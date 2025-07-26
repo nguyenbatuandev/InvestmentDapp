@@ -1,0 +1,551 @@
+﻿
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Pages/_Layout.cshtml";
+}
+@section Styles{
+    <style>
+        /* --- BIẾN MÀU SẮC VÀ THIẾT LẬP CƠ BẢN --- */
+        :root {
+            --bg-dark: #0a0e1a;
+            --bg-light: #12182b;
+            --primary: #00aaff;
+            --primary-light: #00c6ff;
+            --secondary: #272c44;
+            --text-color: #e0e0e0;
+            --text-muted: #8a93b3;
+            --font-body: 'Poppins', sans-serif;
+            --font-data: 'Fira Code', monospace;
+        }
+
+        /* --- THIẾT LẬP CHUNG --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+            line-height: 1.7;
+        }
+
+        a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+            a:hover {
+                color: var(--primary-light);
+            }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+        /* --- PAGINATION --- */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 4rem;
+        }
+
+        .page-link {
+            color: var(--text-muted);
+            border: 1px solid var(--secondary);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            min-width: 40px;
+            text-align: center;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+        }
+
+            .page-link:hover {
+                color: var(--primary);
+                border-color: var(--primary);
+            }
+
+            .page-link.active {
+                background-color: var(--primary);
+                color: var(--bg-dark);
+                border-color: var(--primary);
+                font-weight: 700;
+            }
+
+            .page-link.disabled {
+                color: var(--secondary);
+                pointer-events: none;
+                border-color: var(--secondary);
+            }
+
+        /* --- BỐ CỤC TRANG CHÍNH --- */
+        .page-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 1rem;
+            margin-top: 30px;
+        }
+
+        .page-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+            .page-title h1 {
+                font-size: 2.5rem;
+                font-weight: 700;
+                color: #fff;
+            }
+
+            .page-title p {
+                font-size: 1.1rem;
+                color: var(--text-muted);
+            }
+
+        /* --- TRANG DANH SÁCH BÀI VIẾT (blog.html) --- */
+        .featured-article-link, .article-card-link {
+            display: block;
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .featured-article {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            background-color: var(--bg-light);
+            border: 1px solid var(--secondary);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 3rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+            .featured-article:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 25px rgba(0, 170, 255, 0.1);
+            }
+
+        .featured-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .featured-content {
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .article-category {
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        .featured-content h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .article-excerpt {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        .article-meta {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .article-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .article-card {
+            background-color: var(--bg-light);
+            border: 1px solid var(--secondary);
+            border-radius: 12px;
+            overflow: hidden;
+            height: 100%;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+            .article-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 5px 15px rgba(0, 170, 255, 0.1);
+            }
+
+        .card-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+            .card-content h3 {
+                font-size: 1.25rem;
+                margin-bottom: 1rem;
+                color: #fff;
+            }
+
+        /* --- TRANG CHI TIẾT BÀI VIẾT (article-single.html) --- */
+        .article-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .article-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .article-title {
+            font-size: 3rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            color: #fff;
+        }
+
+        .article-header .article-meta {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .author-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+        }
+
+        .separator {
+            color: var(--secondary);
+        }
+
+        .article-featured-image {
+            margin-bottom: 2rem;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .article-content {
+            font-size: 1.1rem;
+        }
+
+            .article-content p,
+            .article-content ul,
+            .article-content ol {
+                margin-bottom: 1.5rem;
+            }
+
+            .article-content h2, .article-content h3 {
+                color: #fff;
+                margin-top: 2.5rem;
+                margin-bottom: 1rem;
+                border-bottom: 1px solid var(--secondary);
+                padding-bottom: 0.5rem;
+            }
+
+            .article-content ul, .article-content ol {
+                padding-left: 2rem;
+            }
+
+            .article-content blockquote {
+                margin: 2rem 0;
+                padding-left: 1.5rem;
+                border-left: 3px solid var(--primary);
+                color: var(--text-muted);
+                font-style: italic;
+            }
+
+            .article-content pre {
+                background-color: var(--bg-light);
+                border: 1px solid var(--secondary);
+                border-radius: 8px;
+                padding: 1.5rem;
+                overflow-x: auto;
+                font-family: var(--font-data);
+                font-size: 0.9rem;
+            }
+
+        .article-footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .share-links span {
+            margin-right: 1rem;
+            color: var(--text-muted);
+        }
+
+        .share-links a {
+            font-size: 1.2rem;
+            margin-right: 1rem;
+        }
+
+        /* --- CSS CHO HIỆU ỨNG (THÊM VÀO) --- */
+
+        /* 1. CSS cho hiệu ứng xuất hiện (Fade-in) */
+        .featured-article,
+        .article-card {
+            /* Trạng thái ban đầu: mờ và bị đẩy xuống dưới */
+            opacity: 0;
+            transform: translateY(30px);
+            /* Thời gian chuyển động */
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+            .featured-article.is-visible,
+            .article-card.is-visible {
+                /* Trạng thái khi xuất hiện: rõ nét và về vị trí cũ */
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+        /* 2. CSS cho hiệu ứng phóng to ảnh */
+        .featured-image,
+        .card-image {
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .featured-article-link:hover .featured-image,
+        .article-card-link:hover .card-image {
+            transform: scale(1.05); /* Phóng to ảnh lên 5% */
+        }
+
+        /* 3. CSS bổ sung cho hiệu ứng 3D Tilt */
+        .featured-article, .article-card {
+            /* Đảm bảo transition mượt mà khi chuột rời khỏi card */
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+      
+        /* --- RESPONSIVE --- */
+        @@media (max-width: 768px) {
+            .featured-article
+
+        {
+            grid-template-columns: 1fr;
+        }
+
+        .article-title {
+            font-size: 2rem;
+        }
+
+        .main-nav {
+            display: none;
+        }
+        /* Giấu nav trên mobile cho đơn giản */
+        }
+    </style>
+    }
+    
+@section Scripts{
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // ===== HIỆU ỨNG 1: STAGGERED FADE-IN ON SCROLL =====
+            const animatedElements = document.querySelectorAll('.featured-article, .article-card');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry, index) => {
+                    if (entry.isIntersecting) {
+                        // Thêm một độ trễ nhỏ giữa các phần tử để tạo hiệu ứng lần lượt
+                        entry.target.style.transitionDelay = `${index * 100}ms`;
+                        entry.target.classList.add('is-visible');
+                        // Ngừng theo dõi sau khi đã hiển thị
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, {
+                threshold: 0.1 // Kích hoạt khi 10% phần tử lọt vào màn hình
+            });
+
+            animatedElements.forEach(el => {
+                observer.observe(el);
+            });
+
+
+            // ===== HIỆU ỨNG 2: 3D TILT EFFECT ON HOVER =====
+            const tiltElements = document.querySelectorAll('.featured-article, .article-card');
+
+            tiltElements.forEach(el => {
+                const maxTilt = 10; // Độ nghiêng tối đa (đơn vị: độ)
+
+                el.addEventListener('mousemove', (e) => {
+                    const rect = el.getBoundingClientRect();
+                    const x = e.clientX - rect.left; // Vị trí x của chuột trong card
+                    const y = e.clientY - rect.top;  // Vị trí y của chuột trong card
+
+                    const { width, height } = rect;
+
+                    // Tính toán độ nghiêng dựa trên vị trí chuột
+                    // Khi chuột ở giữa, giá trị là 0. Càng ra rìa, giá trị càng gần +/- maxTilt
+                    const tiltX = (y / height - 0.5) * -maxTilt; // Nghiêng lên xuống
+                    const tiltY = (x / width - 0.5) * maxTilt;   // Nghiêng trái phải
+
+                    // Áp dụng hiệu ứng 3D
+                    el.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.02, 1.02, 1.02)`;
+                    el.style.transition = 'none'; // Bỏ transition khi đang di chuột để mượt hơn
+                });
+
+                el.addEventListener('mouseleave', () => {
+                    // Trả về trạng thái ban đầu khi chuột rời khỏi
+                    el.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
+                    el.style.transition = 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; // Thêm lại transition
+                });
+            });
+
+        });
+    </script>
+}
+
+    <main class="page-container">
+        <div class="page-title">
+            <h1>Tin tức & Cập nhật</h1>
+            <p>Theo dõi những thông tin mới nhất từ đội ngũ Project Astra.</p>
+        </div>
+
+        <a href="article-single.html" class="featured-article-link">
+            <article class="featured-article">
+                <img src="https://images.unsplash.com/photo-1639762681057-408e52192e50?q=80&w=2671&auto=format&fit=crop" alt="Blockchain technology" class="featured-image">
+                <div class="featured-content">
+                    <span class="article-category">Thông báo</span>
+                    <h2>Chính thức Mở bán Công khai (IDO) Project Astra!</h2>
+                    <p class="article-excerpt">Sau nhiều tháng chuẩn bị, chúng tôi vui mừng thông báo Project Astra đã chính thức khởi động vòng IDO trên nền tảng của chúng tôi. Đây là cơ hội để cộng đồng...</p>
+                    <div class="article-meta">
+                        <span>Bởi Project Astra Team</span>
+                        <span>-</span>
+                        <time datetime="2025-07-24">24 tháng 7, 2025</time>
+                    </div>
+                </div>
+            </article>
+        </a>
+
+        <div class="article-grid">
+            <a href="article-single.html" class="article-card-link">
+                <article class="article-card">
+                    <img src="https://images.unsplash.com/photo-1642104793539-2a95a8837136?q=80&w=2574&auto=format&fit=crop" alt="Abstract network" class="card-image">
+                    <div class="card-content">
+                        <span class="article-category">Phân tích</span>
+                        <h3>Proof-of-Storage: Giải pháp cho Tương lai Điện toán Phi tập trung</h3>
+                        <div class="article-meta"><time datetime="2025-07-22">22 tháng 7, 2025</time></div>
+                    </div>
+                </article>
+            </a>
+            <a href="article-single.html" class="article-card-link">
+                <article class="article-card">
+                    <img src="https://images.unsplash.com/photo-1640880332220-337a58237536?q=80&w=2574&auto=format&fit=crop" alt="Team working" class="card-image">
+                    <div class="card-content">
+                        <span class="article-category">Cập nhật</span>
+                        <h3>Cập nhật Lộ trình Q4 2025 và Kế hoạch Sàn giao dịch</h3>
+                        <div class="article-meta"><time datetime="2025-07-20">20 tháng 7, 2025</time></div>
+                    </div>
+                </article>
+            </a>
+            <a href="article-single.html" class="article-card-link">
+                <article class="article-card">
+                    <img src="https://images.unsplash.com/photo-1639762681057-408e52192e50?q=80&w=2671&auto=format&fit=crop" alt="Security" class="card-image">
+                    <div class="card-content">
+                        <span class="article-category">Bảo mật</span>
+                        <h3>Báo cáo Kiểm toán Hợp đồng Thông minh (Audit Report)</h3>
+                        <div class="article-meta"><time datetime="2025-07-18">18 tháng 7, 2025</time></div>
+                    </div>
+                </article>
+            </a>
+
+            <a href="article-single.html" class="article-card-link">
+                <article class="article-card">
+                    <img src="https://images.unsplash.com/photo-1639322537228-f710d846310a?q=80&w=2574&auto=format&fit=crop" alt="Crypto wallet" class="card-image">
+                    <div class="card-content">
+                        <span class="article-category">Hướng dẫn</span>
+                        <h3>Hướng dẫn kết nối ví và tham gia IDO an toàn</h3>
+                        <div class="article-meta"><time datetime="2025-07-15">15 tháng 7, 2025</time></div>
+                    </div>
+                </article>
+            </a>
+            <a href="article-single.html" class="article-card-link">
+                <article class="article-card">
+                    <img src="https://images.unsplash.com/photo-1518452811822-b4a1b73c716a?q=80&w=2574&auto=format&fit=crop" alt="Community" class="card-image">
+                    <div class="card-content">
+                        <span class="article-category">Cộng đồng</span>
+                        <h3>Tổng kết sự kiện AMA cùng CEO Jane Doe</h3>
+                        <div class="article-meta"><time datetime="2025-07-12">12 tháng 7, 2025</time></div>
+                    </div>
+                </article>
+            </a>
+            <a href="article-single.html" class="article-card-link">
+                <article class="article-card">
+                    <img src="https://images.unsplash.com/photo-1621528146938-34549b837775?q=80&w=2574&auto=format&fit=crop" alt="Partnership" class="card-image">
+                    <div class="card-content">
+                        <span class="article-category">Đối tác</span>
+                        <h3>Project Astra công bố hợp tác chiến lược với ChainGuard</h3>
+                        <div class="article-meta"><time datetime="2025-07-10">10 tháng 7, 2025</time></div>
+                    </div>
+                </article>
+            </a>
+            <a href="article-single.html" class="article-card-link">
+                <article class="article-card">
+                    <img src="https://images.unsplash.com/photo-1639762681057-408e52192e50?q=80&w=2671&auto=format&fit=crop" alt="Future tech" class="card-image">
+                    <div class="card-content">
+                        <span class="article-category">Tầm nhìn</span>
+                        <h3>Tương lai của Web3 và vai trò của Điện toán Đám mây</h3>
+                        <div class="article-meta"><time datetime="2025-07-08">08 tháng 7, 2025</time></div>
+                    </div>
+                </article>
+            </a>
+            <a href="article-single.html" class="article-card-link">
+                <article class="article-card">
+                    <img src="https://images.unsplash.com/photo-1640880332220-337a58237536?q=80&w=2574&auto=format&fit=crop" alt="Giveaway" class="card-image">
+                    <div class="card-content">
+                        <span class="article-category">Sự kiện</span>
+                        <h3>Chương trình Airdrop cho những người ủng hộ sớm</h3>
+                        <div class="article-meta"><time datetime="2025-07-05">05 tháng 7, 2025</time></div>
+                    </div>
+                </article>
+            </a>
+            <a href="article-single.html" class="article-card-link">
+                <article class="article-card">
+                    <img src="https://images.unsplash.com/photo-1642104793539-2a95a8837136?q=80&w=2574&auto=format&fit=crop" alt="Whitepaper" class="card-image">
+                    <div class="card-content">
+                        <span class="article-category">Tài liệu</span>
+                        <h3>Công bố Whitepaper V2.0 với nhiều cập nhật quan trọng</h3>
+                        <div class="article-meta"><time datetime="2025-07-02">02 tháng 7, 2025</time></div>
+                    </div>
+                </article>
+            </a>
+        </div>
+
+        <nav class="pagination" aria-label="Page navigation">
+            <a href="#" class="page-link disabled" aria-disabled="true">« Trước</a>
+            <a href="#" class="page-link active" aria-current="page">1</a>
+            <a href="#" class="page-link">2</a>
+            <a href="#" class="page-link">3</a>
+            <span class="page-link">...</span>
+            <a href="#" class="page-link">8</a>
+            <a href="#" class="page-link">Sau »</a>
+        </nav>
+
+    </main>

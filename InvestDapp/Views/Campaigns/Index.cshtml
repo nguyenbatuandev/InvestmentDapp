@@ -1,0 +1,544 @@
+﻿
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Pages/_Layout.cshtml";
+}
+
+@section Styles {
+    <style>
+        /* --- BỐ CỤC TRANG CHÍNH --- */
+        .page-container {
+            max-width: 1400px;
+            margin: 0 auto;
+			margin-top: 30px;
+            padding: 3rem 1.5rem;
+        }
+
+        .page-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+            .page-title h1 {
+                font-size: 2.5rem;
+                font-weight: 700;
+                color: #fff;
+            }
+
+            .page-title p {
+                font-size: 1.1rem;
+                color: var(--text-muted);
+            }
+
+        /* --- FILTER BAR --- */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            background-color: var(--bg-light);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--secondary);
+            margin-bottom: 3rem;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+        }
+
+        .filter-status {
+            gap: 0.5rem;
+        }
+
+        .filter-btn {
+            background-color: transparent;
+            border: 1px solid var(--secondary);
+            color: var(--text-muted);
+            padding: 0.6rem 1.2rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+            .filter-btn:hover {
+                color: var(--text-color);
+                border-color: var(--primary);
+            }
+
+            .filter-btn.active {
+                background-color: var(--primary);
+                color: var(--bg-dark);
+                font-weight: 700;
+                border-color: var(--primary);
+                box-shadow: 0 2px 8px rgba(0, 170, 255, 0.3);
+            }
+
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--secondary);
+            border-radius: 25px;
+            padding: 0 1rem;
+        }
+
+            .input-wrapper:focus-within {
+                box-shadow: 0 0 0 2px var(--primary);
+            }
+
+            .input-wrapper i {
+                color: var(--text-muted);
+                margin-right: 0.5rem;
+            }
+
+            .input-wrapper input {
+                background: transparent;
+                border: none;
+                outline: none;
+                color: var(--text-color);
+                padding: 0.7rem 0.6rem;
+                width: 220px;
+                font-size: 1rem;
+            }
+
+        .styled-select {
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+            border: 1px solid var(--secondary);
+            border-radius: 25px;
+            padding: 0.7rem 1.5rem 0.7rem 1rem;
+            -webkit-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a93b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        /* --- PROJECT GRID --- */
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); /* Đổi thành auto-fill */
+            gap: 1.5rem;
+        }
+
+        .project-card {
+            background-color: var(--bg-light);
+            border: 1px solid var(--secondary);
+            /* Bỏ hoàn toàn width và height cố định để lưới tự căn chỉnh */
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+        }
+
+            .project-card:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 12px 30px rgba(0, 170, 255, 0.15);
+            }
+
+        .card-banner {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .card-image {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .project-card:hover .card-image {
+            transform: scale(1.05);
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+            .status-badge::before {
+                content: '';
+                display: inline-block;
+                width: 0.6rem;
+                height: 0.6rem;
+                border-radius: 50%;
+                margin-right: 0.4rem;
+            }
+
+            .status-badge.ongoing::before {
+                background-color: var(--success);
+            }
+
+            .status-badge.upcoming::before {
+                background-color: var(--warning);
+            }
+
+            .status-badge.ended::before {
+                background-color: var(--secondary);
+            }
+
+            .status-badge.ongoing {
+                background-color: rgba(0, 230, 118, 0.15);
+                color: var(--success);
+                border: 1px solid var(--success);
+            }
+
+            .status-badge.upcoming {
+                background-color: rgba(255, 193, 7, 0.15);
+                color: var(--warning);
+                border: 1px solid var(--warning);
+            }
+
+            .status-badge.ended {
+                background-color: rgba(138, 147, 179, 0.15);
+                color: var(--secondary);
+                border: 1px solid var(--secondary);
+            }
+
+        .card-content {
+            padding: 1.75rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem; 
+            margin-bottom: 1.2rem;
+        }
+
+        .project-logo-wrapper {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid var(--secondary);
+            background-color: var(--bg-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .project-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--secondary);
+            background-color: var(--bg-dark);
+            flex-shrink: 0; /* Đảm bảo logo không bị co lại */
+        }
+        .project-info {
+            flex-grow: 1;
+        }
+
+        .project-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #fff;
+            line-height: 1.4;
+            margin: 0; /* Bỏ margin mặc định của thẻ h3 */
+        }
+
+        .project-desc {
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+            /* Giữ lại height để giới hạn số dòng */
+            height: 4.5rem; /* = 3 dòng * 1.5rem (line-height) */
+            /* Bỏ hoàn toàn width: 4.5rem; */
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+        }
+
+        .stats-container {
+            margin-top: auto;
+        }
+
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-muted);
+        }
+
+            .progress-stats strong {
+                color: var(--text-color);
+                font-weight: 600;
+            }
+
+        .progress-bar-container {
+            width: 100%;
+            background-color: var(--secondary);
+            border-radius: 10px;
+            height: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            background: var(--gradient);
+            height: 100%;
+            border-radius: 10px;
+            width: 0%; /* Will be set by JS */
+        }
+
+        .card-footer {
+            margin-top: 1.75rem;
+        }
+
+        .btn-details {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+
+            .btn-details:hover {
+                background-color: var(--primary);
+                color: var(--bg-dark);
+                box-shadow: 0 4px 10px rgba(0, 170, 255, 0.3);
+            }
+
+        .no-results {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading-spinner {
+            border-width: 5px;
+            width: 60px;
+            height: 60px;
+            margin: 6rem auto;
+            border-top-color: var(--primary-light);
+        }
+
+        /* --- RESPONSIVE --- */
+        @@media(max - width: 768px)
+
+        {
+            .filter-bar
+
+        {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+        }
+
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+            document.addEventListener('DOMContentLoaded', () => {
+
+            // --- SAMPLE PROJECT DATA ---
+            const allProjects = [
+                {
+                    id: 1, name: 'Astra Cloud Storage', image: 'https://images.unsplash.com/photo-1639762681057-408e52192e50?q=80', logo: 'https://i.ibb.co/bF9gV88/astra-logo.png', chain: 'ethereum', status: 'ongoing', hot: true, desc: 'Nền tảng lưu trữ phi tập trung, an toàn và hiệu quả.', raised: 750000, goal: 1000000, endDate: '2025-07-30'
+                },
+                {
+                    id: 2, name: 'DeFi Quantum Leap', image: 'https://images.unsplash.com/photo-1642104793539-2a95a8837136?q=80', logo: 'https://cdn-icons-png.flaticon.com/512/6001/6001368.png', chain: 'bsc', status: 'ongoing', hot: false, desc: 'Giao thức cho vay và đi vay thế hệ mới với lãi suất tối ưu.', raised: 450000, goal: 500000, endDate: '2025-08-15'
+                },
+                {
+                    id: 3, name: 'NFT-Verse Creator', image: 'https://images.unsplash.com/photo-1640880332220-337a58237536?q=80', logo: 'https://cdn-icons-png.flaticon.com/512/5999/5999923.png', chain: 'solana', status: 'upcoming', hot: true, desc: 'Công cụ tạo và quản lý NFT 3D cho các nghệ sĩ và nhà phát triển game.', raised: 0, goal: 300000, endDate: '2025-09-01'
+                },
+                {
+                    id: 4, name: 'Polygon Gaming Guild', image: 'https://images.unsplash.com/photo-1621528146938-34549b837775?q=80', logo: 'https://cdn-icons-png.flaticon.com/512/7039/7039603.png', chain: 'polygon', status: 'ended', hot: false, desc: 'Bang hội game phi tập trung đầu tiên trên mạng Polygon.', raised: 250000, goal: 250000, endDate: '2025-06-30'
+                },
+                {
+                    id: 5, name: 'Solana Speed Bridge', image: 'https://images.unsplash.com/photo-1639322537228-f710d846310a?q=80', logo: 'https://cdn-icons-png.flaticon.com/512/6001/6001503.png', chain: 'solana', status: 'ongoing', hot: true, desc: 'Cầu nối cross-chain siêu tốc giữa Solana và các L1 khác.', raised: 600000, goal: 1500000, endDate: '2025-08-20'
+                },
+                {
+                    id: 6, name: 'Ethernal AI', image: 'https://images.unsplash.com/photo-1518452811822-b4a1b73c716a?q=80', logo: 'https://cdn-icons-png.flaticon.com/512/4712/4712109.png', chain: 'ethereum', status: 'upcoming', hot: false, desc: 'Nền tảng trí tuệ nhân tạo phi tập trung trên Ethereum.', raised: 0, goal: 2000000, endDate: '2025-09-10'
+                },
+                {
+                    id: 7, name: 'BNB Yield Farmer', image: 'https://images.unsplash.com/photo-1639762681057-408e52192e50?q=80', logo: 'https://cdn-icons-png.flaticon.com/512/4712/4712035.png', chain: 'bsc', status: 'ended', hot: false, desc: 'Công cụ tổng hợp lợi nhuận tự động trên BNB Chain.', raised: 800000, goal: 800000, endDate: '2025-07-15'
+                },
+                {
+                    id: 8, name: 'Polygon Data DAO', image: 'https://images.unsplash.com/photo-1640880332220-337a58237536?q=80', logo: 'https://cdn-icons-png.flaticon.com/512/5999/5999923.png', chain: 'polygon', status: 'upcoming', hot: true, desc: 'Tổ chức tự trị phi tập trung cho việc chia sẻ và kiếm tiền từ dữ liệu.', raised: 0, goal: 400000, endDate: '2025-09-25'
+                },
+                {
+                    id: 9, name: 'BNB Swap Protocol', image: 'https://images.unsplash.com/photo-1642104793539-2a95a8837136?q=80', logo: 'https://cdn-icons-png.flaticon.com/512/6001/6001368.png', chain: 'bsc', status: 'ongoing', hot: true, desc: 'Giao thức hoán đổi token phi tập trung hàng đầu trên BNB Chain.', raised: 1200000, goal: 2000000, endDate: '2025-08-30'
+                },
+                {
+                    id: 10, name: 'BNB Stable Yield', image: 'https://images.unsplash.com/photo-1640880332220-337a58237536?q=80', logo: 'https://cdn-icons-png.flaticon.com/512/4712/4712035.png', chain: 'bsc', status: 'upcoming', hot: false, desc: 'Nền tảng tối ưu hóa lợi nhuận stablecoin trên BNB Chain.', raised: 0, goal: 750000, endDate: '2025-09-15'
+                },
+            ].map(p => ({ ...p, newest: new Date(p.endDate) }));
+
+            // --- FILTER PROJECTS FOR BNB CHAIN ONLY ---
+            const projects = allProjects.filter(p => p.chain === 'bsc');
+
+            // --- DOM ELEMENTS ---
+            const projectGrid = document.getElementById('project-grid');
+            const statusFilters = document.querySelectorAll('.filter-btn');
+            const searchInput = document.getElementById('search-input');
+            const sortSelect = document.getElementById('sort-select');
+
+            // --- RENDER PROJECTS FUNCTION ---
+            const renderProjects = (projectsToRender) => {
+                projectGrid.innerHTML = '';
+                if (projectsToRender.length === 0) {
+                    projectGrid.innerHTML = '<p class="no-results">Không tìm thấy dự án nào phù hợp.</p>';
+                    return;
+                }
+
+                projectsToRender.forEach(project => {
+                    const progress = project.goal > 0 ? (project.raised / project.goal) * 100 : 0;
+                    const card = document.createElement('div');
+                    card.className = 'project-card';
+                    const statusClass = project.status === 'ongoing' ? 'ongoing' : project.status === 'upcoming' ? 'upcoming' : 'ended';
+                                       // Thay thế toàn bộ nội dung của card.innerHTML bằng đoạn này
+                    card.innerHTML = `
+                        <div class="card-banner">
+                            <img src="${project.image}" alt="${project.name}" class="card-image">
+                            <span class="status-badge ${statusClass}" data-status="${project.status}">${project.status.replace('ongoing', 'Đang gọi vốn').replace('upcoming', 'Sắp diễn ra').replace('ended', 'Đã kết thúc')}</span>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-header">
+                                <img src="${project.logo}" alt="${project.name} logo" class="project-logo">
+                                <div class="project-info">
+                                    <h3 class="project-name">${project.name}</h3>
+                                    <p class="project-chain">${project.chain}</p>
+                                </div>
+                            </div>
+                            <p class="project-desc">${project.desc}</p>
+                            <div class="stats-container">
+                                <div class="progress-stats">
+                                    <span>Tiến độ: <strong>${progress.toFixed(0)}%</strong></span>
+                                    <span>Đã huy động: <strong>$${project.raised.toLocaleString()}</strong></span>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar-fill" style="width: ${progress}%"></div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <button class="btn-details">Xem chi tiết</button>
+                            </div>
+                        </div>
+                    `;
+                    projectGrid.appendChild(card);
+                    // Animate progress bar after adding to DOM
+                    setTimeout(() => {
+                        card.querySelector('.progress-bar-fill').style.width = `${progress}%`;
+                    }, 50);
+                });
+            };
+
+            // --- FILTERING AND SORTING LOGIC ---
+            const applyFilters = () => {
+                const status = document.querySelector('.filter-btn.active').dataset.status;
+                const searchTerm = searchInput.value.toLowerCase();
+                const sortBy = sortSelect.value;
+
+                let filteredProjects = projects;
+
+                // Status filter
+                if (status !== 'all') {
+                    filteredProjects = filteredProjects.filter(p => p.status === status);
+                }
+
+                // Search filter
+                if (searchTerm) {
+                    filteredProjects = filteredProjects.filter(p => p.name.toLowerCase().includes(searchTerm));
+                }
+
+                // Sorting
+                switch (sortBy) {
+                    case 'hot':
+                        filteredProjects.sort((a, b) => b.hot - a.hot);
+                        break;
+                    case 'newest':
+                        filteredProjects.sort((a, b) => b.newest - a.newest);
+                        break;
+                    case 'ending_soon':
+                        filteredProjects.filter(p => p.status === 'ongoing').sort((a, b) => new Date(a.endDate) - new Date(b.endDate));
+                        break;
+                }
+
+                renderProjects(filteredProjects);
+            };
+
+            // --- EVENT LISTENERS ---
+            statusFilters.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    statusFilters.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    applyFilters();
+                });
+            });
+
+            searchInput.addEventListener('input', applyFilters);
+            sortSelect.addEventListener('change', applyFilters);
+
+            // --- INITIAL RENDER ---
+            renderProjects(projects);
+        });
+    </script>
+}
+
+<main class="page-container">
+    <div class="page-title">
+        <h1>Khám phá các Dự án</h1>
+        <p>Tìm kiếm, lọc và đầu tư vào các dự án tiềm năng trên nền tảng của chúng tôi.</p>
+    </div>
+
+    <div class="filter-bar">
+        <div class="filter-group filter-status">
+            <button class="filter-btn active" data-status="all">Tất cả</button>
+            <button class="filter-btn" data-status="ongoing">🟢 Đang gọi vốn</button>
+            <button class="filter-btn" data-status="upcoming">🟡 Sắp diễn ra</button>
+            <button class="filter-btn" data-status="ended">⚪ Đã kết thúc</button>
+        </div>
+
+        <div class="filter-group">
+            <div class="input-wrapper">
+                <i class="fa-solid fa-search"></i>
+                <input type="search" id="search-input" placeholder="Tìm theo tên dự án...">
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <select id="sort-select" class="styled-select">
+                <option value="hot">Sắp xếp: Hot nhất</option>
+                <option value="newest">Sắp xếp: Mới nhất</option>
+                <option value="ending_soon">Sắp xếp: Sắp kết thúc</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="project-grid" id="project-grid">
+        <div class="loading-spinner"></div>
+    </div>
+
+</main>

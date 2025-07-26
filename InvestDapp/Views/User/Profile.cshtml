@@ -1,0 +1,425 @@
+﻿@{
+    ViewData["Title"] = "Profile";
+    Layout = "~/Pages/_Layout.cshtml";
+}
+
+@section Styles {
+    <style>
+        @@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+        /* === TIỆN ÍCH QUAN TRỌNG NHẤT === */
+        .hidden {
+            display: none !important;
+        }
+        /* ================================== */
+
+        .profile-container {
+            padding-top: 100px;
+            padding-bottom: 10px;
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .profile-header {
+            margin-bottom: 2.5rem;
+        }
+
+            .profile-header h1 {
+                font-size: 2.25rem;
+                font-weight: 700;
+                margin-bottom: 0.5rem;
+                background: var(--gradient);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                text-fill-color: transparent;
+            }
+
+            .profile-header p {
+                font-size: 1.1rem;
+                color: var(--text-muted);
+            }
+
+        .profile-body {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2.5rem;
+        }
+
+        .profile-display-card {
+            background-color: var(--bg-light);
+            border: 1px solid var(--secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            height: fit-content;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .avatar-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid var(--primary);
+            object-fit: cover;
+            margin-bottom: 1.5rem;
+        }
+
+        .user-identity {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .verify-icon {
+            width: 22px;
+            height: 22px;
+            color: var(--primary);
+        }
+
+        .pending-icon {
+            width: 22px;
+            height: 22px;
+            color: #ffc107; /* Màu vàng cho trạng thái chờ */
+        }
+
+        .x-icon {
+            width: 22px;
+            height: 22px;
+            color: #ff4d4d;
+        }
+
+        .user-wallet {
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            word-break: break-all;
+            padding: 0 1rem;
+        }
+
+        .bio-display {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--secondary);
+            text-align: left;
+        }
+
+            .bio-display h3 {
+                font-size: 1rem;
+                font-weight: 500;
+                color: var(--text-muted);
+                margin-bottom: 0.5rem;
+            }
+
+            .bio-display p {
+                color: var(--text-color);
+                line-height: 1.6;
+            }
+
+        .form-card {
+            background-color: var(--bg-light);
+            border: 1px solid var(--secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+            .form-group label {
+                display: block;
+                font-size: 0.9rem;
+                font-weight: 500;
+                margin-bottom: 0.5rem;
+                color: var(--text-muted);
+            }
+
+            .form-group input, .form-group textarea {
+                width: 100%;
+                background-color: var(--bg-dark);
+                border: 1px solid var(--secondary);
+                border-radius: 8px;
+                padding: 12px 14px;
+                color: var(--text-color);
+                font-size: 1rem;
+                font-family: 'Poppins', sans-serif;
+                transition: border-color 0.2s, box-shadow 0.2s;
+            }
+
+                .form-group input:focus, .form-group textarea:focus {
+                    outline: none;
+                    border-color: var(--primary);
+                    box-shadow: 0 0 0 3px rgba(0, 170, 255, 0.2);
+                }
+
+            .form-group textarea {
+                resize: vertical;
+                min-height: 80px;
+            }
+
+        .form-actions {
+            text-align: right;
+            margin-top: 2rem;
+        }
+
+        .kyc-status-wrapper {
+            margin-top: 30px;
+            border-top: 1px solid var(--secondary);
+            padding-top: 20px;
+        }
+
+        #kycStatusContainer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 15px;
+            min-height: 24px;
+        }
+
+        @@media (max-width: 992px) {
+            .profile-body {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @@media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .profile-header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+}
+
+<div class="profile-container hidden">
+    <div class="profile-header">
+        <h1>Account Settings</h1>
+        <p>Manage your account details and investment preferences.</p>
+    </div>
+
+    <div class="profile-body">
+        <div class="profile-display-card">
+            <div class="avatar-section">
+                <img id="displayAvatar" src="" alt="User Avatar" class="avatar-image">
+            </div>
+            <div class="user-identity">
+                <h2 id="displayName" class="user-name"></h2>
+                <svg id="mainVerifyIcon" class="verify-icon hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-1.25 17.292l-4.5-4.364 1.857-1.858 2.643 2.506 5.643-5.784 1.857 1.857-7.5 7.643z" />
+                </svg>
+            </div>
+            <p id="displayWallet" class="user-wallet"></p>
+            <div class="bio-display">
+                <h3>Bio</h3>
+                <p id="displayBio"></p>
+            </div>
+
+            <div class="kyc-status-wrapper">
+                <div id="kycStatusContainer">
+                    <svg id="kycVerifyIcon" class="verify-icon hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-1.25 17.292l-4.5-4.364 1.857-1.858 2.643 2.506 5.643-5.784 1.857 1.857-7.5 7.643z" /></svg>
+                    <svg id="kycPendingIcon" class="pending-icon hidden" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm-1-5h2v2h-2zm0-8h2v6h-2z" /></svg>
+                    <svg id="kycXIcon" class="x-icon hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2C6.486,2,2,6.486,2,12s4.486,10,10,10s10-4.486,10-10S17.514,2,12,2z M16.207,14.793l-1.414,1.414L12,13.414 l-2.793,2.793l-1.414-1.414L10.586,12L7.793,9.207l1.414-1.414L12,10.586l2.793-2.793l1.414,1.414L13.414,12L16.207,14.793z" /></svg>
+                    <span id="kycStatusMessage"></span>
+                </div>
+                <a id="kycButton" href="@Url.Action("FundraiserKycView", "Kyc")" class="btn btn-primary hidden"></a>
+            </div>
+        </div>
+
+        <div class="profile-edit-form">
+            <div class="form-card">
+                <div class="form-group"><label for="inputName">Full Name</label><input type="text" id="inputName" placeholder="Enter your full name"></div>
+                <div class="form-group"><label for="inputEmail">Email Address</label><input type="email" id="inputEmail" placeholder="Enter your email"></div>
+                <div class="form-group"><label for="inputAvatar">Avatar URL</label><input type="text" id="inputAvatar" placeholder="https://example.com/image.png"></div>
+                <div class="form-group"><label for="inputBio">Your Bio</label><textarea id="inputBio" rows="4" placeholder="Tell us a little about yourself"></textarea></div>
+                <div class="form-actions"><button id="saveButton" class="btn btn-primary">Save Changes</button></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // === KHAI BÁO BIẾN DOM (Giữ nguyên) ===
+            const profileContainer = document.querySelector('.profile-container');
+            const displayAvatar = document.getElementById('displayAvatar');
+            const displayName = document.getElementById('displayName');
+            const mainVerifyIcon = document.getElementById('mainVerifyIcon');
+            const displayWallet = document.getElementById('displayWallet');
+            const displayBio = document.getElementById('displayBio');
+            const inputName = document.getElementById('inputName');
+            const inputEmail = document.getElementById('inputEmail');
+            const inputAvatar = document.getElementById('inputAvatar');
+            const inputBio = document.getElementById('inputBio');
+            const saveButton = document.getElementById('saveButton');
+            const kycVerifyIcon = document.getElementById('kycVerifyIcon');
+            const kycPendingIcon = document.getElementById('kycPendingIcon');
+            const kycXIcon = document.getElementById('kycXIcon');
+            const kycStatusMessage = document.getElementById('kycStatusMessage');
+            const kycButton = document.getElementById('kycButton');
+
+            // === CÁC HÀM XỬ LÝ (Giữ nguyên) ===
+            function populateProfileData(user) {
+                displayAvatar.src = user.avatar || 'https://i.pravatar.cc/150?u=default';
+                displayName.textContent = user.name || 'Unnamed';
+                displayWallet.textContent = user.walletAddress || 'Not available';
+                displayBio.textContent = user.bio || 'No bio provided.';
+                inputName.value = user.name || '';
+                inputEmail.value = user.email || '';
+                inputAvatar.value = user.avatar || '';
+                inputBio.value = user.bio || '';
+            }
+
+            function updateKycStatus(data) {
+                kycVerifyIcon.classList.add('hidden');
+                kycPendingIcon.classList.add('hidden');
+                kycXIcon.classList.add('hidden');
+                kycButton.classList.add('hidden');
+                mainVerifyIcon.classList.add('hidden');
+
+                if (!data || !data.success) {
+                    kycXIcon.classList.remove('hidden');
+                    kycStatusMessage.textContent = "Error checking status";
+                    return;
+                }
+
+                switch (data.message) {
+                    case "0":
+                        kycXIcon.classList.remove('hidden');
+                        kycStatusMessage.textContent = "Not Verified";
+                        kycButton.textContent = "Verify KYC Now";
+                        kycButton.classList.remove('hidden');
+                        break;
+                    case "1":
+                        kycPendingIcon.classList.remove('hidden');
+                        kycStatusMessage.textContent = "KYC Pending Review";
+                        break;
+                    case "2":
+                        kycVerifyIcon.classList.remove('hidden');
+                        kycStatusMessage.textContent = "KYC Verified";
+                        mainVerifyIcon.classList.remove('hidden');
+                        break;
+                    case "3":
+                        kycXIcon.classList.remove('hidden');
+                        kycStatusMessage.textContent = "KYC Rejected";
+                        kycButton.textContent = "Re-submit KYC";
+                        kycButton.classList.remove('hidden');
+                        break;
+                    default:
+                        kycXIcon.classList.remove('hidden');
+                        kycStatusMessage.textContent = "Unknown Status";
+                        break;
+                }
+            }
+
+            // === ✨ TỐI ƯU HÓA LOGIC TẢI DỮ LIỆU ===
+
+            // 1. Hàm để tải và hiển thị Profile
+            async function loadProfile() {
+                try {
+                    const response = await fetch('/User/GetUserProfile');
+                    if (!response.ok) {
+                        // Nếu lỗi, vẫn hiển thị form trống để người dùng không thấy trang trắng
+                        console.error(`Error fetching profile: ${response.statusText}`);
+                        DApp.showCustomAlert(`Error fetching profile.`);
+                        return;
+                    }
+                    const user = await response.json();
+                    populateProfileData(user);
+                } catch (error) {
+                    console.error("Critical error fetching profile:", error);
+                    DApp.showCustomAlert("Failed to load user profile.");
+                }
+            }
+
+            // 2. Hàm để tải và hiển thị trạng thái KYC
+            async function loadKycStatus() {
+                try {
+                    const response = await fetch('/Kyc/CheckKyc');
+                    if (!response.ok) {
+                        updateKycStatus({ success: false }); // Cập nhật UI với trạng thái lỗi
+                        console.error(`Error checking KYC: ${response.statusText}`);
+                        return;
+                    }
+                    const kycData = await response.json();
+                    updateKycStatus(kycData);
+                } catch (error) {
+                    updateKycStatus({ success: false }); // Cập nhật UI với trạng thái lỗi
+                    console.error("Critical error checking KYC:", error);
+                }
+            }
+
+            // 3. Hàm khởi tạo chính
+            async function initializePage() {
+                // ✨ Hiển thị container ngay lập tức để người dùng thấy bố cục
+                profileContainer.classList.remove('hidden');
+
+                // ✨ Gọi cả hai hàm tải dữ liệu chạy song song mà không block nhau
+                await Promise.all([
+                    loadProfile(),
+                    loadKycStatus()
+                ]);
+            }
+
+            // === ✨ TỐI ƯU HÓA NÚT LƯU ===
+            saveButton.addEventListener('click', async function () {
+                // Hiện loading trên nút để báo cho người dùng
+                saveButton.disabled = true;
+                saveButton.textContent = 'Saving...';
+
+                const updatedUser = {
+                    name: inputName.value,
+                    email: inputEmail.value,
+                    avatar: inputAvatar.value,
+                    bio: inputBio.value
+                };
+                try {
+                    const response = await fetch('/User/UpdateProfile', { // Sửa lỗi chính tả "UpdatePofile" -> "UpdateProfile" nếu cần
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updatedUser)
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        DApp.showCustomAlert(`Failed to update profile: ${errorData.message || 'Server error'}`);
+                        return; // Dừng lại ở đây nếu lỗi
+                    }
+
+                    DApp.showCustomAlert('Profile updated successfully!');
+
+                    // ✨ CẢI TIẾN: Cập nhật giao diện trực tiếp thay vì tải lại trang
+                    // Ta cần thêm walletAddress vào object để hàm populateProfileData không bị lỗi
+                    updatedUser.walletAddress = displayWallet.textContent;
+                    populateProfileData(updatedUser);
+
+                } catch (error) {
+                    console.error("Update failed:", error);
+                    DApp.showCustomAlert("An error occurred while updating. Check console for details.");
+                } finally {
+                    // Dù thành công hay thất bại, bật lại nút
+                    saveButton.disabled = false;
+                    saveButton.textContent = 'Save Changes';
+                }
+            });
+
+            // === CHẠY HÀM KHI TẢI TRANG ===
+            initializePage();
+        });
+    </script>
+}

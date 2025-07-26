@@ -1,0 +1,934 @@
+﻿@using Microsoft.AspNetCore.Authorization
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - DApp Kêu Gọi Vốn</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <style>
+        /* ==================================================
+                   BIẾN MÀU VÀ THIẾT LẬP CƠ BẢN
+                ================================================== */
+        :root {
+            --bg-dark: #0a0e1a;
+            --bg-light: #12182b;
+            --primary: #00aaff;
+            --primary-light: #00c6ff;
+            --secondary: #272c44;
+            --text-color: #e0e0e0;
+            --text-muted: #8a93b3;
+            --gradient: linear-gradient(90deg, var(--primary), var(--primary-light));
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+            .btn-primary:hover {
+                background: var(--primary-light);
+            }
+
+        /* ==================================================
+                   HEADER & NAVBAR
+                ================================================== */
+        .header {
+            background-color: rgba(18, 24, 43, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 15px 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+        }
+
+            .nav-links a {
+                color: var(--text-muted);
+                text-decoration: none;
+                font-weight: 500;
+                transition: color 0.3s ease;
+            }
+
+                .nav-links a:hover {
+                    color: var(--primary);
+                }
+
+        /* ==================================================
+                   WALLET DROPDOWN MENU
+                ================================================== */
+        #wallet-dropdown {
+            display: none;
+            position: relative;
+        }
+
+        #wallet-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid var(--secondary);
+        }
+
+        #wallet-menu {
+            display: none;
+            position: absolute;
+            top: 60px;
+            right: 0;
+            width: 280px;
+            background: var(--bg-light);
+            border: 1px solid var(--secondary);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            padding: 0;
+            z-index: 1010;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        #wallet-dropdown.active #wallet-menu {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #wallet-menu p {
+            font-weight: 600;
+            color: white;
+            padding: 15px 20px;
+            background-color: rgba(0,0,0,0.1);
+            word-break: break-all;
+        }
+
+        #wallet-menu hr {
+            border: none;
+            border-top: 1px solid var(--secondary);
+            margin: 0;
+        }
+
+        #wallet-menu a {
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+            #wallet-menu a:hover {
+                background-color: var(--secondary);
+                color: white;
+            }
+
+        #logout-btn {
+            color: #ff8a8a;
+        }
+
+        /* ==================================================
+                   POPUP & CUSTOM ALERT
+                ================================================== */
+        .popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(10, 14, 26, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1999;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+            .popup-overlay.active {
+                display: block;
+                opacity: 1;
+            }
+
+        #popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            background-color: var(--bg-light);
+            border: 1px solid var(--secondary);
+            border-radius: 16px;
+            padding: 30px 35px;
+            width: 100%;
+            max-width: 450px;
+            z-index: 2000;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transform: translate(-50%, -45%);
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+
+            #popup.active {
+                display: block;
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+
+            #popup h3 {
+                text-align: center;
+                font-size: 1.8rem;
+                margin: 0 0 25px 0;
+                color: white;
+            }
+
+            #popup input {
+                background-color: var(--bg-dark);
+                border: 1px solid var(--secondary);
+                border-radius: 8px;
+                color: var(--text-color);
+                font-size: 1rem;
+                padding: 14px 16px;
+                width: 100%;
+                margin-bottom: 15px;
+            }
+
+                #popup input:focus {
+                    outline: none;
+                    border-color: var(--primary);
+                }
+
+        #saveProfileBtn {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            background: var(--gradient);
+            color: white;
+        }
+
+        .custom-alert {
+            position: fixed;
+            top: 90px;
+            right: 20px;
+            z-index: 9999;
+            background-color: var(--bg-light);
+            color: var(--text-color);
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(120%);
+            transition: all 0.4s ease-in-out;
+        }
+
+            .custom-alert.active {
+                opacity: 1;
+                visibility: visible;
+                transform: translateX(0);
+            }
+
+        /* ==================================================
+                   CHATBOT & WELCOME BUBBLE
+                ================================================== */
+        #chat-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+        }
+
+        #chat-bot-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--gradient);
+            color: white;
+            box-shadow: 0 5px 20px rgba(0, 170, 255, 0.3);
+            font-size: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .welcome-bubble {
+            position: absolute;
+            right: 75px;
+            bottom: 5px;
+            background-color: var(--bg-light);
+            padding: 12px 18px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateY(10px) scale(0.9);
+            transition: all 0.9s ease-in-out;
+            pointer-events: none;
+        }
+
+            .welcome-bubble.visible {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+
+        .welcome-bubble-arrow {
+            position: absolute;
+            top: 50%;
+            right: -10px;
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-left: 10px solid var(--bg-light);
+            transform: translateY(-50%);
+        }
+
+        .chat-widget {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 370px;
+            max-width: 90vw;
+            height: 500px;
+            max-height: 70vh;
+            background-color: var(--bg-light);
+            border: 1px solid var(--secondary);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 998;
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+        }
+
+            .chat-widget.active {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                pointer-events: auto;
+            }
+
+        .chat-header {
+            background-color: var(--secondary);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .close-chat-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message-bubble {
+            max-width: 85%;
+            padding: 10px 15px;
+            border-radius: 12px;
+            line-height: 1.5;
+        }
+
+            .message-bubble p {
+                white-space: pre-wrap;
+                word-wrap: break-word;
+            }
+
+            .message-bubble.bot {
+                background-color: var(--secondary);
+                align-self: flex-start;
+                border-bottom-left-radius: 4px;
+            }
+
+            .message-bubble.user {
+                background: var(--primary);
+                color: white;
+                align-self: flex-end;
+                border-bottom-right-radius: 4px;
+            }
+
+            .message-bubble.typing-indicator {
+                padding: 12px 15px;
+            }
+
+                .message-bubble.typing-indicator span {
+                    display: inline-block;
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    background-color: var(--text-muted);
+                    animation: pulse-dot 1.2s infinite ease-in-out;
+                }
+
+                    .message-bubble.typing-indicator span:nth-child(2) {
+                        animation-delay: 0.2s;
+                    }
+
+                    .message-bubble.typing-indicator span:nth-child(3) {
+                        animation-delay: 0.4s;
+                    }
+
+        @@keyframes pulse-dot {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1.0);
+            }
+        }
+
+        .chat-input-area {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid var(--secondary);
+            flex-shrink: 0;
+        }
+
+        #chat-input {
+            flex-grow: 1;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--secondary);
+            border-radius: 8px;
+            color: var(--text-color);
+            padding: 10px 15px;
+            font-size: 1rem;
+            margin-right: 10px;
+        }
+
+            #chat-input:focus {
+                outline: none;
+                border-color: var(--primary);
+            }
+
+            #chat-send-btn {
+                width: 45px;
+                height: 45px;
+                border-radius: 8px;
+                background: var(--primary);
+                color: white;
+                border: none;
+                cursor: pointer;
+                font-size: 1.1rem;
+                transition: background-color 0.2s;
+                flex-shrink: 0;
+                /* CĂN GIỮA ICON HOÀN HẢO */
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+        /* ==================================================
+                   FOOTER
+                ================================================== */
+        .footer {
+            background-color: var(--bg-light);
+            padding: 60px 0 20px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .footer-col h4 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .footer-col ul {
+            list-style: none;
+        }
+
+            .footer-col ul li {
+                margin-bottom: 10px;
+            }
+
+        .footer-col a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+            .footer-col a:hover {
+                color: var(--primary);
+            }
+
+        .social-links a {
+            font-size: 1.5rem;
+            margin-right: 15px;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid var(--secondary);
+            padding-top: 20px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+    </style>
+
+    @RenderSection("Styles", required: false)
+</head>
+<body>
+    <form id="antiForgeryForm" method="post" class="d-none"> @Html.AntiForgeryToken() </form>
+
+    <header class="header">
+        <div class="container navbar">
+            <a href="/" class="logo">🚀 DAppLaunch</a>
+            <ul class="nav-links">
+                <li><a href="/">Trang chủ</a></li>
+                <li><a asp-controller="News" asp-action="Index">Tin Tức</a></li>
+                <li><a asp-controller="Campaigns" asp-action="Index">Dự án</a></li>
+            </ul>
+            <button id="connectWalletBtn" class="btn btn-primary">Kết nối Ví</button>
+            <div id="wallet-dropdown">
+                <img src="https://i.pravatar.cc/150" class="wallet-avatar" id="wallet-avatar" alt="Wallet Avatar" />
+                <div class="wallet-menu" id="wallet-menu">
+                    <p id="wallet-address"></p> <hr />
+                    <a asp-controller="User" asp-action="Profile">👤 Hồ sơ</a>
+                    <a asp-controller="Conversations" asp-action="Index">
+                        <i class="fab fa-facebook-messenger"></i> Messenger
+                    </a>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a asp-controller="Admin" asp-action="Index">⚙️ Quản trị</a>
+                    }
+                    <hr />
+                    <a href="#" id="logout-btn">🚪 Đăng xuất</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main role="main">
+        @RenderBody()
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <a href="#" class="logo">🚀 DAppLaunch</a>
+                    <p>Thay đổi cách thế giới huy động vốn và đầu tư vào tương lai.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Tài liệu</h4>
+                    <ul>
+                        <li><a href="#">Whitepaper</a></li>
+                        <li><a href="#">Tài liệu kỹ thuật</a></li>
+                        <li><a href="#">GitHub</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Pháp lý</h4>
+                    <ul>
+                        <li><a href="#">Điều khoản dịch vụ</a></li>
+                        <li><a href="#">Chính sách riêng tư</a></li>
+                        <li><a href="#">Audit Smart Contract</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Mạng xã hội</h4>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-telegram"></i></a>
+                        <a href="#"><i class="fab fa-discord"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; @DateTime.Now.Year - DAppLaunch - Sinh viên Nguyễn Bá Tuân.</p>
+            </div>
+        </div>
+    </footer>
+
+    <div id="customAlertPopup" class="custom-alert">
+        <p id="customAlertMessage"></p>
+    </div>
+
+    <div class="popup-overlay" id="popup-overlay"></div>
+    <div id="popup">
+        <h3>Chào mừng thành viên mới!</h3>
+        <p style="text-align: center; color: var(--text-muted); margin-top: -15px; margin-bottom: 25px;">
+            Vui lòng cập nhật tên và email của bạn.
+        </p>
+        <input type="text" id="nameInput" placeholder="Nhập tên của bạn" required>
+        <input type="email" id="emailInput" placeholder="Nhập email của bạn" required>
+        <button id="saveProfileBtn" class="btn btn-primary">Lưu Thông Tin</button>
+    </div>
+
+    <div id="chat-widget" class="chat-widget">
+        <div class="chat-header">
+            <h3>🤖 Hỗ trợ AI</h3>
+            <button id="close-chat-btn" class="close-chat-btn">&times;</button>
+        </div>
+        <div id="chat-messages" class="chat-messages">
+            <div class="message-bubble bot">
+                <p>Chào bạn! Tôi là trợ lý AI của DAppLaunch. Tôi có thể giúp gì cho bạn hôm nay?</p>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." autocomplete="off">
+            <button id="chat-send-btn" class="btn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <div id="chat-container">
+        <div id="welcome-chat-bubble" class="welcome-bubble">
+            🤖 Tôi có thể giúp gì cho bạn?
+            <div class="welcome-bubble-arrow"></div>
+        </div>
+        <button id="chat-bot-btn" class="btn" aria-label="Mở Bot chat hỗ trợ">
+            <i class="fas fa-comments"></i>
+        </button>
+    </div>
+
+    <script>
+        // ==========================================================
+        // === KHỞI TẠO ĐỐI TƯỢNG TOÀN CỤC VÀ HÀM DÙNG CHUNG
+        // ==========================================================
+        window.DApp = {
+            isConnecting: false,
+
+            showCustomAlert: (message) => {
+                const alertEl = document.getElementById('customAlertPopup');
+                const messageEl = document.getElementById('customAlertMessage');
+                if (!alertEl || !messageEl) {
+                    alert(message); // Fallback
+                    return;
+                }
+                messageEl.textContent = message;
+                alertEl.classList.add('active');
+                setTimeout(() => alertEl.classList.remove('active'), 3000);
+            },
+
+            showLoggedOutState: () => {
+                localStorage.removeItem('connectedWallet');
+                document.getElementById('connectWalletBtn').style.display = 'block';
+                document.getElementById('wallet-dropdown').style.display = 'none';
+            },
+
+            getAntiForgeryToken: () => {
+                const tokenEl = document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]');
+                return tokenEl ? tokenEl.value : '';
+            }
+        };
+
+        // ==========================================================
+        // === LOGIC CHÍNH KHI TÀI LIỆU SẴN SÀNG
+        // ==========================================================
+        document.addEventListener("DOMContentLoaded", function () {
+
+            // --- KHAI BÁO BIẾN DOM ---
+            const connectBtn = document.getElementById('connectWalletBtn');
+            const walletDropdown = document.getElementById('wallet-dropdown');
+            const walletAvatar = document.getElementById('wallet-avatar');
+            const walletAddressEl = document.getElementById('wallet-address');
+            const logoutBtn = document.getElementById('logout-btn');
+            const popup = document.getElementById('popup');
+            const popupOverlay = document.getElementById('popup-overlay');
+            const saveProfileBtn = document.getElementById('saveProfileBtn');
+            const nameInput = document.getElementById('nameInput');
+            const emailInput = document.getElementById('emailInput');
+
+            // --- HÀM NỘI BỘ ---
+            const shortenAddress = (addr) => addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : "";
+
+            const showLoggedInState = (address) => {
+                connectBtn.style.display = 'none';
+                walletDropdown.style.display = 'block';
+                walletAddressEl.textContent = shortenAddress(address);
+            };
+
+            // --- KẾT NỐI VÍ ---
+            async function connectAndCheck() {
+                if (!window.ethereum) return DApp.showCustomAlert('⚠️ Bạn cần cài đặt MetaMask để tiếp tục!');
+                if (DApp.isConnecting) return;
+
+                DApp.isConnecting = true;
+                connectBtn.disabled = true;
+                connectBtn.textContent = 'Đang kết nối...';
+
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    if (!accounts || accounts.length === 0) throw new Error("Không tìm thấy tài khoản nào.");
+
+                    const address = accounts[0];
+                    localStorage.setItem('connectedWallet', address);
+                    showLoggedInState(address);
+
+                    const response = await fetch(`/Wallet/CheckWallet?wallet=${encodeURIComponent(address)}`);
+                    if (!response.ok) throw new Error(`Lỗi Server: ${response.status}`);
+
+                    DApp.showCustomAlert("Đăng nhập thành công.");
+                    const data = await response.json();
+
+                    if (data && !data.exists) {
+                        popup.classList.add('active');
+                        popupOverlay.classList.add('active');
+                    }
+                } catch (err) {
+                    DApp.showLoggedOutState();
+                    const rpcCode = err.code || (err.data && err.data.code);
+                    switch (rpcCode) {
+                        case 4001: DApp.showCustomAlert("Bạn đã từ chối yêu cầu kết nối trong MetaMask."); break;
+                        case -32002: DApp.showCustomAlert("⚠️ Yêu cầu đang chờ xử lý. Vui lòng kiểm tra MetaMask."); break;
+                        default: DApp.showCustomAlert("Lỗi kết nối: " + (err.message || "Không xác định.")); break;
+                    }
+                } finally {
+                    DApp.isConnecting = false;
+                    connectBtn.disabled = false;
+                    connectBtn.textContent = 'Kết nối Ví';
+                }
+            }
+
+            // --- ĐĂNG XUẤT ---
+            async function logoutUser() {
+                try {
+                    await fetch('/Wallet/Logout', {
+                        method: 'POST',
+                        headers: { 'RequestVerificationToken': DApp.getAntiForgeryToken() }
+                    });
+                } catch (err) {
+                    console.error('Logout API call failed:', err);
+                } finally {
+                    DApp.showLoggedOutState();
+                    DApp.showCustomAlert("Bạn đã đăng xuất.");
+                }
+            }
+
+            // --- LƯU PROFILE CHO NGƯỜI MỚI ---
+             saveProfileBtn?.addEventListener('click', async () => {
+                const name = nameInput.value.trim();
+                const email = emailInput.value.trim();
+                if (!name || !email) return DApp.showCustomAlert('Vui lòng nhập đầy đủ Tên và Email.');
+
+                try {
+                    const wallet = localStorage.getItem('connectedWallet');
+                    const response = await fetch('/Wallet/SaveProfile', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': DApp.getAntiForgeryToken()
+                        },
+                        body: `wallet=${encodeURIComponent(wallet)}&name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        popup.classList.remove('active');
+                        popupOverlay.classList.remove('active');
+                        DApp.showCustomAlert('✅ Cập nhật thông tin thành công!');
+                    } else {
+                        DApp.showCustomAlert('Lỗi: ' + result.message);
+                    }
+                } catch (error) {
+                    DApp.showCustomAlert('Đã có lỗi xảy ra khi gửi thông tin.');
+                }
+            });
+
+            // --- TỰ ĐỘNG KẾT NỐI KHI TẢI LẠI TRANG ---
+            (async function autoConnect() {
+                 const savedAddress = localStorage.getItem('connectedWallet');
+                 if (savedAddress && window.ethereum) {
+                       try {
+                             const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                             if (accounts.length > 0 && accounts[0].toLowerCase() === savedAddress.toLowerCase()) {
+                                 showLoggedInState(savedAddress);
+                             } else {
+                                 DApp.showLoggedOutState();
+                             }
+                       } catch (err) {
+                             console.error("Tự động kết nối thất bại:", err);
+                       }
+                 }
+            })();
+
+            // --- CÁC BỘ LẮNG NGHE SỰ KIỆN ---
+            connectBtn.addEventListener('click', connectAndCheck);
+            logoutBtn?.addEventListener('click', (e) => { e.preventDefault(); logoutUser(); });
+            walletAvatar?.addEventListener('click', (e) => { e.stopPropagation(); walletDropdown.classList.toggle('active'); });
+            document.addEventListener('click', () => walletDropdown?.classList.remove('active'));
+            popupOverlay?.addEventListener('click', () => {
+                popup.classList.remove('active');
+                popupOverlay.classList.remove('active');
+            });
+
+            // --- SỰ KIỆN THAY ĐỔI VÍ METAMASK ---
+            if (window.ethereum) {
+                window.ethereum.on('accountsChanged', (accounts) => {
+                    if (!localStorage.getItem('connectedWallet')) return;
+                    DApp.showCustomAlert("Tài khoản hoặc kết nối đã thay đổi. Trang sẽ tải lại.");
+                    setTimeout(() => window.location.reload(), 2000);
+                });
+                window.ethereum.on('chainChanged', () => {
+                    DApp.showCustomAlert("Bạn đã thay đổi mạng. Trang sẽ tải lại.");
+                    setTimeout(() => window.location.reload(), 2000);
+                });
+            }
+
+            // --- LOGIC CHO BOTCHAT & WELCOME BUBBLE ---
+            const chatContainer = document.getElementById('chat-container');
+            if (chatContainer) {
+                const chatBotBtn = document.getElementById('chat-bot-btn');
+                const chatBtnIcon = chatBotBtn.querySelector('i');
+                const chatWidget = document.getElementById('chat-widget');
+                const closeChatBtn = document.getElementById('close-chat-btn');
+                const messagesContainer = document.getElementById('chat-messages');
+                const chatInput = document.getElementById('chat-input');
+                const chatSendBtn = document.getElementById('chat-send-btn');
+
+                const addMessage = (sender, message) => {
+                    const bubble = document.createElement('div');
+                    bubble.className = `message-bubble ${sender}`;
+                    const p = document.createElement('p');
+                    p.textContent = message;
+                    bubble.appendChild(p);
+                    messagesContainer.appendChild(bubble);
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                };
+
+                const showTypingIndicator = (show) => {
+                    let indicator = messagesContainer.querySelector('.typing-indicator');
+                    if (show) {
+                        if (!indicator) {
+                            indicator = document.createElement('div');
+                            indicator.className = 'message-bubble bot typing-indicator';
+                            indicator.innerHTML = '<span></span><span></span><span></span>';
+                            messagesContainer.appendChild(indicator);
+                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        }
+                    } else {
+                        indicator?.remove();
+                    }
+                };
+
+                const sendMessage = async () => {
+                    const messageText = chatInput.value.trim();
+                    if (messageText === '') return;
+
+                    addMessage('user', messageText);
+                    chatInput.value = '';
+                    showTypingIndicator(true);
+
+                    try {
+                        const response = await fetch('/Home/SendMessage', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': DApp.getAntiForgeryToken()
+                            },
+                            body: JSON.stringify({ message: messageText })
+                        });
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.reply || 'Lỗi không xác định.');
+
+                        showTypingIndicator(false);
+                        addMessage('bot', data.reply);
+                    } catch (error) {
+                        showTypingIndicator(false);
+                        addMessage('bot', `Lỗi: ${error.message}`);
+                    }
+                };
+
+                const toggleChatWidget = () => {
+                    chatWidget.classList.toggle('active');
+                    chatBtnIcon.className = chatWidget.classList.contains('active') ? 'fas fa-times' : 'fas fa-comments';
+                };
+
+                chatBotBtn.addEventListener('click', toggleChatWidget);
+                closeChatBtn.addEventListener('click', toggleChatWidget);
+                chatSendBtn.addEventListener('click', sendMessage);
+                chatInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                });
+
+                // Logic cho bong bóng chào mừng
+                const welcomeBubble = document.getElementById('welcome-chat-bubble');
+                if (!sessionStorage.getItem('welcomeMessageShown')) {
+                    setTimeout(() => {
+                        welcomeBubble.classList.add('visible');
+                        setTimeout(() => welcomeBubble.classList.remove('visible'), 8000);
+                    }, 1000);
+                    sessionStorage.setItem('welcomeMessageShown', 'true');
+                }
+            }
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

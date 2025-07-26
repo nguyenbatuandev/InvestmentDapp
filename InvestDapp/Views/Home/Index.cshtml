@@ -1,0 +1,609 @@
+﻿@using Microsoft.AspNetCore.Authorization
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Pages/_Layout.cshtml";
+}
+@section Styles {
+    <style>
+        /* --- Hero Section --- */
+        .hero {
+            padding-top: 150px;
+            padding-bottom: 100px;
+            text-align: center;
+            background-image: radial-gradient(circle at 50% 0%, rgba(0, 170, 255, 0.15), transparent 40%);
+        }
+
+        .hero-content h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 20px;
+        }
+
+        .hero-content p {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto 30px;
+            color: var(--text-muted);
+        }
+
+        .hero-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+
+        /* --- General Section Styling --- */
+        section {
+            padding: 80px 0;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+            section.visible {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            section h2 {
+                text-align: center;
+                font-size: 2.5rem;
+                margin-bottom: 50px;
+            }
+
+        /* --- Stats Section --- */
+        .stats-section .container {
+            display: flex;
+            justify-content: space-around;
+            gap: 30px;
+        }
+
+        .stat-card {
+            background-color: var(--bg-light);
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            flex: 1;
+            border: 1px solid var(--secondary);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: block;
+        }
+
+        .stat-card p {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+
+        /* --- Projects Section --- */
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+        }
+
+        .project-card {
+            background-color: var(--bg-light);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--secondary);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+        }
+
+            .project-card:hover {
+                transform: translateY(-10px);
+                box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            }
+
+            .project-card img {
+                width: 100%;
+                height: 200px;
+                object-fit: cover;
+            }
+
+        .badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+        }
+
+            .badge.new {
+                background: var(--gradient);
+            }
+
+            .badge.hot {
+                background: linear-gradient(90deg, #ff4d4d, #ff8c4d);
+            }
+
+            .badge.dao {
+                background: linear-gradient(90deg, #4d4dff, #8c4dff);
+            }
+
+        .card-content {
+            padding: 25px;
+        }
+
+            .card-content h3 {
+                font-size: 1.5rem;
+                margin-bottom: 15px;
+            }
+
+        .progress-bar {
+            height: 8px;
+            background-color: var(--secondary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress {
+            height: 100%;
+            background: var(--gradient);
+            border-radius: 4px;
+        }
+
+        .project-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+
+        .roi {
+            font-size: 1rem;
+            color: var(--text-color);
+            margin-bottom: 20px;
+        }
+
+            .roi strong {
+                color: #00ffaa;
+            }
+
+        .card-content .btn {
+            width: 100%;
+        }
+
+        .btn.disabled {
+            background: var(--secondary);
+            cursor: not-allowed;
+        }
+
+        /* --- Why Us Section --- */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+
+        .feature-item {
+            background-color: var(--bg-light);
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid var(--secondary);
+            transition: background-color 0.3s ease;
+        }
+
+            .feature-item:hover {
+                background-color: var(--secondary);
+            }
+
+            .feature-item i {
+                font-size: 2.5rem;
+                background: var(--gradient);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                margin-bottom: 15px;
+            }
+
+            .feature-item h3 {
+                font-size: 1.3rem;
+                margin-bottom: 10px;
+            }
+
+            .feature-item p {
+                color: var(--text-muted);
+            }
+
+        /* --- Partners Section --- */
+        .partners-logos {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 40px;
+        }
+
+            .partners-logos img {
+                height: 40px;
+                opacity: 0.6;
+                transition: opacity 0.3s ease;
+                filter: grayscale(100%);
+            }
+
+                .partners-logos img:hover {
+                    opacity: 1;
+                    filter: grayscale(0%);
+                }
+
+        /* --- Newsletter Section --- */
+        .newsletter-section {
+            background-color: var(--bg-light);
+            border-radius: 12px;
+            padding: 60px;
+            margin: 80px auto;
+            max-width: 1200px;
+        }
+
+        .newsletter-content {
+            text-align: center;
+        }
+
+            .newsletter-content h2 {
+                font-size: 2.2rem;
+                margin-bottom: 10px;
+            }
+
+            .newsletter-content p {
+                color: var(--text-muted);
+                margin-bottom: 30px;
+            }
+
+        .newsletter-form {
+            display: flex;
+            justify-content: center;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: var(--bg-dark);
+            border-radius: 8px;
+            padding: 8px;
+        }
+
+            .newsletter-form input {
+                flex-grow: 1;
+                background: transparent;
+                border: none;
+                outline: none;
+                color: white;
+                padding: 0 20px;
+                font-size: 1rem;
+            }
+
+            .newsletter-form button {
+                flex-shrink: 0;
+            }
+
+        /* --- FAQ Section --- */
+        .faq-accordion {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            background-color: var(--bg-light);
+            border: 1px solid var(--secondary);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .faq-question {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+            .faq-question i {
+                transition: transform 0.3s ease;
+            }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+        }
+
+            .faq-answer p {
+                padding: 0 20px 20px;
+                color: var(--text-muted);
+                line-height: 1.8;
+            }
+
+        .faq-item.active .faq-answer {
+            max-height: 200px; /* Adjust if answer is longer */
+        }
+
+        .faq-item.active .faq-question i {
+            transform: rotate(180deg);
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+                document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Animation on Scroll using Intersection Observer ---
+            const sections = document.querySelectorAll('section');
+
+            const observerOptions = {
+                root: null, // observes intersections relative to the viewport
+                rootMargin: '0px',
+                threshold: 0.1 // 10% of the section must be visible
+            };
+
+            const sectionObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        // Optional: unobserve after it's visible to save resources
+                        // observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => {
+                sectionObserver.observe(section);
+            });
+
+
+            // --- Animated Number Counter for Stats Section ---
+            const statNumbers = document.querySelectorAll('.stat-number');
+
+            const animateNumber = (element) => {
+                const target = +element.getAttribute('data-target');
+                const duration = 2000; // 2 seconds
+                const stepTime = 20; // update every 20ms
+                const totalSteps = duration / stepTime;
+                const increment = target / totalSteps;
+                let current = 0;
+
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        element.innerText = target.toLocaleString('en-US');
+                        clearInterval(timer);
+                    } else {
+                        element.innerText = Math.ceil(current).toLocaleString('en-US');
+                    }
+                }, stepTime);
+            };
+
+            const statsObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        statNumbers.forEach(number => animateNumber(number));
+                        // Stop observing the stats section after animation starts
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.5 }); // Start when 50% of the stats section is visible
+
+            const statsSection = document.getElementById('stats');
+            if (statsSection) {
+                statsObserver.observe(statsSection);
+            }
+
+            // --- FAQ Accordion Logic ---
+            const faqItems = document.querySelectorAll('.faq-item');
+
+            faqItems.forEach(item => {
+                const question = item.querySelector('.faq-question');
+                question.addEventListener('click', () => {
+                    // Check if the current item is already active
+                    const isActive = item.classList.contains('active');
+
+                    // Optional: Close all other items
+                    faqItems.forEach(otherItem => {
+                        otherItem.classList.remove('active');
+                    });
+
+                    // If the clicked item was not active, open it
+                    if (!isActive) {
+                        item.classList.add('active');
+                    }
+                });
+            });
+
+        });
+    </script>
+}
+    <section id="hero" class="hero">
+        <div class="container hero-content">
+            <h1>Nền Tảng Kêu Gọi Vốn Phi Tập Trung Thế Hệ Mới</h1>
+            <p>Đầu tư minh bạch, an toàn và tiếp cận nguồn vốn toàn cầu một cách dễ dàng thông qua sức mạnh của Smart Contract.</p>
+            <div class="hero-buttons">
+            <a href="#projects" class="btn btn-primary">Khám phá Dự án</a>
+            @if(User.Identity.IsAuthenticated)
+            {
+                <a href="/Kyc/FundraiserKycView" class="btn btn-primary">Đăng kí đầu tư</a>
+            }
+            </div>
+        </div>
+    </section>
+
+    <section id="stats" class="stats-section">
+        <div class="container">
+            <div class="stat-card">
+                <h3 class="stat-number" data-target="15000000">0</h3>
+                <p>Tổng vốn đã huy động (USD)</p>
+            </div>
+            <div class="stat-card">
+                <h3 class="stat-number" data-target="8245">0</h3>
+                <p>Nhà đầu tư tham gia</p>
+            </div>
+            <div class="stat-card">
+                <h3 class="stat-number" data-target="216">0</h3>
+                <p>Dự án đã thành công</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="projects" class="projects-section">
+        <div class="container">
+            <h2>Dự án nổi bật</h2>
+            <div class="project-grid">
+                <div class="project-card">
+                    <img src="https://images.unsplash.com/photo-1639755243236-4098a8c4f09d?q=80&w=1932&auto=format&fit=crop" alt="Project Image">
+                    <span class="badge new">Mới</span>
+                    <div class="card-content">
+                        <h3>DeFi QuantumLeap</h3>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 75%;"></div>
+                        </div>
+                        <div class="project-stats">
+                            <span>75%</span>
+                            <span>$150,000 / $200,000</span>
+                        </div>
+                        <p class="roi">ROI kỳ vọng: <strong>+35%</strong></p>
+                        <button class="btn btn-gradient">Đầu tư ngay</button>
+                    </div>
+                </div>
+                <div class="project-card">
+                    <img src="https://images.unsplash.com/photo-1642104793542-b69806505342?q=80&w=1932&auto=format&fit=crop" alt="Project Image">
+                    <span class="badge hot">Sắp hoàn thành</span>
+                    <div class="card-content">
+                        <h3>NFT Metaverse Hub</h3>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 92%;"></div>
+                        </div>
+                        <div class="project-stats">
+                            <span>92%</span>
+                            <span>$460,000 / $500,000</span>
+                        </div>
+                        <p class="roi">Còn <strong>3 ngày</strong></p>
+                        <button class="btn btn-gradient">Đầu tư ngay</button>
+                    </div>
+                </div>
+                <div class="project-card">
+                    <img src="https://images.unsplash.com/photo-1640578622184-45373a3c220e?q=80&w=1932&auto=format&fit=crop" alt="Project Image">
+                    <span class="badge dao">DAO Vote</span>
+                    <div class="card-content">
+                        <h3>GreenBlock Chain</h3>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 100%;"></div>
+                        </div>
+                        <div class="project-stats">
+                            <span>100%</span>
+                            <span>$100,000 / $100,000</span>
+                        </div>
+                        <p class="roi">Đang biểu quyết rút vốn</p>
+                        <button class="btn btn-secondary disabled">Xem biểu quyết</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="why-us" class="why-us-section">
+        <div class="container">
+            <h2>Tại sao chọn DAppLaunch?</h2>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <i class="fas fa-shield-halved"></i>
+                    <h3>Bảo mật bất biến</h3>
+                    <p>Mọi giao dịch được ghi nhận vĩnh viễn và không thể thay đổi trên Blockchain.</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-users-cog"></i>
+                    <h3>Quy trình phân quyền</h3>
+                    <p>Nhà đầu tư có quyền biểu quyết cho các quyết định quan trọng của dự án.</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-rocket"></i>
+                    <h3>Tiếp cận dễ dàng</h3>
+                    <p>Loại bỏ rào cản từ ngân hàng và các quỹ đầu tư truyền thống (VC).</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-hand-holding-dollar"></i>
+                    <h3>Lợi nhuận minh bạch</h3>
+                    <p>Smart Contract tự động phân phối lợi nhuận một cách công bằng và rõ ràng.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="partners" class="partners-section">
+        <div class="container">
+            <h2>Đối tác & Đơn vị Audit</h2>
+            <div class="partners-logos">
+            <img src="https://tse3.mm.bing.net/th/id/OIP.ZrEbYSfrrORdLiIq8ZpW1QHaHa?r=0&rs=1&pid=ImgDetMain&o=7&rm=3" alt="CertiK Logo" style="width : 200px; height : 200px">
+            <img src="https://th.bing.com/th/id/OIP.Wdwv9_9SgxzzpveuIOnHOgHaHT?r=0&o=7rm=3&rs=1&pid=ImgDetMain&o=7&rm=3" alt="Chainlink Logo" style="width : 200px; height : 200px">
+            <img src="https://tse2.mm.bing.net/th/id/OIP.fiSfLveTZW17iZsRAHEgEgHaHa?r=0&rs=1&pid=ImgDetMain&o=7&rm=3" alt="Binance Labs Logo" style="width : 200px; height : 200px">
+            <img src="https://images.seeklogo.com/logo-png/43/1/quantstamp-logo-png_seeklogo-438075.png" alt="Quantstamp Logo" style="width : 200px; height : 200px">
+            </div>
+        </div>
+    </section>
+
+    <section id="newsletter" class="newsletter-section">
+        <div class="container newsletter-content">
+            <h2>Never want to miss a sale?</h2>
+            <p>Sign up for our newsletter and get the latest news and updates.</p>
+            <form class="newsletter-form">
+                <input type="email" placeholder="Nhập email của bạn..." required>
+                <button type="submit" class="btn btn-gradient">Đăng ký</button>
+            </form>
+        </div>
+    </section>
+
+    <section id="faq" class="faq-section">
+        <div class="container">
+            <h2>Câu hỏi thường gặp (FAQ)</h2>
+            <div class="faq-accordion">
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Có thể đầu tư bằng token nào?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Hiện tại, chúng tôi hỗ trợ các loại tiền điện tử phổ biến như BNB, BUSD, và USDT trên mạng BNB Smart Chain. Chúng tôi sẽ mở rộng sang các chain và token khác trong tương lai.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Nền tảng có thu phí không?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Chúng tôi thu một khoản phí nhỏ (thường từ 2-5%) trên tổng số vốn huy động thành công của mỗi dự án. Khoản phí này được dùng để duy trì và phát triển nền tảng. Không có phí ẩn nào khác.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Dự án có được đảm bảo thành công không?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Đầu tư vào các dự án khởi nghiệp luôn đi kèm với rủi ro. Chúng tôi cung cấp cơ chế biểu quyết (DAO) để cộng đồng giám sát việc rút vốn, nhưng không thể đảm bảo 100% thành công cho mọi dự án. Hãy tự nghiên cứu (DYOR) trước khi đầu tư.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <div class="popup-overlay" id="popup-overlay"></div>
+    <div id="popup" class="popup-modal">
+        <h3>Nhập thông tin của bạn</h3>
+        <input type="text" id="nameInput" placeholder="Tên" />
+        <input type="email" id="emailInput" placeholder="Email" />
+        <button id="saveProfileBtn" class="btn">Lưu</button>
+    </div>

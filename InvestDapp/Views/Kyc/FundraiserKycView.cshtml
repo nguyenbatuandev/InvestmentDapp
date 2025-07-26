@@ -1,0 +1,556 @@
+﻿@{
+    ViewData["Title"] = "Xác Minh Danh Tính KYC";
+    Layout = "~/Pages/_Layout.cshtml";
+}
+
+@section Styles {
+    <style>
+        .page-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 120px 20px 60px
+        }
+
+        .kyc-container {
+            width: 100%;
+            max-width: 1000px;
+            background-color: var(--bg-light);
+            border-radius: 12px;
+            border: 1px solid var(--secondary);
+            padding: 40px;
+            box-shadow: 0 15px 50px rgba(0,0,0,.2)
+        }
+
+        #fundraiser-kyc-form {
+            display: flex;
+            flex-direction: column;
+            gap: 30px
+        }
+
+        .kyc-header {
+            text-align: center;
+            margin-bottom: 10px
+        }
+
+            .kyc-header h1 {
+                font-size: 32px;
+                font-weight: 700;
+                margin-bottom: 8px;
+                background: var(--gradient);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                text-fill-color: transparent
+            }
+
+            .kyc-header p {
+                font-size: 15px;
+                color: var(--text-muted);
+                max-width: 600px;
+                margin: 0 auto
+            }
+
+        .form-section {
+            border: none;
+            padding: 0
+        }
+
+        .form-section-title {
+            font-size: 18px;
+            font-weight: 600;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--secondary);
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+
+            .form-section-title i {
+                color: var(--primary)
+            }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px
+        }
+
+            .form-group:last-child {
+                margin-bottom: 0
+            }
+
+            .form-group label {
+                font-size: 14px;
+                font-weight: 500;
+                color: var(--text-muted)
+            }
+
+                .form-group label .required-star {
+                    color: #ff4d4d
+                }
+
+            .form-group input, .form-group select {
+                width: 100%;
+                background-color: var(--bg-dark);
+                border: 1px solid var(--secondary);
+                border-radius: 8px;
+                padding: 12px 16px;
+                color: var(--text-color);
+                font-size: 15px;
+                font-family: 'Poppins',sans-serif;
+                transition: border-color .3s ease,box-shadow .3s ease
+            }
+
+                .form-group input::placeholder {
+                    color: var(--text-muted);
+                    opacity: .6
+                }
+
+                .form-group input:focus, .form-group select:focus {
+                    outline: none;
+                    border-color: var(--primary);
+                    box-shadow: 0 0 0 3px rgba(0,170,255,.2)
+                }
+
+        .two-column-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0 30px
+        }
+
+        .account-type-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px
+        }
+
+            .account-type-selector input[type=radio] {
+                display: none
+            }
+
+            .account-type-selector label {
+                text-align: center;
+                padding: 12px;
+                border: 1px solid var(--secondary);
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all .3s ease;
+                font-weight: 500;
+                background-color: var(--bg-dark)
+            }
+
+            .account-type-selector input[type=radio]:checked + label {
+                background: var(--gradient);
+                color: #fff;
+                border-color: var(--primary-light)
+            }
+
+        .file-upload-label {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            padding: 20px;
+            background-color: var(--bg-dark);
+            border: 2px dashed var(--secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all .3s ease;
+            height: 100%
+        }
+
+            .file-upload-label:hover {
+                border-color: var(--primary)
+            }
+
+            .file-upload-label.has-file {
+                border-style: solid;
+                border-color: var(--primary)
+            }
+
+            .file-upload-label i {
+                font-size: 24px;
+                color: var(--primary)
+            }
+
+            .file-upload-label span {
+                font-size: 13px;
+                color: var(--text-muted);
+                word-break: break-all
+            }
+
+        .file-upload-input {
+            display: none
+        }
+
+        .form-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            margin-top: 10px;
+            padding-top: 25px;
+            border-top: 1px solid var(--secondary)
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+
+            .checkbox-group input[type=checkbox] {
+                appearance: none;
+                width: 20px;
+                height: 20px;
+                background-color: var(--bg-dark);
+                border: 1px solid var(--secondary);
+                border-radius: 6px;
+                cursor: pointer;
+                position: relative
+            }
+
+                .checkbox-group input[type=checkbox]:checked {
+                    background: var(--primary);
+                    border-color: var(--primary-light)
+                }
+
+                    .checkbox-group input[type=checkbox]:checked::after {
+                        content: '\f00c';
+                        font-family: 'Font Awesome 6 Free';
+                        font-weight: 900;
+                        font-size: 12px;
+                        color: #fff;
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%,-50%)
+                    }
+
+            .checkbox-group label {
+                font-size: 13px;
+                color: var(--text-muted)
+            }
+
+                .checkbox-group label a {
+                    color: var(--primary-light);
+                    text-decoration: none
+                }
+
+        @@media (max-width:960px) {
+            .page-wrapper {
+                padding: 100px 10px 40px
+            }
+
+            .kyc-container {
+                padding: 25px
+            }
+
+            .two-column-layout {
+                grid-template-columns: 1fr
+            }
+
+            .form-footer {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 25px
+            }
+
+                .form-footer .btn {
+                    width: 100%
+                }
+        }
+    </style>
+}
+
+<div class="page-wrapper">
+    <div class="kyc-container">
+        <div class="kyc-header">
+            <h1>Xác Minh Danh Tính</h1>
+            <p>Hoàn thành các bước xác minh để đủ điều kiện tạo chiến dịch kêu gọi vốn.</p>
+        </div>
+
+        <form id="fundraiser-kyc-form" novalidate>
+            <fieldset class="form-section">
+                <legend class="form-section-title"><i class="fa-solid fa-user-check"></i>1. Chọn Loại Tài Khoản</legend>
+                <div class="account-type-selector">
+                    <input type="radio" id="type-individual" name="AccountTypeRadio" value="individual" checked>
+                    <label for="type-individual"><i class="fa-solid fa-user"></i> Cá Nhân</label>
+                    <input type="radio" id="type-company" name="AccountTypeRadio" value="company">
+                    <label for="type-company"><i class="fa-solid fa-building"></i> Công Ty</label>
+                </div>
+            </fieldset>
+
+            <fieldset class="form-section">
+                <legend id="info-legend" class="form-section-title"><i class="fa-solid fa-address-card"></i>2. Thông Tin Cá Nhân</legend>
+                <div class="two-column-layout">
+                    <div>
+                        <div id="individual-col-1">
+                            <div class="form-group">
+                                <label for="individual-name">Họ và Tên đầy đủ <span class="required-star">*</span></label>
+                                <input type="text" id="individual-name" name="FullName" placeholder="Ví dụ: Nguyễn Văn An" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="individual-id-number">Số Căn Cước Công Dân (CCCD) <span class="required-star">*</span></label>
+                                <input type="text" id="individual-id-number" name="IdNumber" placeholder="Nhập 12 số trên CCCD" pattern="\d{12}" title="Vui lòng nhập đúng 12 số CCCD." required>
+                            </div>
+                        </div>
+                        <div id="company-col-1" style="display: none;">
+                            <div class="form-group">
+                                <label for="company-name">Tên công ty đầy đủ <span class="required-star">*</span></label>
+                                <input type="text" id="company-name" name="CompanyName" placeholder="Công ty TNHH FutureTech" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="company-reg-number">Mã số đăng ký kinh doanh <span class="required-star">*</span></label>
+                                <input type="text" id="company-reg-number" name="RegistrationNumber" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div id="individual-col-2">
+                            <div class="form-group">
+                                <label for="individual-nationality">Quốc tịch <span class="required-star">*</span></label>
+                                <input type="text" id="individual-nationality" name="Nationality" placeholder="Ví dụ: Việt Nam" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="contact-email-ind">Email liên hệ <span class="required-star">*</span></label>
+                                <input type="email" id="contact-email-ind" name="ContactEmail" placeholder="email@example.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="individual-website">Website / LinkedIn (Không bắt buộc)</label>
+                                <input type="url" id="individual-website" name="WebsiteOrLinkedIn" placeholder="https://www.linkedin.com/in/...">
+                            </div>
+                        </div>
+                        <div id="company-col-2" style="display: none;">
+                            <div class="form-group">
+                                <label for="company-country">Quốc gia đăng ký <span class="required-star">*</span></label>
+                                <input type="text" id="company-country" name="RegisteredCountry" placeholder="Ví dụ: Việt Nam" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="contact-email-com">Email liên hệ <span class="required-star">*</span></label>
+                                <input type="email" id="contact-email-com" name="ContactEmail" placeholder="email@congty.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="company-website">Website / LinkedIn (Không bắt buộc)</label>
+                                <input type="url" id="company-website" name="WebsiteOrLinkedIn" placeholder="https://www.yourcompany.com">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="form-section">
+                <legend class="form-section-title"><i class="fa-solid fa-cloud-arrow-up"></i>3. Tải Lên Tài Liệu</legend>
+                <div class="two-column-layout">
+                    <div>
+                        <div id="individual-docs-col1">
+                            <div class="form-group">
+                                <label for="individual-id-front">Mặt trước CCCD/Passport <span class="required-star">*</span></label>
+                                <label for="individual-id-front" class="file-upload-label">
+                                    <i class="fa-regular fa-image"></i>
+                                    <span>Nhấn để tải ảnh lên</span>
+                                </label>
+                                <input type="file" id="individual-id-front" name="IdFrontImage" class="file-upload-input" accept="image/png, image/jpeg" required>
+                            </div>
+                        </div>
+                        <div id="company-docs-col1" style="display: none;">
+                            <div class="form-group">
+                                <label for="company-certificate">Giấy chứng nhận ĐKKD <span class="required-star">*</span></label>
+                                <label for="company-certificate" class="file-upload-label">
+                                    <i class="fa-solid fa-file-pdf"></i>
+                                    <span>Tải file PDF lên</span>
+                                </label>
+                                <input type="file" id="company-certificate" name="BusinessLicensePdf" class="file-upload-input" accept=".pdf,application/pdf" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div id="individual-docs-col2">
+                            <div class="form-group">
+                                <label for="individual-selfie">Ảnh selfie cùng CCCD <span class="required-star">*</span></label>
+                                <label for="individual-selfie" class="file-upload-label">
+                                    <i class="fa-solid fa-camera-retro"></i>
+                                    <span>Nhấn để tải ảnh lên</span>
+                                </label>
+                                <input type="file" id="individual-selfie" name="SelfieWithIdImage" class="file-upload-input" accept="image/png, image/jpeg" required>
+                            </div>
+                        </div>
+                        <div id="company-docs-col2" style="display: none;">
+                            <div class="form-group">
+                                <label for="company-director-id">CCCD/Passport Giám đốc <span class="required-star">*</span></label>
+                                <label for="company-director-id" class="file-upload-label">
+                                    <i class="fa-regular fa-address-card"></i>
+                                    <span>Nhấn để tải ảnh lên</span>
+                                </label>
+                                <input type="file" id="company-director-id" name="DirectorIdImage" class="file-upload-input" accept="image/png, image/jpeg" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <div class="form-footer">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="agree-terms" name="AcceptedTerms" value="true" required>
+                    <label for="agree-terms">Tôi đồng ý với <a href="/terms" target="_blank">Điều khoản & Chính sách</a> <span class="required-star">*</span></label>
+                </div>
+                <button type="submit" class="btn btn-gradient" id="submit-kyc-btn">Nộp Đơn & Hoàn Tất</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- DOM Elements ---
+            const kycForm = document.getElementById('fundraiser-kyc-form');
+            const submitButton = document.getElementById('submit-kyc-btn');
+            const infoLegend = document.getElementById('info-legend');
+            const individualRadio = document.getElementById('type-individual');
+
+            const elementsToShowForIndividual = [
+                document.getElementById('individual-col-1'),
+                document.getElementById('individual-col-2'),
+                document.getElementById('individual-docs-col1'),
+                document.getElementById('individual-docs-col2')
+            ];
+            const elementsToShowForCompany = [
+                document.getElementById('company-col-1'),
+                document.getElementById('company-col-2'),
+                document.getElementById('company-docs-col1'),
+                document.getElementById('company-docs-col2')
+            ];
+
+            const allIndividualInputs = elementsToShowForIndividual.flatMap(el => Array.from(el.querySelectorAll('input')));
+            const allCompanyInputs = elementsToShowForCompany.flatMap(el => Array.from(el.querySelectorAll('input')));
+
+            // --- Functions ---
+            function toggleAccountType() {
+                const isIndividual = individualRadio.checked;
+
+                elementsToShowForIndividual.forEach(el => el.style.display = isIndividual ? 'block' : 'none');
+                elementsToShowForCompany.forEach(el => el.style.display = isIndividual ? 'none' : 'block');
+
+                // Chỉ đặt 'required' cho các input có trong HTML gốc, trừ trường không bắt buộc
+                allIndividualInputs.forEach(input => {
+                    if(input.name !== 'WebsiteOrLinkedIn') input.required = isIndividual;
+                });
+                allCompanyInputs.forEach(input => {
+                    if(input.name !== 'WebsiteOrLinkedIn') input.required = !isIndividual;
+                });
+
+                if (isIndividual) {
+                    infoLegend.innerHTML = '<i class="fa-solid fa-address-card"></i>2. Thông Tin Cá Nhân';
+                } else {
+                    infoLegend.innerHTML = '<i class="fa-regular fa-building"></i>2. Thông Tin Công Ty';
+                }
+            }
+
+            function handleFileSelection(event) {
+                const input = event.target;
+                const file = input.files[0];
+                const label = input.previousElementSibling;
+                if (!label || !label.classList.contains('file-upload-label')) return;
+                const span = label.querySelector('span');
+                if (file) {
+                    span.textContent = file.name;
+                    label.classList.add('has-file');
+                } else {
+                    span.textContent = label.dataset.defaultText || 'Nhấn để tải ảnh lên';
+                    label.classList.remove('has-file');
+                }
+            }
+
+            async function handleFormSubmit(event) {
+                event.preventDefault();
+                if (!kycForm.checkValidity()) {
+                    kycForm.reportValidity();
+                    return;
+                }
+
+                submitButton.disabled = true;
+                submitButton.textContent = 'Đang xử lý...';
+
+                const formData = new FormData();
+                const activeType = individualRadio.checked ? 'individual' : 'company';
+
+                formData.append('AccountType', activeType);
+                formData.append('AcceptedTerms', document.getElementById('agree-terms').checked);
+
+                if (activeType === 'individual') {
+                    formData.append('FullName', document.getElementById('individual-name').value);
+                    formData.append('IdNumber', document.getElementById('individual-id-number').value);
+                    formData.append('Nationality', document.getElementById('individual-nationality').value);
+                    formData.append('ContactEmail', document.getElementById('contact-email-ind').value);
+                    formData.append('WebsiteOrLinkedIn', document.getElementById('individual-website').value);
+                    if (document.getElementById('individual-id-front').files[0]) {
+                        formData.append('IdFrontImage', document.getElementById('individual-id-front').files[0]);
+                    }
+                    if (document.getElementById('individual-selfie').files[0]) {
+                        formData.append('SelfieWithIdImage', document.getElementById('individual-selfie').files[0]);
+                    }
+                } else {
+                    formData.append('CompanyName', document.getElementById('company-name').value);
+                    formData.append('RegistrationNumber', document.getElementById('company-reg-number').value);
+                    formData.append('RegisteredCountry', document.getElementById('company-country').value);
+                    formData.append('ContactEmail', document.getElementById('contact-email-com').value);
+                    formData.append('WebsiteOrLinkedIn', document.getElementById('company-website').value);
+                    if (document.getElementById('company-certificate').files[0]) {
+                        formData.append('BusinessLicensePdf', document.getElementById('company-certificate').files[0]);
+                    }
+                    if (document.getElementById('company-director-id').files[0]) {
+                        formData.append('DirectorIdImage', document.getElementById('company-director-id').files[0]);
+                    }
+                }
+
+                try {
+                    const response = await fetch('/Kyc/SubmitKyc', { method: 'POST', body: formData });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        DApp.showCustomAlert('Lỗi: ' + errorData.message); // <-- SỬ DỤNG HÀM TOÀN CỤC
+                        return;
+                    }
+                    else{
+                        DApp.showCustomAlert('Nộp đơn KYC thành công!'); // <-- SỬ DỤNG HÀM TOÀN CỤC
+                    kycForm.reset();
+                    document.querySelectorAll('.file-upload-label').forEach(label => {
+                        label.classList.remove('has-file');
+                        label.querySelector('span').textContent = label.dataset.defaultText || 'Nhấn để tải ảnh lên';
+                    });
+                    toggleAccountType();
+                    }
+                    
+                } catch (error) {
+                    console.error('Lỗi mạng hoặc server:', error);
+                    DApp.showCustomAlert('Không thể kết nối đến máy chủ. Vui lòng thử lại.'); // <-- SỬ DỤNG HÀM TOÀN CỤC
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Nộp Đơn & Hoàn Tất';
+                }
+            }
+
+            // --- Event Listeners ---
+            document.querySelectorAll('input[name="AccountTypeRadio"]').forEach(radio => radio.addEventListener('change', toggleAccountType));
+
+            document.querySelectorAll('.file-upload-input').forEach(input => {
+                const label = input.previousElementSibling;
+                if (label && label.querySelector('span')) {
+                    label.dataset.defaultText = label.querySelector('span').textContent;
+                }
+                input.addEventListener('change', handleFileSelection);
+            });
+
+            kycForm.addEventListener('submit', handleFormSubmit);
+
+            // --- Initialisation ---
+            toggleAccountType();
+        });
+    </script>
+}
