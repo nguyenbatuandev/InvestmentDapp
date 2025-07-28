@@ -1,9 +1,11 @@
-﻿using InvestDapp.Models;
+﻿using InvestDapp.Application.UserService;
+using InvestDapp.Models;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace InvestDapp.Controllers
 {
@@ -24,10 +26,11 @@ namespace InvestDapp.Controllers
             _geminiApiKey = configuration["GeminiApiKey"];
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             return View();
         }
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -158,10 +161,15 @@ namespace InvestDapp.Controllers
         }
 
 
+
+
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
+
+
     }
 }

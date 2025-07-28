@@ -8,6 +8,8 @@ namespace InvestDapp.Application.UserService
     {
         Task<BaseResponse<User>>UpdateUserAsync(UserUpdateRequest userUpdate , string wallet);
         Task<BaseResponse<User>> GetUserByWalletAddressAsync(string walletAddres);
+        Task<BaseResponse<User>> GetUserByIdAsync(int id);
+        Task<int> GetCurrentUserId();
 
     }
 }

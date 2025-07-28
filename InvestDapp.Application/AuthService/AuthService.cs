@@ -43,6 +43,8 @@ namespace InvestDapp.Application.AuthService
             return true;
         }
 
+
+
         public async Task SignInUser(User user)
         {
             var claims = new List<Claim>

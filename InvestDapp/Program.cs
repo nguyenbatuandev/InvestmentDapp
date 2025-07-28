@@ -1,5 +1,4 @@
-﻿using Invest.Application.EventListener;
-using Invest.Application.EventService;
+﻿using Invest.Application.EventService;
 using InvestDapp.Application.AuthService;
 using InvestDapp.Application.KycService;
 using InvestDapp.Application.MessageService;

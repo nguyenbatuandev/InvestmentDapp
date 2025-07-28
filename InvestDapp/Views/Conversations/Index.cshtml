@@ -20,11 +20,12 @@
             --primary: #00aaff;
             --primary-light: #00c6ff;
             --secondary: #272c44;
-            --border-color: #30363d;
+            --border-color: #3b4261;
             --text-color: #e0e0e0;
             --text-muted: #8a93b3;
-            --online-color: #2ecc71;
+            --online-color: #2ecc71; /* Màu xanh lá cây cho trạng thái online */
             --gradient: linear-gradient(90deg, var(--primary), var(--primary-light));
+            --glow: rgba(0, 170, 255, 0.3);
         }
 
         * {
@@ -37,7 +38,6 @@
             font-family: 'Poppins', sans-serif;
             background-color: var(--bg-dark);
             color: var(--text-color);
-            overflow: hidden;
             line-height: 1.6;
         }
 
@@ -47,16 +47,36 @@
             color: var(--text-muted);
             font-size: 1.25rem;
             cursor: pointer;
-            transition: color 0.2s ease, background-color 0.2s ease;
-            padding: 8px;
+            padding: 10px;
             border-radius: 50%;
             display: grid;
             place-items: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
+            .btn-icon::before {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 0;
+                height: 0;
+                background: var(--glow);
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
+                transition: width 0.4s ease, height 0.4s ease;
+            }
+
+            .btn-icon:hover::before {
+                width: 100px;
+                height: 100px;
+            }
+
             .btn-icon:hover {
-                color: var(--primary);
-                background-color: rgba(0, 170, 255, 0.1);
+                color: var(--primary-light);
+                transform: scale(1.1);
             }
 
         .chat-app {
@@ -76,9 +96,8 @@
                     border-right: none;
                 }
 
-        /* --- Sidebar --- */
         .sidebar {
-            background-color: var(--bg-dark);
+            background: linear-gradient(to bottom, var(--bg-dark), var(--bg-light));
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
@@ -92,10 +111,16 @@
             justify-content: space-between;
             padding: 20px;
             flex-shrink: 0;
+            background: var(--bg-dark);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
 
             .sidebar-header h2 {
                 font-size: 1.8rem;
+                background: var(--gradient);
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
             }
 
         .search-bar {
@@ -111,51 +136,54 @@
                 top: 50%;
                 transform: translateY(-50%);
                 color: var(--text-muted);
+                transition: color 0.3s ease;
             }
 
             .search-bar input {
                 width: 100%;
                 background-color: var(--bg-light);
                 border: 1px solid transparent;
-                border-radius: 20px;
-                padding: 10px 15px 10px 45px;
+                border-radius: 25px;
+                padding: 12px 15px 12px 45px;
                 color: var(--text-color);
                 font-size: 0.95rem;
-                transition: border-color 0.2s ease, box-shadow 0.2s ease;
+                transition: all 0.3s ease;
             }
 
                 .search-bar input:focus {
                     outline: none;
                     border-color: var(--primary);
-                    box-shadow: 0 0 0 2px rgba(0, 170, 255, 0.3);
+                    box-shadow: 0 0 10px var(--glow);
+                    background-color: var(--bg-dark);
                 }
 
-        /* ✅ NEW: CSS cho kết quả tìm kiếm */
         .search-results {
             position: absolute;
             top: 100%;
             left: 20px;
             right: 20px;
-            background-color: var(--bg-light);
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            margin-top: 5px;
+            background: var(--bg-light);
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+            margin-top: 8px;
             max-height: 300px;
             overflow-y: auto;
             z-index: 100;
+            animation: slideIn 0.3s ease-out;
         }
 
-        /* Tái sử dụng style của conversation-item cho kết quả tìm kiếm */
         .search-result-item {
             display: flex;
             align-items: center;
             padding: 12px 15px;
             cursor: pointer;
-            transition: background-color 0.2s ease;
+            transition: all 0.3s ease;
         }
 
             .search-result-item:hover {
-                background-color: var(--secondary);
+                background: var(--gradient);
+                color: white;
+                transform: translateX(5px);
             }
 
             .search-result-item img {
@@ -163,6 +191,7 @@
                 height: 45px;
                 border-radius: 50%;
                 margin-right: 15px;
+                border: 2px solid var(--primary);
             }
 
             .search-result-item .info .name {
@@ -178,7 +207,6 @@
                 text-overflow: ellipsis;
                 max-width: 200px;
             }
-        /* Kết thúc CSS mới */
 
         .conversation-list {
             overflow-y: auto;
@@ -190,16 +218,21 @@
             align-items: center;
             padding: 12px 20px;
             cursor: pointer;
-            transition: background-color 0.2s ease;
+            transition: all 0.3s ease;
             position: relative;
+            background: transparent;
         }
 
             .conversation-item:hover {
-                background-color: var(--bg-light);
+                background: var(--bg-light);
+                box-shadow: 0 0 15px var(--glow);
+                transform: translateY(-2px);
             }
 
             .conversation-item.active {
-                background-color: var(--secondary);
+                background: var(--secondary);
+                border-left: 4px solid var(--primary);
+                box-shadow: inset 0 0 10px var(--glow);
             }
 
         .avatar-container {
@@ -213,6 +246,7 @@
                 height: 55px;
                 border-radius: 50%;
                 object-fit: cover;
+                border: 2px solid var(--primary-light);
             }
 
         .status-dot {
@@ -257,8 +291,9 @@
             color: white;
             font-size: 0.75rem;
             font-weight: 600;
-            padding: 2px 8px;
-            border-radius: 12px;
+            padding: 3px 10px;
+            border-radius: 15px;
+            animation: pulse 2s infinite;
         }
 
         .conversation-item.unread .conversation-details .name {
@@ -270,9 +305,8 @@
             color: var(--text-color);
         }
 
-        /* --- Chat Window --- */
         .chat-window {
-            background-color: var(--bg-light);
+            background: radial-gradient(circle at center, var(--glow) 0%, var(--bg-light) 70%);
             display: flex;
             flex-direction: column;
             height: 100vh;
@@ -283,10 +317,11 @@
             align-items: center;
             gap: 15px;
             padding: 15px 20px;
-            border-bottom: 1px solid var(--secondary);
-            background-color: var(--bg-dark);
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-dark);
             flex-shrink: 0;
             min-height: 75px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
 
         .group-info {
@@ -302,14 +337,16 @@
                 height: 45px;
                 border-radius: 50%;
                 object-fit: cover;
+                border: 2px solid var(--primary);
             }
 
             .group-info .group-name {
                 font-weight: 600;
                 font-size: 1.1rem;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
+                background: var(--gradient);
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
             }
 
             .group-info .group-members {
@@ -341,9 +378,14 @@
         .message-group {
             display: flex;
             gap: 10px;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
             max-width: 75%;
+            transition: transform 0.3s ease;
         }
+
+            .message-group:hover {
+                transform: scale(1.02);
+            }
 
             .message-group.sent {
                 align-self: flex-end;
@@ -361,6 +403,7 @@
                 object-fit: cover;
                 flex-shrink: 0;
                 margin-bottom: 4px;
+                border: 1px solid var(--primary-light);
             }
 
         .message-content {
@@ -377,11 +420,12 @@
         }
 
         .message-bubble {
-            padding: 10px 15px;
-            border-radius: 18px;
+            padding: 12px 18px;
+            border-radius: 20px;
             word-break: break-word;
             max-width: fit-content;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
         }
 
         .message-group.sent .message-bubble {
@@ -391,6 +435,7 @@
 
         .message-group.received .message-bubble {
             background-color: var(--secondary);
+            color: var(--text-color);
         }
 
         .message-timestamp {
@@ -431,10 +476,10 @@
         .chat-input-area {
             display: flex;
             align-items: center;
-            padding: 10px 20px;
+            padding: 12px 20px;
             border-top: 1px solid var(--border-color);
-            background-color: var(--bg-dark);
-            gap: 10px;
+            background: var(--bg-dark);
+            gap: 12px;
             flex-shrink: 0;
             position: relative;
         }
@@ -448,26 +493,26 @@
             width: 100%;
             background-color: var(--secondary);
             border: 1px solid transparent;
-            border-radius: 20px;
+            border-radius: 25px;
             color: var(--text-color);
             font-size: 1rem;
-            padding: 10px 45px 10px 20px;
+            padding: 12px 50px 12px 20px;
             resize: none;
             overflow-y: auto;
-            max-height: 100px;
+            max-height: 120px;
             line-height: 1.4;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            transition: all 0.3s ease;
         }
 
             #chat-input:focus {
                 outline: none;
                 border-color: var(--primary);
-                box-shadow: 0 0 0 2px rgba(0, 170, 255, 0.3);
+                box-shadow: 0 0 10px var(--glow);
             }
 
         #emoji-btn {
             position: absolute;
-            right: 10px;
+            right: 15px;
             top: 50%;
             transform: translateY(-50%);
         }
@@ -476,7 +521,7 @@
             position: absolute;
             bottom: 100%;
             right: 20px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             z-index: 1000;
             opacity: 0;
             transform: translateY(10px);
@@ -548,15 +593,40 @@
             0%, 100% {
                 opacity: 1;
                 transform: scale(1);
+                box-shadow: 0 0 0 0 var(--glow);
             }
 
             50% {
                 opacity: 0.8;
-                transform: scale(1.1);
+                transform: scale(1.2);
+                box-shadow: 0 0 10px 5px rgba(46, 204, 113, 0.3); /* Màu xanh lá cây nhạt cho hiệu ứng pulse */
             }
         }
 
-        /* --- Responsive & Sidebar Toggle --- */
+        @@keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.9;
+            }
+        }
+
+        @@keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .sidebar-toggle-btn, .back-btn {
             display: none;
         }
@@ -602,9 +672,16 @@
             .back-btn {
                 display: inline-flex;
             }
+
+            .btn-icon {
+                padding: 12px;
+            }
+
+            .search-bar input, #chat-input {
+                font-size: 1.1rem;
+            }
         }
 
-        /* --- Scrollbar --- */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -614,29 +691,18 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: var(--secondary);
+            background: var(--gradient);
             border-radius: 4px;
             border: 2px solid var(--bg-light);
         }
 
             ::-webkit-scrollbar-thumb:hover {
-                background: var(--border-color);
+                background: var(--primary-light);
             }
-        /* Nếu bạn muốn đường kẻ đẹp hơn, hãy dùng đoạn này thay cho cách 1 */
 
         .conversation-item {
-            position: relative; /* Đã có sẵn trong code của bạn, chỉ cần chắc chắn là có */
+            position: relative;
         }
-
-            .conversation-item:not(:last-child)::after {
-                content: '';
-                position: absolute;
-                bottom: 0;
-                left: 85px; /* Khoảng cách từ lề trái (bằng avatar + margin) */
-                right: 20px; /* Khoảng cách từ lề phải */
-                height: 1px;
-                background-color: var(--border-color);
-            }
     </style>
 </head>
 <body>
@@ -677,7 +743,116 @@
             </footer>
         </main>
     </div>
+    <script>
+                // Typing effect for sidebar header and group name
+        function typeText(element, text, speed = 100) {
+            let index = 0;
+            element.innerHTML = '';
+            const type = () => {
+                if (index < text.length) {
+                    element.innerHTML += text.charAt(index);
+                    index++;
+                    setTimeout(type, speed);
+                } else {
+                    setTimeout(() => {
+                        index = 0;
+                        element.innerHTML = '';
+                        type();
+                    }, 2000); // Repeat after 2s pause
+                }
+            };
+            type();
+        }
 
+        // Initialize typing effect for sidebar header and group name
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebarHeader = document.querySelector('.sidebar-header h2');
+            const groupName = document.querySelector('.group-info .group-name');
+
+            if (sidebarHeader) {
+                typeText(sidebarHeader, 'Chats', 150);
+            }
+            if (groupName) {
+                typeText(groupName, 'Blockchain Group', 150);
+            }
+        });
+
+        // Hover effect for conversation items
+        const conversationItems = document.querySelectorAll('.conversation-item');
+        conversationItems.forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                item.style.transform = 'translateY(-5px) scale(1.02)';
+                item.style.boxShadow = '0 0 20px var(--glow)';
+                item.style.transition = 'all 0.3s ease';
+            });
+            item.addEventListener('mouseleave', () => {
+                item.style.transform = 'translateY(0) scale(1)';
+                item.style.boxShadow = 'none';
+            });
+        });
+
+        // Hover effect for message bubbles
+        const messageBubbles = document.querySelectorAll('.message-bubble');
+        messageBubbles.forEach(bubble => {
+            bubble.addEventListener('mouseenter', () => {
+                bubble.style.transform = 'scale(1.05)';
+                bubble.style.boxShadow = '0 0 15px var(--glow)';
+            });
+            bubble.addEventListener('mouseleave', () => {
+                bubble.style.transform = 'scale(1)';
+                bubble.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+            });
+        });
+
+        // Blockchain-style loading effect
+        function createBlockchainLoading() {
+            const loadingSpinner = document.querySelector('.loading-spinner');
+            if (loadingSpinner) {
+                loadingSpinner.innerHTML = '';
+                for (let i = 0; i < 3; i++) {
+                    const dot = document.createElement('div');
+                    dot.style.width = '8px';
+                    dot.style.height = '8px';
+                    dot.style.background = 'var(--primary)';
+                    dot.style.borderRadius = '50%';
+                    dot.style.display = 'inline-block';
+                    dot.style.margin = '0 4px';
+                    dot.style.animation = `blockchain-pulse 1.5s ${i * 0.2}s ease-in-out infinite`;
+                    loadingSpinner.appendChild(dot);
+                }
+                loadingSpinner.classList.add('show');
+                setTimeout(() => {
+                    loadingSpinner.classList.remove('show');
+                }, 3000); // Simulate loading for 3s
+            }
+        }
+
+        // Add blockchain loading animation keyframes dynamically
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+            @@keyframes blockchain-pulse {
+                0%, 100% { transform: translateY(0); opacity: 0.6; }
+                50% { transform: translateY(-10px); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+
+        // Trigger loading effect on page load (for demo)
+        document.addEventListener('DOMContentLoaded', () => {
+            createBlockchainLoading();
+        });
+
+        // Handle input focus glow
+        const chatInput = document.querySelector('#chat-input');
+        if (chatInput) {
+            chatInput.addEventListener('focus', () => {
+                chatInput.style.boxShadow = '0 0 15px var(--glow)';
+            });
+            chatInput.addEventListener('blur', () => {
+                chatInput.style.boxShadow = '0 0 0 2px rgba(74, 144, 226, 0.3)';
+            });
+        }
+    </script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // =================================================================
@@ -1116,7 +1291,7 @@
                     const oldScrollHeight = target.scrollHeight;
 
                     try {
-                        await new Promise(resolve => setTimeout(resolve, 500)); // Giả lập độ trễ mạng
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // Giả lập độ trễ mạng
                         const olderMessages = await api.getMessages(parseInt(convoId), nextPage, MESSAGES_PER_PAGE);
                         if (olderMessages.length > 0) {
                             olderMessages.reverse().forEach(msg => {
@@ -1379,5 +1554,6 @@
             initializeChat();
         });
     </script>
+
 </body>
 </html>

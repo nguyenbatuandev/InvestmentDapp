@@ -20,5 +20,7 @@ namespace InvestDapp.Application.MessageService
 
         Task MarkConversationAsReadAsync(int conversationId, int readerUserId);
 
+        Task <int> GetTotalUnreadCountAsync(int userId);
+
     }
 }

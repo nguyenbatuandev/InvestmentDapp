@@ -9,5 +9,6 @@ namespace InvestDapp.Infrastructure.Data.interfaces
         Task<User> UpdateUserAsync(UserUpdateRequest userUpdate , string wallet);
         Task<User?> GetUserByWalletAddressAsync(string walletAddress);
         Task<User> SetRoleByIdAsync(string walletAddress);
+        Task<User?> GetUserByIdAsync(int id);
     }
 }

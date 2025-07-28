@@ -27,13 +27,6 @@ namespace InvestDapp.Controllers
             this._user = _user;
             _userService = userService;
         }
-        private async Task<int> GetCurrentUserId()
-        {
-            var wallet = User.FindFirst("WalletAddress")?.Value;
-            var id = await _user.GetUserByWalletAddressAsync(wallet);
-            return id.ID;
-
-        }
 
         [HttpPost("Conversations/private")]
         public async Task<IActionResult> StartPrivateConversation([FromBody] StartPrivateChatDto dto)
@@ -41,7 +34,7 @@ namespace InvestDapp.Controllers
             try
             {
                 // Sửa lỗi deadlock: Dùng await thay vì .Result
-                var currentUserId = await GetCurrentUserId();
+                var currentUserId = await _userService.GetCurrentUserId();
 
                 // 1. Lấy về đối tượng Conversation đầy đủ từ service
                 var conversationEntity = await _convoService.StartPrivateChatAsync(currentUserId, dto.PartnerId);
@@ -75,7 +68,7 @@ namespace InvestDapp.Controllers
         public async Task<IActionResult> CreateGroup([FromBody] CreateGroupDto dto)
         {
             // Đã sửa: Dùng await để lấy ID người dùng
-            var currentUserId = await GetCurrentUserId();
+            var currentUserId = await _userService.GetCurrentUserId();
             var result = await _convoService.CreateGroupAsync(currentUserId, dto.Name, dto.ParticipantIds);
             return Ok(result);
         }
@@ -86,7 +79,7 @@ namespace InvestDapp.Controllers
             try
             {
                 // Đã sửa: Dùng await để lấy ID người dùng
-                var currentUserId = await GetCurrentUserId();
+                var currentUserId = await _userService.GetCurrentUserId();
                 var result = await _convoService.AddMemberToGroupAsync(conversationId, dto.UserId, currentUserId);
                 return Ok(result);
             }
@@ -112,7 +105,7 @@ namespace InvestDapp.Controllers
         [HttpGet]
         public async Task<IActionResult> GetUserConversations()
         {
-            var currentUserId = await GetCurrentUserId();
+            var currentUserId = await _userService.GetCurrentUserId();
             var conversations = await _convoService.GetUserConversationsServiceAsync(currentUserId);
 
             var conversationDtos = await _convoService.MapConversationsToDtosAsync(conversations, currentUserId);
@@ -134,7 +127,7 @@ namespace InvestDapp.Controllers
         public async Task<IActionResult> SearchUser([FromQuery] string walletAddress)
         {
             // BƯỚC 1: Lấy ID người dùng hiện tại và ĐỢI cho nó xong
-            var currentUserId = await GetCurrentUserId(); // Dùng await ở đây
+            var currentUserId = await _userService.GetCurrentUserId(); 
 
             // BƯỚC 2: Sau khi BƯỚC 1 đã xong, mới bắt đầu tìm người dùng khác
             var user = await _userService.GetUserByWalletAddressAsync(walletAddress);
@@ -159,6 +152,19 @@ namespace InvestDapp.Controllers
             };
 
             return Ok(userDto);
+        }
+
+        // Trong file Controllers/ConversationsController.cs
+
+        [HttpGet("Conversations/GetTotalUnreadCount")] // Tạo route mới: /Conversations/GetTotalUnreadCount
+        public async Task<IActionResult> GetTotalUnreadCount()
+        {
+            var currentUserId = await _userService.GetCurrentUserId();
+
+            // Đếm tổng số tin nhắn chưa đọc trong tất cả các cuộc hội thoại của người dùng
+            var totalUnreadCount = await _convoService.GetTotalUnreadCountAsync(currentUserId);
+
+            return Ok(new { count = totalUnreadCount });
         }
 
     }

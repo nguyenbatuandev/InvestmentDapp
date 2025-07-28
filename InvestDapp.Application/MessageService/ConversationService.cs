@@ -127,6 +127,17 @@ namespace InvestDapp.Application.MessageService
 
             // 2. Lưu tin nhắn vào database
             await _convoRepo.AddMessageAsync(message);
+            // 2. TÌM VÀ TĂNG UNREADCOUNT CHO NGƯỜI NHẬN
+            var otherParticipants = await _context.Participants
+                .Where(p => p.ConversationId == conversationId && p.UserId != senderId)
+                .ToListAsync();
+
+            foreach (var participant in otherParticipants)
+            {
+                participant.UnreadCount++;
+            }
+
+            // 3. LƯU TẤT CẢ THAY ĐỔI VÀO DATABASE TRONG MỘT LẦN
             await _context.SaveChangesAsync();
 
             var a= await _convoRepo.FindByIdAsync(conversationId);
@@ -192,11 +203,11 @@ namespace InvestDapp.Application.MessageService
 
         public async Task MarkConversationAsReadAsync(int conversationId, int readerUserId)
         {
-            // 1. Tìm tất cả tin nhắn chưa đọc trong cuộc trò chuyện này
-            //    mà KHÔNG phải do chính người đọc gửi.
+            var participant = await _context.Participants
+           .FirstOrDefaultAsync(p => p.ConversationId == conversationId && p.UserId == readerUserId);
             var unreadMessages = await _context.Messagers
                 .Where(m => m.ConversationId == conversationId &&
-                            m.SenderId != readerUserId && // QUAN TRỌNG: So sánh ID (int) với ID (string)
+                            m.SenderId != readerUserId && 
                             !m.isRead)
                 .ToListAsync();
 
@@ -208,6 +219,11 @@ namespace InvestDapp.Application.MessageService
                     message.isRead = true;
                 }
 
+                await _context.SaveChangesAsync();
+            }
+            if (participant != null)
+            {
+                participant.UnreadCount = 0;
                 await _context.SaveChangesAsync();
             }
         }
@@ -255,6 +271,15 @@ namespace InvestDapp.Application.MessageService
             });
 
             return Task.FromResult(conversationDtos);
+        }
+
+        public async Task<int> GetTotalUnreadCountAsync(int userId)
+        {
+            var totalUnreadCount = await _context.Participants
+                       .Where(p => p.UserId == userId)
+                       .SumAsync(p => p.UnreadCount);
+
+            return totalUnreadCount;
         }
     }
 }

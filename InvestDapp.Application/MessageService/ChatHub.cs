@@ -9,7 +9,7 @@ namespace InvestDapp.Application.MessageService // Thay bằng namespace của b
     public class ChatHub : Hub
     {
         private readonly IConversationService _chatService;
-        private readonly IUserConnectionManager _userConnectionManager; // Thêm quản lý kết nối
+        private readonly IUserConnectionManager _userConnectionManager;
         private readonly ILogger<ChatHub> _logger;
         private static readonly ConcurrentDictionary<string, HashSet<string>> UserConnections = new ConcurrentDictionary<string, HashSet<string>>();
 

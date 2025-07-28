@@ -41,6 +41,13 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 return null;
             }
         }
+
+        public async Task<User?> GetUserByIdAsync(int id)
+        {
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.ID == id);
+        }
+
         public async Task<User?> GetUserByWalletAddressAsync(string wallet)
         {
             var normalizedWallet = wallet?.Trim().ToLower();
@@ -50,6 +57,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 .FirstOrDefaultAsync(x => x.WalletAddress.ToLower() == normalizedWallet);
             return user;
         }
+
 
 
         public async Task<User> SetRoleByIdAsync(string walletAddress)

@@ -2,7 +2,6 @@
 using InvestDapp.Shared.Common.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
 
 namespace InvestDapp.Controllers
 {
@@ -37,21 +36,20 @@ namespace InvestDapp.Controllers
         [HttpGet]
         public async Task<IActionResult> GetUserProfile()
         {
-            var wallet = User.FindFirst("WalletAddress")?.Value;
-
-            if (string.IsNullOrEmpty(wallet))
+            var user = await _userService.GetCurrentUserId();
+            if (user == null)
             {
-                return Unauthorized("WalletAddress claim not found.");
+                return Unauthorized("User not found.");
             }
 
-            var result = await _userService.GetUserByWalletAddressAsync(wallet);
+            var result = await _userService.GetUserByIdAsync(user);
 
             if (!result.Success)
             {
                 return BadRequest(result.Message);
             }
 
-            return Ok(result.Data); // assuming your result has a .Data property
+            return Ok(result.Data); 
         }
 
     }

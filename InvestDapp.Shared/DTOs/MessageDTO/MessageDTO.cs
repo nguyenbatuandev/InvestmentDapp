@@ -30,6 +30,8 @@ namespace InvestDapp.Shared.DTOs.MessageDTO
     {
         public int UserId { get; set; }
         public UserDto User { get; set; }
+        public int UnreadCount { get; set; }
+
     }
 
     public class ConversationDto

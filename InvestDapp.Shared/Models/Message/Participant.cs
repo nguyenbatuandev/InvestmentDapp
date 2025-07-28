@@ -20,6 +20,7 @@ namespace InvestDapp.Shared.Models.Message
         // --- Composite Primary Key (cấu hình trong DbContext) ---
         public int UserId { get; set; }
         public int ConversationId { get; set; }
+        public int UnreadCount { get; set; }
 
         public ParticipantRole Role { get; set; } = ParticipantRole.Member;
 
