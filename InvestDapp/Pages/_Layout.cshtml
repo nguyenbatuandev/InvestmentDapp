@@ -548,6 +548,8 @@
                 <div class="wallet-menu" id="wallet-menu">
                     <p id="wallet-address"></p> <hr />
                     <a asp-controller="User" asp-action="Profile">👤 Hồ sơ</a>
+                    <a asp-controller="Campaigns" asp-action="MyCampaigns">Chiến dịch</a>
+
                     <a asp-controller="Conversations" asp-action="Index">
                         <i class="fab fa-facebook-messenger"></i> Messenger
                         <span id="messenger-unread-badge" style="display: none;"></span>
@@ -745,7 +747,39 @@
                 }
             }
 
-            saveProfileBtn?.addEventListener('click', async () => { /* ... code lưu profile giữ nguyên ... */ });
+        saveProfileBtn?.addEventListener('click', async () => {
+            const wallet = localStorage.getItem('connectedWallet');
+            const name = document.getElementById('nameInput')?.value?.trim();
+            const email = document.getElementById('emailInput')?.value?.trim();
+
+            if (!wallet || !name || !email) {
+                DApp.showCustomAlert("❌ Vui lòng nhập đầy đủ thông tin.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/Wallet/SaveProfile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({ wallet, name, email })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    DApp.showCustomAlert("✅ " + result.message);
+                    popup.classList.remove('active');
+                    popupOverlay.classList.remove('active');
+                } else {
+                    DApp.showCustomAlert("❌ " + result.message);
+                }
+            } catch (err) {
+                console.error('Save profile error:', err);
+                DApp.showCustomAlert("❌ Lỗi khi lưu hồ sơ. Vui lòng thử lại.");
+            }
+        });
 
             // ==========================================================
             // ✨ BẮT ĐẦU PHẦN CODE CHO TÍNH NĂNG MỚI (ĐÃ SỬA LỖI)

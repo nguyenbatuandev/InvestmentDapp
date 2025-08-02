@@ -1,0 +1,555 @@
+﻿@{
+    ViewData["Title"] = "Chờ Duyệt";
+    Layout = "~/Pages/_Layout.cshtml";
+    var campaign = ViewBag.Campaign as InvestDapp.Models.Campaign;
+    var posts = ViewBag.Posts as IEnumerable<InvestDapp.Shared.Models.CampaignPost>;
+}
+
+@section Styles {
+    <style>
+        /* --- BIẾN MÀU SẮC --- */
+        :root {
+            --bg-dark: #0a0e1a;
+            --bg-light: #12182b;
+            --primary: #00aaff;
+            --primary-light: #00c6ff;
+            --secondary: #272c44;
+            --text-color: #e0e0e0;
+            --text-muted: #8a93b3;
+            --success: #00d4aa;
+            --warning: #ffb800;
+            --danger: #ff6b6b;
+            --gradient: linear-gradient(135deg, var(--primary), var(--primary-light));
+        }
+
+        .approval-container {
+            max-width: 1000px;
+            margin: 120px auto 60px;
+            padding: 0;
+        }
+
+        /* Progress Steps - Completed */
+        .wizard-steps {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 40px;
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--secondary);
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+            .step.active {
+                color: var(--warning);
+            }
+
+            .step.completed {
+                color: var(--success);
+            }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--secondary);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .step.active .step-number {
+            background: var(--warning);
+            color: white;
+            box-shadow: 0 0 20px rgba(255, 184, 0, 0.4);
+        }
+
+        .step.completed .step-number {
+            background: var(--success);
+            color: white;
+        }
+
+        .step-connector {
+            width: 80px;
+            height: 2px;
+            background: var(--success);
+            margin: 0 20px;
+        }
+
+        /* Success Card */
+        .success-card {
+            background: linear-gradient(135deg, var(--success), #00b894);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0, 212, 170, 0.3);
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: bounce 1s ease-out;
+        }
+
+        .success-card h2 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .success-card p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        /* Status Cards */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .status-card {
+            background: var(--bg-light);
+            border: 1px solid var(--secondary);
+            border-radius: 16px;
+            padding: 25px;
+            transition: all 0.3s ease;
+        }
+
+            .status-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 25px rgba(0, 170, 255, 0.1);
+            }
+
+        .status-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .status-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .campaign-status .status-icon {
+            background: rgba(255, 184, 0, 0.1);
+            color: var(--warning);
+        }
+
+        .post-status .status-icon {
+            background: rgba(255, 184, 0, 0.1);
+            color: var(--warning);
+        }
+
+        .status-title {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .status-value {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        .status-pending {
+            color: var(--warning);
+            font-weight: 600;
+        }
+
+        .status-description {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* Timeline */
+        .timeline-card {
+            background: var(--bg-light);
+            border: 1px solid var(--secondary);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .timeline-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .timeline-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(0, 170, 255, 0.1);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .timeline-title {
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 1.1rem;
+        }
+
+        .timeline-list {
+            list-style: none;
+            position: relative;
+            padding-left: 30px;
+        }
+
+            .timeline-list::before {
+                content: '';
+                position: absolute;
+                left: 10px;
+                top: 0;
+                bottom: 0;
+                width: 2px;
+                background: var(--secondary);
+            }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+            padding-left: 30px;
+        }
+
+            .timeline-item::before {
+                content: '';
+                position: absolute;
+                left: -6px;
+                top: 5px;
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: var(--success);
+            }
+
+            .timeline-item.pending::before {
+                background: var(--warning);
+                animation: pulse 2s infinite;
+            }
+
+            .timeline-item.future::before {
+                background: var(--secondary);
+            }
+
+        .timeline-step {
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 5px;
+        }
+
+        .timeline-desc {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .timeline-time {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 10px;
+        }
+
+        .btn-primary {
+            background: var(--gradient);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 170, 255, 0.3);
+        }
+
+            .btn-primary:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 25px rgba(0, 170, 255, 0.4);
+            }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: var(--text-color);
+            border: 2px solid var(--secondary);
+        }
+
+            .btn-secondary:hover {
+                background: transparent;
+                border-color: var(--primary);
+                color: var(--primary);
+            }
+
+        /* Responsive */
+        @@media (max-width: 768px) {
+            .wizard-steps {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .step-connector {
+                width: 2px;
+                height: 30px;
+                margin: 10px 0;
+            }
+
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .success-card {
+                padding: 25px;
+            }
+
+            .success-icon {
+                font-size: 3rem;
+            }
+
+            .success-card h2 {
+                font-size: 1.5rem;
+            }
+
+            .action-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .btn {
+                margin: 0;
+                justify-content: center;
+            }
+        }
+
+        /* Animations */
+        @@keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @@keyframes bounce {
+            0%, 20%, 53%, 80%, 100% {
+                animation-timing-function: cubic-bezier(0.215, 0.610, 0.355, 1.000);
+                transform: translate3d(0,0,0);
+            }
+
+            40%, 43% {
+                animation-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
+                transform: translate3d(0, -10px, 0);
+            }
+
+            70% {
+                animation-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
+                transform: translate3d(0, -5px, 0);
+            }
+
+            90% {
+                transform: translate3d(0,-2px,0);
+            }
+        }
+
+        @@keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 184, 0, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 184, 0, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 184, 0, 0);
+            }
+        }
+    </style>
+}
+
+<div class="approval-container">
+    <!-- Progress Steps - All Completed -->
+    <div class="wizard-steps">
+        <div class="step completed">
+            <div class="step-number"><i class="fas fa-check"></i></div>
+            <span>Tạo Chiến Dịch</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step completed">
+            <div class="step-number"><i class="fas fa-check"></i></div>
+            <span>Tạo Bài Viết</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step active">
+            <div class="step-number"><i class="fas fa-clock"></i></div>
+            <span>Chờ Duyệt</span>
+        </div>
+    </div>
+
+    <!-- Success Message -->
+    <div class="success-card">
+        <div class="success-icon">🎉</div>
+        <h2>Hoàn Thành Xuất Sắc!</h2>
+        <p>
+            Bạn đã tạo thành công chiến dịch "<strong>@campaign?.Name</strong>" và bài viết đầu tiên.
+            Hiện tại đang chờ admin xem xét và phê duyệt. Chúng tôi sẽ thông báo kết quả sớm nhất có thể.
+        </p>
+    </div>
+
+    <!-- Status Overview -->
+    <div class="status-grid">
+        <div class="status-card campaign-status">
+            <div class="status-header">
+                <div class="status-icon">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <div class="status-title">Trạng Thái Chiến Dịch</div>
+            </div>
+            <div class="status-value status-pending">
+                @campaign?.ApprovalStatus
+            </div>
+            <div class="status-description">
+                Chiến dịch đang được admin xem xét về tính khả thi và tuân thủ quy định.
+            </div>
+        </div>
+
+        <div class="status-card post-status">
+            <div class="status-header">
+                <div class="status-icon">
+                    <i class="fas fa-pen-fancy"></i>
+                </div>
+                <div class="status-title">Bài Viết</div>
+            </div>
+            <div class="status-value status-pending">
+                @posts?.Count() bài viết chờ duyệt
+            </div>
+            <div class="status-description">
+                Tất cả bài viết sẽ được kiểm tra nội dung và phê duyệt cùng với chiến dịch.
+            </div>
+        </div>
+    </div>
+
+    <!-- Process Timeline -->
+    <div class="timeline-card">
+        <div class="timeline-header">
+            <div class="timeline-icon">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <div class="timeline-title">Quy Trình Duyệt</div>
+        </div>
+
+        <ul class="timeline-list">
+            <li class="timeline-item">
+                <div class="timeline-step">✅ Tạo chiến dịch</div>
+                <div class="timeline-desc">Bạn đã điền đầy đủ thông tin và tạo chiến dịch thành công</div>
+                <div class="timeline-time">Đã hoàn thành</div>
+            </li>
+            <li class="timeline-item">
+                <div class="timeline-step">✅ Tạo bài viết</div>
+                <div class="timeline-desc">Bài viết giới thiệu dự án đã được tạo với TinyMCE editor</div>
+                <div class="timeline-time">Đã hoàn thành</div>
+            </li>
+            <li class="timeline-item pending">
+                <div class="timeline-step">⏳ Xem xét của Admin</div>
+                <div class="timeline-desc">Admin đang xem xét tính khả thi, nội dung và tính hợp lệ của dự án</div>
+                <div class="timeline-time">Đang thực hiện (1-3 ngày làm việc)</div>
+            </li>
+            <li class="timeline-item future">
+                <div class="timeline-step">📧 Thông báo kết quả</div>
+                <div class="timeline-desc">Bạn sẽ nhận được email thông báo về kết quả phê duyệt</div>
+                <div class="timeline-time">Sắp tới</div>
+            </li>
+            <li class="timeline-item future">
+                <div class="timeline-step">🚀 Chiến dịch đi vào hoạt động</div>
+                <div class="timeline-desc">Nếu được phê duyệt, chiến dịch sẽ hiển thị công khai và bắt đầu huy động vốn</div>
+                <div class="timeline-time">Sau khi được phê duyệt</div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <a href="@Url.Action("MyCampaigns")" class="btn btn-primary">
+            <i class="fas fa-folder-open"></i>
+            Xem Tất Cả Chiến Dịch
+        </a>
+        <a href="/" class="btn btn-secondary">
+            <i class="fas fa-home"></i>
+            Về Trang Chủ
+        </a>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Add some interactive effects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate cards on load
+            const cards = document.querySelectorAll('.status-card, .timeline-card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.style.animation = 'slideInUp 0.6s ease-out forwards';
+            });
+
+            // Add hover effects to timeline items
+            const timelineItems = document.querySelectorAll('.timeline-item');
+            timelineItems.forEach(item => {
+                item.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateX(5px)';
+                    this.style.transition = 'transform 0.3s ease';
+                });
+
+                item.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateX(0)';
+                });
+            });
+        });
+    </script>
+}

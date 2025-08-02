@@ -42,6 +42,7 @@ namespace InvestDapp.Infrastructure.Data
         public DbSet<Conversation> Conversations { get; set; }
         public DbSet<Participant> Participants { get; set; }
         public DbSet<MessageReadStatus> MessageReadStatuses { get; set; }
+        public DbSet<CampaignPost> CampaignPosts { get; set; }
 
     }
 }

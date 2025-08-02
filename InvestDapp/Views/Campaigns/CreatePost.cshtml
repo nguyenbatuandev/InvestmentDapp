@@ -1,0 +1,846 @@
+﻿@model InvestDapp.Shared.Common.Request.CreateCampaignPostRequest
+@{
+    ViewData["Title"] = "Tạo Bài Viết Chiến Dịch";
+    Layout = "~/Pages/_Layout.cshtml";
+    var campaign = ViewBag.Campaign as InvestDapp.Models.Campaign;
+}
+
+@section Styles {
+    <style>
+        /* --- BIẾN MÀU SẮC --- */
+        :root {
+            --bg-dark: #0a0e1a;
+            --bg-light: #12182b;
+            --primary: #00aaff;
+            --primary-light: #00c6ff;
+            --secondary: #272c44;
+            --text-color: #e0e0e0;
+            --text-muted: #8a93b3;
+            --success: #00d4aa;
+            --warning: #ffb800;
+            --danger: #ff6b6b;
+            --gradient: linear-gradient(135deg, var(--primary), var(--primary-light));
+        }
+
+        .post-wizard-container {
+            max-width: 1000px;
+            margin: 120px auto 60px;
+            padding: 0;
+        }
+
+        /* Progress Steps */
+        .wizard-steps {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 40px;
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--secondary);
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+            .step.active {
+                color: var(--primary);
+            }
+
+            .step.completed {
+                color: var(--success);
+            }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--secondary);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .step.active .step-number {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 0 20px rgba(0, 170, 255, 0.4);
+        }
+
+        .step.completed .step-number {
+            background: var(--success);
+            color: white;
+        }
+
+        .step-connector {
+            width: 80px;
+            height: 2px;
+            background: var(--secondary);
+            margin: 0 20px;
+        }
+
+        .step.completed + .step-connector {
+            background: var(--success);
+        }
+
+        /* Campaign Info Card */
+        .campaign-info-card {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+            color: white;
+            box-shadow: 0 8px 32px rgba(0, 170, 255, 0.3);
+        }
+
+            .campaign-info-card h3 {
+                margin-bottom: 15px;
+                font-size: 1.3rem;
+            }
+
+        .campaign-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .meta-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .meta-label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-bottom: 2px;
+        }
+
+        .meta-value {
+            font-weight: 600;
+        }
+
+        /* Main Form Container */
+        .form-container {
+            background: var(--bg-light);
+            border-radius: 20px;
+            border: 1px solid var(--secondary);
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-header {
+            background: var(--gradient);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+            .form-header h2 {
+                font-size: 2rem;
+                margin-bottom: 10px;
+                font-weight: 700;
+            }
+
+        .form-body {
+            padding: 40px;
+        }
+
+        /* Post Type Selector */
+        .post-type-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .post-type-option {
+            background: var(--bg-dark);
+            border: 2px solid var(--secondary);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .post-type-option::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(0, 170, 255, 0.1), transparent);
+                transition: left 0.5s ease;
+            }
+
+            .post-type-option:hover::before {
+                left: 100%;
+            }
+
+            .post-type-option:hover,
+            .post-type-option.selected {
+                border-color: var(--primary);
+                background: rgba(0, 170, 255, 0.1);
+                transform: translateY(-2px);
+                box-shadow: 0 5px 20px rgba(0, 170, 255, 0.2);
+            }
+
+            .post-type-option input[type="radio"] {
+                display: none;
+            }
+
+        .post-type-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: block;
+            color: var(--primary);
+        }
+
+        .post-type-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--text-color);
+        }
+
+        .post-type-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 0.95rem;
+        }
+
+        .required {
+            color: var(--danger);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 15px 18px;
+            background: var(--bg-dark);
+            border: 2px solid var(--secondary);
+            border-radius: 12px;
+            color: var(--text-color);
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+            .form-control:focus {
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 20px rgba(0, 170, 255, 0.2);
+                transform: translateY(-1px);
+            }
+
+        /* Rich Text Editor Area */
+        .editor-container {
+            border: 2px solid var(--secondary);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: border-color 0.3s ease;
+        }
+
+            .editor-container:focus-within {
+                border-color: var(--primary);
+                box-shadow: 0 0 20px rgba(0, 170, 255, 0.2);
+            }
+
+        .editor-placeholder {
+            background: var(--bg-dark);
+            min-height: 400px;
+            padding: 20px;
+            color: var(--text-color);
+        }
+
+        /* Tags Input */
+        .tags-input {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 50px;
+            padding: 10px;
+            background: var(--bg-dark);
+            border: 2px solid var(--secondary);
+            border-radius: 12px;
+            cursor: text;
+        }
+
+        .tag {
+            background: var(--primary);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .tag-remove {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Checkbox Styling */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: var(--bg-dark);
+            border-radius: 12px;
+            border: 2px solid var(--secondary);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+            .checkbox-group:hover {
+                border-color: var(--primary);
+            }
+
+            .checkbox-group input[type="checkbox"] {
+                width: 20px;
+                height: 20px;
+                accent-color: var(--primary);
+            }
+
+        /* Form Actions */
+        .form-actions {
+            background: var(--bg-dark);
+            padding: 30px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-wizard {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary-wizard {
+            background: var(--gradient);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 170, 255, 0.3);
+        }
+
+            .btn-primary-wizard:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 25px rgba(0, 170, 255, 0.4);
+            }
+
+        .btn-secondary-wizard {
+            background: var(--secondary);
+            color: var(--text-color);
+            border: 2px solid var(--secondary);
+        }
+
+            .btn-secondary-wizard:hover {
+                background: transparent;
+                border-color: var(--primary);
+                color: var(--primary);
+            }
+
+        /* Alert Styling */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border-left: 4px solid;
+        }
+
+        .alert-danger {
+            background: rgba(255, 107, 107, 0.1);
+            border-left-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .text-danger {
+            color: var(--danger);
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Responsive */
+        @@media (max-width: 768px) {
+            .wizard-steps {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .step-connector {
+                width: 2px;
+                height: 30px;
+                margin: 10px 0;
+            }
+
+            .post-type-selector {
+                grid-template-columns: 1fr;
+            }
+
+            .campaign-meta {
+                grid-template-columns: 1fr;
+            }
+
+            .form-body,
+            .form-actions {
+                padding: 20px;
+            }
+
+            .form-actions {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .btn-wizard {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Animation */
+        .form-container {
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        @@keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+}
+
+<div class="post-wizard-container">
+    <!-- Progress Steps -->
+    <div class="wizard-steps">
+        <div class="step completed">
+            <div class="step-number"><i class="fas fa-check"></i></div>
+            <span>Tạo Chiến Dịch</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step active">
+            <div class="step-number">2</div>
+            <span>Tạo Bài Viết</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step">
+            <div class="step-number">3</div>
+            <span>Chờ Duyệt</span>
+        </div>
+    </div>
+
+    <!-- Campaign Info -->
+    <div class="campaign-info-card">
+        <h3><i class="fas fa-rocket"></i> Thông Tin Chiến Dịch</h3>
+        <p><strong>@campaign?.Name</strong></p>
+        <div class="campaign-meta">
+            <div class="meta-item">
+                <div class="meta-label">Trạng thái</div>
+                <div class="meta-value">@campaign?.ApprovalStatus</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">Mục tiêu</div>
+                <div class="meta-value">@campaign?.GoalAmount BNB</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">Ngày tạo</div>
+                <div class="meta-value">@campaign?.CreatedAt.ToString("dd/MM/yyyy")</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Form -->
+    <div class="form-container">
+        <div class="form-header">
+            <h2><i class="fas fa-pen-fancy"></i> Tạo Bài Viết Đầu Tiên</h2>
+            <p>Viết bài giới thiệu hoặc cập nhật cho chiến dịch của bạn</p>
+            <h2>
+                <i class="fas fa-pen-fancy"></i>
+                @if (!(campaign?.Posts?.Any() ?? false))
+                {
+                    <text>Tạo Bài Viết Đầu Tiên</text>
+                }
+                else
+                {
+                    <text>Tạo Bài Viết Mới</text>
+                }
+            </h2>
+            <p>
+                @if (!(campaign?.Posts?.Any() ?? false))
+                {
+                    <text>Viết bài giới thiệu cho chiến dịch của bạn. Bài viết này sẽ được tự động phê duyệt!</text>
+                }
+                else
+                {
+                    <text>Viết bài cập nhật hoặc thông báo cho chiến dịch của bạn</text>
+                }
+            </p>
+        </div>
+
+        <form asp-action="CreatePost" method="post" id="postForm">
+            @Html.AntiForgeryToken()
+            <input asp-for="CampaignId" type="hidden" />
+
+            <div class="form-body">
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Có lỗi xảy ra:</strong>
+                        <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                            {
+                                <li>@error.ErrorMessage</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-tag"></i> Loại Bài Viết <span class="required">*</span>
+                    </label>
+                    <div class="post-type-selector">
+                        <label class="post-type-option">
+                            <input asp-for="PostType" type="radio" value="0" />
+                            <span class="post-type-icon">📝</span>
+                            <div class="post-type-title">Giới Thiệu</div>
+                            <div class="post-type-desc">Giới thiệu chi tiết về dự án</div>
+                        </label>
+                        <label class="post-type-option">
+                            <input asp-for="PostType" type="radio" value="1" checked />
+                            <span class="post-type-icon">🔄</span>
+                            <div class="post-type-title">Cập Nhật</div>
+                            <div class="post-type-desc">Cập nhật tiến độ dự án</div>
+                        </label>
+                        <label class="post-type-option">
+                            <input asp-for="PostType" type="radio" value="2" />
+                            <span class="post-type-icon">🏆</span>
+                            <div class="post-type-title">Thành Tựu</div>
+                            <div class="post-type-desc">Thành tựu đã đạt được</div>
+                        </label>
+                        <label class="post-type-option">
+                            <input asp-for="PostType" type="radio" value="3" />
+                            <span class="post-type-icon">📢</span>
+                            <div class="post-type-title">Thông Báo</div>
+                            <div class="post-type-desc">Thông báo quan trọng</div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Title" class="form-label">
+                        <i class="fas fa-heading"></i> Tiêu Đề <span class="required">*</span>
+                    </label>
+                    <input asp-for="Title" class="form-control" placeholder="VD: Chính thức Mở bán Công khai (IDO) Project Astra!" />
+                    <span asp-validation-for="Title" class="text-danger">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Content" class="form-label">
+                        <i class="fas fa-edit"></i> Nội Dung <span class="required">*</span>
+                    </label>
+                    <div class="editor-container">
+                        <textarea asp-for="Content" id="tinymce-editor"></textarea>
+                    </div>
+                    <span asp-validation-for="Content" class="text-danger">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="ImageUrl" class="form-label">
+                        <i class="fas fa-image"></i> URL Hình Ảnh Đại Diện
+                    </label>
+                    <input asp-for="ImageUrl" type="url" class="form-control" placeholder="https://example.com/featured-image.jpg" />
+                    <span asp-validation-for="ImageUrl" class="text-danger">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Tags" class="form-label">
+                        <i class="fas fa-tags"></i> Tags (Phân cách bằng dấu phẩy)
+                    </label>
+                    <input asp-for="Tags" class="form-control" placeholder="blockchain, startup, technology, IDO, crypto" />
+                    <span asp-validation-for="Tags" class="text-danger">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </span>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-group">
+                        <input asp-for="IsFeatured" type="checkbox" />
+                        <span>
+                            <i class="fas fa-star"></i>
+                            Đánh dấu là bài viết nổi bật
+                            <small style="display: block; color: var(--text-muted); margin-top: 5px;">
+                                Bài viết nổi bật sẽ được hiển thị ưu tiên trên trang chủ
+                            </small>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <a href="@Url.Action("Details", new { id = campaign?.Id })" class="btn-wizard btn-secondary-wizard">
+                    <i class="fas fa-arrow-left"></i> Quay Lại
+                </a>
+                <button type="submit" class="btn-wizard btn-primary-wizard" id="submitBtn">
+                    <i class="fas fa-paper-plane"></i> Đăng Bài & Gửi Duyệt
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <!-- TinyMCE Editor -->
+    <script src="https://cdn.jsdelivr.net/npm/tinymce@7.1.0/tinymce.min.js" referrerpolicy="origin"></script>
+
+    <script>
+        // Initialize TinyMCE with Vietnamese language and better configuration
+        tinymce.init({
+            selector: '#tinymce-editor',
+            height: 500,
+            language: 'vi',
+            menubar: 'file edit view insert format tools table help',
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'media', 'table', 'help', 'wordcount', 'emoticons',
+                'codesample', 'hr', 'pagebreak', 'nonbreaking', 'toc'
+            ],
+            toolbar: 'undo redo | styles | bold italic underline strikethrough | ' +
+                    'alignleft aligncenter alignright alignjustify | ' +
+                    'bullist numlist outdent indent | ' +
+                    'link image media table | ' +
+                    'forecolor backcolor | ' +
+                    'emoticons charmap | ' +
+                    'codesample | ' +
+                    'preview code | ' +
+                    'fullscreen help',
+
+            // Content styling for dark theme
+            content_style: `
+                body {
+                    font-family: 'Poppins', Arial, sans-serif;
+                    font-size: 16px;
+                    line-height: 1.6;
+                    background-color: #0a0e1a;
+                    color: #e0e0e0;
+                    margin: 20px;
+                }
+                h1, h2, h3, h4, h5, h6 {
+                    color: #ffffff;
+                    margin-top: 20px;
+                    margin-bottom: 10px;
+                }
+                p {
+                    margin-bottom: 15px;
+                }
+                a {
+                    color: #00aaff;
+                }
+                blockquote {
+                    border-left: 4px solid #00aaff;
+                    margin: 20px 0;
+                    padding-left: 20px;
+                    color: #8a93b3;
+                    font-style: italic;
+                }
+                code {
+                    background-color: #12182b;
+                    color: #00aaff;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                }
+                pre {
+                    background-color: #12182b;
+                    border: 1px solid #272c44;
+                    border-radius: 8px;
+                    padding: 15px;
+                    overflow-x: auto;
+                }
+            `,
+
+            skin: 'oxide-dark',
+            content_css: 'dark',
+
+            // Placeholder text
+            placeholder: 'Viết nội dung bài viết tại đây...\n\nMột số gợi ý:\n• Giới thiệu về dự án và tầm nhìn\n• Mục tiêu và kế hoạch sử dụng vốn\n• Đội ngũ phát triển và kinh nghiệm\n• Lộ trình phát triển chi tiết\n• Các thành tựu đã đạt được',
+
+            // Enhanced configuration
+            branding: false,
+            promotion: false,
+            resize: true,
+            statusbar: true,
+
+            // Image upload (nếu cần)
+            automatic_uploads: false,
+            images_upload_url: false,
+
+            // Content filtering
+            paste_data_images: true,
+            paste_as_text: false,
+
+            // Advanced settings
+            verify_html: false,
+            cleanup: true,
+            convert_urls: false,
+
+            // Custom formats
+            style_formats: [
+                {
+                    title: 'Tiêu đề lớn',
+                    block: 'h1'
+                },
+                {
+                    title: 'Tiêu đề phụ',
+                    block: 'h2'
+                },
+                {
+                    title: 'Tiêu đề nhỏ',
+                    block: 'h3'
+                },
+                {
+                    title: 'Đoạn văn',
+                    block: 'p'
+                },
+                {
+                    title: 'Trích dẫn',
+                    block: 'blockquote'
+                },
+                {
+                    title: 'Code inline',
+                    inline: 'code'
+                }
+            ],
+
+            // File browser callback for images
+            file_picker_callback: function(callback, value, meta) {
+                if (meta.filetype === 'image') {
+                    var input = document.createElement('input');
+                    input.setAttribute('type', 'file');
+                    input.setAttribute('accept', 'image/*');
+
+                    input.onchange = function() {
+                        var file = this.files[0];
+                        var reader = new FileReader();
+
+                        reader.onload = function() {
+                            var id = 'blobid' + (new Date()).getTime();
+                            var blobCache = tinymce.activeEditor.editorUpload.blobCache;
+                            var base64 = reader.result.split(',')[1];
+                            var blobInfo = blobCache.create(id, file, base64);
+                            blobCache.add(blobInfo);
+
+                            callback(blobInfo.blobUri(), { title: file.name });
+                        };
+                        reader.readAsDataURL(file);
+                    };
+
+                    input.click();
+                }
+            },
+
+            // Setup callback
+            setup: function(editor) {
+                editor.on('init', function() {
+                    console.log('TinyMCE editor đã được khởi tạo thành công');
+                });
+
+                editor.on('change', function() {
+                    editor.save();
+                });
+            }
+        });
+
+        // Post type selection
+        document.querySelectorAll('.post-type-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.post-type-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                const radio = this.querySelector('input[type="radio"]');
+                if (radio) radio.checked = true;
+            });
+        });
+
+        // Initialize selected state
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkedRadio = document.querySelector('input[name="PostType"]:checked');
+            if (checkedRadio) {
+                checkedRadio.closest('.post-type-option').classList.add('selected');
+            }
+
+            // Form submission handling
+            const form = document.getElementById('postForm');
+            const submitBtn = document.getElementById('submitBtn');
+
+            form.addEventListener('submit', function(e) {
+                // Get content from TinyMCE and validate
+                tinymce.triggerSave();
+
+                const content = tinymce.get('tinymce-editor').getContent();
+                if (!content || content.trim() === '') {
+                    e.preventDefault();
+                    alert('Vui lòng nhập nội dung bài viết!');
+                    return false;
+                }
+
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang Đăng Bài...';
+                submitBtn.disabled = true;
+            });
+        });
+    </script>
+}

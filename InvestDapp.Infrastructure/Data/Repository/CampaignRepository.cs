@@ -1,5 +1,4 @@
-﻿
-using InvestDapp.Infrastructure.Data.interfaces;
+﻿using InvestDapp.Infrastructure.Data.interfaces;
 using InvestDapp.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,7 +18,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
             var campaigns = await _context.Campaigns
                 .Include(c => c.category)
                 .Include(c => c.Investments)
-                .Include(c => c.WithdrawalRequests) 
+                .Include(c => c.WithdrawalRequests)
                 .Include(c => c.Profits)
                 .Include(c => c.Refund) // Bao gồm Refund nếu cần
                 .ToListAsync();
@@ -31,7 +30,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
             var campaign = await _context.Campaigns
                 .Include(c => c.category)
                 .Include(c => c.Investments)
-                .Include(c => c.WithdrawalRequests) 
+                .Include(c => c.WithdrawalRequests)
                 .Include(c => c.Profits)
                 .Include(c => c.Refund) // Bao gồm Refund nếu cần
                 .FirstOrDefaultAsync(c => c.Id == id);
@@ -63,7 +62,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
             var updated = await _context.Campaigns
                 .Include(c => c.category)
                 .Include(c => c.Investments)
-                .Include(c => c.WithdrawalRequests) 
+                .Include(c => c.WithdrawalRequests)
                 .Include(c => c.Profits)
                 .Include(c => c.Refund)
                 .FirstOrDefaultAsync(c => c.Id == campaign.Id);
@@ -71,5 +70,21 @@ namespace InvestDapp.Infrastructure.Data.Repository
             return updated!;
         }
 
+        public async Task<Campaign> CreateCampaignAsync(Campaign campaign)
+        {
+            _context.Campaigns.Add(campaign);
+            await _context.SaveChangesAsync();
+            return campaign;
+        }
+
+        public async Task<IEnumerable<Campaign>> GetCampaignsByOwnerAsync(string ownerAddress)
+        {
+            return await _context.Campaigns
+                .Include(c => c.category)
+                .Include(c => c.Posts)
+                .Where(c => c.OwnerAddress.ToLower() == ownerAddress.ToLower())
+                .OrderByDescending(c => c.CreatedAt)
+                .ToListAsync();
+        }
     }
 }

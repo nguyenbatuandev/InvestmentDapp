@@ -1,0 +1,596 @@
+﻿@model InvestDapp.Models.Campaign
+@{
+    ViewData["Title"] = Model.Name;
+    Layout = "~/Pages/_Layout.cshtml";
+}
+
+@section Styles {
+    <style>
+        /* --- BIẾN MÀU SẮC --- */
+        :root {
+            --bg-dark: #0a0e1a;
+            --bg-light: #12182b;
+            --primary: #00aaff;
+            --primary-light: #00c6ff;
+            --secondary: #272c44;
+            --text-color: #e0e0e0;
+            --text-muted: #8a93b3;
+            --success: #00d4aa;
+            --warning: #ffb800;
+            --danger: #ff6b6b;
+            --gradient: linear-gradient(135deg, var(--primary), var(--primary-light));
+        }
+
+        .campaign-details-container {
+            max-width: 1200px;
+            margin: 120px auto 60px;
+            padding: 0 20px;
+        }
+
+        .campaign-hero {
+            background: var(--gradient);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .campaign-hero::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+                background-size: 20px 20px;
+                animation: float 20s infinite linear;
+            }
+
+        @@keyframes float {
+            0% {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+
+            100% {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .campaign-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .campaign-short-desc {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .campaign-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .status-pending {
+            background: rgba(255, 184, 0, 0.2);
+            color: #ffb800;
+            border: 1px solid rgba(255, 184, 0, 0.3);
+        }
+
+        .status-approved {
+            background: rgba(0, 212, 170, 0.2);
+            color: #00d4aa;
+            border: 1px solid rgba(0, 212, 170, 0.3);
+        }
+
+        .status-rejected {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        .campaign-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--bg-light);
+            border: 1px solid var(--secondary);
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+            .stat-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 25px rgba(0, 170, 255, 0.1);
+            }
+
+        .stat-icon {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .campaign-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 40px;
+        }
+
+        .main-content {
+            background: var(--bg-light);
+            border: 1px solid var(--secondary);
+            border-radius: 16px;
+            padding: 30px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .sidebar-card {
+            background: var(--bg-light);
+            border: 1px solid var(--secondary);
+            border-radius: 16px;
+            padding: 25px;
+        }
+
+        .description-section h3 {
+            color: var(--primary);
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .description-content {
+            color: var(--text-color);
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+
+        .campaign-image {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .owner-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: var(--bg-dark);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .owner-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .owner-details h4 {
+            color: var(--text-color);
+            margin-bottom: 5px;
+        }
+
+        .owner-address {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-family: monospace;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .btn-action {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary-action {
+            background: var(--gradient);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 170, 255, 0.3);
+        }
+
+            .btn-primary-action:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 25px rgba(0, 170, 255, 0.4);
+            }
+
+        .btn-secondary-action {
+            background: var(--secondary);
+            color: var(--text-color);
+            border: 2px solid var(--secondary);
+        }
+
+            .btn-secondary-action:hover {
+                background: transparent;
+                border-color: var(--primary);
+                color: var(--primary);
+            }
+
+        .progress-section {
+            margin: 30px 0;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 12px;
+            background: var(--secondary);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient);
+            border-radius: 6px;
+            transition: width 0.8s ease;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .timeline {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .time-left {
+            color: var(--warning);
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @@media (max-width: 768px) {
+            .campaign-content {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+
+            .campaign-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .campaign-title {
+                font-size: 2rem;
+            }
+
+            .campaign-hero {
+                padding: 25px;
+            }
+        }
+
+        /* Animation */
+        .campaign-details-container > * {
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        @@keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+}
+
+<div class="campaign-details-container">
+    <!-- Campaign Hero Section -->
+    <div class="campaign-hero">
+        <div class="hero-content">
+            <h1 class="campaign-title">@Model.Name</h1>
+            <p class="campaign-short-desc">@Model.ShortDescription</p>
+
+            @switch (Model.ApprovalStatus)
+            {
+                case InvestDapp.Shared.Enums.ApprovalStatus.Pending:
+                    <span class="campaign-status status-pending">
+                        <i class="fas fa-clock"></i> Chờ Duyệt
+                    </span>
+                    break;
+                case InvestDapp.Shared.Enums.ApprovalStatus.Approved:
+                    <span class="campaign-status status-approved">
+                        <i class="fas fa-check-circle"></i> Đã Duyệt
+                    </span>
+                    break;
+                case InvestDapp.Shared.Enums.ApprovalStatus.Rejected:
+                    <span class="campaign-status status-rejected">
+                        <i class="fas fa-times-circle"></i> Đã Từ Chối
+                    </span>
+                    break;
+            }
+        </div>
+    </div>
+
+    <!-- Campaign Statistics -->
+    <div class="campaign-stats">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-coins"></i>
+            </div>
+            <div class="stat-value">@Model.GoalAmount BNB</div>
+            <div class="stat-label">Mục Tiêu</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-value">@Model.CurrentRaisedAmount BNB</div>
+            <div class="stat-label">Đã Huy Động</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-value">@Model.InvestorCount</div>
+            <div class="stat-label">Nhà Đầu Tư</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="stat-value">@((Model.EndTime - DateTime.UtcNow).Days)</div>
+            <div class="stat-label">Ngày Còn Lại</div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="campaign-content">
+        <div class="main-content">
+            <div class="description-section">
+                <h3>
+                    <i class="fas fa-file-alt"></i>
+                    Mô Tả Chi Tiết
+                </h3>
+                <div class="description-content">
+                    @Html.Raw(Model.Description?.Replace("\n", "<br/>"))
+                </div>
+            </div>
+
+            @if (Model.Posts?.Any() == true)
+            {
+                <div class="progress-section">
+                    <h3>
+                        <i class="fas fa-newspaper"></i>
+                        Bài Viết Mới Nhất
+                    </h3>
+                    @foreach (var post in Model.Posts.Take(3).OrderByDescending(p => p.CreatedAt))
+                    {
+                        <div style="padding: 15px; margin-bottom: 15px; background: var(--bg-dark); border-radius: 8px;">
+                            <h4 style="color: var(--primary); margin-bottom: 8px;">
+                                <a href="@Url.Action("PostDetails", new { id = post.Id })" style="text-decoration: none; color: inherit;">
+                                    @post.Title
+                                </a>
+                            </h4>
+                            <p style="color: var(--text-muted); font-size: 0.9rem;">
+                                @post.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                            </p>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="sidebar">
+            <!-- Progress Card -->
+            <div class="sidebar-card">
+                <div class="progress-section">
+                    <div class="progress-header">
+                        <span style="font-weight: 600; color: var(--text-color);">Tiến Độ</span>
+                        <span style="color: var(--primary); font-weight: 600;">
+                            @(Model.GoalAmount > 0 ? (Model.CurrentRaisedAmount / Model.GoalAmount * 100).ToString("F1") : "0")%
+                        </span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: @(Model.GoalAmount > 0 ? (Model.CurrentRaisedAmount / Model.GoalAmount * 100) : 0)%"></div>
+                    </div>
+                    <div class="progress-info">
+                        <span>@Model.CurrentRaisedAmount BNB</span>
+                        <span>@Model.GoalAmount BNB</span>
+                    </div>
+                </div>
+
+                <div class="timeline">
+                    <i class="fas fa-clock"></i>
+                    <span>Kết thúc:</span>
+                    <span class="time-left">@Model.EndTime.ToString("dd/MM/yyyy HH:mm")</span>
+                </div>
+            </div>
+
+            <!-- Owner Info Card -->
+            <div class="sidebar-card">
+                <h4 style="color: var(--primary); margin-bottom: 15px;">
+                    <i class="fas fa-user-circle"></i> Người Tạo
+                </h4>
+                <div class="owner-info">
+                    <div class="owner-avatar">
+                        @Model.OwnerAddress?.Substring(0, 2).ToUpper()
+                    </div>
+                    <div class="owner-details">
+                        <h4>Chủ Dự Án</h4>
+                        <div class="owner-address">@Model.OwnerAddress</div>
+                    </div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.ImageUrl))
+            {
+                <div class="sidebar-card">
+                    <h4 style="color: var(--primary); margin-bottom: 15px;">
+                        <i class="fas fa-image"></i> Hình Ảnh
+                    </h4>
+                    <img src="@Model.ImageUrl" alt="@Model.Name" class="campaign-image" />
+                </div>
+            }
+
+            <!-- Action Buttons -->
+            <div class="sidebar-card">
+                <div class="action-buttons">
+                    @{
+                        var currentUserWallet = User.FindFirst("WalletAddress")?.Value;
+                        var isOwner = currentUserWallet == Model.OwnerAddress;
+                        var hasExistingPosts = Model.Posts?.Any() ?? false;
+
+                        var canCreatePost = false;
+                        if (isOwner)
+                        {
+                            if (!hasExistingPosts)
+                            {
+                                // Chưa có bài viết nào, có thể tạo bài viết đầu tiên
+                                canCreatePost = true;
+                            }
+                            else if (Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
+                            {
+                                // Đã có bài viết và campaign đã được approve, có thể tạo thêm
+                                canCreatePost = true;
+                            }
+                        }
+                    }
+
+                    @if (isOwner)
+                    {
+                        <a href="@Url.Action("Posts", new { campaignId = Model.Id })" class="btn-action btn-primary-action">
+                            <i class="fas fa-newspaper"></i>
+                            Quản Lý Bài Viết
+                        </a>
+
+                        @if (canCreatePost)
+                        {
+                            <a href="@Url.Action("CreatePost", new { campaignId = Model.Id })" class="btn-action btn-secondary-action">
+                                <i class="fas fa-plus"></i>
+                                @if (!hasExistingPosts)
+                                {
+                                    <text>Tạo Bài Viết Đầu Tiên</text>
+                                }
+                                else
+                                {
+                                    <text>Tạo Bài Viết Mới</text>
+                                }
+                            </a>
+                        }
+                        else if (Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Pending && hasExistingPosts)
+                        {
+                            <span class="btn-action btn-secondary-action" style="cursor: not-allowed; opacity: 0.6;">
+                                <i class="fas fa-clock"></i>
+                                Chờ Duyệt Chiến Dịch
+                            </span>
+                        }
+                    }
+                    else if (Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
+                    {
+                        <button class="btn-action btn-primary-action" onclick="investInCampaign(@Model.Id)">
+                            <i class="fas fa-dollar-sign"></i>
+                            Đầu Tư Ngay
+                        </button>
+                    }
+
+                    <a href="@Url.Action("Posts", new { campaignId = Model.Id })" class="btn-action btn-secondary-action">
+                        <i class="fas fa-eye"></i>
+                        Xem Tất Cả Bài Viết
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function investInCampaign(campaignId) {
+            // Placeholder for investment functionality
+            alert('Tính năng đầu tư sẽ được phát triển trong tương lai!');
+        }
+
+        // Add animation delays for staggered effect
+        document.addEventListener('DOMContentLoaded', function() {
+            const elements = document.querySelectorAll('.campaign-details-container > *');
+            elements.forEach((element, index) => {
+                element.style.animationDelay = `${index * 0.1}s`;
+            });
+        });
+    </script>
+}

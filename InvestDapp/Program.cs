@@ -1,5 +1,6 @@
 ﻿using Invest.Application.EventService;
 using InvestDapp.Application.AuthService;
+using InvestDapp.Application.CampaignService;
 using InvestDapp.Application.KycService;
 using InvestDapp.Application.MessageService;
 using InvestDapp.Application.UserService;
@@ -52,7 +53,9 @@ builder.Services.AddScoped<IUserConnectionManager, UserConnectionManager>();
 builder.Services.AddScoped<IKyc, KycRepository>();
 builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
-// Đăng ký CampaignEventService
+builder.Services.AddScoped<ICampaignPostRepository, CampaignPostRepository>();
+builder.Services.AddScoped<ICampaignPostService, CampaignPostService>();
+builder.Services.AddScoped<ICampaign, CampaignRepository>();
 builder.Services.AddScoped<CampaignEventService>();
 builder.Services.AddSignalR(options =>
 {

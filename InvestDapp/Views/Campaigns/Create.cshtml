@@ -1,0 +1,706 @@
+﻿@model InvestDapp.Shared.Common.Request.CreateCampaignRequest
+@{
+    ViewData["Title"] = "Tạo Chiến Dịch Mới";
+    Layout = "~/Pages/_Layout.cshtml";
+}
+
+@section Styles {
+    <style>
+        /* --- BIẾN MÀU SẮC --- */
+        :root {
+            --bg-dark: #0a0e1a;
+            --bg-light: #12182b;
+            --primary: #00aaff;
+            --primary-light: #00c6ff;
+            --secondary: #272c44;
+            --text-color: #e0e0e0;
+            --text-muted: #8a93b3;
+            --success: #00d4aa;
+            --warning: #ffb800;
+            --danger: #ff6b6b;
+        }
+
+        .campaign-wizard-container {
+            max-width: 900px;
+            margin: 120px auto 60px;
+            padding: 0;
+        }
+
+        /* Progress Steps */
+        .wizard-steps {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 40px;
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--secondary);
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+            .step.active {
+                color: var(--primary);
+            }
+
+            .step.completed {
+                color: var(--success);
+            }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--secondary);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .step.active .step-number {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 0 20px rgba(0, 170, 255, 0.4);
+        }
+
+        .step.completed .step-number {
+            background: var(--success);
+            color: white;
+        }
+
+        .step-connector {
+            width: 80px;
+            height: 2px;
+            background: var(--secondary);
+            margin: 0 20px;
+        }
+
+        .step.completed + .step-connector {
+            background: var(--success);
+        }
+
+        /* Main Form Container */
+        .form-container {
+            background: var(--bg-light);
+            border-radius: 20px;
+            border: 1px solid var(--secondary);
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+            .form-header h2 {
+                font-size: 2rem;
+                margin-bottom: 10px;
+                font-weight: 700;
+            }
+
+            .form-header p {
+                opacity: 0.9;
+                font-size: 1.1rem;
+            }
+
+        .form-body {
+            padding: 40px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+            .form-group.full-width {
+                grid-column: 1 / -1;
+            }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 0.95rem;
+        }
+
+        .required {
+            color: var(--danger);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 15px 18px;
+            background: var(--bg-dark);
+            border: 2px solid var(--secondary);
+            border-radius: 12px;
+            color: var(--text-color);
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+            .form-control:focus {
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 20px rgba(0, 170, 255, 0.2);
+                transform: translateY(-1px);
+            }
+
+            .form-control:hover {
+                border-color: var(--primary-light);
+            }
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .char-counter {
+            text-align: right;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .input-group .form-control {
+            padding-left: 45px;
+        }
+
+        .form-actions {
+            background: var(--bg-dark);
+            padding: 30px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-wizard {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary-wizard {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 170, 255, 0.3);
+        }
+
+            .btn-primary-wizard:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 25px rgba(0, 170, 255, 0.4);
+            }
+
+        .btn-secondary-wizard {
+            background: var(--secondary);
+            color: var(--text-color);
+            border: 2px solid var(--secondary);
+        }
+
+            .btn-secondary-wizard:hover {
+                background: transparent;
+                border-color: var(--primary);
+                color: var(--primary);
+            }
+
+        .text-danger {
+            color: var(--danger);
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border-left: 4px solid;
+        }
+
+        .alert-danger {
+            background: rgba(255, 107, 107, 0.1);
+            border-left-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .form-tips {
+            background: rgba(0, 170, 255, 0.1);
+            border: 1px solid rgba(0, 170, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+            .form-tips h4 {
+                color: var(--primary);
+                margin-bottom: 10px;
+                font-size: 1.1rem;
+            }
+
+            .form-tips ul {
+                margin: 0;
+                padding-left: 20px;
+                color: var(--text-muted);
+            }
+
+            .form-tips li {
+                margin-bottom: 5px;
+            }
+
+        /* Responsive */
+        @@media (max-width: 768px) {
+            .wizard-steps {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .step-connector {
+                width: 2px;
+                height: 30px;
+                margin: 10px 0;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .form-header h2 {
+                font-size: 1.5rem;
+            }
+
+            .form-body,
+            .form-actions {
+                padding: 20px;
+            }
+
+            .form-actions {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .btn-wizard {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Animation */
+        .form-container {
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        @@keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+}
+
+<div class="campaign-wizard-container">
+    <div class="wizard-steps">
+        <div class="step active">
+            <div class="step-number">1</div>
+            <span>Tạo Chiến Dịch</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step">
+            <div class="step-number">2</div>
+            <span>Tạo Bài Viết</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step">
+            <div class="step-number">3</div>
+            <span>Chờ Duyệt</span>
+        </div>
+    </div>
+
+    <div class="form-container">
+        <div class="form-header">
+            <h2><i class="fas fa-rocket"></i> Tạo Chiến Dịch Huy Động Vốn</h2>
+            <p>Bước đầu tiên để biến ý tưởng của bạn thành hiện thực</p>
+        </div>
+
+        <form asp-action="Create" method="post" id="campaignForm">
+            @Html.AntiForgeryToken()
+
+            <div class="form-body">
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Vui lòng sửa các lỗi sau:</strong>
+                        <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                            {
+                                <li>@error.ErrorMessage</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                @if (ViewData["Error"] != null)
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Đã xảy ra lỗi khi tạo chiến dịch. Vui lòng thử lại.</strong>
+                            <strong>@TempData["ErrorMessage"]</strong>
+                        </div>
+                    }
+
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success" style="background: rgba(0, 212, 170, 0.1); border-left-color: var(--success); color: var(--success);">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>@TempData["SuccessMessage"]</strong>
+                    </div>
+                }
+
+                <div class="form-tips">
+                    <h4><i class="fas fa-lightbulb"></i> Mẹo để tạo chiến dịch thành công:</h4>
+                    <ul>
+                        <li>Tên chiến dịch ngắn gọn, dễ nhớ và thể hiện được giá trị cốt lõi</li>
+                        <li>Mô tả ngắn phải thu hút và tạo được ấn tượng mạnh ngay từ đầu</li>
+                        <li>Mục tiêu huy động vốn cần thực tế và có căn cứ rõ ràng</li>
+                        <li>Thời gian kết thúc nên đủ dài để thu hút nhà đầu tư nhưng tạo tính cấp thiết</li>
+                    </ul>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Name" class="form-label">
+                        <i class="fas fa-tag"></i> Tên Chiến Dịch <span class="required">*</span>
+                    </label>
+                    <div class="input-group">
+                        <i class="input-icon fas fa-rocket"></i>
+                        <input asp-for="Name" class="form-control" placeholder="VD: Project Astra - Cách mạng hóa điện toán đám mây" maxlength="100" />
+                    </div>
+                    <span asp-validation-for="Name" class="text-danger">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="ShortDescription" class="form-label">
+                        <i class="fas fa-align-left"></i> Mô Tả Ngắn <span class="required">*</span>
+                    </label>
+                    <textarea asp-for="ShortDescription" class="form-control" rows="3" placeholder="Mô tả ngắn gọn, hấp dẫn về dự án của bạn (tối đa 500 ký tự)" maxlength="500" oninput="updateCharCount(this, 500)"></textarea>
+                    <div class="char-counter">
+                        <span id="shortDescCount">0</span>/500 ký tự
+                    </div>
+                    <span asp-validation-for="ShortDescription" class="text-danger">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Description" class="form-label">
+                        <i class="fas fa-file-alt"></i> Mô Tả Chi Tiết <span class="required">*</span>
+                    </label>
+                    <textarea asp-for="Description" class="form-control" rows="8" placeholder="Mô tả chi tiết về dự án, mục tiêu, kế hoạch sử dụng vốn, đội ngũ thực hiện..." oninput="updateCharCount(this, 2000)"></textarea>
+                    <div class="char-counter">
+                        <span id="descCount">0</span>/2000 ký tự khuyến nghị
+                    </div>
+                    <span asp-validation-for="Description" class="text-danger">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label asp-for="GoalAmount" class="form-label">
+                            <i class="fas fa-coins"></i> Mục Tiêu Huy Động (BNB) <span class="required">*</span>
+                        </label>
+                        <div class="input-group">
+                            <i class="input-icon fab fa-bitcoin"></i>
+                            <input asp-for="GoalAmount" type="number" step="0.1" min="0.1" class="form-control" placeholder="0.0" />
+                        </div>
+                        <span asp-validation-for="GoalAmount" class="text-danger">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="EndTime" class="form-label">
+                            <i class="fas fa-calendar-alt"></i> Thời Gian Kết Thúc <span class="required">*</span>
+                        </label>
+                        <div class="input-group">
+                            <i class="input-icon fas fa-clock"></i>
+                            <input asp-for="EndTime" type="datetime-local" class="form-control" />
+                        </div>
+                        <span asp-validation-for="EndTime" class="text-danger">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="ImageUrl" class="form-label">
+                        <i class="fas fa-image"></i> URL Hình Ảnh Đại Diện
+                    </label>
+                    <div class="input-group">
+                        <i class="input-icon fas fa-link"></i>
+                        <input asp-for="ImageUrl" type="url" class="form-control" placeholder="https://example.com/image.jpg" />
+                    </div>
+                    <span asp-validation-for="ImageUrl" class="text-danger">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </span>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <a href="/" class="btn-wizard btn-secondary-wizard">
+                    <i class="fas fa-arrow-left"></i> Quay Lại
+                </a>
+                <button type="submit" class="btn-wizard btn-primary-wizard" id="submitBtn">
+                    <i class="fas fa-arrow-right"></i> Tạo Chiến Dịch & Tiếp Theo
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        // Character counter function
+        function updateCharCount(textarea, maxLength = null) {
+            const current = textarea.value.length;
+            const countElement = document.getElementById(textarea.name === 'ShortDescription' ? 'shortDescCount' : 'descCount');
+            if (countElement) {
+                countElement.textContent = current;
+                if (maxLength && current > maxLength) {
+                    countElement.style.color = 'var(--danger)';
+                } else {
+                    countElement.style.color = 'var(--text-muted)';
+                }
+            }
+        }
+
+        // Validation functions
+        function validateForm() {
+            let isValid = true;
+            const errors = [];
+
+            // Validate name
+            const name = document.querySelector('input[name="Name"]').value.trim();
+            if (!name) {
+                errors.push('Tên chiến dịch là bắt buộc');
+                isValid = false;
+            } else if (name.length > 200) {
+                errors.push('Tên chiến dịch không được vượt quá 200 ký tự');
+                isValid = false;
+            }
+
+            // Validate short description
+            const shortDesc = document.querySelector('textarea[name="ShortDescription"]').value.trim();
+            if (!shortDesc) {
+                errors.push('Mô tả ngắn là bắt buộc');
+                isValid = false;
+            } else if (shortDesc.length > 500) {
+                errors.push('Mô tả ngắn không được vượt quá 500 ký tự');
+                isValid = false;
+            }
+
+            // Validate description
+            const desc = document.querySelector('textarea[name="Description"]').value.trim();
+            if (!desc) {
+                errors.push('Mô tả chi tiết là bắt buộc');
+                isValid = false;
+            }
+
+            // Validate goal amount
+            const goalAmount = parseFloat(document.querySelector('input[name="GoalAmount"]').value);
+            if (!goalAmount || goalAmount <= 0) {
+                errors.push('Mục tiêu huy động phải lớn hơn 0');
+                isValid = false;
+            }
+
+            // Validate end time
+            const endTime = new Date(document.querySelector('input[name="EndTime"]').value);
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            if (!endTime || endTime <= tomorrow) {
+                errors.push('Thời gian kết thúc phải sau ít nhất 1 ngày từ bây giờ');
+                isValid = false;
+            }
+
+            // Validate image URL if provided
+            const imageUrl = document.querySelector('input[name="ImageUrl"]').value.trim();
+            if (imageUrl) {
+                try {
+                    const url = new URL(imageUrl);
+                    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+                        errors.push('URL hình ảnh phải bắt đầu bằng http:// hoặc https://');
+                        isValid = false;
+                    }
+                } catch {
+                    errors.push('URL hình ảnh không hợp lệ');
+                    isValid = false;
+                }
+            }
+
+            return { isValid, errors };
+        }
+
+        function showClientValidationErrors(errors) {
+            // Remove existing error display
+            const existingAlert = document.querySelector('.client-validation-alert');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+
+            if (errors.length > 0) {
+                const alertHtml = `
+                    <div class="alert alert-danger client-validation-alert" style="margin-bottom: 25px;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Vui lòng sửa các lỗi sau:</strong>
+                        <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                            ${errors.map(error => `<li>${error}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+
+                const formBody = document.querySelector('.form-body');
+                formBody.insertAdjacentHTML('afterbegin', alertHtml);
+
+                // Scroll to top of form to show errors
+                document.querySelector('.form-container').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            const shortDesc = document.querySelector('textarea[name="ShortDescription"]');
+            const desc = document.querySelector('textarea[name="Description"]');
+
+            if (shortDesc) {
+                updateCharCount(shortDesc, 500);
+            }
+            if (desc) {
+                updateCharCount(desc, 2000);
+            }
+
+            // Set minimum date for EndTime to tomorrow
+            const endTimeInput = document.querySelector('input[name="EndTime"]');
+            if (endTimeInput) {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                endTimeInput.min = tomorrow.toISOString().slice(0, 16);
+            }
+
+            // Form submission with validation
+            const form = document.getElementById('campaignForm');
+            const submitBtn = document.getElementById('submitBtn');
+
+            form.addEventListener('submit', function(e) {
+                // Remove any existing client validation errors
+                const existingAlert = document.querySelector('.client-validation-alert');
+                if (existingAlert) {
+                    existingAlert.remove();
+                }
+
+                // Validate form
+                const validation = validateForm();
+
+                if (!validation.isValid) {
+                    e.preventDefault();
+                    showClientValidationErrors(validation.errors);
+                    return false;
+                }
+
+                // If validation passes, show loading state
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang Tạo Chiến Dịch...';
+                submitBtn.disabled = true;
+            });
+
+            // Auto-resize textareas
+            document.querySelectorAll('textarea').forEach(textarea => {
+                textarea.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = (this.scrollHeight) + 'px';
+                });
+            });
+
+            // Real-time validation feedback
+            const inputs = document.querySelectorAll('input, textarea');
+
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    // Remove existing validation styling
+                    this.classList.remove('border-success', 'border-danger');
+
+                    // Add validation styling based on validity
+                    if (this.value.trim()) {
+                        if (this.checkValidity()) {
+                            this.style.borderColor = 'var(--success)';
+                        } else {
+                            this.style.borderColor = 'var(--danger)';
+                        }
+                    } else {
+                        this.style.borderColor = 'var(--secondary)';
+                    }
+                });
+
+                input.addEventListener('focus', function() {
+                    this.style.borderColor = 'var(--primary)';
+                });
+            });
+        });
+    </script>
+}

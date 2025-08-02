@@ -14,6 +14,14 @@ namespace InvestDapp.Shared.Enums
         Failed
     }
 
+    // ✅ THÊM ENUM CHO TRẠNG THÁI DUYỆT
+    public enum ApprovalStatus
+    {
+        Pending,    // Chờ duyệt
+        Approved,   // Đã duyệt
+        Rejected    // Bị từ chối
+    }
+
     public enum WithdrawalStatus
     {
         Pending,
@@ -38,5 +46,14 @@ namespace InvestDapp.Shared.Enums
         Text,
         Image,
         File
+    }
+
+    // ✅ THÊM ENUM CHO LOẠI BÀI VIẾT
+    public enum PostType
+    {
+        Introduction,   // Giới thiệu dự án
+        Update,        // Cập nhật tiến độ
+        Achievement,   // Thành tựu đạt được
+        Announcement   // Thông báo quan trọng
     }
 }

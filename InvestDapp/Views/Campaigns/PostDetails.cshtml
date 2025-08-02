@@ -1,0 +1,604 @@
+﻿@model InvestDapp.Shared.Models.CampaignPost
+@{
+    ViewData["Title"] = Model.Title;
+    Layout = "~/Pages/_Layout.cshtml";
+}
+
+@section Styles {
+    <style>
+        /* --- BIẾN MÀU SẮC VÀ THIẾT LẬP CƠ BẢN --- */
+        :root {
+            --bg-dark: #0a0e1a;
+            --bg-light: #12182b;
+            --primary: #00aaff;
+            --primary-light: #00c6ff;
+            --secondary: #272c44;
+            --text-color: #e0e0e0;
+            --text-muted: #8a93b3;
+            --font-body: 'Poppins', sans-serif;
+            --font-data: 'Fira Code', monospace;
+        }
+
+        /* --- THIẾT LẬP CHUNG --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+            line-height: 1.7;
+        }
+
+        a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+            a:hover {
+                color: var(--primary-light);
+            }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* --- BỐ CỤC TRANG CHÍNH --- */
+        .page-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 1rem;
+            margin-top: 100px;
+        }
+
+        /* --- TRANG CHI TIẾT BÀI VIẾT --- */
+        .article-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .article-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .post-type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .post-type-introduction {
+            background: rgba(52, 152, 219, 0.2);
+            color: #3498db;
+        }
+
+        .post-type-update {
+            background: rgba(0, 212, 170, 0.2);
+            color: #00d4aa;
+        }
+
+        .post-type-milestone {
+            background: rgba(255, 184, 0, 0.2);
+            color: #ffb800;
+        }
+
+        .post-type-announcement {
+            background: rgba(155, 89, 182, 0.2);
+            color: #9b59b6;
+        }
+
+        .article-title {
+            font-size: 3rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            color: #fff;
+        }
+
+        .article-header .article-meta {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .author-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .separator {
+            color: var(--secondary);
+        }
+
+        .article-featured-image {
+            margin-bottom: 2rem;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .campaign-info {
+            background: var(--bg-light);
+            border: 1px solid var(--secondary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--primary);
+        }
+
+            .campaign-info h4 {
+                color: var(--primary);
+                margin-bottom: 10px;
+                font-size: 1.1rem;
+            }
+
+        .campaign-link {
+            color: var(--text-color);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+            .campaign-link:hover {
+                color: var(--primary);
+            }
+
+        .article-content {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+            .article-content p,
+            .article-content ul,
+            .article-content ol {
+                margin-bottom: 1.5rem;
+            }
+
+            .article-content h1,
+            .article-content h2,
+            .article-content h3 {
+                color: #fff;
+                margin-top: 2.5rem;
+                margin-bottom: 1rem;
+                border-bottom: 1px solid var(--secondary);
+                padding-bottom: 0.5rem;
+            }
+
+            .article-content h1 {
+                font-size: 2.2rem;
+            }
+
+            .article-content h2 {
+                font-size: 1.8rem;
+            }
+
+            .article-content h3 {
+                font-size: 1.5rem;
+            }
+
+            .article-content ul, .article-content ol {
+                padding-left: 2rem;
+            }
+
+            .article-content blockquote {
+                margin: 2rem 0;
+                padding-left: 1.5rem;
+                border-left: 3px solid var(--primary);
+                color: var(--text-muted);
+                font-style: italic;
+                background: rgba(0, 170, 255, 0.05);
+                padding: 1rem 1rem 1rem 1.5rem;
+                border-radius: 0 8px 8px 0;
+            }
+
+            .article-content pre {
+                background-color: var(--bg-light);
+                border: 1px solid var(--secondary);
+                border-radius: 8px;
+                padding: 1.5rem;
+                overflow-x: auto;
+                font-family: var(--font-data);
+                font-size: 0.9rem;
+                margin: 1.5rem 0;
+            }
+
+            .article-content code {
+                background-color: var(--bg-light);
+                color: var(--primary);
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-family: var(--font-data);
+                font-size: 0.9em;
+            }
+
+            .article-content pre code {
+                background: none;
+                padding: 0;
+                color: var(--text-color);
+            }
+
+            .article-content table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 1.5rem 0;
+                background: var(--bg-light);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+
+            .article-content th,
+            .article-content td {
+                padding: 12px 15px;
+                text-align: left;
+                border-bottom: 1px solid var(--secondary);
+            }
+
+            .article-content th {
+                background: var(--secondary);
+                color: var(--text-color);
+                font-weight: 600;
+            }
+
+        .tags-section {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: var(--bg-light);
+            border-radius: 12px;
+            border: 1px solid var(--secondary);
+        }
+
+        .tags-label {
+            color: var(--text-color);
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .tags-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag {
+            background: rgba(0, 170, 255, 0.2);
+            color: var(--primary);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 1px solid rgba(0, 170, 255, 0.3);
+        }
+
+        .article-footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .share-links span {
+            margin-right: 1rem;
+            color: var(--text-muted);
+        }
+
+        .share-links a {
+            font-size: 1.2rem;
+            margin-right: 1rem;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background-color 0.3s ease;
+        }
+
+            .share-links a:hover {
+                background: var(--bg-light);
+            }
+
+        .back-to-blog {
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--secondary);
+            transition: all 0.3s ease;
+        }
+
+            .back-to-blog:hover {
+                color: var(--primary);
+                border-color: var(--primary);
+            }
+
+        .featured-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255, 184, 0, 0.2);
+            color: #ffb800;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .approval-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-approved {
+            background: rgba(0, 212, 170, 0.2);
+            color: #00d4aa;
+        }
+
+        .status-pending {
+            background: rgba(255, 184, 0, 0.2);
+            color: #ffb800;
+        }
+
+        .status-rejected {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+
+        /* --- RESPONSIVE --- */
+        @@media (max-width: 768px) {
+            .article-title {
+                font-size: 2rem;
+            }
+
+            .article-header .article-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .article-footer {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .tags-section {
+                padding: 1rem;
+            }
+        }
+
+        /* Animation */
+        .article-container {
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        @@keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+}
+
+<main class="page-container">
+    <article class="article-container">
+        <header class="article-header">
+            @switch (Model.PostType)
+            {
+                case InvestDapp.Shared.Enums.PostType.Introduction:
+                    <span class="post-type-badge post-type-introduction">
+                        <i class="fas fa-info-circle"></i> Giới thiệu
+                    </span>
+                    break;
+                case InvestDapp.Shared.Enums.PostType.Update:
+                    <span class="post-type-badge post-type-update">
+                        <i class="fas fa-sync"></i> Cập nhật
+                    </span>
+                    break;
+                case InvestDapp.Shared.Enums.PostType.Achievement:
+                    <span class="post-type-badge post-type-milestone">
+                        <i class="fas fa-trophy"></i> Thành tựu
+                    </span>
+                    break;
+                case InvestDapp.Shared.Enums.PostType.Announcement:
+                    <span class="post-type-badge post-type-announcement">
+                        <i class="fas fa-bullhorn"></i> Thông báo
+                    </span>
+                    break;
+            }
+
+            @if (Model.IsFeatured)
+            {
+                <span class="featured-indicator">
+                    <i class="fas fa-star"></i> Bài viết nổi bật
+                </span>
+            }
+
+            @if (User.IsInRole("Admin") || Model.AuthorAddress == User.FindFirst("WalletAddress")?.Value)
+            {
+                @switch (Model.ApprovalStatus)
+                {
+                    case InvestDapp.Shared.Enums.ApprovalStatus.Approved:
+                        <span class="approval-status status-approved">
+                            <i class="fas fa-check-circle"></i> Đã duyệt
+                        </span>
+                        break;
+                    case InvestDapp.Shared.Enums.ApprovalStatus.Pending:
+                        <span class="approval-status status-pending">
+                            <i class="fas fa-clock"></i> Chờ duyệt
+                        </span>
+                        break;
+                    case InvestDapp.Shared.Enums.ApprovalStatus.Rejected:
+                        <span class="approval-status status-rejected">
+                            <i class="fas fa-times-circle"></i> Đã từ chối
+                        </span>
+                        break;
+                }
+            }
+
+            <h1 class="article-title">@Model.Title</h1>
+
+            <div class="article-meta">
+                <div class="author-avatar">
+                    @Model.AuthorAddress?.Substring(0, 2).ToUpper()
+                </div>
+                <span>Bởi <strong>@Model.AuthorAddress?.Substring(0, 6)...@Model.AuthorAddress?.Substring(Model.AuthorAddress.Length - 4)</strong></span>
+                <span class="separator">|</span>
+                <time datetime="@Model.CreatedAt.ToString("yyyy-MM-dd")">@Model.CreatedAt.ToString("dd MMMM, yyyy", new System.Globalization.CultureInfo("vi-VN"))</time>
+                @if (Model.ViewCount > 0)
+                {
+                    <span class="separator">|</span>
+                    <span><i class="fas fa-eye"></i> @Model.ViewCount lượt xem</span>
+                }
+            </div>
+        </header>
+
+        @if (!string.IsNullOrEmpty(Model.ImageUrl))
+        {
+            <figure class="article-featured-image">
+                <img src="@Model.ImageUrl" alt="@Model.Title" loading="lazy">
+            </figure>
+        }
+
+        @if (Model.Campaign != null)
+        {
+            <div class="campaign-info">
+                <h4><i class="fas fa-rocket"></i> Thuộc chiến dịch</h4>
+                <a href="@Url.Action("Details", new { id = Model.CampaignId })" class="campaign-link">
+                    @Model.Campaign.Name
+                </a>
+                <p style="color: var(--text-muted); margin-top: 5px; margin-bottom: 0;">
+                    Mục tiêu: @Model.Campaign.GoalAmount BNB •
+                    Kết thúc: @Model.Campaign.EndTime.ToString("dd/MM/yyyy")
+                </p>
+            </div>
+        }
+
+        <div class="article-content">
+            @Html.Raw(Model.Content)
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Tags))
+        {
+            <div class="tags-section">
+                <span class="tags-label"><i class="fas fa-tags"></i> Tags:</span>
+                <div class="tags-list">
+                    @foreach (var tag in Model.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        <span class="tag">@tag.Trim()</span>
+                    }
+                </div>
+            </div>
+        }
+
+        <footer class="article-footer">
+            <div class="share-links">
+                <span><i class="fas fa-share-alt"></i> Chia sẻ bài viết:</span>
+                <a href="https://www.facebook.com/sharer/sharer.php?u=@(Context.Request.Scheme)://@(Context.Request.Host)@Url.Action("PostDetails", "Campaign", new { id = Model.Id })" target="_blank" title="Chia sẻ trên Facebook">
+                    <i class="fab fa-facebook"></i>
+                </a>
+                <a href="https://twitter.com/intent/tweet?url=@(Context.Request.Scheme)://@(Context.Request.Host)@Url.Action("PostDetails", "Campaign", new { id = Model.Id })&text=@Model.Title" target="_blank" title="Chia sẻ trên Twitter">
+                    <i class="fab fa-twitter"></i>
+                </a>
+                <a href="#" onclick="copyToClipboard()" title="Sao chép liên kết">
+                    <i class="fas fa-link"></i>
+                </a>
+            </div>
+
+            <a href="@Url.Action("Posts", new { campaignId = Model.CampaignId })" class="back-to-blog">
+                <i class="fas fa-arrow-left"></i>
+                Quay lại trang bài viết
+            </a>
+        </footer>
+    </article>
+</main>
+
+@section Scripts {
+    <script>
+        // Copy link to clipboard
+        function copyToClipboard() {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(function() {
+                // Show a temporary notification
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: var(--primary);
+                    color: white;
+                    padding: 10px 20px;
+                    border-radius: 8px;
+                    z-index: 9999;
+                    animation: slideInRight 0.3s ease-out;
+                `;
+                notification.innerHTML = '<i class="fas fa-check"></i> Đã sao chép liên kết!';
+                document.body.appendChild(notification);
+
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            });
+        }
+
+        // Add CSS for notification animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @@keyframes slideInRight {
+                from {
+                    opacity: 0;
+                    transform: translateX(100%);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Update view count (optional - you can implement this if needed)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Track page view after 5 seconds (to avoid counting quick bounces)
+            setTimeout(() => {
+                // You can implement an AJAX call here to update view count
+                console.log('Page view tracked for post @Model.Id');
+            }, 5000);
+        });
+    </script>
+}
