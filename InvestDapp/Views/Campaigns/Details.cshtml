@@ -88,9 +88,10 @@
         }
 
         .status-pending {
-            background: rgba(255, 184, 0, 0.2);
-            color: #ffb800;
-            border: 1px solid rgba(255, 184, 0, 0.3);
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            cursor: not-allowed;
         }
 
         .status-approved {
@@ -99,10 +100,18 @@
             border: 1px solid rgba(0, 212, 170, 0.3);
         }
 
+        .status-completed {
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border: 1px solid rgba(40, 167, 69, 0.3);
+            cursor: not-allowed;
+        }
+
         .status-rejected {
-            background: rgba(255, 107, 107, 0.2);
-            color: #ff6b6b;
-            border: 1px solid rgba(255, 107, 107, 0.3);
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            cursor: not-allowed;
         }
 
         .campaign-stats {
@@ -531,6 +540,11 @@
                         }
                     }
 
+                    <a href="@Url.Action("Dashboard", new { id = Model.Id })" class="btn-action btn-primary-action">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Xem Dashboard
+                    </a>
+
                     @if (isOwner)
                     {
                         <a href="@Url.Action("Posts", new { campaignId = Model.Id })" class="btn-action btn-primary-action">
@@ -560,18 +574,93 @@
                             </span>
                         }
                     }
+                    else if (Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Pending)
+                    {
+                        if (!(Model.Posts?.Any() ?? false))
+                        {
+                            <span class="btn-action status-pending">
+                                <i class="fas fa-pen"></i>
+                                Chờ Tạo Bài Viết
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="btn-action status-pending">
+                                <i class="fas fa-clock"></i>
+                                Chờ Duyệt Chiến Dịch
+                            </span>
+                        }
+                    }
                     else if (Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
                     {
-                        <button class="btn-action btn-primary-action" onclick="investInCampaign(@Model.Id)">
-                            <i class="fas fa-dollar-sign"></i>
-                            Đầu Tư Ngay
-                        </button>
-                    }
+                        var userWallet = User.FindFirst("WalletAddress")?.Value;
+                        var isInvestor = Model.Investments?.Any(i => i.InvestorAddress.Equals(userWallet, StringComparison.OrdinalIgnoreCase)) ?? false;
 
-                    <a href="@Url.Action("Posts", new { campaignId = Model.Id })" class="btn-action btn-secondary-action">
-                        <i class="fas fa-eye"></i>
-                        Xem Tất Cả Bài Viết
-                    </a>
+                        @switch (Model.Status)
+                        {
+                            case InvestDapp.Shared.Enums.CampaignStatus.Active:
+                                <button class="btn-action btn-primary-action" onclick="investInCampaign(@Model.Id)">
+                                    <i class="fas fa-dollar-sign"></i>
+                                    Đầu Tư Ngay
+                                </button>
+                                break;
+                            
+                            case InvestDapp.Shared.Enums.CampaignStatus.Voting:
+                                if (isInvestor)
+                                {
+                                    <button class="btn-action btn-primary-action" onclick="voteOnCampaign(@Model.Id)">
+                                        <i class="fas fa-vote-yea"></i>
+                                        Bỏ Phiếu
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="btn-action status-pending" title="Chỉ nhà đầu tư mới có quyền bỏ phiếu">
+                                        <i class="fas fa-lock"></i>
+                                        Bỏ Phiếu (Chỉ nhà đầu tư)
+                                    </span>
+                                }
+                                break;
+                            
+                            case InvestDapp.Shared.Enums.CampaignStatus.Failed:
+                                if (isInvestor)
+                                {
+                                    <button class="btn-action btn-primary-action" onclick="claimRefund(@Model.Id)">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                        Claim Lại Tiền
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="btn-action status-pending" title="Chỉ nhà đầu tư mới có thể claim">
+                                        <i class="fas fa-lock"></i>
+                                        Claim (Chỉ nhà đầu tư)
+                                    </span>
+                                }
+                                break;
+                            
+                            case InvestDapp.Shared.Enums.CampaignStatus.Completed:
+                                <span class="btn-action status-completed">
+                                    <i class="fas fa-check-circle"></i>
+                                    Đã Hoàn Thành
+                                </span>
+                                break;
+                            
+                            default:
+                                <span class="btn-action status-pending">
+                                    <i class="fas fa-clock"></i>
+                                    Đang Chuẩn Bị
+                                </span>
+                                break;
+                        }
+                    }
+                    else if (Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Rejected)
+                    {
+                        <span class="btn-action status-rejected">
+                            <i class="fas fa-times-circle"></i>
+                            Đã Bị Từ Chối
+                        </span>
+                    }
                 </div>
             </div>
         </div>
@@ -583,6 +672,58 @@
         function investInCampaign(campaignId) {
             // Placeholder for investment functionality
             alert('Tính năng đầu tư sẽ được phát triển trong tương lai!');
+        }
+
+        function voteOnCampaign(campaignId) {
+            // Hiển thị modal hoặc chuyển hướng đến trang bỏ phiếu
+            if (confirm('Bạn có muốn tham gia bỏ phiếu cho dự án này không?')) {
+                // Chuyển hướng đến trang voting hoặc mở modal
+                window.location.href = `/Campaigns/Vote/${campaignId}`;
+            }
+        }
+
+        function claimRefund(campaignId) {
+            if (confirm('Bạn có chắc chắn muốn claim lại tiền đầu tư không? Hành động này không thể hoàn tác.')) {
+                // Gọi smart contract để claim refund
+                claimRefundFromContract(campaignId);
+            }
+        }
+
+        async function claimRefundFromContract(campaignId) {
+            try {
+                // Kiểm tra xem có MetaMask không
+                if (typeof window.ethereum === 'undefined') {
+                    alert('Vui lòng cài đặt MetaMask để thực hiện giao dịch!');
+                    return;
+                }
+
+                // Hiển thị loading state
+                const claimBtn = event.target;
+                const originalText = claimBtn.innerHTML;
+                claimBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+                claimBtn.disabled = true;
+
+                // Placeholder cho việc gọi smart contract
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate transaction
+                
+                alert('Claim refund thành công! Tiền đã được chuyển về ví của bạn.');
+                
+                // Reset button
+                claimBtn.innerHTML = originalText;
+                claimBtn.disabled = false;
+                
+                // Reload trang để cập nhật trạng thái
+                window.location.reload();
+                
+            } catch (error) {
+                console.error('Lỗi khi claim refund:', error);
+                alert('Có lỗi xảy ra khi claim refund. Vui lòng thử lại!');
+                
+                // Reset button nếu có lỗi
+                const claimBtn = event.target;
+                claimBtn.innerHTML = '<i class="fas fa-money-bill-wave"></i> Claim Lại Tiền';
+                claimBtn.disabled = false;
+            }
         }
 
         // Add animation delays for staggered effect

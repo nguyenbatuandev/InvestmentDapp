@@ -1,4 +1,4 @@
-using InvestDapp.Models;
+﻿using InvestDapp.Models;
 using InvestDapp.Shared.Common.Request;
 using InvestDapp.Shared.Models;
 using InvestDapp.Shared.Enums;
@@ -23,6 +23,7 @@ namespace InvestDapp.Infrastructure.Data.interfaces
         Task<bool> ApproveCampaignAsync(int id, string adminNotes, string approvedBy);
         Task<bool> RejectCampaignAsync(int id, string adminNotes, string approvedBy);
         Task<IEnumerable<Campaign>> GetPendingCampaignsAsync();
+        Task<IEnumerable<Campaign>> GetApprovedCampaignsAsync();
         Task<Campaign?> GetCampaignByIdAsync(int id);
         Task<bool> UpdateCampaignAsync(Campaign campaign);
     }

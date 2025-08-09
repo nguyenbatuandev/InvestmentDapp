@@ -8,10 +8,13 @@ namespace InvestDapp.Shared.Enums
 {
     public enum CampaignStatus
     {
-        Active,
-        Voting,
-        Completed,
-        Failed
+        Draft,          // Dự án đang được tạo
+        PendingPost,    // Đã tạo dự án, chờ tạo bài viết đầu tiên
+        PendingApproval,// Đã có bài viết, chờ admin duyệt
+        Active,         // Đã được duyệt, đang gây quỹ
+        Voting,         // Đang bỏ phiếu (nếu có tranh chấp)
+        Completed,      // Đã hoàn thành thành công
+        Failed          // Thất bại hoặc bị từ chối
     }
 
     // ✅ THÊM ENUM CHO TRẠNG THÁI DUYỆT
@@ -24,9 +27,11 @@ namespace InvestDapp.Shared.Enums
 
     public enum WithdrawalStatus
     {
-        Pending,
-        Executed,
-        Canceled
+        Pending,    // Đang chờ bỏ phiếu (voting period)
+        Approved,   // Được nhà đầu tư chấp thuận, chờ thực thi
+        Executed,   // Đã thực thi thành công
+        Rejected,   // Bị từ chối bởi nhà đầu tư
+        Canceled    // Bị hủy bỏ bởi chủ dự án
     }
     // Enums.cs
     public enum ConversationType

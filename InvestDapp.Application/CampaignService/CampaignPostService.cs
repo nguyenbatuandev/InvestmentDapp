@@ -57,7 +57,16 @@ namespace InvestDapp.Application.CampaignService
                 ApprovedBy = isFirstPost ? "SYSTEM_AUTO_APPROVE" : null
             };
 
-            return await _repository.CreatePostAsync(post);
+            var result = await _repository.CreatePostAsync(post);
+
+            // Cập nhật trạng thái campaign nếu đây là bài viết đầu tiên
+            if (isFirstPost && campaign != null)
+            {
+                campaign.Status = CampaignStatus.PendingApproval;
+                await _repository.UpdateCampaignAsync(campaign);
+            }
+
+            return result;
         }
 
         public async Task<CampaignPost?> GetPostByIdAsync(int id)
@@ -152,7 +161,7 @@ namespace InvestDapp.Application.CampaignService
                 categoryId = request.CategoryId,
                 ApprovalStatus = ApprovalStatus.Pending,
                 CreatedAt = DateTime.UtcNow,
-                Status = CampaignStatus.Active,
+                Status = CampaignStatus.PendingPost, // Bắt đầu với trạng thái chờ bài viết
                 CurrentRaisedAmount = 0,
                 TotalInvestmentsOnCompletion = 0,
                 TotalProfitAdded = 0,
@@ -169,6 +178,11 @@ namespace InvestDapp.Application.CampaignService
             return await _repository.GetPendingCampaignsAsync();
         }
 
+        public async Task<IEnumerable<Campaign>> GetApprovedCampaignsAsync()
+        {
+            return await _repository.GetApprovedCampaignsAsync();
+        }
+
         public async Task<Campaign?> GetCampaignByIdAsync(int id)
         {
             return await _repository.GetCampaignByIdAsync(id);
@@ -176,11 +190,24 @@ namespace InvestDapp.Application.CampaignService
 
         public async Task<bool> ApproveCampaignAsync(int id, string adminNotes, string adminWallet)
         {
-            return await _repository.ApproveCampaignAsync(id, adminNotes, adminWallet);
+            var campaign = await _repository.GetCampaignByIdAsync(id);
+            if (campaign == null) return false;
+
+            // Cập nhật trạng thái campaign khi được approve
+            campaign.Status = CampaignStatus.Active;
+            
+            var result = await _repository.ApproveCampaignAsync(id, adminNotes, adminWallet);
+            return result;
         }
 
         public async Task<bool> RejectCampaignAsync(int id, string adminNotes, string adminWallet)
         {
+            var campaign = await _repository.GetCampaignByIdAsync(id);
+            if (campaign == null) return false;
+
+            // Cập nhật trạng thái campaign khi bị reject
+            campaign.Status = CampaignStatus.Failed;
+
             // Khi reject campaign, cần xóa bài viết đầu tiên (nếu có)
             var posts = await _repository.GetPostsByCampaignIdAsync(id);
             var firstPost = posts.OrderBy(p => p.CreatedAt).FirstOrDefault();
@@ -226,7 +253,6 @@ namespace InvestDapp.Application.CampaignService
             // Nếu đã có bài viết, chỉ cho phép tạo thêm khi campaign đã được approve
             return campaign.ApprovalStatus == ApprovalStatus.Approved;
         }
-
         #endregion
     }
 }

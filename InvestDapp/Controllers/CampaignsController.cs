@@ -21,11 +21,20 @@ namespace InvestDapp.Controllers
         }
 
         [AllowAnonymous]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+            try
+            {
+                // Lấy các campaign đã được approve
+                var approvedCampaigns = await _campaignPostService.GetApprovedCampaignsAsync();
+                return View(approvedCampaigns);
+            }
+            catch (Exception ex)
+            {
+                // Nếu có lỗi, trả về view với danh sách rỗng
+                return View(new List<InvestDapp.Models.Campaign>());
+            }
         }
-
 
         // GET: /Campaign/Create
         public IActionResult Create()
@@ -55,6 +64,32 @@ namespace InvestDapp.Controllers
 
         // GET: /Campaign/Details/5
         public async Task<IActionResult> Details(int id)
+        {
+            var campaign = await _campaignPostService.GetCampaignByIdAsync(id);
+            if (campaign == null)
+            {
+                return NotFound();
+            }
+
+            return View(campaign);
+        }
+
+        // GET: /Campaign/Dashboard/5 - Trang dashboard cho dự án cụ thể
+        [AllowAnonymous]
+        public async Task<IActionResult> Dashboard(int id)
+        {
+            var campaign = await _campaignPostService.GetCampaignByIdAsync(id);
+            if (campaign == null)
+            {
+                return NotFound();
+            }
+
+            return View(campaign);
+        }
+
+        // GET: /Campaign/WithdrawalRequests/5 - Trang chi tiết withdrawal requests
+        [AllowAnonymous]
+        public async Task<IActionResult> WithdrawalRequests(int id)
         {
             var campaign = await _campaignPostService.GetCampaignByIdAsync(id);
             if (campaign == null)

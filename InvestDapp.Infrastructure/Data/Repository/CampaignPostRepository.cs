@@ -1,4 +1,4 @@
-using InvestDapp.Infrastructure.Data.interfaces;
+﻿using InvestDapp.Infrastructure.Data.interfaces;
 using InvestDapp.Shared.Models;
 using InvestDapp.Shared.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -150,6 +150,17 @@ namespace InvestDapp.Infrastructure.Data.Repository
             return await _context.Campaigns
                 .Include(c => c.category)
                 .Where(c => c.ApprovalStatus == ApprovalStatus.Pending)
+                .OrderByDescending(c => c.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Campaign>> GetApprovedCampaignsAsync()
+        {
+            return await _context.Campaigns
+                .Include(c => c.category)
+                .Include(c => c.Posts)
+                .Include(c => c.Investments)
+                .Where(c => c.ApprovalStatus == ApprovalStatus.Approved)
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
         }

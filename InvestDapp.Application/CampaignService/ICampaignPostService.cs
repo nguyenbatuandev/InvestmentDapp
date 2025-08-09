@@ -1,4 +1,4 @@
-using InvestDapp.Shared.Common.Request;
+﻿using InvestDapp.Shared.Common.Request;
 using InvestDapp.Shared.Models;
 using InvestDapp.Shared.Enums;
 using InvestDapp.Models;
@@ -21,6 +21,7 @@ namespace InvestDapp.Application.CampaignService
         // Campaign Services with approval
         Task<Campaign> CreateCampaignAsync(CreateCampaignRequest request, string ownerAddress);
         Task<IEnumerable<Campaign>> GetPendingCampaignsAsync();
+        Task<IEnumerable<Campaign>> GetApprovedCampaignsAsync();
         Task<Campaign?> GetCampaignByIdAsync(int id);
         Task<bool> ApproveCampaignAsync(int id, string adminNotes, string adminWallet);
         Task<bool> RejectCampaignAsync(int id, string adminNotes, string adminWallet);

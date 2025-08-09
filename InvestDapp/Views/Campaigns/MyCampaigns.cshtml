@@ -417,7 +417,7 @@
                     <i class="fas fa-plus"></i>
                     <span>Tạo Chiến Dịch Mới</span>
                 </a>
-                <a href="@Url.Action("Browse")" class="quick-action-btn">
+                <a href="@Url.Action("Index")" class="quick-action-btn">
                     <i class="fas fa-search"></i>
                     <span>Khám Phá Dự Án</span>
                 </a>
@@ -437,14 +437,44 @@
                         @switch (campaign.ApprovalStatus)
                         {
                             case InvestDapp.Shared.Enums.ApprovalStatus.Pending:
-                                <span class="status-badge status-pending">
-                                    <i class="fas fa-clock"></i> Chờ Duyệt
-                                </span>
+                                @switch (campaign.Status)
+                                {
+                                    case InvestDapp.Shared.Enums.CampaignStatus.PendingPost:
+                                        <span class="status-badge status-pending">
+                                            <i class="fas fa-pen"></i> Chờ Bài Viết
+                                        </span>
+                                        break;
+                                    case InvestDapp.Shared.Enums.CampaignStatus.PendingApproval:
+                                        <span class="status-badge status-pending">
+                                            <i class="fas fa-clock"></i> Chờ Duyệt
+                                        </span>
+                                        break;
+                                    default:
+                                        <span class="status-badge status-pending">
+                                            <i class="fas fa-clock"></i> Chờ Duyệt
+                                        </span>
+                                        break;
+                                }
                                 break;
                             case InvestDapp.Shared.Enums.ApprovalStatus.Approved:
-                                <span class="status-badge status-approved">
-                                    <i class="fas fa-check-circle"></i> Đã Duyệt
-                                </span>
+                                @switch (campaign.Status)
+                                {
+                                    case InvestDapp.Shared.Enums.CampaignStatus.Active:
+                                        <span class="status-badge status-approved">
+                                            <i class="fas fa-play-circle"></i> Đang Gây Quỹ
+                                        </span>
+                                        break;
+                                    case InvestDapp.Shared.Enums.CampaignStatus.Completed:
+                                        <span class="status-badge status-approved">
+                                            <i class="fas fa-check-circle"></i> Hoàn Thành
+                                        </span>
+                                        break;
+                                    default:
+                                        <span class="status-badge status-approved">
+                                            <i class="fas fa-check-circle"></i> Đã Duyệt
+                                        </span>
+                                        break;
+                                }
                                 break;
                             case InvestDapp.Shared.Enums.ApprovalStatus.Rejected:
                                 <span class="status-badge status-rejected">
@@ -499,6 +529,11 @@
                             <a href="@Url.Action("Details", new { id = campaign.Id })" class="btn-action btn-primary-action">
                                 <i class="fas fa-eye"></i>
                                 Chi Tiết
+                            </a>
+
+                            <a href="@Url.Action("Dashboard", new { id = campaign.Id })" class="btn-action btn-primary-action">
+                                <i class="fas fa-tachometer-alt"></i>
+                                Dashboard
                             </a>
 
                             @if (campaign.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
