@@ -1,7 +1,1505 @@
-﻿
+﻿@model IEnumerable<InvestDapp.Models.Campaign>
 @{
-    ViewData["Title"] = "Index";
-    Layout = "~/Pages/_Layout.cshtml";
+    ViewData["Title"] = "Quản lý Chiến dịch";
+    Layout = "~/Areas/admin/Views/Shared/_Layout.cshtml";
 }
 
+@section Styles {
+<style>
+/* Modern Campaign Management UI */
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --danger-gradient: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    --card-shadow-hover: 0 15px 40px rgba(0, 0, 0, 0.15);
+    --border-radius: 16px;
+    --animation-speed: 0.3s;
+}
+
+.campaigns-container {
+    padding: 0;
+    background: linear-gradient(120deg, #f6f9fc 0%, #e9ecef 100%);
+    min-height: 100vh;
+}
+
+/* Header Section */
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="rgba(255,255,255,0.1)"><polygon points="1000,100 1000,0 0,100"/></svg>');
+    background-size: cover;
+}
+
+.header-content {
+    position: relative;
+    z-index: 2;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.page-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.page-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin-top: 0.5rem;
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.btn-refresh {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 500;
+    transition: all var(--animation-speed);
+    backdrop-filter: blur(10px);
+}
+
+.btn-refresh:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+}
+
+/* Filter Bar */
+.filter-bar {
+    background: white;
+    padding: 1.5rem 2rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-select {
+    padding: 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    min-width: 180px;
+    transition: all var(--animation-speed);
+    background: white;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    max-width: 400px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 3rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 50px;
+    font-size: 0.875rem;
+    transition: all var(--animation-speed);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    font-size: 1.125rem;
+}
+
+.view-toggle {
+    display: flex;
+    gap: 0.5rem;
+    background: #f3f4f6;
+    padding: 0.25rem;
+    border-radius: 12px;
+}
+
+.view-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all var(--animation-speed);
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.view-btn.active {
+    background: white;
+    color: #667eea;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Stats Cards */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    position: relative;
+    overflow: hidden;
+    transition: all var(--animation-speed);
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary-gradient);
+}
+
+.stat-card:nth-child(2)::before {
+    background: var(--warning-gradient);
+}
+
+.stat-card:nth-child(3)::before {
+    background: var(--success-gradient);
+}
+
+.stat-card:nth-child(4)::before {
+    background: var(--danger-gradient);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--card-shadow-hover);
+}
+
+.stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.stat-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    background: var(--primary-gradient);
+}
+
+.stat-card:nth-child(2) .stat-icon {
+    background: var(--warning-gradient);
+}
+
+.stat-card:nth-child(3) .stat-icon {
+    background: var(--success-gradient);
+}
+
+.stat-card:nth-child(4) .stat-icon {
+    background: var(--danger-gradient);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.stat-change {
+    font-size: 0.875rem;
+    color: #10b981;
+    font-weight: 500;
+}
+
+.stat-change.negative {
+    color: #ef4444;
+}
+
+/* Content Card */
+.content-card {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+}
+
+.content-header {
+    padding: 2rem 2rem 1rem;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.content-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+}
+
+/* Table View */
+.campaigns-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.campaigns-table th {
+    padding: 1rem 2rem;
+    text-align: left;
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: #f9fafb;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.campaigns-table td {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+}
+
+.campaigns-table tbody tr {
+    transition: all var(--animation-speed);
+}
+
+.campaigns-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.campaign-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.campaign-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.campaign-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.campaign-avatar .placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.campaign-details h4 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.campaign-details p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+.owner-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.wallet-address {
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.75rem;
+    background: #f3f4f6;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    color: #6b7280;
+}
+
+.amount {
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-weight: 600;
+    color: #059669;
+    font-size: 0.875rem;
+}
+
+.progress-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 120px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 4px;
+    transition: width 1s ease;
+}
+
+.progress-text {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-align: center;
+}
+
+/* Status Badges */
+.status-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-draft {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.status-pending {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.status-active {
+    background: #dcfce7;
+    color: #059669;
+}
+
+.status-completed {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.status-failed {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.status-voting {
+    background: #f3e8ff;
+    color: #7c3aed;
+}
+
+.approval-pending {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.approval-approved {
+    background: #dcfce7;
+    color: #059669;
+}
+
+.approval-rejected {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.date-info {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    transition: all var(--animation-speed);
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+}
+
+.btn-view {
+    background: #e5e7eb;
+    color: #6b7280;
+}
+
+.btn-view:hover {
+    background: #d1d5db;
+    color: #374151;
+}
+
+.btn-approve {
+    background: #dcfce7;
+    color: #059669;
+}
+
+.btn-approve:hover {
+    background: #bbf7d0;
+    color: #047857;
+}
+
+.btn-reject {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.btn-reject:hover {
+    background: #fecaca;
+    color: #b91c1c;
+}
+
+/* Grid View */
+.campaigns-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 2rem;
+    padding: 2rem;
+}
+
+.campaign-card {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+    transition: all var(--animation-speed);
+    position: relative;
+}
+
+.campaign-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--card-shadow-hover);
+}
+
+.card-image {
+    height: 200px;
+    position: relative;
+    overflow: hidden;
+}
+
+.card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--animation-speed);
+}
+
+.campaign-card:hover .card-image img {
+    transform: scale(1.05);
+}
+
+.card-image .placeholder {
+    width: 100%;
+    height: 100%;
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 3rem;
+}
+
+.card-overlay {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.card-content {
+    padding: 2rem;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.3;
+}
+
+.card-description {
+    color: #6b7280;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+}
+
+.card-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.card-stat {
+    text-align: center;
+}
+
+.card-stat-value {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1f2937;
+    display: block;
+}
+
+.card-stat-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.25rem;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+    border-top: 1px solid #f3f4f6;
+}
+
+.card-date {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #9ca3af;
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #6b7280;
+}
+
+.empty-state p {
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+/* Loading States */
+.loading-skeleton {
+    background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Responsive Design */
+@@media (max-width: 1200px) {
+    .campaigns-grid {
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+}
+
+@@media (max-width: 768px) {
+    .header-top {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .filter-group {
+        width: 100%;
+    }
+    
+    .filter-select {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+    
+    .campaigns-table {
+        font-size: 0.875rem;
+    }
+    
+    .campaigns-table th,
+    .campaigns-table td {
+        padding: 1rem;
+    }
+    
+    .campaigns-grid {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+    
+    .campaign-avatar {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+}
+
+@@media (max-width: 480px) {
+    .page-title {
+        font-size: 2rem;
+    }
+    
+    .content-card {
+        margin: 0 -1rem;
+        border-radius: 0;
+    }
+    
+    .campaigns-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}
+
+/* Animation Classes */
+.fade-in {
+    animation: fadeIn 0.6s ease-out;
+}
+
+.slide-up {
+    animation: slideUp 0.6s ease-out;
+}
+
+@@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+</style>
+}
+
+<div class="main">
+    <div class="topbar">
+        <div class="toggle">
+            <ion-icon name="menu-outline"></ion-icon>
+        </div>
+        <div class="search">
+            <label>
+                <input type="text" placeholder="Tìm kiếm...">
+                <ion-icon name="search-outline"></ion-icon>
+            </label>
+        </div>
+        <div class="user">
+            <img src="/assets/imgs/customer01.jpg" alt="">
+        </div>
+    </div>
+
+    <div class="campaigns-container">
+
+
+        <div style="max-width: 1400px; margin: 0 auto; padding: 0 2rem;">
+            <!-- Filter Bar -->
+            <div class="filter-bar fade-in">
+                <div class="filter-group">
+                    <label class="filter-label">Trạng thái chiến dịch</label>
+                    <select id="statusFilter" class="filter-select">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="@InvestDapp.Shared.Enums.CampaignStatus.Draft" @(ViewBag.CurrentStatus?.ToString() == "Draft" ? "selected" : "")>Nháp</option>
+                        <option value="@InvestDapp.Shared.Enums.CampaignStatus.PendingPost" @(ViewBag.CurrentStatus?.ToString() == "PendingPost" ? "selected" : "")>Chờ bài viết</option>
+                        <option value="@InvestDapp.Shared.Enums.CampaignStatus.PendingApproval" @(ViewBag.CurrentStatus?.ToString() == "PendingApproval" ? "selected" : "")>Chờ duyệt</option>
+                        <option value="@InvestDapp.Shared.Enums.CampaignStatus.Active" @(ViewBag.CurrentStatus?.ToString() == "Active" ? "selected" : "")>Đang hoạt động</option>
+                        <option value="@InvestDapp.Shared.Enums.CampaignStatus.Voting" @(ViewBag.CurrentStatus?.ToString() == "Voting" ? "selected" : "")>Đang bỏ phiếu</option>
+                        <option value="@InvestDapp.Shared.Enums.CampaignStatus.Completed" @(ViewBag.CurrentStatus?.ToString() == "Completed" ? "selected" : "")>Hoàn thành</option>
+                        <option value="@InvestDapp.Shared.Enums.CampaignStatus.Failed" @(ViewBag.CurrentStatus?.ToString() == "Failed" ? "selected" : "")>Thất bại</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Trạng thái duyệt</label>
+                    <select id="approvalFilter" class="filter-select">
+                        <option value="">Tất cả trạng thái duyệt</option>
+                        <option value="@InvestDapp.Shared.Enums.ApprovalStatus.Pending" @(ViewBag.CurrentApprovalStatus?.ToString() == "Pending" ? "selected" : "")>Chờ duyệt</option>
+                        <option value="@InvestDapp.Shared.Enums.ApprovalStatus.Approved" @(ViewBag.CurrentApprovalStatus?.ToString() == "Approved" ? "selected" : "")>Đã duyệt</option>
+                        <option value="@InvestDapp.Shared.Enums.ApprovalStatus.Rejected" @(ViewBag.CurrentApprovalStatus?.ToString() == "Rejected" ? "selected" : "")>Đã từ chối</option>
+                    </select>
+                </div>
+
+                <div class="search-box">
+                    <ion-icon name="search-outline" class="search-icon"></ion-icon>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Tìm kiếm chiến dịch...">
+                </div>
+
+                <div class="view-toggle">
+                    <button class="view-btn active" data-view="table">
+                        <ion-icon name="list-outline"></ion-icon>
+                        Bảng
+                    </button>
+                    <button class="view-btn" data-view="grid">
+                        <ion-icon name="grid-outline"></ion-icon>
+                        Lưới
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid slide-up">
+                @{
+                    var totalCampaigns = Model.Count();
+                    var pendingApproval = Model.Count(c => c.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Pending);
+                    var activeCampaigns = Model.Count(c => c.Status == InvestDapp.Shared.Enums.CampaignStatus.Active);
+                    var completedCampaigns = Model.Count(c => c.Status == InvestDapp.Shared.Enums.CampaignStatus.Completed);
+                }
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">Tổng chiến dịch</span>
+                        <div class="stat-icon">
+                            <ion-icon name="folder-outline"></ion-icon>
+                        </div>
+                    </div>
+                    <div class="stat-number">@totalCampaigns</div>
+                    <div class="stat-change">Tổng số chiến dịch trên hệ thống</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">Chờ duyệt</span>
+                        <div class="stat-icon">
+                            <ion-icon name="time-outline"></ion-icon>
+                        </div>
+                    </div>
+                    <div class="stat-number">@pendingApproval</div>
+                    <div class="stat-change">Cần xem xét và phê duyệt</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">Đang hoạt động</span>
+                        <div class="stat-icon">
+                            <ion-icon name="play-circle-outline"></ion-icon>
+                        </div>
+                    </div>
+                    <div class="stat-number">@activeCampaigns</div>
+                    <div class="stat-change">Đang huy động vốn</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">Hoàn thành</span>
+                        <div class="stat-icon">
+                            <ion-icon name="checkmark-circle-outline"></ion-icon>
+                        </div>
+                    </div>
+                    <div class="stat-number">@completedCampaigns</div>
+                    <div class="stat-change">Đã đạt mục tiêu</div>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="content-card fade-in">
+                <div class="content-header">
+                    <h2 class="content-title">Danh sách Chiến dịch</h2>
+                </div>
+
+                <!-- Table View -->
+                <div id="tableView" class="table-container">
+                    @if (Model.Any())
+                    {
+                        <table class="campaigns-table">
+                            <thead>
+                                <tr>
+                                    <th>Chiến dịch</th>
+                                    <th>Chủ sở hữu</th>
+                                    <th>Tiến độ</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày tạo</th>
+                                    <th>Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var campaign in Model)
+                                {
+                                    var endUnix = new DateTimeOffset(campaign.EndTime).ToUnixTimeSeconds();
+                                    <tr class="campaign-row" data-campaign-id="@campaign.Id" data-name="@Html.Raw(campaign.Name.Replace("\"", "&quot;"))" data-goal="@campaign.GoalAmount" data-endtime="@endUnix" data-owner="@campaign.OwnerAddress">
+                                        <td>
+                                            <div class="campaign-info">
+                                                <div class="campaign-avatar">
+                                                    @if (!string.IsNullOrEmpty(campaign.ImageUrl))
+                                                    {
+                                                        <img src="@campaign.ImageUrl" alt="@campaign.Name" />
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="placeholder">
+                                                            <ion-icon name="image-outline"></ion-icon>
+                                                        </div>
+                                                    }
+                                                </div>
+                                                <div class="campaign-details">
+                                                    <h4>@campaign.Name</h4>
+                                                    <p>@(campaign.ShortDescription?.Substring(0, Math.Min(campaign.ShortDescription.Length, 60)) ?? "")...</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="owner-info">
+                                                <span class="wallet-address">@campaign.OwnerAddress.Substring(0, 6)...@campaign.OwnerAddress.Substring(campaign.OwnerAddress.Length - 4)</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="progress-info">
+                                                <div class="progress-bar">
+                                                    <div class="progress-fill" style="width: @(campaign.GoalAmount > 0 ? (campaign.CurrentRaisedAmount / campaign.GoalAmount * 100) : 0)%"></div>
+                                                </div>
+                                                <div class="progress-text">@(campaign.GoalAmount > 0 ? (campaign.CurrentRaisedAmount / campaign.GoalAmount * 100).ToString("F1") : "0")%</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="status-group">
+                                                @{
+                                                    string campaignStatusClass = "";
+                                                    string campaignStatusText = "";
+                                                    string approvalStatusClass = "";
+                                                    string approvalStatusText = "";
+
+                                                    switch (campaign.Status)
+                                                    {
+                                                        case InvestDapp.Shared.Enums.CampaignStatus.Draft:
+                                                            campaignStatusClass = "status-draft";
+                                                            campaignStatusText = "Nháp";
+                                                            break;
+                                                        case InvestDapp.Shared.Enums.CampaignStatus.PendingPost:
+                                                            campaignStatusClass = "status-pending";
+                                                            campaignStatusText = "Chờ bài viết";
+                                                            break;
+                                                        case InvestDapp.Shared.Enums.CampaignStatus.PendingApproval:
+                                                            campaignStatusClass = "status-pending";
+                                                            campaignStatusText = "Chờ duyệt";
+                                                            break;
+                                                        case InvestDapp.Shared.Enums.CampaignStatus.Active:
+                                                            campaignStatusClass = "status-active";
+                                                            campaignStatusText = "Hoạt động";
+                                                            break;
+                                                        case InvestDapp.Shared.Enums.CampaignStatus.Voting:
+                                                            campaignStatusClass = "status-voting";
+                                                            campaignStatusText = "Bỏ phiếu";
+                                                            break;
+                                                        case InvestDapp.Shared.Enums.CampaignStatus.Completed:
+                                                            campaignStatusClass = "status-completed";
+                                                            campaignStatusText = "Hoàn thành";
+                                                            break;
+                                                        case InvestDapp.Shared.Enums.CampaignStatus.Failed:
+                                                            campaignStatusClass = "status-failed";
+                                                            campaignStatusText = "Thất bại";
+                                                            break;
+                                                    }
+
+                                                    switch (campaign.ApprovalStatus)
+                                                    {
+                                                        case InvestDapp.Shared.Enums.ApprovalStatus.Pending:
+                                                            approvalStatusClass = "approval-pending";
+                                                            approvalStatusText = "Chờ duyệt";
+                                                            break;
+                                                        case InvestDapp.Shared.Enums.ApprovalStatus.Approved:
+                                                            approvalStatusClass = "approval-approved";
+                                                            approvalStatusText = "Đã duyệt";
+                                                            break;
+                                                        case InvestDapp.Shared.Enums.ApprovalStatus.Rejected:
+                                                            approvalStatusClass = "approval-rejected";
+                                                            approvalStatusText = "Từ chối";
+                                                            break;
+                                                    }
+                                                }
+                                                <span class="status-badge @campaignStatusClass">@campaignStatusText</span>
+                                                <span class="status-badge @approvalStatusClass">@approvalStatusText</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="date-info">@campaign.CreatedAt.ToString("dd/MM/yyyy")</div>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn btn-view" onclick="viewCampaign(@campaign.Id)" title="Xem chi tiết">
+                                                    <ion-icon name="eye-outline"></ion-icon>
+                                                </button>
+                                                @if (campaign.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Pending)
+                                                {
+                                                    <button class="action-btn btn-approve" onclick="approveCampaign(@campaign.Id)" title="Phê duyệt">
+                                                        <ion-icon name="checkmark-outline"></ion-icon>
+                                                    </button>
+                                                    <button class="action-btn btn-reject" onclick="rejectCampaign(@campaign.Id)" title="Từ chối">
+                                                        <ion-icon name="close-outline"></ion-icon>
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <div class="empty-state">
+                            <div class="empty-state-icon">
+                                <ion-icon name="folder-open-outline"></ion-icon>
+                            </div>
+                            <h3>Chưa có chiến dịch nào</h3>
+                            <p>Hiện tại chưa có chiến dịch nào trong hệ thống.<br>Các chiến dịch mới sẽ xuất hiện ở đây khi được tạo.</p>
+                        </div>
+                    }
+                </div>
+
+                <!-- Grid View -->
+                <div id="gridView" class="campaigns-grid" style="display: none;">
+                    @foreach (var campaign in Model)
+                    {
+                        var endUnix = new DateTimeOffset(campaign.EndTime).ToUnixTimeSeconds();
+                        <div class="campaign-card" data-campaign-id="@campaign.Id" data-name="@Html.Raw(campaign.Name.Replace("\"", "&quot;"))" data-goal="@campaign.GoalAmount" data-endtime="@endUnix" data-owner="@campaign.OwnerAddress">
+                            <div class="card-image">
+                                @if (!string.IsNullOrEmpty(campaign.ImageUrl))
+                                {
+                                    <img src="@campaign.ImageUrl" alt="@campaign.Name" />
+                                }
+                                else
+                                {
+                                    <div class="placeholder">
+                                        <ion-icon name="image-outline"></ion-icon>
+                                    </div>
+                                }
+                                <div class="card-overlay">
+                                    @{
+                                        string campaignStatusClass = "";
+                                        string campaignStatusText = "";
+                                        string approvalStatusClass = "";
+                                        string approvalStatusText = "";
+
+                                        switch (campaign.Status)
+                                        {
+                                            case InvestDapp.Shared.Enums.CampaignStatus.Draft:
+                                                campaignStatusClass = "status-draft";
+                                                campaignStatusText = "Nháp";
+                                                break;
+                                            case InvestDapp.Shared.Enums.CampaignStatus.PendingPost:
+                                                campaignStatusClass = "status-pending";
+                                                campaignStatusText = "Chờ bài viết";
+                                                break;
+                                            case InvestDapp.Shared.Enums.CampaignStatus.PendingApproval:
+                                                campaignStatusClass = "status-pending";
+                                                campaignStatusText = "Chờ duyệt";
+                                                break;
+                                            case InvestDapp.Shared.Enums.CampaignStatus.Active:
+                                                campaignStatusClass = "status-active";
+                                                campaignStatusText = "Hoạt động";
+                                                break;
+                                            case InvestDapp.Shared.Enums.CampaignStatus.Voting:
+                                                campaignStatusClass = "status-voting";
+                                                campaignStatusText = "Bỏ phiếu";
+                                                break;
+                                            case InvestDapp.Shared.Enums.CampaignStatus.Completed:
+                                                campaignStatusClass = "status-completed";
+                                                campaignStatusText = "Hoàn thành";
+                                                break;
+                                            case InvestDapp.Shared.Enums.CampaignStatus.Failed:
+                                                campaignStatusClass = "status-failed";
+                                                campaignStatusText = "Thất bại";
+                                                break;
+                                        }
+
+                                        switch (campaign.ApprovalStatus)
+                                        {
+                                            case InvestDapp.Shared.Enums.ApprovalStatus.Pending:
+                                                approvalStatusClass = "approval-pending";
+                                                approvalStatusText = "Chờ duyệt";
+                                                break;
+                                            case InvestDapp.Shared.Enums.ApprovalStatus.Approved:
+                                                approvalStatusClass = "approval-approved";
+                                                approvalStatusText = "Đã duyệt";
+                                                break;
+                                            case InvestDapp.Shared.Enums.ApprovalStatus.Rejected:
+                                                approvalStatusClass = "approval-rejected";
+                                                approvalStatusText = "Từ chối";
+                                                break;
+                                        }
+                                    }
+                                    <span class="status-badge @campaignStatusClass">@campaignStatusText</span>
+                                    <span class="status-badge @approvalStatusClass">@approvalStatusText</span>
+                                </div>
+                            </div>
+                            
+                            <div class="card-content">
+                                <h3 class="card-title">@campaign.Name</h3>
+                                <p class="card-description">@(campaign.ShortDescription?.Substring(0, Math.Min(campaign.ShortDescription.Length, 100)) ?? "")...</p>
+                                
+                                <div class="card-stats">
+                                    <div class="card-stat">
+                                        <span class="card-stat-value">@campaign.GoalAmount.ToString("F2") BNB</span>
+                                        <span class="card-stat-label">Mục tiêu</span>
+                                    </div>
+                                    <div class="card-stat">
+                                        <span class="card-stat-value">@campaign.CurrentRaisedAmount.ToString("F2") BNB</span>
+                                        <span class="card-stat-label">Đã huy động</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="progress-info">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: @(campaign.GoalAmount > 0 ? (campaign.CurrentRaisedAmount / campaign.GoalAmount * 100) : 0)%"></div>
+                                    </div>
+                                    <div class="progress-text">@(campaign.GoalAmount > 0 ? (campaign.CurrentRaisedAmount / campaign.GoalAmount * 100).ToString("F1") : "0")% hoàn thành</div>
+                                </div>
+                                
+                                <div class="card-footer">
+                                    <span class="card-date">@campaign.CreatedAt.ToString("dd/MM/yyyy")</span>
+                                    <div class="action-buttons">
+                                        <button class="action-btn btn-view" onclick="viewCampaign(@campaign.Id)" title="Xem chi tiết">
+                                            <ion-icon name="eye-outline"></ion-icon>
+                                        </button>
+                                        @if (campaign.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Pending)
+                                        {
+                                            <button class="action-btn btn-approve" onclick="approveCampaign(@campaign.Id)" title="Phê duyệt">
+                                                <ion-icon name="checkmark-outline"></ion-icon>
+                                            </button>
+                                            <button class="action-btn btn-reject" onclick="rejectCampaign(@campaign.Id)" title="Từ chối">
+                                                <ion-icon name="close-outline"></ion-icon>
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- 1) Load config TRƯỚC từ đường dẫn đúng -->
+    <script src="~/js/contract-config.js"></script>
+
+    <!-- 2) Ethers UMD: bảo đảm có window.ethers -->
+    <script id="ethers-cdn" src="https://unpkg.com/ethers@6.10.0/bundles/ethers.umd.min.js"></script>
+
+    <script>
+        // ===== LẤY CONFIG với fallback =====
+        const CFG = window.CONTRACT_CONFIG || {};
+        const EXPECTED_CHAIN_ID = CFG.EXPECTED_CHAIN_ID_HEX || CFG.EXPECTED_CHAIN_ID || '0x61';
+        const CONTRACT_ADDRESS  = CFG.CONTRACT_ADDRESS || '0xD96d68dE1B768eA6ac30f701f6dBfE79eb75c20f';
+        const CONTRACT_ABI      = CFG.CONTRACT_ABI || [];
+
+        // Debug log để kiểm tra config
+        console.log('CONTRACT_CONFIG loaded:', !!window.CONTRACT_CONFIG);
+        console.log('CONTRACT_ADDRESS:', CONTRACT_ADDRESS);
+        console.log('CONTRACT_ABI length:', CONTRACT_ABI?.length || 0);
+
+        // ===== ETHERS LOADER =====
+        let _ethersLoadingPromise = null;
+        function injectScript(src){
+          return new Promise((resolve,reject)=>{
+            const s=document.createElement('script');
+            s.src=src; s.async=true; s.onload=resolve; s.onerror=reject;
+            document.head.appendChild(s);
+          });
+        }
+        async function loadEthersIfNeeded(){
+          if(window.ethers) return;
+          if(_ethersLoadingPromise){ await _ethersLoadingPromise; return; }
+          const primary = document.getElementById('ethers-cdn');
+          _ethersLoadingPromise = (async ()=>{
+            if(primary && !primary.complete){
+              for(let i=0;i<10 && !window.ethers;i++){ await new Promise(r=>setTimeout(r,200)); }
+              if(window.ethers) return;
+            }
+            // Fallback CDNs
+            const cdns = [
+              'https://cdnjs.cloudflare.com/ajax/libs/ethers/6.10.0/ethers.umd.min.js',
+              'https://unpkg.com/ethers@6.10.0/bundles/ethers.umd.min.js'
+            ];
+            for(const url of cdns){
+              try{ await injectScript(url); if(window.ethers) return; }catch{}
+            }
+          })();
+          await _ethersLoadingPromise;
+        }
+        async function ensureEthersReady(){
+          if(window.ethers) return;
+          await loadEthersIfNeeded();
+          for(let i=0;i<10 && !window.ethers;i++){ await new Promise(r=>setTimeout(r,300)); }
+          if(!window.ethers) throw new Error('Không thể tải ethers.');
+        }
+
+        // ===== WALLET / CHAIN =====
+        async function ensureWalletConnected(){
+          if(!window.ethereum) throw new Error('Chưa cài MetaMask.');
+          
+          // 🔥 KIỂM TRA XEM ĐÃ KẾT NỐI CHƯA - TRÁNH GỌI LẠI eth_requestAccounts
+          let accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          
+          // Nếu chưa có tài khoản nào được kết nối, mới yêu cầu kết nối
+          if(!accounts || accounts.length === 0) {
+            accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          }
+          
+          if(!accounts?.length) throw new Error('Không kết nối được ví.');
+
+          let chainId = await window.ethereum.request({ method:'eth_chainId' });
+          if(chainId !== EXPECTED_CHAIN_ID){
+            try{
+              await window.ethereum.request({ method:'wallet_switchEthereumChain', params:[{ chainId: EXPECTED_CHAIN_ID }] });
+            }catch(err){
+              if(err?.code === 4902){
+                await window.ethereum.request({
+                  method:'wallet_addEthereumChain',
+                  params:[{
+                    chainId: EXPECTED_CHAIN_ID,
+                    chainName:'BSC Testnet',
+                    nativeCurrency:{ name:'tBNB', symbol:'tBNB', decimals:18 },
+                    rpcUrls:['https://data-seed-prebsc-1-s1.binance.org:8545'],
+                    blockExplorerUrls:['https://testnet.bscscan.com']
+                  }]
+                });
+              }else{
+                throw new Error('Vui lòng chuyển sang BSC Testnet trong MetaMask.');
+              }
+            }
+          }
+          return accounts[0];
+        }
+
+        // ===== CONTRACT WRITER =====
+        async function getContract(){
+          await ensureEthersReady();
+          await ensureWalletConnected();
+          
+          // Validate contract address
+          if(!CONTRACT_ADDRESS || CONTRACT_ADDRESS === 'PASTE_YOUR_CONTRACT_ADDRESS_HERE'){
+            throw new Error('Chưa cấu hình CONTRACT_ADDRESS. Vui lòng cập nhật trong contract-config.js');
+          }
+          
+          if(!window.ethers.isAddress(CONTRACT_ADDRESS)){
+            throw new Error(`CONTRACT_ADDRESS không hợp lệ: ${CONTRACT_ADDRESS}`);
+          }
+          
+          if(!CONTRACT_ABI || CONTRACT_ABI.length === 0){
+            throw new Error('CONTRACT_ABI chưa được cấu hình hoặc rỗng.');
+          }
+          
+          const provider = new window.ethers.BrowserProvider(window.ethereum);
+          const signer = await provider.getSigner();
+          return new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        }
+
+        // ===== TOAST =====
+        function showOnChainToast(msg,isError=false){
+          let t=document.getElementById('onchain-toast');
+          if(!t){
+            t=document.createElement('div');
+            t.id='onchain-toast';
+            t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:12000;padding:14px 18px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.15);max-width:340px;background:#1f2937;color:#fff;line-height:1.4;transition:opacity .6s';
+            document.body.appendChild(t);
+          }
+          t.style.background = isError ? '#dc2626' : '#1f2937';
+          t.textContent = msg; t.style.opacity='1';
+          setTimeout(()=> t.style.opacity='0', 4500);
+        }
+
+        // ===== ON-CHAIN CREATE =====
+        async function deployCampaignOnChain(campaignId){
+          await ensureEthersReady();
+          const el = document.querySelector(`[data-campaign-id="${campaignId}"]`);
+          if(!el) throw new Error('Không tìm thấy dữ liệu chiến dịch.');
+
+          const name = (el.dataset.name||'').trim();
+          const goalBNB = parseFloat(el.dataset.goal||'0');
+          const endTime = parseInt(el.dataset.endtime||'0',10);
+          let owner = (el.dataset.owner||'').trim();
+
+          if(!name) throw new Error('Thiếu tên chiến dịch.');
+          if(!(goalBNB>0)) throw new Error('Mục tiêu không hợp lệ.');
+          if(!Number.isFinite(endTime)||endTime<=0) throw new Error('endTime không hợp lệ.');
+
+          const provider = new window.ethers.BrowserProvider(window.ethereum);
+          const signer = await provider.getSigner();
+          if(!window.ethers.isAddress(owner)){
+            // nếu HTML để dạng rút gọn 0x1234...abcd thì dùng địa chỉ signer
+            owner = await signer.getAddress();
+          }
+          owner = window.ethers.getAddress(owner);
+
+          const nowSec = Math.floor(Date.now()/1000);
+          let durationDays = Math.ceil((endTime - nowSec)/86400);
+          if(durationDays < 1) durationDays = 1;
+
+          const goalWei = window.ethers.parseEther(String(goalBNB));
+          const contract = await getContract();
+
+          const tx = await contract.createCampaign(name, goalWei, durationDays, owner);
+          showOnChainToast('Đang gửi giao dịch... TX: '+tx.hash);
+
+          const receipt = await tx.wait();
+          if(receipt.status !== 1) throw new Error('Giao dịch thất bại.');
+
+          showOnChainToast('Tạo chiến dịch on-chain thành công! Block #'+receipt.blockNumber);
+          return receipt;
+        }
+
+        // ===== MODAL / UI =====
+        function createModal({title,content,actions}){
+          const m=document.createElement('div');
+          m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:10000;backdrop-filter:blur(4px)';
+          const actionsHtml = actions.map((a,i)=>`<button class="btn ${a.class}" data-action="${i}">${a.text}</button>`).join('');
+          m.innerHTML = `
+            <div style="background:#fff;border-radius:16px;padding:2rem;max-width:500px;width:90%;box-shadow:0 20px 40px rgba(0,0,0,.15);">
+              <h3 style="margin:0 0 1.5rem 0;font-size:1.25rem;font-weight:700;color:#1f2937;">${title}</h3>
+              <div style="margin-bottom:2rem;">${content}</div>
+              <div style="display:flex;gap:1rem;justify-content:flex-end;">${actionsHtml}</div>
+            </div>`;
+          m.querySelectorAll('[data-action]').forEach((btn,i)=> btn.addEventListener('click', actions[i].onClick));
+          m.addEventListener('click',e=>{ if(e.target===m) m.remove(); });
+          document.body.appendChild(m);
+          return m;
+        }
+
+        function showApprovalDialog(id){
+          const modal = createModal({
+            title:'Phê duyệt Chiến dịch',
+            content:`
+              <p style="margin-bottom:1rem;">Bạn có chắc chắn muốn phê duyệt chiến dịch này?</p>
+              <p style="margin-bottom:1rem;color:#0ea5e9;font-size:.9rem;"><i class="fas fa-info-circle"></i> Hệ thống sẽ kết nối ví và tạo chiến dịch on-chain.</p>
+              <textarea id="approveNotes" placeholder="Nhập ghi chú (tùy chọn)..." style="width:100%;padding:.75rem;border:2px solid #e5e7eb;border-radius:8px;resize:vertical;min-height:80px;"></textarea>
+            `,
+            actions:[
+              { text:'Hủy', class:'btn-secondary', onClick:()=> modal.remove() },
+              { text:'Phê duyệt & Ký', class:'btn-success', onClick:()=> confirmApprove(id, modal) }
+            ]
+          });
+        }
+
+        function showRejectionDialog(id){
+          const modal = createModal({
+            title:'Từ chối Chiến dịch',
+            content:`<p style="margin-bottom:1rem;">Vui lòng nhập lý do từ chối:</p>
+                     <textarea id="rejectNotes" placeholder="Nhập lý do..." required style="width:100%;padding:.75rem;border:2px solid #e5e7eb;border-radius:8px;resize:vertical;min-height:80px;"></textarea>`,
+            actions:[
+              { text:'Hủy', class:'btn-secondary', onClick:()=> modal.remove() },
+              { text:'Từ chối', class:'btn-danger', onClick:()=> confirmReject(id, modal) }
+            ]
+          });
+        }
+
+        async function confirmApprove(id, modal){
+          const notes = document.getElementById('approveNotes')?.value || '';
+          try{
+            const btn = modal.querySelector('.btn-success');
+            if(btn){ btn.disabled=true; btn.innerHTML='<ion-icon name="wallet-outline"></ion-icon> Đang tải ethers...'; }
+            await ensureEthersReady();
+
+            if(btn){ btn.innerHTML='<ion-icon name="link-outline"></ion-icon> Kết nối ví...'; }
+            await deployCampaignOnChain(id);
+
+            if(btn){ btn.innerHTML='<ion-icon name="checkmark-circle-outline"></ion-icon> Hoàn tất, đang cập nhật...'; }
+            submitAction('approve', id, notes);
+          }catch(err){
+            console.error('Lỗi phê duyệt:', err);
+            alert('Lỗi khi tạo chiến dịch on-chain: '+(err.message||err));
+            showOnChainToast('Lỗi: '+(err.message||err), true);
+            // Reset button nếu có lỗi
+            const btn = modal.querySelector('.btn-success');
+            if(btn){ btn.disabled=false; btn.innerHTML='Phê duyệt & Ký'; }
+          }finally{
+            // Không tự động remove modal nếu có lỗi
+          }
+        }
+
+        function confirmReject(id, modal){
+          const notes = document.getElementById('rejectNotes')?.value.trim();
+          if(!notes){ alert('Vui lòng nhập lý do từ chối.'); return; }
+          submitAction('reject', id, notes);
+          modal.remove();
+        }
+
+        function submitAction(action,id,notes){
+          const form=document.createElement('form');
+          form.method='POST'; form.action=`/admin/manage-campaigns/${action}/${id}`;
+          const csrf=document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+          if(csrf){
+            const t=document.createElement('input'); t.type='hidden'; t.name='__RequestVerificationToken'; t.value=csrf; form.appendChild(t);
+          }
+          if(notes){
+            const n=document.createElement('input'); n.type='hidden'; n.name='adminNotes'; n.value=notes; form.appendChild(n);
+          }
+          showLoading();
+          document.body.appendChild(form); form.submit();
+        }
+
+        // ===== EXPOSE GLOBALS =====
+        window.viewCampaign     = function(id){ window.open(`/admin/manage-campaigns/details/${id}`, '_blank'); };
+        window.approveCampaign  = function(id){ showApprovalDialog(id); };
+        window.rejectCampaign   = function(id){ showRejectionDialog(id); };
+
+        // ===== PHẦN UI KHÁC =====
+        document.addEventListener('DOMContentLoaded', function(){
+          initializeFilters(); initializeSearch(); initializeViewToggle(); addAnimations();
+        });
+        function initializeFilters(){ const s=document.getElementById('statusFilter'); const a=document.getElementById('approvalFilter'); s?.addEventListener('change',applyFilters); a?.addEventListener('change',applyFilters); }
+        function initializeSearch(){ const i=document.getElementById('searchInput'); let t; i?.addEventListener('input',function(){ clearTimeout(t); t=setTimeout(()=>{ filterCampaigns(this.value); },300); }); }
+        function initializeViewToggle(){ document.querySelectorAll('.view-btn').forEach(b=>b.addEventListener('click',function(){ const v=this.dataset.view; document.querySelectorAll('.view-btn').forEach(x=>x.classList.remove('active')); this.classList.add('active'); const tv=document.getElementById('tableView'); const gv=document.getElementById('gridView'); if(v==='table'){ gv.style.display='none'; tv.style.display='block'; tv.classList.add('fade-in'); }else{ tv.style.display='none'; gv.style.display='grid'; gv.classList.add('fade-in'); } })); }
+        function addAnimations(){ const ob=new IntersectionObserver(es=>{ es.forEach(en=>{ if(en.isIntersecting){ en.target.style.animationDelay=(Math.random()*0.3)+'s'; en.target.classList.add('slide-up'); } }); }); document.querySelectorAll('.stat-card, .campaign-card').forEach(c=>ob.observe(c)); }
+        function applyFilters(){ const s=document.getElementById('statusFilter')?.value||''; const a=document.getElementById('approvalFilter')?.value||''; const p=new URLSearchParams(); if(s) p.append('status',s); if(a) p.append('approvalStatus',a); const url='/admin/manage-campaigns'+(p.toString()?('?'+p.toString()):''); showLoading(); window.location.href=url; }
+        function filterCampaigns(k){ const term=(k||'').toLowerCase(); const rows=document.querySelectorAll('.campaign-row, .campaign-card'); rows.forEach(r=>{ const txt=r.textContent.toLowerCase(); const ok=txt.includes(term); r.style.display= ok ? '' : 'none'; if(ok) r.classList.add('fade-in'); }); updateEmptyState(); }
+        function updateEmptyState(){ const visible=document.querySelectorAll('.campaign-row:not([style*="display: none"]), .campaign-card:not([style*="display: none"])'); const empty=document.querySelector('.empty-state'); if(visible.length===0 && !empty){ const ctr=document.querySelector('.table-container, .campaigns-grid'); ctr.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><ion-icon name="search-outline"></ion-icon></div><h3>Không tìm thấy kết quả</h3><p>Không có chiến dịch nào phù hợp với tiêu chí tìm kiếm của bạn.</p></div>'; } }
+        function showLoading(){ const o=document.createElement('div'); o.style.cssText='position:fixed;inset:0;background:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(2px)'; o.innerHTML='<div style="text-align:center;color:#667eea;"><ion-icon name="hourglass-outline" style="font-size:3rem;animation:spin 2s linear infinite;"></ion-icon><p style="margin-top:1rem;font-weight:500;">Đang tải...</p></div>'; document.body.appendChild(o); }
+        const btnStyles=document.createElement('style'); btnStyles.textContent=`
+          .btn{padding:.75rem 1.5rem;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:.3s;font-size:.875rem;}
+          .btn-secondary{background:#f3f4f6;color:#6b7280}.btn-secondary:hover{background:#e5e7eb}
+          .btn-success{background:#10b981;color:#fff}.btn-success:hover{background:#059669;transform:translateY(-1px)}
+          .btn-danger{background:#ef4444;color:#fff}.btn-danger:hover{background:#dc2626;transform:translateY(-1px)}
+          @@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+        `; document.head.appendChild(btnStyles);
+    </script>
+}
+
+@Html.AntiForgeryToken()
 

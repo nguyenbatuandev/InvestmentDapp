@@ -1,5 +1,6 @@
 ﻿using InvestDapp.Infrastructure.Data.interfaces;
 using InvestDapp.Models;
+using InvestDapp.Shared.Enums;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -84,6 +85,34 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 .Include(c => c.Posts)
                 .Where(c => c.OwnerAddress.ToLower() == ownerAddress.ToLower())
                 .OrderByDescending(c => c.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Campaign>> GetCampaignsForAdminAsync(CampaignStatus? status = null, ApprovalStatus? approvalStatus = null, int page = 1, int pageSize = 10)
+        {
+            var query = _context.Campaigns
+                .Include(c => c.category)
+                .Include(c => c.Posts)
+                .Include(c => c.Investments)
+                .Include(c => c.WithdrawalRequests)
+                .AsQueryable();
+
+            // Apply filters
+            if (status.HasValue)
+            {
+                query = query.Where(c => c.Status == status.Value);
+            }
+
+            if (approvalStatus.HasValue)
+            {
+                query = query.Where(c => c.ApprovalStatus == approvalStatus.Value);
+            }
+
+            // Apply pagination and ordering
+            return await query
+                .OrderByDescending(c => c.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
         }
     }

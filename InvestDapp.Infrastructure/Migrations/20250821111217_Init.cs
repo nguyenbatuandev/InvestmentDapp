@@ -84,13 +84,18 @@ namespace InvestDapp.Infrastructure.Migrations
                 name: "Campaigns",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false),
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     OwnerAddress = table.Column<string>(type: "nvarchar(42)", maxLength: 42, nullable: false),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ShortDescription = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     categoryId = table.Column<int>(type: "int", nullable: true),
+                    ApprovalStatus = table.Column<int>(type: "int", nullable: false),
+                    AdminNotes = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ApprovedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ApprovedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     GoalAmount = table.Column<double>(type: "float", nullable: false),
                     CurrentRaisedAmount = table.Column<double>(type: "float", nullable: false),
                     TotalInvestmentsOnCompletion = table.Column<double>(type: "float", nullable: false),
@@ -158,6 +163,39 @@ namespace InvestDapp.Infrastructure.Migrations
                         column: x => x.UserID,
                         principalTable: "Users",
                         principalColumn: "ID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CampaignPosts",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CampaignId = table.Column<int>(type: "int", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PostType = table.Column<int>(type: "int", nullable: false),
+                    ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    AuthorAddress = table.Column<string>(type: "nvarchar(42)", maxLength: 42, nullable: false),
+                    ApprovalStatus = table.Column<int>(type: "int", nullable: false),
+                    AdminNotes = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ApprovedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ApprovedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ViewCount = table.Column<int>(type: "int", nullable: false),
+                    IsFeatured = table.Column<bool>(type: "bit", nullable: false),
+                    Tags = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CampaignPosts", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CampaignPosts_Campaigns_CampaignId",
+                        column: x => x.CampaignId,
+                        principalTable: "Campaigns",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -333,12 +371,18 @@ namespace InvestDapp.Infrastructure.Migrations
                     Type = table.Column<int>(type: "int", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     AvatarURL = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    CampaignId = table.Column<int>(type: "int", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     LastMessageId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Conversations", x => x.ConversationId);
+                    table.ForeignKey(
+                        name: "FK_Conversations_Campaigns_CampaignId",
+                        column: x => x.CampaignId,
+                        principalTable: "Campaigns",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -377,6 +421,7 @@ namespace InvestDapp.Infrastructure.Migrations
                 {
                     UserId = table.Column<int>(type: "int", nullable: false),
                     ConversationId = table.Column<int>(type: "int", nullable: false),
+                    UnreadCount = table.Column<int>(type: "int", nullable: false),
                     Role = table.Column<int>(type: "int", nullable: false),
                     JoinedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -423,6 +468,11 @@ namespace InvestDapp.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_CampaignPosts_CampaignId",
+                table: "CampaignPosts",
+                column: "CampaignId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Campaigns_categoryId",
                 table: "Campaigns",
                 column: "categoryId");
@@ -432,6 +482,11 @@ namespace InvestDapp.Infrastructure.Migrations
                 table: "CompanyKycInfos",
                 column: "FundraiserKycId",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Conversations_CampaignId",
+                table: "Conversations",
+                column: "CampaignId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Conversations_LastMessageId",
@@ -507,8 +562,15 @@ namespace InvestDapp.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(
+                name: "FK_Conversations_Campaigns_CampaignId",
+                table: "Conversations");
+
+            migrationBuilder.DropForeignKey(
                 name: "FK_Conversations_Messagers_LastMessageId",
                 table: "Conversations");
+
+            migrationBuilder.DropTable(
+                name: "CampaignPosts");
 
             migrationBuilder.DropTable(
                 name: "CompanyKycInfos");

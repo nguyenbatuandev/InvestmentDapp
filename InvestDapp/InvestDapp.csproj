@@ -21,8 +21,6 @@
   <ItemGroup>
     <Folder Include="Areas\admin\Data\" />
     <Folder Include="Areas\admin\Models\" />
-    <Folder Include="Areas\admin\Service\" />
-    <Folder Include="Areas\admin\Repository\" />
     <Folder Include="Data\" />
     <Folder Include="Models\" />
     <Folder Include="Pages\" />
@@ -31,7 +29,6 @@
     <Folder Include="wwwroot\css\" />
     <Folder Include="wwwroot\css\Custom\" />
     <Folder Include="wwwroot\images\" />
-    <Folder Include="wwwroot\js\" />
     <Folder Include="wwwroot\js\Custom\" />
     <Folder Include="wwwroot\lib\bootstrap\" />
     <Folder Include="wwwroot\lib\bootstrap\dist\css\" />

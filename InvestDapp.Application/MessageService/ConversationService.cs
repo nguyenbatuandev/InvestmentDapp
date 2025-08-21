@@ -50,7 +50,7 @@ namespace InvestDapp.Application.MessageService
             if (participantCount == 0)
             {
                 _logger.LogError("LỖI NGHIÊM TRỌNG: Danh sách thành viên bị rỗng. Logic thêm vào group sẽ bị bỏ qua.");
-                return conversation; // Trả về để tránh lỗi, nhưng log đã ghi lại vấn đề
+                return conversation; 
             }
 
             // 3. Vòng lặp thêm tất cả thành viên vào group SignalR

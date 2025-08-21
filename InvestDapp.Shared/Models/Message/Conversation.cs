@@ -1,6 +1,6 @@
-﻿using InvestDapp.Shared.Enums;
-using System;
-using System.Collections.Generic;
+﻿using InvestDapp.Models;
+using InvestDapp.Shared.Enums;
+using InvestDapp.Shared.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
@@ -20,6 +20,10 @@ namespace InvestDapp.Shared.Models.Message
 
         [StringLength(255)]
         public string? AvatarURL { get; set; }
+
+        // Nối khóa ngoại với Campaign (có thể null nếu không phải group chiến dịch)
+        public int? CampaignId { get; set; }
+        [ForeignKey("CampaignId")] public Campaign? Campaign { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 

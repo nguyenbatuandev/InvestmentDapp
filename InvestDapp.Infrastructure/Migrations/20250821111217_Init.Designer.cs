@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace InvestDapp.Infrastructure.Migrations
 {
     [DbContext(typeof(InvestDbContext))]
-    [Migration("20250726123105_Init")]
+    [Migration("20250821111217_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -28,7 +28,22 @@ namespace InvestDapp.Infrastructure.Migrations
             modelBuilder.Entity("InvestDapp.Models.Campaign", b =>
                 {
                     b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AdminNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ApprovalStatus")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ApprovedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -140,6 +155,71 @@ namespace InvestDapp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("EventProcessingStates");
+                });
+
+            modelBuilder.Entity("InvestDapp.Shared.Models.CampaignPost", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AdminNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ApprovalStatus")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ApprovedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AuthorAddress")
+                        .IsRequired()
+                        .HasMaxLength(42)
+                        .HasColumnType("nvarchar(42)");
+
+                    b.Property<int>("CampaignId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsFeatured")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PostType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Tags")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ViewCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CampaignId");
+
+                    b.ToTable("CampaignPosts");
                 });
 
             modelBuilder.Entity("InvestDapp.Shared.Models.Category", b =>
@@ -323,6 +403,9 @@ namespace InvestDapp.Infrastructure.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<int?>("CampaignId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -337,6 +420,8 @@ namespace InvestDapp.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("ConversationId");
+
+                    b.HasIndex("CampaignId");
 
                     b.HasIndex("LastMessageId");
 
@@ -409,6 +494,9 @@ namespace InvestDapp.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UnreadCount")
                         .HasColumnType("int");
 
                     b.HasKey("UserId", "ConversationId");
@@ -651,6 +739,17 @@ namespace InvestDapp.Infrastructure.Migrations
                     b.Navigation("category");
                 });
 
+            modelBuilder.Entity("InvestDapp.Shared.Models.CampaignPost", b =>
+                {
+                    b.HasOne("InvestDapp.Models.Campaign", "Campaign")
+                        .WithMany("Posts")
+                        .HasForeignKey("CampaignId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Campaign");
+                });
+
             modelBuilder.Entity("InvestDapp.Shared.Models.Investment", b =>
                 {
                     b.HasOne("InvestDapp.Models.Campaign", "Campaign")
@@ -697,10 +796,16 @@ namespace InvestDapp.Infrastructure.Migrations
 
             modelBuilder.Entity("InvestDapp.Shared.Models.Message.Conversation", b =>
                 {
+                    b.HasOne("InvestDapp.Models.Campaign", "Campaign")
+                        .WithMany()
+                        .HasForeignKey("CampaignId");
+
                     b.HasOne("InvestDapp.Shared.Models.Message.Messager", "LastMessage")
                         .WithMany()
                         .HasForeignKey("LastMessageId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Campaign");
 
                     b.Navigation("LastMessage");
                 });
@@ -820,6 +925,8 @@ namespace InvestDapp.Infrastructure.Migrations
             modelBuilder.Entity("InvestDapp.Models.Campaign", b =>
                 {
                     b.Navigation("Investments");
+
+                    b.Navigation("Posts");
 
                     b.Navigation("Profits");
 

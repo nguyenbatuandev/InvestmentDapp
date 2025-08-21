@@ -188,7 +188,7 @@ namespace InvestDapp.Application.CampaignService
             return await _repository.GetCampaignByIdAsync(id);
         }
 
-        public async Task<bool> ApproveCampaignAsync(int id, string adminNotes, string adminWallet)
+        public async Task<bool> ApproveCampaignAsync(int id, string adminWallet, string? adminNotes = null)
         {
             var campaign = await _repository.GetCampaignByIdAsync(id);
             if (campaign == null) return false;
@@ -200,7 +200,7 @@ namespace InvestDapp.Application.CampaignService
             return result;
         }
 
-        public async Task<bool> RejectCampaignAsync(int id, string adminNotes, string adminWallet)
+        public async Task<bool> RejectCampaignAsync(int id, string adminWallet, string adminNotes)
         {
             var campaign = await _repository.GetCampaignByIdAsync(id);
             if (campaign == null) return false;
@@ -219,6 +219,11 @@ namespace InvestDapp.Application.CampaignService
             }
 
             return await _repository.RejectCampaignAsync(id, adminNotes, adminWallet);
+        }
+
+        public async Task<IEnumerable<Campaign>> GetCampaignsForAdminAsync(CampaignStatus? status = null, ApprovalStatus? approvalStatus = null, int page = 1, int pageSize = 10)
+        {
+            return await _campaignRepository.GetCampaignsForAdminAsync(status, approvalStatus, page, pageSize);
         }
 
         public async Task<IEnumerable<Campaign>> GetUserCampaignsAsync(string ownerAddress)
