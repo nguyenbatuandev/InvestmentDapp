@@ -556,7 +556,7 @@
                     </a>
                     @if (User.IsInRole("Admin"))
                     {
-                        <a asp-controller="Admin" asp-action="Index">⚙️ Quản trị</a>
+                        <a asp-area="Admin" asp-controller="Manage_Campaigns" asp-action="Index">⚙️ Quản trị</a>
                     }
                     <hr />
                     <a href="#" id="logout-btn">🚪 Đăng xuất</a>

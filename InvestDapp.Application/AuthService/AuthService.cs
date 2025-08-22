@@ -47,16 +47,24 @@ namespace InvestDapp.Application.AuthService
 
         public async Task SignInUser(User user)
         {
+            var kyc = await _dbContext.FundraiserKyc
+          .FirstOrDefaultAsync(k => k.UserId == user.ID && k.IsApproved == true);
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.ID.ToString()),
-                new Claim("WalletAddress", user.WalletAddress),
-                new Claim(ClaimTypes.Name, user.Name),
+                new Claim("WalletAddress", user.WalletAddress ?? ""),
+                new Claim(ClaimTypes.Name, user.Name ?? ""),
                 new Claim(ClaimTypes.Role, user.Role)
             };
 
+            if (kyc != null && kyc.AcceptedTerms)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "KycVerified"));
+            }
+
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var principal = new ClaimsPrincipal(claimsIdentity); // 🔧 Sửa: tạo principal
+            var principal = new ClaimsPrincipal(claimsIdentity);
 
             var authProperties = new AuthenticationProperties
             {
@@ -64,7 +72,7 @@ namespace InvestDapp.Application.AuthService
                 ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
             };
 
-            var httpContext = _httpContextAccessor.HttpContext; // 🔧 Lấy context đúng cách
+            var httpContext = _httpContextAccessor.HttpContext;
 
             if (httpContext != null)
             {

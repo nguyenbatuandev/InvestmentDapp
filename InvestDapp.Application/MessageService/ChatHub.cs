@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
-namespace InvestDapp.Application.MessageService // Thay bằng namespace của bạn
+namespace InvestDapp.Application.MessageService
 {
     [Authorize]
     public class ChatHub : Hub

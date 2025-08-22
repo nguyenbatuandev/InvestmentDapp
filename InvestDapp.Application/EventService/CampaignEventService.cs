@@ -66,38 +66,6 @@ namespace Invest.Application.EventService
 
                     _logger.LogInformation("--> Processing chunk from block {Start} to {End}", currentChunkStartBlock, currentChunkEndBlock);
 
-                    // Xử lý sự kiện CampaignCreated
-                    //await ProcessEventsInRange<CampaignCreatedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "CampaignCreated", async (log) =>
-                    //{
-                    //    // === LOGIC XỬ LÝ NẰM HOÀN TOÀN Ở ĐÂY ===
-                    //    var evt = log.Event; // evt bây giờ có kiểu là CampaignCreatedEventDTO
-                    //    var txHash = log.Log.TransactionHash;
-                    //    var blockNumber = (int)log.Log.BlockNumber.Value;
-                    //    // Lấy thông tin về transaction
-                    //    var transaction = await _web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(txHash);
-
-                    //    // Lấy thông tin block chứa transaction này
-                    //    var block = await _web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(transaction.BlockNumber);
-
-                    //    // Lấy timestamp của block
-                    //    var timestamp = block.Timestamp;  // Đơn vị là seconds từ Unix epoch
-                    //    DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds((long)timestamp.Value).UtcDateTime;
-
-                    //    // 1. Xử lý logic nghiệp vụ
-                    //    await _eventRepository.HandleCampaignCreatedAsync(evt.Id, evt.Owner, evt.Name, evt.GoalAmount, evt.EndTime, dateTime);
-
-                    //    // 2. Ghi log sự kiện
-                    //    // Ở đây, evt.Id là BigInteger, chúng ta ép kiểu nó thành long một cách an toàn
-                    //    await _eventRepository.LogEventAsync(
-                    //        "CampaignCreated",
-                    //        txHash,
-                    //        blockNumber,
-                    //        (int)evt.Id, // <-- ÉP KIỂU AN TOÀN VÀ CHÍNH XÁC
-                    //        JsonSerializer.Serialize(evt)
-                    //    );
-                    //}, cancellationToken);
-
-
                     // 2. THÊM ĐOẠN CODE LẮNG NGHE INVESTMENT TẠI ĐÂY
                     await ProcessEventsInRange<InvestmentReceivedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "InvestmentReceived", async (log) =>
                     {

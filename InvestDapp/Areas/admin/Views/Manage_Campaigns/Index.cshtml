@@ -1216,8 +1216,8 @@
 </div>
 
 @section Scripts {
-    <!-- 1) Load config TRƯỚC từ đường dẫn đúng -->
-    <script src="~/js/contract-config.js"></script>
+    <!-- 1) Load config TRƯỚC từ đường dẫn đúng với cache-busting -->
+    <script src="~/js/contract-config.js?v=@DateTime.Now.Ticks"></script>
 
     <!-- 2) Ethers UMD: bảo đảm có window.ethers -->
     <script id="ethers-cdn" src="https://unpkg.com/ethers@6.10.0/bundles/ethers.umd.min.js"></script>
@@ -1226,13 +1226,20 @@
         // ===== LẤY CONFIG với fallback =====
         const CFG = window.CONTRACT_CONFIG || {};
         const EXPECTED_CHAIN_ID = CFG.EXPECTED_CHAIN_ID_HEX || CFG.EXPECTED_CHAIN_ID || '0x61';
-        const CONTRACT_ADDRESS  = CFG.CONTRACT_ADDRESS || '0xD96d68dE1B768eA6ac30f701f6dBfE79eb75c20f';
-        const CONTRACT_ABI      = CFG.CONTRACT_ABI || [];
+        const CONTRACT_ADDRESS  = CFG.CONTRACT_ADDRESS;
+        const CONTRACT_ABI      = CFG.CONTRACT_ABI;
 
         // Debug log để kiểm tra config
         console.log('CONTRACT_CONFIG loaded:', !!window.CONTRACT_CONFIG);
-        console.log('CONTRACT_ADDRESS:', CONTRACT_ADDRESS);
+        console.log('CONTRACT_ADDRESS from config:', CONTRACT_ADDRESS);
         console.log('CONTRACT_ABI length:', CONTRACT_ABI?.length || 0);
+        
+        // KIỂM TRA PHÒNG THỦ - đảm bảo địa chỉ đúng
+        if (CONTRACT_ADDRESS && CONTRACT_ADDRESS !== '0x6D0A032b4BF1d39444f7Be141913Ed8878686Cb8') {
+            console.warn('⚠️ CONTRACT_ADDRESS không khớp với expected:', CONTRACT_ADDRESS);
+            console.warn('Expected: 0x6D0A032b4BF1d39444f7Be141913Ed8878686Cb8');
+            console.warn('Actual:', CONTRACT_ADDRESS);
+        }
 
         // ===== ETHERS LOADER =====
         let _ethersLoadingPromise = null;
@@ -1351,10 +1358,20 @@
           const el = document.querySelector(`[data-campaign-id="${campaignId}"]`);
           if(!el) throw new Error('Không tìm thấy dữ liệu chiến dịch.');
 
+          const id = BigInt(campaignId);             // Sử dụng campaignId trực tiếp
           const name = (el.dataset.name||'').trim();
           const goalBNB = parseFloat(el.dataset.goal||'0');
           const endTime = parseInt(el.dataset.endtime||'0',10);
           let owner = (el.dataset.owner||'').trim();
+
+		  // Debug: log raw data from element
+          console.log('Raw data from element:', {
+            id: campaignId,
+            name: el.dataset.name,
+            goal: el.dataset.goal,
+            endtime: el.dataset.endtime,
+            owner: el.dataset.owner
+          });
 
           if(!name) throw new Error('Thiếu tên chiến dịch.');
           if(!(goalBNB>0)) throw new Error('Mục tiêu không hợp lệ.');
@@ -1375,7 +1392,16 @@
           const goalWei = window.ethers.parseEther(String(goalBNB));
           const contract = await getContract();
 
-          const tx = await contract.createCampaign(name, goalWei, durationDays, owner);
+          // Debug: log các tham số gọi hàm
+          console.log('Calling createCampaign with params:', {
+            id: id.toString(),
+            name,
+            goalWei: goalWei.toString(),
+            durationDays,
+            owner
+          });
+
+          const tx = await contract.createCampaign(id, name, goalWei, durationDays, owner);
           showOnChainToast('Đang gửi giao dịch... TX: '+tx.hash);
 
           const receipt = await tx.wait();
@@ -1388,7 +1414,7 @@
         // ===== MODAL / UI =====
         function createModal({title,content,actions}){
           const m=document.createElement('div');
-          m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:10000;backdrop-filter:blur(4px)';
+          m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index=10000;backdrop-filter:blur(4px)';
           const actionsHtml = actions.map((a,i)=>`<button class="btn ${a.class}" data-action="${i}">${a.text}</button>`).join('');
           m.innerHTML = `
             <div style="background:#fff;border-radius:16px;padding:2rem;max-width:500px;width:90%;box-shadow:0 20px 40px rgba(0,0,0,.15);">
@@ -1475,7 +1501,7 @@
         }
 
         // ===== EXPOSE GLOBALS =====
-        window.viewCampaign     = function(id){ window.open(`/admin/manage-campaigns/details/${id}`, '_blank'); };
+               window.viewCampaign     = function(id){  window.location.href = `/admin/manage-campaigns/details/${id}`;};
         window.approveCampaign  = function(id){ showApprovalDialog(id); };
         window.rejectCampaign   = function(id){ showRejectionDialog(id); };
 

@@ -62,13 +62,12 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
     // --- BIẾN TRẠNG THÁI (STATE VARIABLES) ---
     // Các biến này được lưu trữ vĩnh viễn trên blockchain và xác định trạng thái của hợp đồng.
     uint256 public addProfitCounter;
-    uint256 public campaignCounter;
     uint256 public requestWithdrawCounter;
     uint256 public constant MIN_INVESTMENT_AMOUNT = 0.01 ether;
     uint256 public constant VOTE_DURATION = 3 days;
     uint16  public fees;
     address public feeReceiver;
-
+    uint256 public campaignCounter;
     // --- MAPPINGS ---
     // Mappings hoạt động như các bảng băm (hash tables), dùng để lưu trữ và truy xuất dữ liệu một cách hiệu quả.
     mapping(uint256 => Campaign) public campaigns;
@@ -185,20 +184,20 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
     }
 
     function createCampaign(
-        string memory _name,
-        uint256 _goalAmount,
-        uint256 _durationInDays,
-        address _creatorAddress
+    uint256 _id,
+    string memory _name,
+    uint256 _goalAmount,
+    uint256 _durationInDays,
+    address _creatorAddress
     ) external onlyAdmin {
+        require(_id != 0, "Invalid id");
+        require(campaigns[_id].owner == address(0), "ID already used");
         require(_goalAmount > 0, "Goal must be greater than 0");
         require(_durationInDays > 0, "Duration must be greater than 0");
-
-        uint256 endTime = block.timestamp + _durationInDays * 1 days; 
         campaignCounter++;
-        
-        // Tạo một thực thể Campaign mới và lưu vào mapping `campaigns`.
-        campaigns[campaignCounter] = Campaign({
-            id: campaignCounter,
+        uint256 endTime = block.timestamp + _durationInDays * 1 days;
+        campaigns[_id] = Campaign({
+            id: _id,
             owner: _creatorAddress,
             name: _name,
             goalAmount: _goalAmount,
@@ -208,34 +207,32 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
             status: CampaignStatus.Active,
             investorCount: 0
         });
-        emit CampaignCreated(campaignCounter, _creatorAddress, _name, _goalAmount, endTime);
+        emit CampaignCreated(_id, _creatorAddress, _name, _goalAmount, endTime);
     }
     
     // Hàm này là `payable`, có nghĩa là nó có thể nhận ETH khi được gọi.
     function invest(uint256 _campaignId) external payable nonReentrant {
-        Campaign storage campaign = campaigns[_campaignId];
-        require(_campaignId > 0 && _campaignId <= campaignCounter, "Campaign does not exist");
-        require(campaign.status == CampaignStatus.Active, "Campaign is not active");
-        require(msg.value >= MIN_INVESTMENT_AMOUNT, "investment amount is too small");
-        require(block.timestamp < campaign.endTime, "Campaign has ended");
+        Campaign storage c = campaigns[_campaignId];
+        require(c.owner != address(0) && c.id == _campaignId, "Campaign not found");
+        require(c.status == CampaignStatus.Active, "Campaign is not active");
+        require(msg.value >= MIN_INVESTMENT_AMOUNT, "Investment too small");
+        require(block.timestamp < c.endTime, "Campaign has ended");
 
-        // Nếu đây là lần đầu người này quyên góp, tăng số lượng nhà tài trợ lên.
         if (campaignInvestorBalances[_campaignId][msg.sender] == 0) {
-            campaign.investorCount++;
+            c.investorCount++;
             campaignInvestors[_campaignId].push(msg.sender);
         }
-        
-        // Cập nhật các số liệu liên quan.
+
         campaignInvestorBalances[_campaignId][msg.sender] += msg.value;
-        campaign.currentRaisedAmount += msg.value;
-        
-        // Lưu lại lịch sử của lần quyên góp này.
+        c.currentRaisedAmount += msg.value;
+
         campaignInvestments[_campaignId].push(Investment({
             investor: msg.sender,
             amount: msg.value,
             timestamp: block.timestamp
         }));
-        emit InvestmentReceived(_campaignId, msg.sender, msg.value, campaign.currentRaisedAmount);
+
+        emit InvestmentReceived(_campaignId, msg.sender, msg.value, c.currentRaisedAmount);
     }
     
     function addProfit(uint256 _campaignId) external payable onlyCampaignOwner(_campaignId) {
@@ -255,7 +252,7 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
 
     function claimProfit(uint256 _campaignId, uint256 _profitIndex) external nonReentrant {
         // Đổi tên _profitId thành _profitIndex để rõ ràng hơn
-        require(_campaignId > 0 && _campaignId <= campaignCounter, "Campaign does not exist");
+        require(campaigns[_campaignId].owner != address(0), "Campaign does not exist");
 
         Campaign storage campaign = campaigns[_campaignId];
         require(campaign.status == CampaignStatus.Completed, "Campaign not completed");
@@ -291,7 +288,7 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         uint256 voteWeight = campaignInvestorBalances[_campaignId][msg.sender];
         require(voteWeight > 0, "Only investors can vote");
         require(_requestId < withdrawalRequests[_campaignId].length, "Withdrawal request not found");
-        require(_campaignId > 0 && _campaignId <= campaignCounter, "Campaign does not exist");
+        require(campaigns[_campaignId].owner != address(0), "Campaign does not exist");
 
         WithdrawalRequest storage request = withdrawalRequests[_campaignId][_requestId];
         

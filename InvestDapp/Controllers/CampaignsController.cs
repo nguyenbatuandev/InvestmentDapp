@@ -20,7 +20,7 @@ namespace InvestDapp.Controllers
             _userService = userService;
         }
 
-        [AllowAnonymous]
+        [Authorize(Roles = "KycVerified,Admin")]
         public async Task<IActionResult> Index()
         {
             try
@@ -37,12 +37,14 @@ namespace InvestDapp.Controllers
         }
 
         // GET: /Campaign/Create
+        [Authorize(Roles = "KycVerified,Admin")]
         public IActionResult Create()
         {
             return View();
         }
 
         // GET: /Campaign/MyCampaigns
+        [Authorize(Roles = "KycVerified,Admin")]
         public async Task<IActionResult> MyCampaigns()
         {
             try
@@ -106,6 +108,7 @@ namespace InvestDapp.Controllers
         // POST: /Campaign/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "KycVerified,Admin")]
         public async Task<IActionResult> Create(CreateCampaignRequest request)
         {
             if (!ModelState.IsValid)
@@ -190,6 +193,7 @@ namespace InvestDapp.Controllers
         #region Campaign Posts Views
 
         // GET: /Campaign/CreatePost/5
+        [Authorize(Roles = "KycVerified,Admin")]
         public async Task<IActionResult> CreatePost(int campaignId)
         {
             var campaign = await _campaignPostService.GetCampaignByIdAsync(campaignId);
@@ -254,6 +258,7 @@ namespace InvestDapp.Controllers
         // POST: /Campaign/CreatePost
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "KycVerified,Admin")]
         public async Task<IActionResult> CreatePost(CreateCampaignPostRequest request)
         {
             if (!ModelState.IsValid)
@@ -305,8 +310,9 @@ namespace InvestDapp.Controllers
         }
 
         // POST: /Campaign/DeletePost/5
-        [HttpPost]
+        [HttpDelete]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "KycVerified,Admin")]
         public async Task<IActionResult> DeletePost(int id)
         {
             try
@@ -341,6 +347,7 @@ namespace InvestDapp.Controllers
         #region Workflow Views
 
         // GET: /Campaign/AwaitingApproval/5
+        [Authorize(Roles = "KycVerified,Admin")]
         public async Task<IActionResult> AwaitingApproval(int campaignId)
         {
             var campaign = await _campaignPostService.GetCampaignByIdAsync(campaignId);

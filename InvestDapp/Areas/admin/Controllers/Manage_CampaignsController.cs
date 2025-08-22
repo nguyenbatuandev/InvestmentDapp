@@ -1,8 +1,8 @@
 ﻿using InvestDapp.Application.CampaignService;
-using InvestDapp.Application.MessageService;
 using InvestDapp.Infrastructure.Data;
 using InvestDapp.Shared.Enums;
 using InvestDapp.Shared.Models.Message;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +10,7 @@ namespace InvestDapp.Areas.admin.Controllers
 {
     [Area("Admin")]
     [Route("admin/manage-campaigns")]
+    [Authorize(Roles = "Admin")]
     public class Manage_CampaignsController : Controller
     {
         private readonly ICampaignPostService _campaignService;
