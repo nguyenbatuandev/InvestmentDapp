@@ -1,10 +1,23 @@
-@{
-    ViewData["Title"] = "Chart - " + ViewBag.Symbol;
-    Layout = "~/Pages/_Layout.cshtml";
+﻿@{
+    Layout = null;
 }
 
-@section Styles {
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group Chat UI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@latest/index.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
     <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         /* Override default layout styles for trading page */
         .trading-page main {
             padding-top: 0 !important;
@@ -25,6 +38,12 @@
             --trading-yellow: #f59e0b;
             --trading-blue: #0ea5e9;
             --trading-purple: #8b5cf6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body.light {
@@ -230,13 +249,35 @@
             }
 
         /* Main trading area */
-        .trading-main {
+        .trading-container {
             flex: 1;
-            padding: 24px;
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 24px;
+            display: flex;
+            flex-direction: column; /* Stack top panel and tabs vertically */
+            padding: 20px;
+            gap: 20px;
             min-height: 0;
+            overflow: hidden;
+        }
+
+        .trading-top-panel {
+            flex: 1; /* Allow this panel to grow and fill available space */
+            display: flex;
+            gap: 20px;
+            min-height: 0;
+        }
+
+        .trading-main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .trading-sidebar {
+            width: 380px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Chart container with professional styling */
@@ -247,12 +288,13 @@
             overflow: hidden;
             position: relative;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            display: flex;
         }
 
         #chart {
             width: 100%;
-            height: 600px;
-            min-height: 500px;
+            height: 100%;
         }
 
         /* Trading controls panel */
@@ -263,9 +305,10 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
             backdrop-filter: blur(10px);
+            height: 100%; /* Make controls fill sidebar height */
         }
 
         .control-section {
@@ -276,10 +319,10 @@
             transition: all 0.3s ease;
         }
 
-        .control-section:hover {
-            border-color: var(--trading-accent);
-            box-shadow: 0 4px 16px rgba(88, 166, 255, 0.1);
-        }
+            .control-section:hover {
+                border-color: var(--trading-accent);
+                box-shadow: 0 4px 16px rgba(88, 166, 255, 0.1);
+            }
 
         .section-title {
             font-size: 15px;
@@ -311,6 +354,57 @@
             color: var(--trading-muted);
         }
 
+        /* New Order Form Styles */
+        .order-type-switcher {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: var(--trading-panel);
+            border-radius: 10px;
+            padding: 4px;
+            border: 1px solid var(--trading-border);
+            margin-bottom: 16px;
+        }
+
+        .order-type-btn {
+            background: transparent;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            color: var(--trading-muted);
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+            .order-type-btn.active {
+                background: var(--trading-accent);
+                color: white;
+                box-shadow: 0 2px 8px rgba(88, 166, 255, 0.3);
+            }
+
+        #order-form-body {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .tp-sl-group {
+            display: flex;
+            gap: 10px;
+        }
+
+            .tp-sl-group .input-group {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .tp-sl-group .input-field {
+                width: 100%;
+                min-width: 0;
+            }
+
         /* Form inputs */
         .input-grid {
             display: grid;
@@ -334,6 +428,7 @@
         }
 
         .input-field {
+            width: 100%;
             background: var(--trading-panel);
             border: 1px solid var(--trading-border);
             border-radius: 8px;
@@ -359,7 +454,7 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
-            margin-bottom: 16px;
+            margin-top: 8px;
         }
 
         .action-btn {
@@ -372,6 +467,10 @@
             transition: all 0.2s ease;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .btn-long {
@@ -403,6 +502,7 @@
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
+            margin-top: 16px;
         }
 
         .control-btn {
@@ -429,18 +529,20 @@
 
         /* Tables styling */
         .info-tabs {
-            margin-top: 24px;
             background: var(--trading-panel);
             border: 1px solid var(--trading-border);
             border-radius: 16px;
             overflow: hidden;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
         }
 
         .tab-header {
             display: flex;
             background: var(--trading-panel-light);
             border-bottom: 1px solid var(--trading-border);
+            flex-shrink: 0;
         }
 
         .tab-link {
@@ -470,14 +572,17 @@
 
         .tab-content {
             display: none;
+            flex: 1;
+            overflow: hidden;
         }
 
             .tab-content.active {
-                display: block;
+                display: flex;
+                flex-direction: column;
             }
 
         .table-wrapper {
-            max-height: 400px;
+            flex: 1;
             overflow: auto;
         }
 
@@ -525,27 +630,67 @@
                 color: var(--trading-down);
             }
 
-            /* Inline TP/SL edit chips */
-            .tp-sl-edit {
-                display: flex;
-                gap:4px;
-                align-items:center;
+        /* Inline TP/SL edit chips */
+        .tp-sl-edit {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .tp-sl-value {
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: var(--trading-panel);
+            border: 1px solid var(--trading-border);
+            font-size: 11px;
+            cursor: pointer;
+            transition: .15s;
+        }
+
+            .tp-sl-value:hover {
+                border-color: var(--trading-accent);
+                color: var(--trading-accent);
             }
-            .tp-sl-value {
-                padding:2px 6px;
-                border-radius:4px;
-                background:var(--trading-panel);
-                border:1px solid var(--trading-border);
-                font-size:11px;
-                cursor:pointer;
-                transition:.15s;
-            }
-            .tp-sl-value:hover { border-color: var(--trading-accent); color: var(--trading-accent); }
-            .tp-sl-input { width:70px; background:var(--trading-panel); border:1px solid var(--trading-accent); color:var(--trading-text); border-radius:4px; padding:2px 4px; font-size:11px; }
-            .tp-sl-save { background:var(--trading-up); color:#fff; border:none; padding:2px 6px; border-radius:4px; font-size:11px; cursor:pointer; }
-            .tp-sl-cancel { background:var(--trading-down); color:#fff; border:none; padding:2px 4px; border-radius:4px; font-size:11px; cursor:pointer; }
-            .pos-actions { display:flex; gap:4px; }
-            .control-btn.inline { padding:4px 8px; font-size:11px; }
+
+        .tp-sl-input {
+            width: 70px;
+            background: var(--trading-panel);
+            border: 1px solid var(--trading-accent);
+            color: var(--trading-text);
+            border-radius: 4px;
+            padding: 2px 4px;
+            font-size: 11px;
+        }
+
+        .tp-sl-save {
+            background: var(--trading-up);
+            color: #fff;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .tp-sl-cancel {
+            background: var(--trading-down);
+            color: #fff;
+            border: none;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .pos-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .control-btn.inline {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
 
         .pnl-positive {
             color: var(--trading-up);
@@ -558,14 +703,18 @@
         }
 
         /* Responsive design */
-        @@media (max-width: 1400px) {
-            .trading-main {
-                grid-template-columns: 1fr;
-                grid-template-rows: 600px 1fr;
+        @@media (max-width: 1200px) {
+            .trading-container {
+                flex-direction: column;
             }
 
-            .trading-controls {
-                order: 2;
+            .trading-sidebar {
+                width: 100%;
+            }
+
+            .chart-container {
+                height: 500px;
+                flex: none;
             }
         }
 
@@ -582,7 +731,7 @@
                 justify-content: center;
             }
 
-            .trading-main {
+            .trading-container {
                 padding: 16px;
                 gap: 16px;
             }
@@ -601,7 +750,7 @@
                 grid-template-columns: 1fr;
             }
 
-            #chart {
+            .chart-container {
                 height: 400px;
             }
         }
@@ -657,7 +806,7 @@
             }
         }
 
-        .trading-controls,
+        .trading-sidebar,
         .chart-container,
         .info-tabs {
             animation: slideIn 0.6s ease-out;
@@ -669,6 +818,7 @@
                 opacity: 0;
                 transform: translateX(100%);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
@@ -680,125 +830,224 @@
                 opacity: 1;
                 transform: translateX(0);
             }
+
             to {
                 opacity: 0;
                 transform: translateX(100%);
             }
         }
 
-    /* TP/SL Modal */
-    .tp-sl-modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:3000; }
-    .tp-sl-modal { background:var(--trading-panel); border:1px solid var(--trading-border); border-radius:14px; width:360px; padding:24px; box-shadow:0 12px 40px rgba(0,0,0,.45); animation: slideIn .35s; }
-    .tp-sl-modal h3 { margin:0 0 12px; font-size:18px; font-weight:700; }
-    .tp-sl-modal .field { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
-    .tp-sl-modal label { font-size:12px; font-weight:600; letter-spacing:.5px; color:var(--trading-muted); text-transform:uppercase; }
-    .tp-sl-modal input { background:var(--trading-panel-light); border:1px solid var(--trading-border); border-radius:8px; padding:10px 12px; color:var(--trading-text); font-family:'SF Mono',monospace; }
-    .tp-sl-modal input:focus { outline:none; border-color:var(--trading-accent); box-shadow:0 0 0 3px rgba(88,166,255,.15); }
-    .tp-sl-modal .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:4px; }
-    .btn { cursor:pointer; border:none; padding:10px 16px; font-weight:600; border-radius:8px; font-size:13px; letter-spacing:.3px; }
-    .btn-primary { background:var(--trading-accent); color:#fff; }
-    .btn-primary:hover { filter:brightness(1.1); }
-    .btn-outline { background:transparent; border:1px solid var(--trading-border); color:var(--trading-text); }
-    .btn-outline:hover { border-color:var(--trading-accent); color:var(--trading-accent); }
-    .hidden { display:none !important; }
-
-    /* Loading spinner */
-    .loading-spinner {
-        display: inline-block;
-        width: 16px;
-        height: 16px;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        border-top-color: #fff;
-        animation: spin 0.8s ease-in-out infinite;
-        margin-right: 8px;
-    }
-
-    .loading-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        backdrop-filter: blur(4px);
-    }
-
-    .loading-card {
-        background: var(--trading-panel);
-        border: 1px solid var(--trading-border);
-        border-radius: 12px;
-        padding: 24px;
-        text-align: center;
-        min-width: 200px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        animation: scaleIn 0.3s ease-out;
-    }
-
-    .loading-spinner-large {
-        width: 40px;
-        height: 40px;
-        border: 3px solid rgba(88, 166, 255, 0.3);
-        border-radius: 50%;
-        border-top-color: var(--trading-accent);
-        animation: spin 1s linear infinite;
-        margin: 0 auto 16px;
-    }
-
-    @@keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-
-    @@keyframes scaleIn {
-        from {
-            opacity: 0;
-            transform: scale(0.9);
+        /* TP/SL Modal */
+        .tp-sl-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
         }
-        to {
-            opacity: 1;
-            transform: scale(1);
+
+        .tp-sl-modal {
+            background: var(--trading-panel);
+            border: 1px solid var(--trading-border);
+            border-radius: 14px;
+            width: 360px;
+            padding: 24px;
+            box-shadow: 0 12px 40px rgba(0,0,0,.45);
+            animation: slideIn .35s;
         }
-    }
 
-    @@keyframes fadeOut {
-        from {
-            opacity: 1;
+            .tp-sl-modal h3 {
+                margin: 0 0 12px;
+                font-size: 18px;
+                font-weight: 700;
+            }
+
+            .tp-sl-modal .field {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                margin-bottom: 14px;
+            }
+
+            .tp-sl-modal label {
+                font-size: 12px;
+                font-weight: 600;
+                letter-spacing: .5px;
+                color: var(--trading-muted);
+                text-transform: uppercase;
+            }
+
+            .tp-sl-modal input {
+                background: var(--trading-panel-light);
+                border: 1px solid var(--trading-border);
+                border-radius: 8px;
+                padding: 10px 12px;
+                color: var(--trading-text);
+                font-family: 'SF Mono',monospace;
+            }
+
+                .tp-sl-modal input:focus {
+                    outline: none;
+                    border-color: var(--trading-accent);
+                    box-shadow: 0 0 0 3px rgba(88,166,255,.15);
+                }
+
+            .tp-sl-modal .actions {
+                display: flex;
+                gap: 10px;
+                justify-content: flex-end;
+                margin-top: 4px;
+            }
+
+        .btn {
+            cursor: pointer;
+            border: none;
+            padding: 10px 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            font-size: 13px;
+            letter-spacing: .3px;
         }
-        to {
-            opacity: 0;
+
+        .btn-primary {
+            background: var(--trading-accent);
+            color: #fff;
         }
-    }
 
-    /* Button loading states */
-    .btn-loading {
-        pointer-events: none;
-        opacity: 0.8;
-        position: relative;
-    }
+            .btn-primary:hover {
+                filter: brightness(1.1);
+            }
 
-    .btn-loading::before {
-        content: '';
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        width: 16px;
-        height: 16px;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        border-top-color: #fff;
-        animation: spin 0.8s linear infinite;
-    }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--trading-border);
+            color: var(--trading-text);
+        }
 
-    .btn-loading span {
-        opacity: 0;
-    }
+            .btn-outline:hover {
+                border-color: var(--trading-accent);
+                color: var(--trading-accent);
+            }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* TP/SL modal inline errors */
+        .tp-sl-modal .field {
+            position: relative;
+        }
+
+            .tp-sl-modal .field .error {
+                color: #ff6b6b;
+                font-size: 12px;
+                margin-top: 6px;
+                display: block;
+            }
+
+        /* Loading spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s ease-in-out infinite;
+            margin-right: 8px;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+        }
+
+        .loading-card {
+            background: var(--trading-panel);
+            border: 1px solid var(--trading-border);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            min-width: 200px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            animation: scaleIn 0.3s ease-out;
+        }
+
+        .loading-spinner-large {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(88, 166, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--trading-accent);
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @@keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @@keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @@keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
+        }
+
+        /* Button loading states */
+        .btn-loading {
+            pointer-events: none;
+            opacity: 0.8;
+            position: relative;
+        }
+
+            .btn-loading::before {
+                content: '';
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                width: 16px;
+                height: 16px;
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                border-top-color: #fff;
+                animation: spin 0.8s linear infinite;
+            }
+
+            .btn-loading span {
+                opacity: 0;
+            }
     </style>
-}
-
-@section Scripts {
+</head>
+<body>
     <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
     <script>
         // Configuration
         const SYMBOL = '@ViewBag.Symbol' || 'BTCUSDT';
@@ -842,7 +1091,7 @@
             await boot(currentInterval);
             await initializeSignalR();
             setupEventListeners();
-            toggleOrderTypeFields();
+            document.querySelector('.order-type-btn[data-type="0"]').click(); // Set initial state
             await detectBackendTrading();
             // Periodically refresh backend positions if enabled
             setInterval(() => refreshBackendState(), 5000);
@@ -854,7 +1103,7 @@
             return {
                 autoSize: true,
                 layout: {
-                    background: { color: isDark ? '#161b22' : '#f8fafc' },
+                    background: { color: 'transparent' },
                     textColor: isDark ? '#e6edf3' : '#0f172a',
                 },
                 grid: {
@@ -911,7 +1160,6 @@
 
         // Data helpers
         function klineToCandle(k) {
-            console.log('Raw kline data:', k);
             const candle = {
                 time: Math.floor(k.openTime / 1000),
                 open: normalizeSymbolPrice(parseFloat(k.open), currentSymbol),
@@ -919,7 +1167,6 @@
                 low: normalizeSymbolPrice(parseFloat(k.low), currentSymbol),
                 close: normalizeSymbolPrice(parseFloat(k.close), currentSymbol),
             };
-            console.log('Converted candle (normalized):', candle);
             return candle;
         }
 
@@ -928,14 +1175,12 @@
             const close = parseFloat(k.close);
             const isUp = close >= open;
             const color = isUp ? '#00d4aa' : '#ff4747';
-            
-            // CHUẨN VOLUME - Không scale gì cả, dùng raw data từ Binance
+
             const rawVolume = parseFloat(k.volume);
-            console.log('CHUẨN VOLUME - Raw volume từ Binance:', rawVolume, 'for symbol:', currentSymbol);
-            
+
             return {
                 time: Math.floor(k.openTime / 1000),
-                value: rawVolume, // Dùng volume gốc từ Binance
+                value: rawVolume,
                 color: color + '40', // Add transparency
             };
         }
@@ -947,8 +1192,7 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const data = await response.json();
-                console.log(`Received ${data.length} candles from API`);
-                
+
                 if (!data || data.length === 0) {
                     updateConnectionStatus({ status: 'disconnected' });
                     return;
@@ -961,20 +1205,14 @@
                 volumeSeries.setData(volumes);
                 chart.timeScale().fitContent();
 
-                // Update latest price
                 if (data.length > 0) {
                     const latest = data[data.length - 1];
-                    console.log('RAW API LATEST DATA:', latest);
-                    console.log('CLOSE FIELD VALUE:', latest.close, 'TYPE:', typeof latest.close);
                     latestPrice = normalizeSymbolPrice(parseFloat(latest.close), currentSymbol);
-                    console.log('PARSED LATEST PRICE:', latestPrice);
                     updatePriceTicker(latestPrice);
-                    console.log(`Latest price updated: ${latestPrice}`);
                 }
 
                 updateConnectionStatus({ status: 'connected' });
-                
-                // Start realtime polling as backup
+
                 startRealtimePolling();
 
             } catch (error) {
@@ -986,12 +1224,8 @@
         // Realtime polling backup
         let realtimeInterval;
         function startRealtimePolling() {
-            // Clear existing interval
-            if (realtimeInterval) {
-                clearInterval(realtimeInterval);
-            }
-            
-            // Poll for latest data every 5 seconds
+            if (realtimeInterval) clearInterval(realtimeInterval);
+
             realtimeInterval = setInterval(async () => {
                 try {
                     const response = await fetch(`${API_BASE}/klines?symbol=${SYMBOL}&interval=${currentInterval}&limit=1`);
@@ -1001,26 +1235,22 @@
                             const latestKline = data[0];
                             const candle = klineToCandle(latestKline);
                             const volume = klineToVolume(latestKline);
-                            
-                            // Update chart with latest data
+
                             candleSeries.update(candle);
                             volumeSeries.update(volume);
-                            
-                            // Update price display
+
                             const newPrice = normalizeSymbolPrice(parseFloat(latestKline.close), currentSymbol);
                             if (newPrice !== latestPrice) {
                                 latestPrice = newPrice;
                                 updatePriceTicker(newPrice);
-                                renderPositions(); // Update P&L
+                                renderPositions();
                             }
                         }
                     }
                 } catch (error) {
                     console.error('Realtime polling error:', error);
                 }
-            }, 5000); // Poll every 5 seconds
-            
-            console.log('Started realtime polling every 5 seconds');
+            }, 5000);
         }
 
         // SignalR connection
@@ -1037,24 +1267,16 @@
                     }
                 });
 
-        connection.on("markPrice", (data) => {
-                    console.log('RAW DATA DEBUG - Received markPrice from SignalR:', data);
-                    console.log('RAW DATA DEBUG - data.symbol:', data.symbol, 'SYMBOL:', SYMBOL);
-                    console.log('RAW DATA DEBUG - data.markPrice:', data.markPrice, typeof data.markPrice);
-                    
-                    // Store mark price for this symbol
+                connection.on("markPrice", (data) => {
                     const norm = normalizeSymbolPrice(parseFloat(data.markPrice), data.symbol);
                     symbolPrices[data.symbol] = norm;
-                    
-                    // Update current symbol display if this is the chart symbol
+
                     if (data.symbol === SYMBOL) {
-            markPriceData = { ...data, markPrice: norm };
-            latestPrice = norm;
-            console.log('RAW DATA DEBUG - About to call updatePriceTicker with normalized:', norm);
-            updatePriceTicker(norm);
+                        markPriceData = { ...data, markPrice: norm };
+                        latestPrice = norm;
+                        updatePriceTicker(norm);
                     }
-                    
-                    // Re-render positions to update mark prices for all symbols
+
                     renderPositions();
                 });
 
@@ -1075,7 +1297,6 @@
             }
         }
 
-        // Function to request mark price for a specific symbol
         async function requestSymbolPrice(symbol) {
             if (!connection || connection.state !== 'Connected') return;
             try {
@@ -1085,21 +1306,16 @@
             }
         }
 
-        // Function to subscribe to mark prices for all position symbols
         async function subscribeToPositionSymbols() {
             if (!connection || connection.state !== 'Connected') return;
-            
+
             const positionSymbols = new Set(SimFut.positions.map(p => p.symbol || currentSymbol));
-            console.log('Position symbols to subscribe:', Array.from(positionSymbols));
-            
+
             for (const symbol of positionSymbols) {
                 if (!subscribedSymbols.has(symbol)) {
                     try {
                         await connection.invoke("JoinSymbolRoom", symbol);
                         subscribedSymbols.add(symbol);
-                        console.log(`✅ Subscribed to mark price for ${symbol}`);
-                        
-                        // Also request current price immediately
                         await requestSymbolPrice(symbol);
                     } catch (err) {
                         console.error(`❌ Failed to subscribe to ${symbol}:`, err);
@@ -1108,20 +1324,14 @@
             }
         }
 
-        // Start periodic position updates
         function startPositionUpdates() {
-            if (positionUpdateInterval) {
-                clearInterval(positionUpdateInterval);
-            }
-            
+            if (positionUpdateInterval) clearInterval(positionUpdateInterval);
+
             positionUpdateInterval = setInterval(() => {
-                if (SimFut.positions.length > 0) {
-                    renderPositions();
-                }
-            }, 2000); // Update every 2 seconds
+                if (SimFut.positions.length > 0) renderPositions();
+            }, 2000);
         }
 
-        // Stop periodic position updates
         function stopPositionUpdates() {
             if (positionUpdateInterval) {
                 clearInterval(positionUpdateInterval);
@@ -1140,27 +1350,12 @@
             updatePriceTicker(latestPrice);
         }
 
-        // Price ticker - FORCE OVERRIDE
-    function updatePriceTicker(price) {
-            console.log('FORCE OVERRIDE - updatePriceTicker called with:', price);
+        function updatePriceTicker(price) {
             if (elPrice) {
-                console.log('FORCE OVERRIDE - Raw price:', price, 'Type:', typeof price);
-        const normalizedNumeric = normalizeSymbolPrice(Number(price), currentSymbol);
-        latestPrice = normalizedNumeric; // keep global normalized
-        const formattedPrice = formatPrice(normalizedNumeric);
-                console.log('FORCE OVERRIDE - Formatted price:', formattedPrice);
-                elPrice.textContent = formattedPrice; // Remove the extra '$' since formatPrice already adds it
-                
-                // FORCE UPDATE all other price displays
-                setTimeout(() => {
-                    const allPriceElements = document.querySelectorAll('.current-price, #lastPrice, [id*="price"]');
-                    allPriceElements.forEach(el => {
-                        if (el.textContent.includes('$')) {
-                            el.textContent = formattedPrice;
-                            console.log('FORCE OVERRIDE - Updated element:', el);
-                        }
-                    });
-                }, 100);
+                const normalizedNumeric = normalizeSymbolPrice(Number(price), currentSymbol);
+                latestPrice = normalizedNumeric;
+                const formattedPrice = formatPrice(normalizedNumeric);
+                elPrice.textContent = formattedPrice;
             }
         }
 
@@ -1189,9 +1384,7 @@
             if (elToggle) elToggle.textContent = mode === 'light' ? '🌙' : '☀️';
 
             if (!isInitial && chart) {
-                initChart();
-                boot(currentInterval, false);
-                renderHistory();
+                chart.applyOptions(makeChartOptions());
             }
         }
 
@@ -1204,61 +1397,43 @@
 
         // Event listeners
         function setupEventListeners() {
-            // Interval selector
             document.querySelectorAll('.interval-btn').forEach(btn => {
                 btn.addEventListener('click', () => selectInterval(btn.dataset.interval));
             });
 
-            // Theme toggle
             if (elToggle) elToggle.addEventListener('click', toggleTheme);
 
-            // Symbol selector
             document.getElementById('symbol-selector')?.addEventListener('change', (e) => {
-                currentSymbol = e.target.value; // Update current symbol before redirect
-                console.log('DYNAMIC FIX - Symbol changed to:', currentSymbol);
                 window.location.href = `/Trading/Chart?symbol=${e.target.value}`;
             });
 
-            // Futures controls
+            document.querySelectorAll('.order-type-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const orderType = btn.dataset.type;
+                    document.querySelectorAll('.order-type-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    const limitGrp = document.getElementById('limitPriceGroup');
+                    if(limitGrp){
+                        limitGrp.style.display = (orderType === '1' ? 'flex' : 'none');
+                    }
+                });
+            });
+
             document.getElementById('btnLong')?.addEventListener('click', async () => {
                 setButtonLoading('btnLong', true);
-                try {
-                    await openPosition('LONG');
-                } finally {
-                    setButtonLoading('btnLong', false);
-                }
+                try { await openPosition('LONG'); } finally { setButtonLoading('btnLong', false); }
             });
             document.getElementById('btnShort')?.addEventListener('click', async () => {
                 setButtonLoading('btnShort', true);
-                try {
-                    await openPosition('SHORT');
-                } finally {
-                    setButtonLoading('btnShort', false);
-                }
+                try { await openPosition('SHORT'); } finally { setButtonLoading('btnShort', false); }
             });
             document.getElementById('closeAll')?.addEventListener('click', () => {
                 if (confirm('Đóng tất cả vị thế?')) {
                     [...SimFut.positions].forEach(p => closePosition(p, 'CloseAll'));
                 }
             });
-            document.getElementById('resetFut')?.addEventListener('click', resetFutures);
 
-            // Input listeners
-            document.getElementById('qtyInput')?.addEventListener('input', updateOrderSummary);
-            document.getElementById('levInput')?.addEventListener('input', updateOrderSummary);
-            document.getElementById('tpInput')?.addEventListener('input', updateOrderSummary);
-            document.getElementById('slInput')?.addEventListener('input', updateOrderSummary);
-            document.getElementById('orderTypeSelect')?.addEventListener('change', toggleOrderTypeFields);
-
-            // Keyboard shortcuts
-            window.addEventListener('keydown', (e) => {
-                if (e.target.tagName === 'INPUT') return;
-                if (e.key.toLowerCase() === 'r') boot(currentInterval);
-                if (e.key === 'ArrowUp') { e.preventDefault(); openPosition('LONG'); }
-                if (e.key === 'ArrowDown') { e.preventDefault(); openPosition('SHORT'); }
-            });
-
-            // Tabs
             document.querySelectorAll('.tab-link').forEach(link => {
                 link.addEventListener('click', async () => {
                     const tabName = link.getAttribute('data-tab');
@@ -1266,22 +1441,12 @@
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                     link.classList.add('active');
                     document.getElementById(tabName)?.classList.add('active');
-                    
-                    // Refresh data when switching to history tab
+
                     if (tabName === 'history' && useBackendTrading) {
-                        console.log('Switching to history tab, refreshing backend data...');
                         await refreshBackendState();
                     }
                 });
             });
-        }
-
-        function toggleOrderTypeFields(){
-            const typeVal = Number(document.getElementById('orderTypeSelect')?.value || 0);
-            const limitGrp = document.getElementById('limitPriceGroup');
-            if(limitGrp){
-                limitGrp.style.display = (typeVal === 1 ? 'flex' : 'none');
-            }
         }
 
         function selectInterval(interval) {
@@ -1340,9 +1505,9 @@
             localStorage.setItem(FUT_LS_KEY, JSON.stringify(SimFut));
         }
 
-        let useBackendTrading = false; // auto enable if backend reachable
-        let positionUpdateInterval = null; // Interval for updating positions PnL
-        let subscribedSymbols = new Set(); // Track subscribed symbols
+        let useBackendTrading = false;
+        let positionUpdateInterval = null;
+        let subscribedSymbols = new Set();
 
         async function detectBackendTrading() {
             try {
@@ -1362,262 +1527,144 @@
                 const [posRes, balRes, ordersRes] = await Promise.all([
                     fetch('/api/Order/positions'),
                     fetch('/api/Order/balance'),
-                    fetch('/api/Order/debug/history') // Sử dụng endpoint debug không cần auth
+                    fetch('/api/Order/debug/history')
                 ]);
                 if (balRes.ok) {
                     const bal = await balRes.json();
-                    // Map backend balance into SimFut for display only
                     SimFut.balance = bal.availableBalance ?? bal.available ?? bal.AvailableBalance ?? bal.balance ?? SimFut.balance;
                 }
                 if (posRes.ok) {
                     const positions = await posRes.json();
-                    console.log('Raw backend positions:', positions);
-                    // Adapt backend positions to UI schema (case-insensitive mapping)
                     SimFut.positions = positions.map(raw => {
-                        // Normalize keys (build a lowercase map)
                         const map = {};
                         Object.keys(raw).forEach(k => map[k.toLowerCase()] = raw[k]);
-                        console.log('Processing position raw:', raw, 'mapped:', map);
                         const sideRaw = map['side'];
                         const side = (sideRaw === 0 || sideRaw === 'Buy' || sideRaw === 'LONG') ? 'LONG' : 'SHORT';
-                        const qty = map['size'] ?? map['quantity'] ?? 0;
-                        const entryPrice = map['entryprice'] ?? map['entryPrice'] ?? 0;
-                        const leverage = map['leverage'] ?? 1;
-                        const margin = map['margin'] ?? 0;
-                        const tp = map['takeprofitprice'] ?? map['takeProfitPrice'] ?? null;
-                        const sl = map['stoplossprice'] ?? map['stopLossPrice'] ?? null;
-                        const createdAt = map['createdat'] || map['createdAt'] || new Date().toISOString();
-                        const id = map['id'] ? String(map['id']) : `${map['symbol'] || 'SYM'}-${createdAt}`;
-                        const symbol = map['symbol'] || currentSymbol;
-                        console.log('Final mapped position ID:', id, 'original ID:', map['id']);
                         return {
-                            id,
-                            symbol,
+                            id: String(map['id']),
+                            symbol: map['symbol'] || currentSymbol,
                             side,
-                            qty,
-                            entryPrice,
-                            leverage,
-                            margin,
-                            tp,
-                            sl,
-                            entryTs: Date.parse(createdAt)
+                            qty: map['size'] ?? map['quantity'] ?? 0,
+                            entryPrice: map['entryprice'] ?? map['entryPrice'] ?? 0,
+                            leverage: map['leverage'] ?? 1,
+                            margin: map['margin'] ?? 0,
+                            tp: map['takeprofitprice'] ?? map['takeProfitPrice'] ?? null,
+                            sl: map['stoplossprice'] ?? map['stopLossPrice'] ?? null,
+                            entryTs: Date.parse(map['createdat'] || map['createdAt'] || new Date().toISOString())
                         };
                     });
-                    console.log('Mapped backend positions:', SimFut.positions);
                 }
                 if (ordersRes.ok) {
                     const orders = await ordersRes.json();
-                    console.log('Raw backend orders:', orders);
-                    
-                    // Group orders by symbol and process reduce-only orders only
                     const completedTrades = [];
-                    
-                    // Filter for filled reduce-only orders (close orders)
-                    const closeOrders = orders.filter(order => {
-                        const map = {};
-                        Object.keys(order).forEach(k => map[k.toLowerCase()] = order[k]);
-                        const status = map['status'];
-                        const reduceOnly = map['reduceonly'];
-                        return (status === 1 || status === 'Filled') && reduceOnly === true;
-                    });
-                    
-                    console.log('Close orders (reduceOnly):', closeOrders);
-                    
-                    // For each close order, find corresponding open order
+                    const closeOrders = orders.filter(o => (o.status === 1 || o.status === 'Filled') && o.reduceOnly === true);
+
                     for (const closeOrder of closeOrders) {
-                        const closeMap = {};
-                        Object.keys(closeOrder).forEach(k => closeMap[k.toLowerCase()] = closeOrder[k]);
-                        
-                        const symbol = closeMap['symbol'];
-                        const closeSide = closeMap['side'];
-                        const closeTime = new Date(closeMap['createdat'] || closeMap['createdAt']);
-                        
-                        // Find the most recent open order for same symbol and side before close time
-                        const openOrder = orders.find(order => {
-                            const openMap = {};
-                            Object.keys(order).forEach(k => openMap[k.toLowerCase()] = order[k]);
-                            const openTime = new Date(openMap['createdat'] || openMap['createdAt']);
-                            const status = openMap['status'];
-                            const reduceOnly = openMap['reduceonly'];
-                            
-                            return openMap['symbol'] === symbol &&
-                                   openMap['side'] === closeSide &&
-                                   (status === 1 || status === 'Filled') &&
-                                   reduceOnly !== true &&
-                                   openTime < closeTime;
-                        });
-                        
+                        const openOrder = orders.find(o => o.symbol === closeOrder.symbol && o.side === closeOrder.side && (o.status === 1 || o.status === 'Filled') && o.reduceOnly !== true && new Date(o.createdAt) < new Date(closeOrder.createdAt));
                         if (openOrder) {
-                            const openMap = {};
-                            Object.keys(openOrder).forEach(k => openMap[k.toLowerCase()] = openOrder[k]);
-                            
-                            const sideRaw = closeMap['side'];
-                            const side = (sideRaw === 0 || sideRaw === 'Buy' || sideRaw === 'LONG') ? 'LONG' : 'SHORT';
-                            const qty = closeMap['quantity'] ?? closeMap['filledquantity'] ?? 0;
-                            const entryPrice = openMap['averageprice'] ?? openMap['price'] ?? 0; // Use open order price
-                            const exitPrice = closeMap['averageprice'] ?? closeMap['price'] ?? 0; // Use close order price
-                            const createdAt = openMap['createdat'] || openMap['createdAt'] || new Date().toISOString();
-                            const updatedAt = closeMap['createdat'] || closeMap['createdAt'] || new Date().toISOString();
-                            const id = closeMap['id'] ? String(closeMap['id']) : Date.now();
-                            
-                            // Calculate PnL
-                            const sideSign = side === 'LONG' ? 1 : -1;
-                            const pnl = sideSign * (exitPrice - entryPrice) * qty;
-                            const fees = (entryPrice * qty + exitPrice * qty) * 0.0002; // 0.02% per side
-                            
+                            const side = (closeOrder.side === 0 || closeOrder.side === 'Buy' || closeOrder.side === 'LONG') ? 'LONG' : 'SHORT';
+                            const pnl = (side === 'LONG' ? 1 : -1) * (closeOrder.averagePrice - openOrder.averagePrice) * closeOrder.quantity;
                             completedTrades.push({
-                                id,
-                                symbol,
+                                id: String(closeOrder.id),
+                                symbol: closeOrder.symbol,
                                 side,
-                                qty,
-                                entryPrice,
-                                exitPrice,
-                                entryTs: Date.parse(createdAt),
-                                exitTs: Date.parse(updatedAt),
-                                leverage: closeMap['leverage'] ?? 1,
+                                qty: closeOrder.quantity,
+                                entryPrice: openOrder.averagePrice,
+                                exitPrice: closeOrder.averagePrice,
+                                entryTs: Date.parse(openOrder.createdAt),
+                                exitTs: Date.parse(closeOrder.createdAt),
+                                leverage: closeOrder.leverage,
                                 pnl,
-                                fees,
+                                fees: (openOrder.averagePrice * openOrder.quantity + closeOrder.averagePrice * closeOrder.quantity) * 0.0002,
                                 note: 'Backend Trade'
                             });
-                        } else {
-                            console.warn('No matching open order found for close order:', closeOrder);
                         }
                     }
-                    
                     SimFut.history = completedTrades;
-                    console.log('Processed completed trades:', SimFut.history);
-                } else {
-                    console.warn('Failed to fetch orders:', ordersRes.status, ordersRes.statusText);
                 }
                 renderFut();
-                
-                // Subscribe to mark prices for all position symbols
                 await subscribeToPositionSymbols();
-                
-                // Start position updates if we have positions
-                if (SimFut.positions.length > 0) {
-                    startPositionUpdates();
-                } else {
-                    stopPositionUpdates();
-                }
+                if (SimFut.positions.length > 0) startPositionUpdates(); else stopPositionUpdates();
             } catch (e) { console.warn('Refresh backend state failed', e); }
         }
 
         async function openPosition(side) {
-            // Show loading immediately
             showLoading(`Đang mở lệnh ${side}...`);
-            
             try {
                 if (useBackendTrading) {
-                    showNotification(`🚀 Đang tạo lệnh ${side}...`, 'info');
                     await createBackendOrder(side);
+                    await new Promise(r => setTimeout(r, 500));
                     await refreshBackendState();
                     hideLoading();
-                    showNotification(`✅ Lệnh ${side} đã được tạo thành công!`, 'success');
+                    showNotification(`✅ Lệnh ${side} đã được tạo!`, 'success');
                     return;
                 }
-                
-                const orderType = Number(document.getElementById('orderTypeSelect')?.value || 0);
+
+                const orderType = Number(document.querySelector('.order-type-btn.active')?.dataset.type || 0);
                 if(orderType !== 0){
                     hideLoading();
-                    showNotification('❌ Limit chỉ hỗ trợ khi kết nối backend.', 'danger');
+                    showNotification('❌ Limit orders only supported with backend.', 'danger');
                     return;
                 }
-                
-                // Fallback local simulation
-                if (!latestPrice) { 
-                    hideLoading();
-                    showNotification('❌ Chưa có giá realtime.', 'danger');
-                    return; 
-                }
-                
-                const qty = Math.max(0.0001, Number(document.getElementById('qtyInput')?.value || 0));
-                const lev = Math.min(125, Math.max(1, Number(document.getElementById('levInput')?.value || 20)));
+
+                if (!latestPrice) { hideLoading(); showNotification('❌ No real-time price.', 'danger'); return; }
+
+                const qty = Math.max(0.0001, Number($('#qtyInput')?.value || 0));
+                const lev = Math.min(125, Math.max(1, Number($('#levInput')?.value || 20)));
                 const price = normalizeSymbolPrice(latestPrice, currentSymbol);
                 const mgn = (price * qty) / lev;
                 const openFee = (price * qty) * (SimFut.feeRate / 100);
                 const need = mgn + openFee;
-                
-                if (SimFut.balance < need) { 
-                    hideLoading();
-                    showNotification('❌ Số dư không đủ (cần ' + formatMoney(need) + ' USDT)', 'danger');
-                    return; 
-                }
-                
-                // Check if total margin usage exceeds available balance
+
+                if (SimFut.balance < need) { hideLoading(); showNotification('❌ Insufficient balance (need ' + formatMoney(need) + ' USDT)', 'danger'); return; }
+
                 const currentMarginUsed = SimFut.positions.reduce((sum, p) => sum + (p.margin || 0), 0);
-                const totalMarginAfter = currentMarginUsed + mgn;
-                const maxMarginAllowed = SimFut.balance * 0.95; // Use max 95% of balance
-                
-                if (totalMarginAfter > maxMarginAllowed) {
-                    hideLoading();
-                    showNotification('❌ Tổng margin vượt quá giới hạn an toàn (' + formatMoney(totalMarginAfter) + ' > ' + formatMoney(maxMarginAllowed) + ')', 'danger');
-                    return;
-                }
-                
-                const tp = Number(document.getElementById('tpInput')?.value || NaN);
-                const sl = Number(document.getElementById('slInput')?.value || NaN);
+                if (currentMarginUsed + mgn > SimFut.balance * 0.95) { hideLoading(); showNotification('❌ Total margin exceeds safety limit.', 'danger'); return; }
+
+                const tp = Number($('#tpInput')?.value || NaN);
+                const sl = Number($('#slInput')?.value || NaN);
                 const pos = { id: SimFut.nextId++, side, qty, entryPrice: price, entryTs: Date.now(), leverage: lev, margin: mgn, openFee, tp: Number.isFinite(tp) ? tp : null, sl: Number.isFinite(sl) ? sl : null, symbol: currentSymbol };
-                SimFut.balance -= need; SimFut.positions.unshift(pos); saveFut(); 
-                
-                // Simulate processing delay
-                await new Promise(resolve => setTimeout(resolve, 800));
-                
+                SimFut.balance -= need; SimFut.positions.unshift(pos); saveFut();
+
+                await new Promise(r => setTimeout(r, 500));
                 hideLoading();
                 renderFut();
-                showNotification(`🎉 Vị thế ${side} #${pos.id} đã được mở tại $${formatMoney(price)}!`, 'success');
-                
+                showNotification(`🎉 ${side} position #${pos.id} opened at $${formatMoney(price)}!`, 'success');
+
             } catch (error) {
                 hideLoading();
                 console.error('Open position error:', error);
-                showNotification('❌ Lỗi khi mở lệnh: ' + error.message, 'danger');
+                showNotification('❌ Error opening position: ' + error.message, 'danger');
             }
         }
 
         async function createBackendOrder(side) {
             try {
-                const qty = Math.max(0.0001, Number(document.getElementById('qtyInput')?.value || 0));
-                const lev = Math.min(125, Math.max(1, Number(document.getElementById('levInput')?.value || 20)));
-                const tp = document.getElementById('tpInput')?.value;
-                const sl = document.getElementById('slInput')?.value;
-                const orderType = Number(document.getElementById('orderTypeSelect')?.value || 0); // 0=Market,1=Limit
-                const limitPriceVal = document.getElementById('limitPriceInput')?.value;
+                const orderType = Number(document.querySelector('.order-type-btn.active')?.dataset.type || 0);
+                const limitPriceVal = $('#limitPriceInput')?.value;
                 if(orderType === 1 && (!limitPriceVal || Number(limitPriceVal) <= 0)){
-                    alert('Nhập giá Limit hợp lệ.');
+                    alert('Please enter a valid limit price.');
                     return;
                 }
                 const body = {
                     symbol: currentSymbol,
-                    side: side === 'LONG' ? 0 : 1, // OrderSide enum
-                    type: orderType, // Market / Limit
-                    quantity: qty,
+                    side: side === 'LONG' ? 0 : 1,
+                    type: orderType,
+                    quantity: Math.max(0.0001, Number($('#qtyInput')?.value || 0)),
                     price: orderType === 1 ? Number(limitPriceVal) : null,
-                    leverage: lev,
-                    takeProfitPrice: tp ? Number(tp) : null,
-                    stopLossPrice: sl ? Number(sl) : null
+                    leverage: Math.min(125, Math.max(1, Number($('#levInput')?.value || 20))),
+                    takeProfitPrice: $('#tpInput')?.value ? Number($('#tpInput')?.value) : null,
+                    stopLossPrice: $('#slInput')?.value ? Number($('#slInput')?.value) : null
                 };
                 const r = await fetch('/api/Order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-                if (r.status === 401) { 
-                    useBackendTrading = false; 
-                    alert('Chưa đăng nhập hoặc phiên hết hạn. Vui lòng đăng nhập lại.');
-                    return; 
-                }
-                let data = null;
-                try { data = await r.json(); } catch {}
-                const statusVal = (data && (data.status ?? data.Status));
-                const notesVal = data && (data.notes ?? data.Notes ?? data.error);
-                // status enum: 0 Pending,1 Filled,2 PartiallyFilled,3 Cancelled,4 Rejected
-                if (!r.ok || statusVal === 4 || notesVal === 'Rejected') {
-                    alert('Tạo lệnh thất bại: ' + (notesVal || 'Unknown'));
-                } else {
-                    console.log('Order created', data);
-                    // Force immediate positions refresh (some async delay for processing)
-                    setTimeout(()=>refreshBackendState(), 300);
-                    setTimeout(()=>refreshBackendState(), 1000);
+                if (r.status === 401) { useBackendTrading = false; alert('Not logged in or session expired. Please log in again.'); return; }
+                if (!r.ok) {
+                    const err = await r.text();
+                    alert('Failed to create order: ' + err);
                 }
             } catch (e) {
                 console.error('Create backend order error', e);
-                alert('Lỗi tạo lệnh (xem console).');
+                alert('Error creating order (see console).');
             }
         }
 
@@ -1626,359 +1673,206 @@
 
             const exitPrice = normalizeSymbolPrice(latestPrice, currentSymbol);
             const closeFee = (exitPrice * pos.qty) * (SimFut.feeRate / 100);
-            const sideSign = pos.side === 'LONG' ? 1 : -1;
-            const pnlGross = sideSign * (exitPrice - pos.entryPrice) * pos.qty;
-            const pnlNet = pnlGross - pos.openFee - closeFee;
+            const pnlNet = (pos.side === 'LONG' ? 1 : -1) * (exitPrice - pos.entryPrice) * pos.qty - pos.openFee - closeFee;
 
             SimFut.balance += pos.margin + pnlNet;
+            SimFut.history.unshift({ ...pos, exitPrice, exitTs: Date.now(), pnl: pnlNet, fees: pos.openFee + closeFee, note: reason });
 
-            const rec = {
-                id: pos.id, side: pos.side, qty: pos.qty,
-                entryPrice: pos.entryPrice, exitPrice,
-                entryTs: pos.entryTs, exitTs: Date.now(), leverage: pos.leverage,
-                pnl: pnlNet, fees: pos.openFee + closeFee, note: reason,
-            };
-            SimFut.history.unshift(rec);
-            
-            // Clean up tracking sets khi đóng position
-            const posSymbol = pos.symbol || currentSymbol;
-            const positionKey = `${pos.id}-${posSymbol}`;
-            triggeredPositions.delete(positionKey);
-            liquidatedPositions.delete(positionKey);
-            
+            triggeredPositions.delete(`${pos.id}-${pos.symbol || currentSymbol}`);
+            liquidatedPositions.delete(`${pos.id}-${pos.symbol || currentSymbol}`);
+
             SimFut.positions = SimFut.positions.filter(p => p.id !== pos.id);
 
             saveFut();
             renderFut();
-            
-            // Show success notification
-            const pnlText = pnlNet >= 0 ? '+$' + formatMoney(pnlNet) : '-$' + formatMoney(Math.abs(pnlNet));
-            const pnlColor = pnlNet >= 0 ? 'success' : 'danger';
-            showNotification('✅ Vị thế #' + pos.id + ' đã đóng. PnL: ' + pnlText, pnlColor);
-        }
 
-        function resetFutures() {
-            if (!confirm('Reset số dư về 10000 USDT và xoá mọi dữ liệu futures?')) return;
-            SimFut.balance = 10000;
-            SimFut.positions = [];
-            SimFut.history = [];
-            SimFut.markers = [];
-            SimFut.nextId = 1;
-            saveFut();
-            renderFut();
+            const pnlText = pnlNet >= 0 ? '+$' + formatMoney(pnlNet) : '-$' + formatMoney(Math.abs(pnlNet));
+            showNotification(`✅ Position #${pos.id} closed. PnL: ${pnlText}`, pnlNet >= 0 ? 'success' : 'danger');
         }
 
         function renderFut() {
             renderFutHeader();
             renderPositions();
             renderHistory();
-            
-            // Manage position updates based on whether we have positions
+
             if (SimFut.positions.length > 0) {
-                // Subscribe to symbols and start updates
                 subscribeToPositionSymbols();
                 startPositionUpdates();
             } else {
-                // Stop updates if no positions
                 stopPositionUpdates();
             }
         }
 
         function renderFutHeader() {
-            const balanceEl = document.getElementById('futBalance');
-            const feeRateEl = document.getElementById('feeRateView');
-            if (balanceEl) balanceEl.textContent = formatMoney(SimFut.balance);
-            if (feeRateEl) feeRateEl.textContent = SimFut.feeRate.toFixed(2);
+            $('#futBalance').textContent = formatMoney(SimFut.balance);
+            $('#feeRateView').textContent = SimFut.feeRate.toFixed(2);
         }
 
         function renderPositions() {
-            const posBody = document.getElementById('posBody');
+            const posBody = $('#posBody');
             if (!posBody) return;
 
-            // First, identify symbols that need price updates
             const missingPriceSymbols = new Set();
-            console.log('🔄 Rendering positions - symbolPrices:', symbolPrices);
-            
+
             posBody.innerHTML = SimFut.positions.map(p => {
-                // Use the correct mark price for this position's symbol
                 const positionSymbol = p.symbol || currentSymbol;
-                let mark = symbolPrices[positionSymbol];
-                
-                // Only use latestPrice if this position is for the current chart symbol
-                if (!mark && positionSymbol === currentSymbol) {
-                    mark = latestPrice;
-                }
-                
-                // If still no price, mark for price request
-                if (!mark && positionSymbol !== currentSymbol) {
+                let mark = symbolPrices[positionSymbol] || (positionSymbol === currentSymbol ? latestPrice : null);
+
+                if (!mark) {
                     missingPriceSymbols.add(positionSymbol);
-                    // Use entry price as temporary fallback to avoid showing wrong price
                     mark = p.entryPrice;
                 }
-                
-                mark = mark || 0;
-                
-                const sideSign = p.side === 'LONG' ? 1 : -1;
-                const uPnL = sideSign * (mark - p.entryPrice) * p.qty;
+
+                const uPnL = (p.side === 'LONG' ? 1 : -1) * (mark - p.entryPrice) * p.qty;
                 const roe = p.margin > 0 ? (uPnL / p.margin * 100) : 0;
-                const pnlCls = uPnL >= 0 ? 'pnl-positive' : 'pnl-negative';
-                const tpSl = `${p.tp ? formatMoney(p.tp) : '-'} / ${p.sl ? formatMoney(p.sl) : '-'}`;
-                
-                // Calculate accurate liquidation price
-                const liquidationPrice = calculateLiquidationPrice(p, mark);
-                
-                // Show if price is from entry (temporary)
-                const priceDisplay = !symbolPrices[positionSymbol] && positionSymbol !== currentSymbol ? 
-                    '$' + formatMoney(mark) + ' (entry)' : '$' + formatMoney(mark);
-                
-                console.log('📊 Position ' + p.id + ' (' + positionSymbol + '): mark=' + mark + ', entry=' + p.entryPrice + ', PnL=' + uPnL);
-                
-                return '<tr data-posid="' + p.id + '">' +
-                    '<td>#' + p.id + '</td>' +
-                    '<td>' + positionSymbol + '</td>' +
-                    '<td><span class="position-tag ' + p.side.toLowerCase() + '">' + p.side + '</span></td>' +
-                    '<td>' + p.qty + '</td>' +
-                    '<td>$' + formatMoney(p.entryPrice) + '</td>' +
-                    '<td>' + priceDisplay + '</td>' +
-                    '<td>' + p.leverage + 'x</td>' +
-                    '<td>$' + formatMoney(p.margin) + '</td>' +
-                    '<td>$' + formatMoney(liquidationPrice) + '</td>' +
-                    '<td><button class="control-btn inline" onclick="window.__editTpSl(' + p.id + ')">TP:' + (p.tp?formatMoney(p.tp):'-') + ' / SL:' + (p.sl?formatMoney(p.sl):'-') + '</button></td>' +
-                    '<td class="' + pnlCls + '">$' + formatMoney(uPnL) + ' / ' + roe.toFixed(2) + '%</td>' +
-                    '<td class="pos-actions">' +
-                        '<button class="control-btn inline danger" onclick="window.__closePos(' + p.id + ')">Đóng</button>' +
-                    '</td>' +
-                '</tr>';
-            }).join('') || '<tr><td colspan="12" style="text-align:center; padding: 24px; color: var(--trading-muted);">Chưa có vị thế mở</td></tr>';
-            
-            // Request prices for missing symbols
-            missingPriceSymbols.forEach(symbol => {
-                console.log('🔍 Requesting price for missing symbol: ' + symbol);
-                requestSymbolPrice(symbol);
-            });
+                const liquidationPrice = calculateLiquidationPrice(p);
+
+                return `<tr data-posid="${p.id}">
+                    <td>#${p.id}</td>
+                    <td>${positionSymbol}</td>
+                    <td><span class="position-tag ${p.side.toLowerCase()}">${p.side}</span></td>
+                    <td>${p.qty}</td>
+                    <td>$${formatMoney(p.entryPrice)}</td>
+                    <td>$${formatMoney(mark)}</td>
+                    <td>${p.leverage}x</td>
+                    <td>$${formatMoney(p.margin)}</td>
+                    <td>$${formatMoney(liquidationPrice)}</td>
+                    <td><button class="control-btn inline" onclick="window.__editTpSl('${p.id}')">TP:${p.tp?formatMoney(p.tp):'-'} / SL:${p.sl?formatMoney(p.sl):'-'}</button></td>
+                    <td class="${uPnL >= 0 ? 'pnl-positive' : 'pnl-negative'}">$${formatMoney(uPnL)} / ${roe.toFixed(2)}%</td>
+                    <td class="pos-actions"><button class="control-btn inline danger" onclick="window.__closePos('${p.id}')">Close</button></td>
+                </tr>`;
+            }).join('') || '<tr><td colspan="12" style="text-align:center; padding: 24px; color: var(--trading-muted);">No open positions</td></tr>';
+
+            missingPriceSymbols.forEach(symbol => requestSymbolPrice(symbol));
         }
 
-        // Calculate accurate liquidation price
-        function calculateLiquidationPrice(position, currentPrice) {
-            const leverage = position.leverage || 1;
-            const mmRate = SimFut.mmRate / 100; // Convert percentage to decimal
-            const entryPrice = position.entryPrice;
-            
-            let liquidationPrice;
-            
-            if (position.side === 'LONG') {
-                // For LONG: Liq Price = Entry * (1 - (1/leverage) + mmRate)
-                liquidationPrice = entryPrice * (1 - (1/leverage) + mmRate);
+        function calculateLiquidationPrice(position) {
+            const { leverage, entryPrice, side } = position;
+            const mmRate = SimFut.mmRate / 100;
+            if (side === 'LONG') {
+                return entryPrice * (1 - (1/leverage) + mmRate);
             } else {
-                // For SHORT: Liq Price = Entry * (1 + (1/leverage) - mmRate)  
-                liquidationPrice = entryPrice * (1 + (1/leverage) - mmRate);
+                return entryPrice * (1 + (1/leverage) - mmRate);
             }
-            
-            // Ensure liquidation price is positive and reasonable
-            return Math.max(0.01, liquidationPrice);
         }
 
-        // Popup TP/SL
         let editingPosId = null;
         window.__editTpSl = function(id){
             const pos = SimFut.positions.find(p => String(p.id) === String(id));
             if(!pos) return;
             editingPosId = id;
-            document.getElementById('tpInputModal').value = pos.tp ?? '';
-            document.getElementById('slInputModal').value = pos.sl ?? '';
-            document.getElementById('tpSlModalBackdrop').classList.remove('hidden');
+            $('#tpInputModal').value = pos.tp ?? '';
+            $('#slInputModal').value = pos.sl ?? '';
+            $('#tpSlModalBackdrop').classList.remove('hidden');
         };
         window.__closeTpSlModal = function(){
             editingPosId = null;
-            document.getElementById('tpSlModalBackdrop').classList.add('hidden');
+            $('#tpSlModalBackdrop').classList.add('hidden');
         };
         window.__saveTpSl = async function(){
             if(editingPosId==null) return;
             const pos = SimFut.positions.find(p => String(p.id) === String(editingPosId));
             if(!pos) { window.__closeTpSlModal(); return; }
-            const newTp = document.getElementById('tpInputModal').value ? Number(document.getElementById('tpInputModal').value) : null;
-            const newSl = document.getElementById('slInputModal').value ? Number(document.getElementById('slInputModal').value) : null;
-            
-            // Validate TP/SL logic
-            if (newTp && newTp <= 0) {
-                showNotification('❌ Take Profit phải > 0', 'danger');
-                return;
-            }
-            if (newSl && newSl <= 0) {
-                showNotification('❌ Stop Loss phải > 0', 'danger');
-                return;
-            }
-            
-            // Check TP/SL direction for position side
-            if (pos.side === 'LONG') {
-                if (newTp && newTp <= pos.entryPrice) {
-                    showNotification('❌ Take Profit LONG phải > Entry Price', 'danger');
-                    return;
-                }
-                if (newSl && newSl >= pos.entryPrice) {
-                    showNotification('❌ Stop Loss LONG phải < Entry Price', 'danger');
-                    return;
-                }
-            } else { // SHORT
-                if (newTp && newTp >= pos.entryPrice) {
-                    showNotification('❌ Take Profit SHORT phải < Entry Price', 'danger');
-                    return;
-                }
-                if (newSl && newSl <= pos.entryPrice) {
-                    showNotification('❌ Stop Loss SHORT phải > Entry Price', 'danger');
-                    return;
+
+            // Read raw strings and normalize (allow commas)
+            const tpRaw = (document.getElementById('tpInputModal')?.value || '').toString().trim();
+            const slRaw = (document.getElementById('slInputModal')?.value || '').toString().trim();
+            const newTp = tpRaw !== '' ? Number(tpRaw.replace(/,/g, '')) : null;
+            const newSl = slRaw !== '' ? Number(slRaw.replace(/,/g, '')) : null;
+
+            const isNumTp = Number.isFinite(newTp);
+            const isNumSl = Number.isFinite(newSl);
+
+            // Epsilon tolerance to avoid false rejections due to rounding
+            const eps = Math.max(1e-8, Math.abs(pos.entryPrice) * 1e-6);
+
+            // Clear previous errors
+            const tpErrEl = document.getElementById('tpModalError');
+            const slErrEl = document.getElementById('slModalError');
+            if (tpErrEl) tpErrEl.textContent = '';
+            if (slErrEl) slErrEl.textContent = '';
+
+            // Validate Take Profit (if provided)
+            if (isNumTp) {
+                if (pos.side === 'LONG') {
+                    if (!(newTp > pos.entryPrice + eps)) { if (tpErrEl) tpErrEl.textContent = 'Take Profit must be greater than entry price.'; showNotification('❌ Invalid Take Profit price.', 'danger'); return; }
+                } else {
+                    if (!(newTp < pos.entryPrice - eps)) { if (tpErrEl) tpErrEl.textContent = 'Take Profit must be less than entry price for SHORT.'; showNotification('❌ Invalid Take Profit price.', 'danger'); return; }
                 }
             }
-            // Local update
-            pos.tp = newTp; pos.sl = newSl; saveFut();
-            // Backend update if available (needs symbol from pos.symbol or currentSymbol)
+
+            // Validate Stop Loss (if provided)
+            if (isNumSl) {
+                if (pos.side === 'LONG') {
+                    if (!(newSl < pos.entryPrice - eps)) { if (slErrEl) slErrEl.textContent = 'Stop Loss must be less than entry price.'; showNotification('❌ Invalid Stop Loss price.', 'danger'); return; }
+                } else {
+                    if (!(newSl > pos.entryPrice + eps)) { if (slErrEl) slErrEl.textContent = 'Stop Loss must be greater than entry price for SHORT.'; showNotification('❌ Invalid Stop Loss price.', 'danger'); return; }
+                }
+            }
+
+            // Apply and save
+            pos.tp = isNumTp ? newTp : null;
+            pos.sl = isNumSl ? newSl : null;
+            saveFut();
+
             if(useBackendTrading){
                 try {
-                    console.log('Updating TP/SL for symbol:', pos.symbol || currentSymbol, 'TP:', newTp, 'SL:', newSl);
-                    const r = await fetch('/api/Order/positions/risk',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol: pos.symbol || currentSymbol, takeProfitPrice: newTp, stopLossPrice: newSl }) });
-                    if(!r.ok){
-                        const t = await r.text();
-                        console.error('TP/SL update failed:', t);
-                        alert('Lưu TP/SL thất bại: '+t);
-                    } else {
-                        console.log('TP/SL updated successfully');
-                        showNotification('✅ TP/SL đã được cập nhật', 'success');
-                        // force refresh positions for DB confirmation
-                        setTimeout(()=>refreshBackendState(),300);
-                    }
-                } catch(e){ 
-                    console.error('Update TP/SL backend error:', e); 
-                    alert('Lỗi kết nối khi lưu TP/SL: ' + e.message);
-                }
+                    const r = await fetch('/api/Order/positions/risk',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol: pos.symbol || currentSymbol, takeProfitPrice: pos.tp, stopLossPrice: pos.sl }) });
+                    if(!r.ok) { const t = await r.text(); alert('Failed to save TP/SL: '+t); }
+                    else { showNotification('✅ TP/SL updated.', 'success'); setTimeout(()=>refreshBackendState(),300); }
+                } catch(e){ alert('Connection error saving TP/SL: ' + e.message); }
             }
+
             window.__closeTpSlModal();
             renderPositions();
         };
 
         function renderHistory() {
-            const histBody = document.getElementById('histBody');
+            const histBody = $('#histBody');
             if (!histBody) return;
 
             histBody.innerHTML = SimFut.history.map(h => {
-                const pnlCls = h.pnl >= 0 ? 'pnl-positive' : 'pnl-negative';
-                return '<tr>' +
-                    '<td>#' + h.id + '</td>' +
-                    '<td>' + (h.symbol || currentSymbol) + '</td>' +
-                    '<td>' + formatTime(h.entryTs) + '</td>' +
-                    '<td>' + formatTime(h.exitTs) + '</td>' +
-                    '<td><span class="position-tag ' + h.side.toLowerCase() + '">' + h.side + '</span></td>' +
-                    '<td>' + h.qty + '</td>' +
-                    '<td>$' + formatMoney(h.entryPrice) + '</td>' +
-                    '<td>$' + formatMoney(h.exitPrice) + '</td>' +
-                    '<td class="' + pnlCls + '">$' + formatMoney(h.pnl) + '</td>' +
-                    '<td>$' + formatMoney(h.fees, 4) + '</td>' +
-                    '<td>' + (h.note || '-') + '</td>' +
-                '</tr>';
-            }).join('') || '<tr><td colspan="10" style="text-align:center; padding: 24px; color: var(--trading-muted);">Chưa có lịch sử</td></tr>';
+                return `<tr>
+                    <td>#${h.id}</td>
+                    <td>${h.symbol || currentSymbol}</td>
+                    <td>${formatTime(h.entryTs)}</td>
+                    <td>${formatTime(h.exitTs)}</td>
+                    <td><span class="position-tag ${h.side.toLowerCase()}">${h.side}</span></td>
+                    <td>${h.qty}</td>
+                    <td>$${formatMoney(h.entryPrice)}</td>
+                    <td>$${formatMoney(h.exitPrice)}</td>
+                    <td class="${h.pnl >= 0 ? 'pnl-positive' : 'pnl-negative'}">$${formatMoney(h.pnl)}</td>
+                    <td>$${formatMoney(h.fees, 4)}</td>
+                    <td>${h.note || '-'}</td>
+                </tr>`;
+            }).join('') || '<tr><td colspan="11" style="text-align:center; padding: 24px; color: var(--trading-muted);">No trade history</td></tr>';
         }
 
-        function updateOrderSummary() {
-            // Update order summary logic here
-        }
-
-        // Global function for buttons
         async function closeBackendPosition(p){
-            showLoading('Đang đóng vị thế...');
-            showNotification('🔄 Đang đóng vị thế #' + p.id + '...', 'info');
-            
+            showLoading('Closing position...');
             try {
-                // Đảm bảo có symbol từ position hoặc fallback currentSymbol
                 const symbol = p.symbol || currentSymbol;
-                console.log('=== CLOSE BACKEND POSITION DEBUG ===');
-                console.log('Position:', p);
-                console.log('Symbol to close:', symbol);
-                console.log('Current symbol:', currentSymbol);
-                
-                if (!symbol) {
-                    hideLoading();
-                    showNotification('❌ Không xác định được symbol để đóng lệnh', 'danger');
-                    return;
-                }
-                
-                // Thử endpoint chuyên dụng /positions/close trước
-                console.log('Attempting close position API call...');
-                let resp = await fetch('/api/Order/positions/close', { 
-                    method:'POST', 
-                    headers:{'Content-Type':'application/json'}, 
-                    body: JSON.stringify({ symbol }) 
-                });
-                
-                console.log('Close position response status:', resp.status);
-                
-                if(!resp.ok){
-                    const errorText = await resp.text();
-                    console.warn('ClosePosition endpoint failed:', errorText, 'fallback to reduceOnly order');
-                    
-                    // Fallback gửi reduce-only order thủ công
-                    const body = {
-                        symbol,
-                        side: p.side === 'LONG' ? 0 : 1, // Same side as position for reduce-only (0=Buy/LONG, 1=Sell/SHORT)
-                        type: 0, // Market order
-                        quantity: p.qty || p.size || 0, // Support cả qty và size
-                        leverage: p.leverage || 1,
-                        reduceOnly: true
-                    };
-                    console.log('Sending fallback reduceOnly order:', body);
-                    resp = await fetch('/api/Order',{
-                        method:'POST', 
-                        headers:{'Content-Type':'application/json'}, 
-                        body: JSON.stringify(body)
-                    });
-                    
-                    console.log('Fallback order response status:', resp.status);
-                }
-                
-                if(!resp.ok){
-                    const txt = await resp.text();
-                    console.error('Close position failed:', txt);
-                    hideLoading();
-                    showNotification('❌ Đóng lệnh backend lỗi: ' + txt, 'danger');
-                    return;
-                }
-                
-                const result = await resp.json();
-                console.log('Close position response:', result);
-                
-                hideLoading();
-                showNotification('✅ Vị thế #' + p.id + ' đã được đóng thành công!', 'success');
+                let resp = await fetch('/api/Order/positions/close', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol }) });
 
-                // Refresh positions multiple times to ensure update
-                setTimeout(()=>refreshBackendState(),300);
-                setTimeout(()=>refreshBackendState(),1000);
-                setTimeout(()=>refreshBackendState(),2000);
-            } catch(e){
-                console.error('closeBackendPosition error', e);
+                if(!resp.ok){
+                    const body = { symbol, side: p.side === 'LONG' ? 1 : 0, type: 0, quantity: p.qty, leverage: p.leverage, reduceOnly: true };
+                    resp = await fetch('/api/Order',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+                }
+
+                if(!resp.ok){ const txt = await resp.text(); hideLoading(); showNotification('❌ Error closing position: ' + txt, 'danger'); return; }
+
                 hideLoading();
-                showNotification('❌ Lỗi đóng lệnh: ' + e.message, 'danger');
+                showNotification(`✅ Position #${p.id} closed!`, 'success');
+                setTimeout(()=>refreshBackendState(), 300);
+            } catch(e){
+                hideLoading();
+                showNotification('❌ Error closing position: ' + e.message, 'danger');
             }
         }
         window.__closePos = function(id) {
-            console.log('=== CLOSE POSITION DEBUG ===');
-            console.log('Position ID:', id, '(type:', typeof id, ')');
-            console.log('useBackendTrading:', useBackendTrading);
-            console.log('All positions:', SimFut.positions);
-            
-            // Tìm position theo ID (support cả string và number)
             const p = SimFut.positions.find(x => String(x.id) === String(id));
-            console.log('Found position:', p);
-            
-            if(!p) {
-                alert('Không tìm thấy vị thế với ID: ' + id + '. Available IDs: ' + SimFut.positions.map(x => x.id).join(', '));
-                return;
-            }
-            
-            if(useBackendTrading){ 
-                console.log('Calling closeBackendPosition with:', p);
-                closeBackendPosition(p); 
-            } else { 
-                console.log('Calling local closePosition with:', p);
-                closePosition(p); 
-            }
+            if(!p) { alert('Position not found: ' + id); return; }
+            if(useBackendTrading) closeBackendPosition(p); else closePosition(p);
         };
 
         // Utility functions
@@ -1987,34 +1881,9 @@
         }
 
         function formatTime(ts) {
-            const d = new Date(ts);
-            return d.toLocaleTimeString('vi-VN', { hour12: false });
+            return new Date(ts).toLocaleTimeString('vi-VN', { hour12: false });
         }
 
-        // Fallback to get real price from external API if our data seems wrong
-        async function validateAndFixPrice(price, symbol) {
-            try {
-                // If price seems way off, get real price from Binance API
-                const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
-                const data = await response.json();
-                const realPrice = parseFloat(data.price);
-                
-                console.log('PRICE VALIDATION - Our price:', price, 'Real price:', realPrice);
-                
-                // If our price is more than 50% off, use the real price
-                const priceDiff = Math.abs(price - realPrice) / realPrice;
-                if (priceDiff > 0.5) {
-                    console.log('PRICE VALIDATION - Using real price instead of our data');
-                    return realPrice;
-                }
-                return price;
-            } catch (error) {
-                console.log('PRICE VALIDATION - Failed to get real price, using our data');
-                return price;
-            }
-        }
-
-        // Unified price normalization + formatting (remove all ad-hoc multipliers)
         const SYMBOL_PRICE_RANGES = {
             BTCUSDT: { min: 10000, max: 200000, decimals: 2 },
             ETHUSDT: { min: 500, max: 10000, decimals: 2 },
@@ -2025,206 +1894,106 @@
             if (!value || isNaN(value)) return 0;
             let v = Number(value);
             const cfg = SYMBOL_PRICE_RANGES[symbol] || { min: 0.00000001, max: 100000000, decimals: 2 };
-            const { min, max } = cfg;
-            // Limit iterations to avoid infinite loops
             let guard = 0;
-            // If value is absurdly large (common corruption: multiplied by 10^n)
-            while (v > max * 10 && guard < 8) { v = v / 10; guard++; }
-            // Second pass for factor 100 / 1000 issues
-            while (v > max * 1.2 && guard < 12) { v = v / 10; guard++; }
-            // If value too small (divided accidentally)
-            while (v !== 0 && v < min / 10 && guard < 20) { v = v * 10; guard++; }
-            // Fine tune: if still slightly outside, clamp
-            if (v > max * 2) v = max; 
-            if (v !== 0 && v < min / 5) v = min; 
+            while (v > cfg.max * 10 && guard < 8) { v /= 10; guard++; }
+            while (v > cfg.max * 1.2 && guard < 12) { v /= 10; guard++; }
+            while (v !== 0 && v < cfg.min / 10 && guard < 20) { v *= 10; guard++; }
             return v;
         }
 
         function formatPrice(rawPrice, symbol = currentSymbol) {
-            if (rawPrice === null || rawPrice === undefined) return '$0.00';
-            let num = Number(rawPrice);
-            if (isNaN(num)) return '$0.00';
-            const normalized = normalizeSymbolPrice(num, symbol);
+            if (rawPrice == null) return '$0.00';
+            const normalized = normalizeSymbolPrice(Number(rawPrice), symbol);
             const cfg = SYMBOL_PRICE_RANGES[symbol] || { decimals: 2 };
-            return '$' + normalized.toLocaleString('en-US', {
-                minimumFractionDigits: cfg.decimals,
-                maximumFractionDigits: cfg.decimals
-            });
+            return '$' + normalized.toLocaleString('en-US', { minimumFractionDigits: cfg.decimals, maximumFractionDigits: cfg.decimals });
         }
 
-        // Bootstrap
         async function boot(interval = '1h', fit = true) {
-            try {
-                await loadHistory(interval);
-                if (fit && chart) chart.timeScale().fitContent();
-            } catch (e) {
-                console.error(e);
-            }
+            await loadHistory(interval);
+            if (fit && chart) chart.timeScale().fitContent();
             refresh24hTicker();
         }
 
-        // Auto-update intervals với TP/SL checking và margin call
         setInterval(() => {
             renderPositions();
             checkTPSLTriggers();
             checkMarginCalls();
-        }, 500);
+        }, 1000);
 
         setInterval(refresh24hTicker, 30000);
 
-        // TP/SL Auto Trigger System - Với ngăn chặn lặp lại
-        let triggeredPositions = new Set(); // Track positions đã được trigger để tránh lặp lại
-        
+        let triggeredPositions = new Set();
         function checkTPSLTriggers() {
-            if (!latestPrice || SimFut.positions.length === 0) return;
-            
+            if (SimFut.positions.length === 0) return;
+
             [...SimFut.positions].forEach(pos => {
                 const posSymbol = pos.symbol || currentSymbol;
                 const currentPrice = symbolPrices[posSymbol] || (posSymbol === currentSymbol ? latestPrice : null);
-                
                 if (!currentPrice) return;
-                
-                // Kiểm tra nếu position này đã được trigger rồi thì skip
+
                 const positionKey = `${pos.id}-${posSymbol}`;
                 if (triggeredPositions.has(positionKey)) return;
-                
-                let shouldClose = false;
-                let reason = '';
-                
-                // Check Take Profit
-                if (pos.tp && pos.tp > 0) {
-                    if ((pos.side === 'LONG' && currentPrice >= pos.tp) || 
-                        (pos.side === 'SHORT' && currentPrice <= pos.tp)) {
-                        shouldClose = true;
-                        reason = 'Take Profit Hit at $' + formatMoney(pos.tp);
-                    }
+
+                let shouldClose = false, reason = '';
+                if (pos.tp && ((pos.side === 'LONG' && currentPrice >= pos.tp) || (pos.side === 'SHORT' && currentPrice <= pos.tp))) {
+                    shouldClose = true; reason = 'Take Profit Hit';
                 }
-                
-                // Check Stop Loss
-                if (pos.sl && pos.sl > 0) {
-                    if ((pos.side === 'LONG' && currentPrice <= pos.sl) || 
-                        (pos.side === 'SHORT' && currentPrice >= pos.sl)) {
-                        shouldClose = true;
-                        reason = 'Stop Loss Hit at $' + formatMoney(pos.sl);
-                    }
+                if (pos.sl && ((pos.side === 'LONG' && currentPrice <= pos.sl) || (pos.side === 'SHORT' && currentPrice >= pos.sl))) {
+                    shouldClose = true; reason = 'Stop Loss Hit';
                 }
-                
+
                 if (shouldClose) {
-                    console.log('TP/SL Triggered for position ' + pos.id + ': ' + reason);
-                    
-                    // Đánh dấu position này đã được trigger để tránh lặp lại
                     triggeredPositions.add(positionKey);
-                    
-                    // Xóa khỏi set sau 30 giây để cho phép trigger lại nếu position vẫn tồn tại
-                    setTimeout(() => {
-                        triggeredPositions.delete(positionKey);
-                    }, 30000);
-                    
-                    if (useBackendTrading) {
-                        // For backend, try to close position
-                        closeBackendPosition(pos);
-                        // Add notification
-                        showNotification('🎯 ' + reason, 'success');
-                    } else {
-                        // Update exit price for local simulation
-                        const originalLatest = latestPrice;
-                        latestPrice = currentPrice; // Temporarily use trigger price
-                        closePosition(pos, reason);
-                        latestPrice = originalLatest; // Restore
-                        // Add notification
-                        showNotification('🎯 ' + reason, 'success');
-                    }
-                }
-            });
-        }
-        
-        // Margin Call System - Với ngăn chặn lặp lại
-        let liquidatedPositions = new Set(); // Track positions đã được liquidate để tránh lặp lại
-        
-        function checkMarginCalls() {
-            if (!latestPrice || SimFut.positions.length === 0) return;
-            
-            [...SimFut.positions].forEach(pos => {
-                const posSymbol = pos.symbol || currentSymbol;
-                const currentPrice = symbolPrices[posSymbol] || (posSymbol === currentSymbol ? latestPrice : null);
-                
-                if (!currentPrice) return;
-                
-                // Kiểm tra nếu position này đã được liquidate rồi thì skip
-                const positionKey = `${pos.id}-${posSymbol}`;
-                if (liquidatedPositions.has(positionKey)) return;
-                
-                // Calculate unrealized PnL
-                const sideSign = pos.side === 'LONG' ? 1 : -1;
-                const uPnL = sideSign * (currentPrice - pos.entryPrice) * pos.qty;
-                
-                // Calculate current equity (margin + PnL)
-                const currentEquity = pos.margin + uPnL;
-                
-                // Calculate minimum margin requirement (using maintenance margin rate)
-                const maintenanceMargin = (currentPrice * pos.qty * SimFut.mmRate) / 100;
-                
-                // Check if position should be liquidated
-                if (currentEquity <= maintenanceMargin) {
-                    console.log('MARGIN CALL! Position ' + pos.id + ' equity: $' + formatMoney(currentEquity) + ', required: $' + formatMoney(maintenanceMargin));
-                    
-                    // Đánh dấu position này đã được liquidate để tránh lặp lại
-                    liquidatedPositions.add(positionKey);
-                    
-                    // Xóa khỏi set sau 60 giây để cho phép check lại nếu cần
-                    setTimeout(() => {
-                        liquidatedPositions.delete(positionKey);
-                    }, 60000);
-                    
-                    const reason = 'Liquidated at $' + formatMoney(currentPrice) + ' (Margin Call)';
-                    
-                    if (useBackendTrading) {
-                        closeBackendPosition(pos);
-                        showNotification('💀 THANH LÝ VỊ THẾ #' + pos.id + ' at $' + formatMoney(currentPrice), 'danger');
-                    } else {
-                        // Force liquidation at current price
-                        const originalLatest = latestPrice;
-                        latestPrice = currentPrice;
-                        closePosition(pos, reason);
-                        latestPrice = originalLatest;
-                        showNotification('💀 THANH LÝ VỊ THẾ #' + pos.id + ' at $' + formatMoney(currentPrice), 'danger');
-                    }
-                    
-                    // Show detailed warning to user
-                    setTimeout(() => {
-                        alert('⚠️ THANH LÝ VỊ THẾ #' + pos.id + '\nSymbol: ' + posSymbol + '\nGiá thanh lý: $' + formatMoney(currentPrice) + '\nLý do: Không đủ margin\nEquity: $' + formatMoney(currentEquity) + ' < Required: $' + formatMoney(maintenanceMargin));
-                    }, 1000);
+                    setTimeout(() => triggeredPositions.delete(positionKey), 30000);
+
+                    if (useBackendTrading) closeBackendPosition(pos); else closePosition(pos, reason);
+                    showNotification(`🎯 ${reason} for #${pos.id}`, 'success');
                 }
             });
         }
 
-        // Notification system
+        let liquidatedPositions = new Set();
+        function checkMarginCalls() {
+            if (SimFut.positions.length === 0) return;
+
+            [...SimFut.positions].forEach(pos => {
+                const posSymbol = pos.symbol || currentSymbol;
+                const currentPrice = symbolPrices[posSymbol] || (posSymbol === currentSymbol ? latestPrice : null);
+                if (!currentPrice) return;
+
+                const positionKey = `${pos.id}-${posSymbol}`;
+                if (liquidatedPositions.has(positionKey)) return;
+
+                const uPnL = (pos.side === 'LONG' ? 1 : -1) * (currentPrice - pos.entryPrice) * pos.qty;
+                const currentEquity = pos.margin + uPnL;
+                const maintenanceMargin = (currentPrice * pos.qty * SimFut.mmRate) / 100;
+
+                if (currentEquity <= maintenanceMargin) {
+                    liquidatedPositions.add(positionKey);
+                    setTimeout(() => liquidatedPositions.delete(positionKey), 60000);
+
+                    const reason = 'Liquidated (Margin Call)';
+                    if (useBackendTrading) closeBackendPosition(pos); else closePosition(pos, reason);
+                    showNotification(`💀 Position #${pos.id} Liquidated!`, 'danger');
+                }
+            });
+        }
+
         function showNotification(message, type = 'info') {
-            // Remove existing notifications
-            const existing = document.querySelectorAll('.notification');
-            existing.forEach(n => n.remove());
-            
+            document.querySelectorAll('.notification').forEach(n => n.remove());
+
             const notification = document.createElement('div');
             notification.className = `notification notification-${type}`;
             notification.style.cssText = `
-                position: fixed;
-                top: 80px;
-                right: 20px;
+                position: fixed; top: 80px; right: 20px;
                 background: ${type === 'success' ? 'var(--trading-up)' : type === 'danger' ? 'var(--trading-down)' : 'var(--trading-accent)'};
-                color: white;
-                padding: 12px 20px;
-                border-radius: 8px;
-                font-weight: 600;
-                font-size: 14px;
-                z-index: 9999;
-                max-width: 300px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                color: white; padding: 12px 20px; border-radius: 8px; font-weight: 600; font-size: 14px;
+                z-index: 9999; max-width: 300px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
                 animation: slideInRight 0.3s ease-out;
             `;
             notification.textContent = message;
             document.body.appendChild(notification);
-            
-            // Auto remove after 5 seconds
+
             setTimeout(() => {
                 if (notification.parentNode) {
                     notification.style.animation = 'slideOutRight 0.3s ease-in';
@@ -2233,245 +2002,227 @@
             }, 5000);
         }
 
-        // Loading overlay system
-        function showLoading(message = 'Đang xử lý...') {
-            hideLoading(); // Remove existing loading first
-            
+        function showLoading(message = 'Processing...') {
+            hideLoading();
             const overlay = document.createElement('div');
             overlay.className = 'loading-overlay';
             overlay.id = 'loadingOverlay';
-            
-            overlay.innerHTML = `
-                <div class="loading-card">
-                    <div class="loading-spinner-large"></div>
-                    <div style="color: var(--trading-text); font-weight: 600;">${message}</div>
-                </div>
-            `;
-            
+            overlay.innerHTML = `<div class="loading-card"><div class="loading-spinner-large"></div><div style="color: var(--trading-text); font-weight: 600;">${message}</div></div>`;
             document.body.appendChild(overlay);
         }
 
         function hideLoading() {
-            const existing = document.getElementById('loadingOverlay');
+            const existing = $('#loadingOverlay');
             if (existing) {
                 existing.style.animation = 'fadeOut 0.3s ease-in';
                 setTimeout(() => existing.remove(), 300);
             }
         }
 
-        // Button loading state
         function setButtonLoading(buttonId, loading = true) {
             const btn = document.getElementById(buttonId);
             if (!btn) return;
-            
+
             if (loading) {
                 btn.classList.add('btn-loading');
                 btn.disabled = true;
-                // Store original text
-                if (!btn.dataset.originalText) {
-                    btn.dataset.originalText = btn.innerHTML;
-                }
+                if (!btn.dataset.originalText) btn.dataset.originalText = btn.innerHTML;
                 btn.innerHTML = `<span>${btn.dataset.originalText}</span>`;
             } else {
                 btn.classList.remove('btn-loading');
                 btn.disabled = false;
-                if (btn.dataset.originalText) {
-                    btn.innerHTML = btn.dataset.originalText;
-                }
+                if (btn.dataset.originalText) btn.innerHTML = btn.dataset.originalText;
             }
         }
 
-        setInterval(refresh24hTicker, 30000);
-
         window.addEventListener('resize', () => chart?.applyOptions({ autoSize: true }));
-
-        // Khởi động phát hiện backend sau khi DOM sẵn sàng
-        document.addEventListener('DOMContentLoaded', ()=>{
-            detectBackendTrading();
-        });
     </script>
-}
 
-<div class="trading-page">
-    <div class="trading-header">
-        <div class="trading-header-left">
-            <div class="trading-symbol">@ViewBag.Symbol</div>
-            <div class="price-display">
-                <div class="current-price" id="lastPrice">$0.00</div>
-                <div class="price-change up" id="pctChange">+0.00%</div>
-    <div id="backendModeBadge" style="display:none; background:#1f6feb; color:#fff; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:600; letter-spacing:.5px;">BACKEND</div>
-            </div>
-            <div class="connection-status" id="connectionStatus">
-                <div class="status-dot status-connecting"></div>
-                <span class="status-text">Connecting</span>
-            </div>
-        </div>
-        
-
-        <div class="trading-header-right">
-            <select id="symbol-selector" class="symbol-selector">
-                <option value="BTCUSDT" selected="@(ViewBag.Symbol == "BTCUSDT")">BTC/USDT</option>
-                <option value="ETHUSDT" selected="@(ViewBag.Symbol == "ETHUSDT")">ETH/USDT</option>
-                <option value="BNBUSDT" selected="@(ViewBag.Symbol == "BNBUSDT")">BNB/USDT</option>
-            </select>
-
-            <div class="interval-selector">
-                <button class="interval-btn" data-interval="1m">1m</button>
-                <button class="interval-btn" data-interval="5m">5m</button>
-                <button class="interval-btn" data-interval="15m">15m</button>
-                <button class="interval-btn" data-interval="30m">30m</button>
-                <button class="interval-btn active" data-interval="1h">1h</button>
-                <button class="interval-btn" data-interval="4h">4h</button>
-                <button class="interval-btn" data-interval="1d">1d</button>
-            </div>
-
-            <button id="themeToggle" class="theme-toggle">🌙</button>
-        </div>
-    </div>
-
-    <div class="trading-main">
-        <div class="chart-container">
-            <div id="chart"></div>
-        </div>
-
-        <div class="trading-controls">
-            <div class="control-section">
-                <div class="section-title">💰 Account Balance</div>
-                <div class="balance-display">
-                    <div class="balance-amount" id="futBalance">$10,000.00</div>
-                    <div class="fee-rate">Fee: <span id="feeRateView">0.04</span>%</div>
+    <div class="trading-page">
+        <div class="trading-header">
+            <div class="trading-header-left">
+                <div class="trading-symbol">@ViewBag.Symbol</div>
+                <div class="price-display">
+                    <div class="current-price" id="lastPrice">$0.00</div>
+                    <div class="price-change up" id="pctChange">+0.00%</div>
+                </div>
+                <div class="connection-status" id="connectionStatus">
+                    <div class="status-dot status-connecting"></div>
+                    <span class="status-text">Connecting</span>
                 </div>
             </div>
 
-            <div class="control-section">
-                <div class="section-title">📊 Place Order</div>
-                <div class="input-grid">
-                    <div class="input-group">
-                        <label class="input-label">Order Type</label>
-                        <select id="orderTypeSelect" class="input-field" style="padding:11px 16px;">
-                            <option value="0" selected>Market</option>
-                            <option value="1">Limit</option>
-                        </select>
-                    </div>
-                    <div class="input-group" id="limitPriceGroup" style="display:none;">
-                        <label class="input-label">Limit Price</label>
-                        <input type="number" id="limitPriceInput" class="input-field" step="0.1" placeholder="65000" />
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Quantity</label>
-                        <input type="number" id="qtyInput" class="input-field" min="0.0001" step="0.0001" value="0.001" placeholder="0.001" />
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Leverage</label>
-                        <input type="number" id="levInput" class="input-field" min="1" max="125" step="1" value="20" placeholder="20" />
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Take Profit</label>
-                        <input type="number" id="tpInput" class="input-field" step="0.1" placeholder="65000" />
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Stop Loss</label>
-                        <input type="number" id="slInput" class="input-field" step="0.1" placeholder="59000" />
+
+            <div class="trading-header-right">
+                <select id="symbol-selector" class="symbol-selector">
+                    <option value="BTCUSDT" selected="@(ViewBag.Symbol == "BTCUSDT")">BTC/USDT</option>
+                    <option value="ETHUSDT" selected="@(ViewBag.Symbol == "ETHUSDT")">ETH/USDT</option>
+                    <option value="BNBUSDT" selected="@(ViewBag.Symbol == "BNBUSDT")">BNB/USDT</option>
+                </select>
+
+                <div class="interval-selector">
+                    <button class="interval-btn" data-interval="1m">1m</button>
+                    <button class="interval-btn" data-interval="5m">5m</button>
+                    <button class="interval-btn" data-interval="15m">15m</button>
+                    <button class="interval-btn" data-interval="30m">30m</button>
+                    <button class="interval-btn active" data-interval="1h">1h</button>
+                    <button class="interval-btn" data-interval="4h">4h</button>
+                    <button class="interval-btn" data-interval="1d">1d</button>
+                </div>
+
+                <button id="themeToggle" class="theme-toggle">🌙</button>
+            </div>
+        </div>
+
+        <div class="trading-container">
+            <div class="trading-top-panel">
+                <div class="trading-main-content">
+                    <div class="chart-container">
+                        <div id="chart"></div>
                     </div>
                 </div>
 
-                <div class="action-buttons">
-                    <button class="action-btn btn-long" id="btnLong">🚀 Open Long</button>
-                    <button class="action-btn btn-short" id="btnShort">📉 Open Short</button>
+                <aside class="trading-sidebar">
+                    <div class="trading-controls">
+                        <div class="control-section">
+                            <div class="section-title">💰 Account Balance</div>
+                            <div class="balance-display">
+                                <div class="balance-amount" id="futBalance">$10,000.00</div>
+                                <div class="fee-rate">Fee: <span id="feeRateView">0.04</span>%</div>
+                            </div>
+                        </div>
+
+                        <div class="control-section">
+                            <div class="section-title">📊 Place Order</div>
+
+                            <div class="order-type-switcher">
+                                <button class="order-type-btn active" data-type="0">Market</button>
+                                <button class="order-type-btn" data-type="1">Limit</button>
+                            </div>
+
+                            <div id="order-form-body">
+                                <div class="input-group" id="limitPriceGroup" style="display:none;">
+                                    <label class="input-label">Limit Price</label>
+                                    <input type="number" id="limitPriceInput" class="input-field" step="0.1" placeholder="e.g. 65000" />
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label">Quantity</label>
+                                    <input type="number" id="qtyInput" class="input-field" min="0.0001" step="0.0001" value="0.001" placeholder="0.001" />
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label">Leverage</label>
+                                    <input type="number" id="levInput" class="input-field" min="1" max="125" step="1" value="20" placeholder="20x" />
+                                </div>
+                                <div class="tp-sl-group">
+                                    <div class="input-group">
+                                        <label class="input-label">Take Profit</label>
+                                        <input type="number" id="tpInput" class="input-field" step="0.1" placeholder="Optional" />
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="input-label">Stop Loss</label>
+                                        <input type="number" id="slInput" class="input-field" step="0.1" placeholder="Optional" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="action-buttons">
+                                <button class="action-btn btn-long" id="btnLong"><span>🚀</span> Open Long</button>
+                                <button class="action-btn btn-short" id="btnShort"><span>📉</span> Open Short</button>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+
+            <div class="info-tabs">
+                <div class="tab-header">
+                    <button class="tab-link active" data-tab="positions">📈 Open Positions</button>
+                    <button class="tab-link" data-tab="history">� Trade History</button>
                 </div>
+                <div id="positions" class="tab-content active">
+                    <div class="table-wrapper">
+                        <table class="trading-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Symbol</th>
+                                    <th>Side</th>
+                                    <th>Size</th>
+                                    <th>Entry Price</th>
+                                    <th>Mark Price</th>
+                                    <th>Leverage</th>
+                                    <th>Margin</th>
+                                    <th>Liq. Price</th>
+                                    <th>TP / SL</th>
+                                    <th>Unrealized PnL</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="posBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="history" class="tab-content">
+                    <div class="table-wrapper">
+                        <table class="trading-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Symbol</th>
+                                    <th>Open Time</th>
+                                    <th>Close Time</th>
+                                    <th>Side</th>
+                                    <th>Size</th>
+                                    <th>Entry Price</th>
+                                    <th>Exit Price</th>
+                                    <th>Realized PnL</th>
+                                    <th>Fees</th>
+                                    <th>Note</th>
+                                </tr>
+                            </thead>
+                            <tbody id="histBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                <div class="control-buttons">
-                    <button id="closeAll" class="control-btn danger">Close All</button>
-                    <button id="resetFut" class="control-btn danger">Reset</button>
+        <div class="trading-footer">
+            <div class="footer-legend">
+                <div class="legend-item">
+                    <div class="legend-dot up"></div>
+                    <span>Bullish Candle</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot down"></div>
+                    <span>Bearish Candle</span>
+                </div>
+                <div class="legend-item">
+                    <span>Data: Real-time Binance API • Press R to refresh</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="info-tabs">
-        <div class="tab-header">
-            <button class="tab-link active" data-tab="positions">📈 Open Positions</button>
-            <button class="tab-link" data-tab="history">📊 Trade History</button>
-        </div>
-        <div id="positions" class="tab-content active">
-            <div class="table-wrapper">
-                <table class="trading-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Symbol</th>
-                            <th>Side</th>
-                            <th>Size</th>
-                            <th>Entry Price</th>
-                            <th>Mark Price</th>
-                            <th>Leverage</th>
-                            <th>Margin</th>
-                            <th>Liq. Price</th>
-                            <th>TP / SL</th>
-                            <th>Unrealized PnL</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="posBody"></tbody>
-                </table>
+    <!-- TP/SL Modal -->
+    <div id="tpSlModalBackdrop" class="tp-sl-modal-backdrop hidden">
+        <div class="tp-sl-modal">
+            <h3>Update TP / SL</h3>
+            <div class="field">
+                <label>Take Profit</label>
+                <input type="number" id="tpInputModal" step="0.1" placeholder="e.g. 70000" />
+                <span id="tpModalError" class="error" aria-live="polite"></span>
             </div>
-        </div>
-        <div id="history" class="tab-content">
-            <div class="table-wrapper">
-                <table class="trading-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Symbol</th>
-                            <th>Open Time</th>
-                            <th>Close Time</th>
-                            <th>Side</th>
-                            <th>Size</th>
-                            <th>Entry Price</th>
-                            <th>Exit Price</th>
-                            <th>Realized PnL</th>
-                            <th>Fees</th>
-                            <th>Note</th>
-                        </tr>
-                    </thead>
-                    <tbody id="histBody"></tbody>
-                </table>
+            <div class="field">
+                <label>Stop Loss</label>
+                <input type="number" id="slInputModal" step="0.1" placeholder="e.g. 60000" />
+                <span id="slModalError" class="error" aria-live="polite"></span>
+            </div>
+            <div class="actions">
+                <button class="btn btn-outline" onclick="window.__closeTpSlModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="window.__saveTpSl()">Save</button>
             </div>
         </div>
     </div>
-
-    <div class="trading-footer">
-        <div class="footer-legend">
-            <div class="legend-item">
-                <div class="legend-dot up"></div>
-                <span>Bullish Candle</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-dot down"></div>
-                <span>Bearish Candle</span>
-            </div>
-            <div class="legend-item">
-                <span>Data: Real-time Binance API • Press R to refresh</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- TP/SL Modal -->
-<div id="tpSlModalBackdrop" class="tp-sl-modal-backdrop hidden">
-    <div class="tp-sl-modal">
-        <h3>Cập nhật TP / SL</h3>
-        <div class="field">
-            <label>Take Profit</label>
-            <input type="number" id="tpInputModal" step="0.1" placeholder="Ví dụ: 70000" />
-        </div>
-        <div class="field">
-            <label>Stop Loss</label>
-            <input type="number" id="slInputModal" step="0.1" placeholder="Ví dụ: 60000" />
-        </div>
-        <div class="actions">
-            <button class="btn btn-outline" onclick="window.__closeTpSlModal()">Hủy</button>
-            <button class="btn btn-primary" onclick="window.__saveTpSl()">Lưu</button>
-        </div>
-    </div>
-</div>
+</body>
+</html>

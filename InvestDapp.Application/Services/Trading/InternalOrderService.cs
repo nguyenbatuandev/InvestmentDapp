@@ -21,8 +21,8 @@ namespace InvestDapp.Application.Services.Trading
         Task<InternalUserBalance?> GetUserBalanceAsync(string userId);
         Task<InternalUserBalance> UpdateUserBalanceAsync(string userId, decimal balanceChange, string reason);
         IReadOnlyCollection<InternalPosition> GetAllPositions();
-    Task<bool> UpdatePositionRiskAsync(string userId, string symbol, decimal? takeProfit, decimal? stopLoss);
-    Task<(bool ok, string? error)> ClosePositionAsync(string userId, string symbol);
+        Task<bool> UpdatePositionRiskAsync(string userId, string symbol, decimal? takeProfit, decimal? stopLoss);
+    Task<(bool ok, string? error)> ClosePositionAsync(string userId, string symbol, string? positionId = null);
     }
 
     public class InternalOrderService : IInternalOrderService
@@ -54,132 +54,72 @@ namespace InvestDapp.Application.Services.Trading
 
         public async Task<InternalOrder> CreateOrderAsync(InternalOrder order)
         {
-            try
+            // Normalize symbol
+            order.Symbol = NormalizeSymbol(order.Symbol);
+
+            var (isValid, errorMessage) = await ValidateOrderAsync(order);
+            if (!isValid)
             {
-                // Normalize symbol to standard (e.g., BNB -> BNBUSDT)
-                order.Symbol = NormalizeSymbol(order.Symbol);
-                var (isValid, errorMessage) = await ValidateOrderAsync(order);
-                if (!isValid)
-                {
-                    order.Status = OrderStatus.Rejected;
-                    order.Notes = errorMessage;
-                    _orders.TryAdd(order.Id, order);
-                    return order;
-                }
-
-                order.Status = OrderStatus.Pending;
-                order.CreatedAt = DateTime.UtcNow; // single timestamp reused for DB row to allow later matching
-
-                _orders.TryAdd(order.Id, order);
-                _db.Orders.Add(new Order
-                {
-                    InternalOrderId = order.Id,
-                    UserWallet = order.UserId,
-                    Symbol = order.Symbol,
-                    Side = order.Side,
-                    Type = order.Type,
-                    Quantity = order.Quantity,
-                    Price = order.Price,
-                    StopPrice = order.StopPrice,
-                    TakeProfitPrice = order.TakeProfitPrice,
-                    StopLossPrice = order.StopLossPrice,
-                    ReduceOnly = order.ReduceOnly,
-                    Leverage = order.Leverage,
-                    Status = OrderStatus.Pending,
-                    CreatedAt = order.CreatedAt // keep identical for later lookup
-                });
-                await _db.SaveChangesAsync();
-
-                if (order.Type == OrderType.Market)
-                {
-                    // Pre-reserve margin immediately so UI sees reduced available balance right after placing order
-                    try
-                    {
-                        if (!order.ReduceOnly) // do not reserve margin for reduce-only close orders
-                        {
-                            var requiredMargin = CalculateRequiredMargin(order);
-                            var bal = GetUserBalanceSync(order.UserId);
-                            if (bal != null && requiredMargin > 0)
-                            {
-                                bal.AvailableBalance -= requiredMargin;
-                                bal.UsedMargin += requiredMargin;
-                                bal.UpdatedAt = DateTime.UtcNow;
-                                // Persist provisional margin reservation
-                                var dbBalEarly = _db.UserBalances.FirstOrDefault(b => b.UserWallet == order.UserId);
-                                if (dbBalEarly == null)
-                                {
-                                    dbBalEarly = new UserBalance
-                                    {
-                                        UserWallet = order.UserId,
-                                        Balance = bal.Balance,
-                                        AvailableBalance = bal.AvailableBalance,
-                                        MarginUsed = bal.UsedMargin,
-                                        UnrealizedPnl = bal.UnrealizedPnl,
-                                        UpdatedAt = bal.UpdatedAt
-                                    };
-                                    _db.UserBalances.Add(dbBalEarly);
-                                }
-                                else
-                                {
-                                    dbBalEarly.Balance = bal.Balance;
-                                    dbBalEarly.AvailableBalance = bal.AvailableBalance;
-                                    dbBalEarly.MarginUsed = bal.UsedMargin;
-                                    dbBalEarly.UnrealizedPnl = bal.UnrealizedPnl;
-                                    dbBalEarly.UpdatedAt = bal.UpdatedAt;
-                                }
-                                _db.SaveChanges();
-                            }
-                        }
-                    }
-                    catch { /* soft fail margin reservation */ }
-                    await ProcessMarketOrderAsync(order);
-                }
-                else
-                {
-                    // Index pending limit/stop order, margin not reserved until execution (simpler)
-                    IndexConditionalOrder(order);
-                }
-
-                _logger.LogInformation("Order created: {OrderId} for user {UserId}", order.Id, order.UserId);
-                return order;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating order {OrderId}", order.Id);
                 order.Status = OrderStatus.Rejected;
-                order.Notes = "Internal error occurred";
+                order.Notes = errorMessage;
+                _orders.TryAdd(order.Id, order);
                 return order;
             }
-        }
 
-        private string NormalizeSymbol(string symbol)
-        {
-            if (string.IsNullOrWhiteSpace(symbol)) return symbol;
-            symbol = symbol.Trim().ToUpper();
-            // Remove common separators (e.g., BNB/USDT, BNB-USDT)
-            symbol = symbol.Replace("/", string.Empty).Replace("-", string.Empty).Replace("_", string.Empty);
-            if (symbol.EndsWith("USDT") || symbol.EndsWith("USD")) return symbol;
-            // Append USDT if only base provided (<=6 chars heuristically)
-            if (symbol.Length <= 6) return symbol + "USDT";
-            return symbol;
-        }
+            order.Status = OrderStatus.Pending;
+            order.CreatedAt = DateTime.UtcNow;
 
-    private async Task ProcessMarketOrderAsync(InternalOrder order, decimal? forcedExecutionPrice = null)
-        {
-            decimal executionPrice;
-            if (forcedExecutionPrice.HasValue)
+            _orders.TryAdd(order.Id, order);
+
+            // Persist a minimal DB order record so history exists immediately
+            var dbOrder = new Order
             {
-                executionPrice = forcedExecutionPrice.Value;
+                InternalOrderId = order.Id,
+                UserWallet = order.UserId,
+                Symbol = order.Symbol,
+                Side = order.Side,
+                Type = order.Type,
+                Quantity = order.Quantity,
+                Price = order.Price,
+                StopPrice = order.StopPrice,
+                ReduceOnly = order.ReduceOnly,
+                Leverage = order.Leverage,
+                Status = order.Status,
+                CreatedAt = order.CreatedAt
+            };
+            _db.Orders.Add(dbOrder);
+            await _db.SaveChangesAsync();
+
+            // If market order -> execute immediately
+            if (order.Type == OrderType.Market)
+            {
+                decimal? execPx = null;
+                try
+                {
+                    execPx = order.Price ?? order.StopPrice ?? await _priceService.GetMarkPriceAsync(order.Symbol);
+                }
+                catch { execPx = null; }
+
+                await ProcessMarketOrderAsync(order, execPx);
             }
             else
             {
-                try { executionPrice = await _priceService.GetMarkPriceAsync(order.Symbol); }
-                catch { executionPrice = await _priceService.GetMarkPriceAsync(order.Symbol); } // try again fallback inside service
+                // Index conditional orders for execution by mark price engine
+                IndexConditionalOrder(order);
             }
 
-            // Kiểm tra giá bất thường thay vì clamp về hardCap (tránh Entry luôn 2,000,000)
+            return order;
+        }
+
+        private async Task ProcessMarketOrderAsync(InternalOrder order, decimal? providedPrice = null)
+        {
+            // Determine execution price
+            decimal executionPrice = providedPrice ?? await _priceService.GetMarkPriceAsync(order.Symbol);
+
+            // Basic realistic bounds to avoid absurd fills
             decimal realisticMax = order.Symbol.Contains("BTC") ? 200_000m : order.Symbol.Contains("ETH") ? 10_000m : order.Symbol.Contains("BNB") ? 2_000m : 100_000m;
             decimal realisticMin = order.Symbol.Contains("BTC") ? 100m : order.Symbol.Contains("ETH") ? 10m : order.Symbol.Contains("BNB") ? 1m : 0.001m;
+
             if (executionPrice <= 0 || executionPrice > realisticMax * 5 || executionPrice < realisticMin / 5)
             {
                 _logger.LogWarning("Execution price OUTLIER {Sym}: {Price}. Refetching...", order.Symbol, executionPrice);
@@ -191,39 +131,29 @@ namespace InvestDapp.Application.Services.Trading
                 }
                 catch { }
             }
-            // Nếu vẫn ngoài ngưỡng — reject order
+
             if (executionPrice <= 0 || executionPrice > realisticMax * 5 || executionPrice < realisticMin / 5)
             {
                 order.Status = OrderStatus.Rejected;
                 order.Notes = "Giá thị trường bất thường. Thử lại sau";
                 _logger.LogWarning("Reject order {Id} do giá bất thường {Price} {Sym}", order.Id, executionPrice, order.Symbol);
-                return; // không fill
+                return;
             }
 
-            // If limit order carried an extreme Price/StopPrice adjust similarly
-            if (order.Price.HasValue && (order.Price <= 0 || order.Price > 1_000_000_000m))
-            {
-                _logger.LogWarning("Order price invalid for {Sym}: {Price}. Nulling.", order.Symbol, order.Price);
-                order.Price = null;
-            }
-            if (order.StopPrice.HasValue && (order.StopPrice <= 0 || order.StopPrice > 1_000_000_000m))
-            {
-                _logger.LogWarning("Order stop price invalid for {Sym}: {Price}. Nulling.", order.Symbol, order.StopPrice);
-                order.StopPrice = null;
-            }
+            if (order.Price.HasValue && (order.Price <= 0 || order.Price > 1_000_000_000m)) order.Price = null;
+            if (order.StopPrice.HasValue && (order.StopPrice <= 0 || order.StopPrice > 1_000_000_000m)) order.StopPrice = null;
 
             lock (_lockObject)
             {
                 if (!_orders.TryGetValue(order.Id, out var currentOrder)) return;
                 currentOrder.Status = OrderStatus.Filled;
                 currentOrder.FilledQuantity = currentOrder.Quantity;
-                // Ensure sanitized execution price (already clamped). Force rounding to 2 decimals for display and DB consistency.
                 executionPrice = Math.Round(executionPrice, 2, MidpointRounding.AwayFromZero);
                 currentOrder.AveragePrice = executionPrice;
                 currentOrder.UpdatedAt = DateTime.UtcNow;
                 _orders[order.Id] = currentOrder;
 
-                var dbOrder = _db.Orders.FirstOrDefault(o => o.UserWallet == currentOrder.UserId && o.Symbol == currentOrder.Symbol && o.CreatedAt == currentOrder.CreatedAt);
+                var dbOrder = _db.Orders.FirstOrDefault(o => o.InternalOrderId == currentOrder.Id);
                 if (dbOrder != null)
                 {
                     dbOrder.Status = OrderStatus.Filled;
@@ -232,10 +162,9 @@ namespace InvestDapp.Application.Services.Trading
                     dbOrder.UpdatedAt = DateTime.UtcNow;
                 }
 
-                // Update position & balances (includes realized PnL + margin adjustments)
+                // Update in-memory positions and balances
                 UpdateUserPosition(currentOrder, executionPrice);
 
-                // Persist balance after position update
                 var balance = GetUserBalanceSync(currentOrder.UserId);
                 if (balance != null)
                 {
@@ -263,21 +192,17 @@ namespace InvestDapp.Application.Services.Trading
                     }
                 }
 
-                // Persist modified/removed position
-                var posKey = $"{currentOrder.UserId}:{currentOrder.Symbol}";
-                if (_positions.TryGetValue(posKey, out var memPos))
-                {
-                    UpsertDbPosition(memPos);
-                }
-                else
-                {
-                    // Removed => delete from DB if exists
-                    var existingDbPos = _db.Positions.FirstOrDefault(x => x.UserWallet == currentOrder.UserId && x.Symbol == currentOrder.Symbol);
-                    if (existingDbPos != null)
+                    // Persist all in-memory positions for this user+symbol.
+                    // Note: do NOT delete DB rows here. Each opening order should create its own DB row
+                    // and historical rows should only be removed when a position is explicitly closed.
+                    var memPositions = _positions.Values.Where(p => p.UserId == currentOrder.UserId && p.Symbol == currentOrder.Symbol).ToList();
+                    if (memPositions.Count > 0)
                     {
-                        _db.Positions.Remove(existingDbPos);
+                        foreach (var m in memPositions)
+                        {
+                            UpsertDbPosition(m);
+                        }
                     }
-                }
             }
 
             await _db.SaveChangesAsync();
@@ -286,43 +211,62 @@ namespace InvestDapp.Application.Services.Trading
 
         private void UpdateUserPosition(InternalOrder order, decimal executionPrice)
         {
-            var positionKey = $"{order.UserId}:{order.Symbol}";
             var balance = GetUserBalanceSync(order.UserId)!; // ensured non-null
 
-        if (_positions.TryGetValue(positionKey, out var pos))
+            // Collect existing positions for this user+symbol
+            var existingPositions = _positions.Values.Where(p => p.UserId == order.UserId && p.Symbol == order.Symbol).OrderBy(p => p.CreatedAt).ToList();
+
+            // If reduce-only and no in-memory positions, sync from DB so we can close DB rows correctly
+            if (order.ReduceOnly && existingPositions.Count == 0)
             {
-                // Nếu là reduce-only, chắc chắn chỉ đóng hoặc đóng một phần, không đảo chiều
-                if (order.ReduceOnly && order.Quantity > pos.Size)
+                try
                 {
-                    _logger.LogInformation("Clamp reduce-only execution qty from {Q} to {Size} for user {U} {Sym}", order.Quantity, pos.Size, order.UserId, order.Symbol);
-                    order.Quantity = pos.Size;
-                }
-                // Existing position
-                if (pos.Side == order.Side && !order.ReduceOnly)
-                {
-                    // Increase (add) to position
-                    var newTotalSize = pos.Size + order.Quantity;
-                    var newEntry = ((pos.EntryPrice * pos.Size) + (executionPrice * order.Quantity)) / newTotalSize;
-                    // Recalculate margin
-                    var oldMargin = pos.Margin;
-                    pos.Size = newTotalSize;
-                    pos.EntryPrice = newEntry;
-                    pos.Margin = (pos.Size * pos.EntryPrice) / Math.Max(1, pos.Leverage);
-                    var marginIncrease = pos.Margin - oldMargin;
-                    if (marginIncrease > 0)
+                    var dbPositions = _db.Positions.Where(p => p.UserWallet == order.UserId && p.Symbol == order.Symbol).OrderBy(p => p.CreatedAt).ToList();
+                    foreach (var dp in dbPositions)
                     {
-                        balance.AvailableBalance -= marginIncrease;
-                        balance.UsedMargin += marginIncrease;
+                        var ip = new InternalPosition
+                        {
+                            Id = dp.Id.ToString(),
+                            UserId = dp.UserWallet,
+                            Symbol = dp.Symbol,
+                            Side = dp.Side,
+                            Size = dp.Size,
+                            EntryPrice = dp.EntryPrice,
+                            MarkPrice = dp.MarkPrice,
+                            UnrealizedPnl = dp.UnrealizedPnl,
+                            RealizedPnl = dp.RealizedPnl,
+                            Leverage = dp.Leverage,
+                            Margin = dp.Margin,
+                            PnL = dp.PnL,
+                            TakeProfitPrice = dp.TakeProfitPrice,
+                            StopLossPrice = dp.StopLossPrice,
+                            MaintenanceMarginRate = dp.MaintenanceMarginRate,
+                            IsIsolated = dp.IsIsolated,
+                            LiquidationPrice = dp.LiquidationPrice,
+                            CreatedAt = dp.CreatedAt,
+                            UpdatedAt = dp.UpdatedAt
+                        };
+                        var k = $"{order.UserId}:{dp.Symbol}:{dp.Id}";
+                        _positions[k] = ip;
                     }
-            // If user supplies new TP/SL override existing
-            if (order.TakeProfitPrice.HasValue) pos.TakeProfitPrice = order.TakeProfitPrice;
-            if (order.StopLossPrice.HasValue) pos.StopLossPrice = order.StopLossPrice;
+                    existingPositions = _positions.Values.Where(p => p.UserId == order.UserId && p.Symbol == order.Symbol).OrderBy(p => p.CreatedAt).ToList();
                 }
-                else
+                catch (Exception ex)
                 {
-                    // Closing or reversing
-                    var closingQty = Math.Min(pos.Size, order.Quantity);
-                    var sideFactor = pos.Side == OrderSide.Buy ? 1 : -1; // long profit when price up
+                    _logger.LogError(ex, "Error syncing DB positions into memory for reduce-only close for {User} {Sym}", order.UserId, order.Symbol);
+                }
+            }
+
+            if (order.ReduceOnly)
+            {
+                // Closing behavior: consume existing positions FIFO until order.Quantity satisfied
+                var remaining = order.Quantity;
+                var positionsToRemove = new List<InternalPosition>();
+                foreach (var pos in existingPositions)
+                {
+                    if (remaining <= 0) break;
+                    var closingQty = Math.Min(pos.Size, remaining);
+                    var sideFactor = pos.Side == OrderSide.Buy ? 1 : -1;
                     var realizedPnl = (executionPrice - pos.EntryPrice) * sideFactor * closingQty;
                     var marginPortion = pos.Margin * (closingQty / pos.Size);
 
@@ -331,58 +275,87 @@ namespace InvestDapp.Application.Services.Trading
                     balance.UsedMargin -= marginPortion;
                     pos.RealizedPnl += realizedPnl;
 
-                    if (order.Quantity < pos.Size)
+                    if (closingQty >= pos.Size - 0.0000001m)
                     {
-                        // Partial close
+                        // fully close this position
+                        positionsToRemove.Add(pos);
+                    }
+                    else
+                    {
+                        // partially close
                         pos.Size -= closingQty;
                         pos.Margin -= marginPortion;
+                        pos.UnrealizedPnl = (executionPrice - pos.EntryPrice) * (pos.Side == OrderSide.Buy ? 1 : -1) * pos.Size;
+                        pos.PnL = pos.RealizedPnl + pos.UnrealizedPnl;
+                        pos.UpdatedAt = DateTime.UtcNow;
+                        // persist partial change
+                        UpsertDbPosition(pos);
                     }
-                    else if (order.Quantity == pos.Size)
+
+                    remaining -= closingQty;
+                }
+
+                // Remove fully closed positions from memory and DB
+                var removedAny = false;
+                foreach (var closedPos in positionsToRemove)
+                {
+                    // remove from in-memory cache
+                    var key = _positions.Keys.FirstOrDefault(k => k.EndsWith(":" + closedPos.Id));
+                    if (!string.IsNullOrEmpty(key)) _positions.TryRemove(key, out _);
+
+                    // attempt to remove DB row if exists
+                    try
                     {
-                        // Full close
-                        _positions.TryRemove(positionKey, out _);
-                        balance.UnrealizedPnl = 0; // all closed
-                        balance.UpdatedAt = DateTime.UtcNow;
-                        return;
-                    }
-                    else // reverse
-                    {
-                        if (order.ReduceOnly)
+                        if (int.TryParse(closedPos.Id, out var dbId))
                         {
-                            // ReduceOnly không được reverse, chỉ close toàn bộ position
-                            _logger.LogInformation("ReduceOnly order cannot reverse, closing position fully for {U} {Sym}", order.UserId, order.Symbol);
-                            _positions.TryRemove(positionKey, out _);
-                            balance.UnrealizedPnl = 0;
-                            balance.UpdatedAt = DateTime.UtcNow;
-                            return;
+                            var dbPos = _db.Positions.FirstOrDefault(p => p.Id == dbId && p.UserWallet == closedPos.UserId && p.Symbol == closedPos.Symbol);
+                            if (dbPos != null) { _db.Positions.Remove(dbPos); removedAny = true; }
                         }
-                        var extraQty = order.Quantity - pos.Size; // new exposure
-                        // Reset to new side
-                        pos.Side = order.Side; // opposite of previous
-                        pos.Size = extraQty;
-                        pos.EntryPrice = executionPrice;
-                        pos.Margin = (pos.Size * executionPrice) / Math.Max(1, pos.Leverage);
-                        // Allocate new margin
-                        balance.AvailableBalance -= pos.Margin; // after releasing old marginPortion earlier
-                        balance.UsedMargin += pos.Margin;
-                        pos.TakeProfitPrice = order.TakeProfitPrice;
-                        pos.StopLossPrice = order.StopLossPrice;
+                        else
+                        {
+                            // best-effort: find a matching DB row for this user+symbol+side+entryprice
+                            // Narrow fallback match to include Size and Leverage to avoid removing unrelated rows with same entry price
+                            var dbPos = _db.Positions.Where(p => p.UserWallet == closedPos.UserId
+                                                                  && p.Symbol == closedPos.Symbol
+                                                                  && p.Side == closedPos.Side
+                                                                  && p.EntryPrice == closedPos.EntryPrice
+                                                                  && p.Size == closedPos.Size
+                                                                  && p.Leverage == closedPos.Leverage)
+                                .OrderBy(p => p.CreatedAt).FirstOrDefault();
+                            if (dbPos != null) { _db.Positions.Remove(dbPos); removedAny = true; }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error removing closed position for {User} {Sym}", closedPos.UserId, closedPos.Symbol);
                     }
                 }
 
-                // Update mark/unrealized after adjustment
-                pos.MarkPrice = executionPrice;
-                var sideFactor2 = pos.Side == OrderSide.Buy ? 1 : -1;
-                pos.UnrealizedPnl = (executionPrice - pos.EntryPrice) * sideFactor2 * pos.Size;
-                pos.PnL = pos.RealizedPnl + pos.UnrealizedPnl;
-                // Recompute liquidation price
-                pos.LiquidationPrice = ComputeLiquidationPrice(pos.Side, pos.EntryPrice, pos.Leverage, pos.MaintenanceMarginRate);
-                pos.UpdatedAt = DateTime.UtcNow;
-                _positions[positionKey] = pos;
+                // Persist DB removals immediately so consumers see positions disappear
+                if (removedAny)
+                {
+                    try
+                    {
+                        _db.SaveChanges();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error saving DB changes after removing closed positions for {User} {Sym}", order.UserId, order.Symbol);
+                    }
+                }
+
+                // (DB rows for fully closed positions are removed above per-closedPos.)
+
+                // If user tried to reduce more than total open, clamp
+                var totalOpen = existingPositions.Sum(p => p.Size);
+                if (order.Quantity > totalOpen)
+                {
+                    _logger.LogInformation("Reduce-only quantity {Q} exceeds total open {T}, clamped for {U} {Sym}", order.Quantity, totalOpen, order.UserId, order.Symbol);
+                }
             }
-            else if(!order.ReduceOnly)
+            else
             {
-                // New position (opening)
+                // Always create a new separate position for non-reduce (opening) orders
                 var newPos = new InternalPosition
                 {
                     Id = Guid.NewGuid().ToString(),
@@ -394,20 +367,22 @@ namespace InvestDapp.Application.Services.Trading
                     MarkPrice = executionPrice,
                     Leverage = order.Leverage,
                     Margin = (order.Quantity * executionPrice) / Math.Max(1, order.Leverage),
-            TakeProfitPrice = order.TakeProfitPrice,
-            StopLossPrice = order.StopLossPrice,
+                    TakeProfitPrice = order.TakeProfitPrice,
+                    StopLossPrice = order.StopLossPrice,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
                 newPos.LiquidationPrice = ComputeLiquidationPrice(newPos.Side, newPos.EntryPrice, newPos.Leverage, newPos.MaintenanceMarginRate);
                 balance.AvailableBalance -= newPos.Margin;
                 balance.UsedMargin += newPos.Margin;
-                _positions.TryAdd(positionKey, newPos);
+
+                var key = $"{order.UserId}:{order.Symbol}:{newPos.Id}";
+                _positions.TryAdd(key, newPos);
             }
 
             balance.UpdatedAt = DateTime.UtcNow;
-        // Recalculate aggregate unrealized PnL across positions for balance
-        balance.UnrealizedPnl = _positions.Values.Where(p => p.UserId == order.UserId).Sum(p => p.UnrealizedPnl);
+            // Recalculate aggregate unrealized PnL across positions for balance
+            balance.UnrealizedPnl = _positions.Values.Where(p => p.UserId == order.UserId).Sum(p => p.UnrealizedPnl);
         }
 
         private decimal? ComputeLiquidationPrice(OrderSide side, decimal entryPrice, int leverage, decimal maintenanceRate)
@@ -424,6 +399,14 @@ namespace InvestDapp.Application.Services.Trading
             {
                 return entryPrice * (1 + (1m / leverage) - maintenanceRate);
             }
+        }
+
+        private string NormalizeSymbol(string? symbol)
+        {
+            if (string.IsNullOrWhiteSpace(symbol)) return string.Empty;
+            var s = symbol.ToUpperInvariant().Trim();
+            if (s.EndsWith("USDT") || s.EndsWith("USD")) return s;
+            return s + "USDT";
         }
 
         public async Task<bool> CancelOrderAsync(string orderId, string userId)
@@ -528,93 +511,120 @@ namespace InvestDapp.Application.Services.Trading
 
         public async Task<InternalPosition?> GetUserPositionAsync(string userId, string symbol)
         {
-            lock (_lockObject)
+            // Always prefer DB as source-of-truth. Load latest positions for this user+symbol and return the first.
+            symbol = NormalizeSymbol(symbol);
+            var dp = await _db.Positions.Where(p => p.UserWallet == userId && p.Symbol == symbol)
+                .OrderByDescending(p => p.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (dp == null) return null;
+
+            var ip = new InternalPosition
             {
-                var key = $"{userId}:{symbol}";
-                return _positions.TryGetValue(key, out var position) ? position : null;
-            }
+                Id = dp.Id.ToString(),
+                UserId = dp.UserWallet,
+                Symbol = dp.Symbol,
+                Side = dp.Side,
+                Size = dp.Size,
+                EntryPrice = dp.EntryPrice,
+                MarkPrice = dp.MarkPrice,
+                UnrealizedPnl = dp.UnrealizedPnl,
+                RealizedPnl = dp.RealizedPnl,
+                Leverage = dp.Leverage,
+                Margin = dp.Margin,
+                PnL = dp.PnL,
+                TakeProfitPrice = dp.TakeProfitPrice,
+                StopLossPrice = dp.StopLossPrice,
+                MaintenanceMarginRate = dp.MaintenanceMarginRate,
+                IsIsolated = dp.IsIsolated,
+                LiquidationPrice = dp.LiquidationPrice,
+                CreatedAt = dp.CreatedAt,
+                UpdatedAt = dp.UpdatedAt
+            };
+
+            // Ensure cache reflects DB
+            var key = $"{userId}:{dp.Symbol}:{dp.Id}";
+            _positions[key] = ip;
+            return ip;
         }
 
         public async Task<List<InternalPosition>> GetUserPositionsAsync(string userId)
         {
-            lock (_lockObject)
+            // DB is source-of-truth. Load all positions for the user from DB and sync in-memory cache.
+            var dbPositions = await _db.Positions.Where(p => p.UserWallet == userId).OrderBy(p => p.CreatedAt).ToListAsync();
+            var result = new List<InternalPosition>(dbPositions.Count);
+
+            // Remove any in-memory positions for this user to avoid stale entries, then repopulate from DB
+            var keysToRemove = _positions.Keys.Where(k => k.StartsWith(userId + ":")).ToList();
+            foreach (var k in keysToRemove) _positions.TryRemove(k, out _);
+
+            foreach (var dp in dbPositions)
             {
-                var list = _positions.Values.Where(p => p.UserId == userId).ToList();
-                if (list.Count == 0)
+                var ip = new InternalPosition
                 {
-                    // Load from DB if memory empty (server restarted)
-                    var dbPositions = _db.Positions.Where(p => p.UserWallet == userId).ToList();
-                    foreach (var dp in dbPositions)
-                    {
-                        var key = $"{userId}:{dp.Symbol}";
-                        if (_positions.ContainsKey(key)) continue;
-                        var ip = new InternalPosition
-                        {
-                            Id = dp.Id.ToString(),
-                            UserId = userId,
-                            Symbol = dp.Symbol,
-                            Side = dp.Side,
-                            Size = dp.Size,
-                            EntryPrice = dp.EntryPrice,
-                            MarkPrice = dp.MarkPrice,
-                            UnrealizedPnl = dp.UnrealizedPnl,
-                            RealizedPnl = dp.RealizedPnl,
-                            Leverage = dp.Leverage,
-                            Margin = dp.Margin,
-                            PnL = dp.PnL,
-                            TakeProfitPrice = dp.TakeProfitPrice,
-                            StopLossPrice = dp.StopLossPrice,
-                            MaintenanceMarginRate = dp.MaintenanceMarginRate,
-                            IsIsolated = dp.IsIsolated,
-                            LiquidationPrice = dp.LiquidationPrice,
-                            CreatedAt = dp.CreatedAt,
-                            UpdatedAt = dp.UpdatedAt
-                        };
-                        _positions.TryAdd(key, ip);
-                        list.Add(ip);
-                    }
-                }
-                return list;
+                    Id = dp.Id.ToString(),
+                    UserId = dp.UserWallet,
+                    Symbol = dp.Symbol,
+                    Side = dp.Side,
+                    Size = dp.Size,
+                    EntryPrice = dp.EntryPrice,
+                    MarkPrice = dp.MarkPrice,
+                    UnrealizedPnl = dp.UnrealizedPnl,
+                    RealizedPnl = dp.RealizedPnl,
+                    Leverage = dp.Leverage,
+                    Margin = dp.Margin,
+                    PnL = dp.PnL,
+                    TakeProfitPrice = dp.TakeProfitPrice,
+                    StopLossPrice = dp.StopLossPrice,
+                    MaintenanceMarginRate = dp.MaintenanceMarginRate,
+                    IsIsolated = dp.IsIsolated,
+                    LiquidationPrice = dp.LiquidationPrice,
+                    CreatedAt = dp.CreatedAt,
+                    UpdatedAt = dp.UpdatedAt
+                };
+                var key = $"{userId}:{dp.Symbol}:{dp.Id}";
+                _positions[key] = ip;
+                result.Add(ip);
             }
+
+            return result;
         }
 
         public async Task<InternalUserBalance?> GetUserBalanceAsync(string userId)
         {
-            lock (_lockObject)
+            // Always read latest from DB and update memory cache
+            var dbBal = await _db.UserBalances.FirstOrDefaultAsync(b => b.UserWallet == userId);
+            InternalUserBalance bal;
+            if (dbBal != null)
             {
-                if (!_balances.TryGetValue(userId, out var balance))
+                bal = new InternalUserBalance
                 {
-                    var dbBal = _db.UserBalances.FirstOrDefault(b => b.UserWallet == userId);
-                    if (dbBal != null)
-                    {
-                        balance = new InternalUserBalance
-                        {
-                            UserId = userId,
-                            Balance = dbBal.Balance,
-                            AvailableBalance = dbBal.AvailableBalance,
-                            UsedMargin = dbBal.MarginUsed,
-                            UnrealizedPnl = dbBal.UnrealizedPnl,
-                            UpdatedAt = dbBal.UpdatedAt
-                        };
-                    }
-                    else
-                    {
-                        balance = new InternalUserBalance
-                        {
-                            UserId = userId,
-                            Balance = 0,
-                            AvailableBalance = 0,
-                            UpdatedAt = DateTime.UtcNow
-                        };
-                    }
-                    _balances[userId] = balance;
-                }
-                return balance;
+                    UserId = userId,
+                    Balance = dbBal.Balance,
+                    AvailableBalance = dbBal.AvailableBalance,
+                    UsedMargin = dbBal.MarginUsed,
+                    UnrealizedPnl = dbBal.UnrealizedPnl,
+                    UpdatedAt = dbBal.UpdatedAt
+                };
             }
+            else
+            {
+                bal = new InternalUserBalance
+                {
+                    UserId = userId,
+                    Balance = 0,
+                    AvailableBalance = 0,
+                    UpdatedAt = DateTime.UtcNow
+                };
+            }
+
+            _balances[userId] = bal;
+            return bal;
         }
 
         private InternalUserBalance? GetUserBalanceSync(string userId)
         {
+            // Sync from DB synchronously (used from within locks)
             if (_balances.TryGetValue(userId, out var existing)) return existing;
             var dbBal = _db.UserBalances.FirstOrDefault(b => b.UserWallet == userId);
             InternalUserBalance bal;
@@ -737,15 +747,20 @@ namespace InvestDapp.Application.Services.Trading
             if (order.ReduceOnly)
             {
                 // Reduce-only: ensure there is an existing position to reduce (same symbol) and clamp quantity if oversized
-                var existing = await GetUserPositionAsync(order.UserId, order.Symbol);
-                if (existing == null)
+                // Reduce-only: ensure there are positions in DB for this user+symbol and clamp to total open size
+                var dbPositions = await _db.Positions.Where(p => p.UserWallet == order.UserId && p.Symbol == order.Symbol).ToListAsync();
+                var totalOpen = dbPositions.Sum(p => p.Size);
+                if (totalOpen <= 0)
                 {
-                    return (false, "No position to reduce");
+                    // also check in-memory cache as fallback
+                    var mem = _positions.Values.Where(p => p.UserId == order.UserId && p.Symbol == order.Symbol).ToList();
+                    totalOpen = mem.Sum(p => p.Size);
                 }
-                if (order.Quantity > existing.Size)
+                if (totalOpen <= 0) return (false, "No position to reduce");
+                if (order.Quantity > totalOpen)
                 {
-                    _logger.LogInformation("Clamp reduce-only order qty from {Q} to {Size} for {User} {Sym}", order.Quantity, existing.Size, order.UserId, order.Symbol);
-                    order.Quantity = existing.Size; // clamp silently
+                    _logger.LogInformation("Clamp reduce-only order qty from {Q} to {Size} for {User} {Sym}", order.Quantity, totalOpen, order.UserId, order.Symbol);
+                    order.Quantity = totalOpen; // clamp silently
                 }
             }
             else
@@ -846,48 +861,88 @@ namespace InvestDapp.Application.Services.Trading
 
         private void UpsertDbPosition(InternalPosition p)
         {
-            var dbPos = _db.Positions.FirstOrDefault(x => x.UserWallet == p.UserId && x.Symbol == p.Symbol);
-            if (dbPos == null)
+            // Try to interpret InternalPosition.Id as DB id. If parse succeeds, update that DB row.
+            if (int.TryParse(p.Id, out var dbId))
             {
-                _db.Positions.Add(new Position
+                var dbPos = _db.Positions.FirstOrDefault(x => x.Id == dbId && x.UserWallet == p.UserId && x.Symbol == p.Symbol);
+                if (dbPos != null)
                 {
-                    UserWallet = p.UserId,
-                    Symbol = p.Symbol,
-                    Side = p.Side,
-                    Size = p.Size,
-                    EntryPrice = p.EntryPrice,
-                    MarkPrice = p.MarkPrice,
-                    UnrealizedPnl = p.UnrealizedPnl,
-                    RealizedPnl = p.RealizedPnl,
-                    Leverage = p.Leverage,
-                    Margin = p.Margin,
-                    PnL = p.RealizedPnl + p.UnrealizedPnl,
-                    TakeProfitPrice = p.TakeProfitPrice,
-                    StopLossPrice = p.StopLossPrice,
-                    MaintenanceMarginRate = p.MaintenanceMarginRate,
-                    IsIsolated = p.IsIsolated,
-                    LiquidationPrice = p.LiquidationPrice,
-                    CreatedAt = p.CreatedAt == default ? DateTime.UtcNow : p.CreatedAt,
-                    UpdatedAt = DateTime.UtcNow
-                });
+                    dbPos.Side = p.Side;
+                    dbPos.Size = p.Size;
+                    dbPos.EntryPrice = p.EntryPrice;
+                    dbPos.MarkPrice = p.MarkPrice;
+                    dbPos.UnrealizedPnl = p.UnrealizedPnl;
+                    dbPos.RealizedPnl = p.RealizedPnl;
+                    dbPos.Leverage = p.Leverage;
+                    dbPos.Margin = p.Margin;
+                    dbPos.PnL = p.RealizedPnl + p.UnrealizedPnl;
+                    dbPos.TakeProfitPrice = p.TakeProfitPrice;
+                    dbPos.StopLossPrice = p.StopLossPrice;
+                    dbPos.MaintenanceMarginRate = p.MaintenanceMarginRate;
+                    dbPos.IsIsolated = p.IsIsolated;
+                    dbPos.LiquidationPrice = p.LiquidationPrice;
+                    dbPos.UpdatedAt = DateTime.UtcNow;
+                }
+                return;
             }
-            else
+
+            // Insert a new DB row (allow multiple DB positions per symbol).
+            // Persist immediately and map the generated DB id back onto the InternalPosition
+            var newDbPos = new Position
             {
-                dbPos.Side = p.Side;
-                dbPos.Size = p.Size;
-                dbPos.EntryPrice = p.EntryPrice;
-                dbPos.MarkPrice = p.MarkPrice;
-                dbPos.UnrealizedPnl = p.UnrealizedPnl;
-                dbPos.RealizedPnl = p.RealizedPnl;
-                dbPos.Leverage = p.Leverage;
-                dbPos.Margin = p.Margin;
-                dbPos.PnL = p.RealizedPnl + p.UnrealizedPnl;
-                dbPos.TakeProfitPrice = p.TakeProfitPrice;
-                dbPos.StopLossPrice = p.StopLossPrice;
-                dbPos.MaintenanceMarginRate = p.MaintenanceMarginRate;
-                dbPos.IsIsolated = p.IsIsolated;
-                dbPos.LiquidationPrice = p.LiquidationPrice;
-                dbPos.UpdatedAt = DateTime.UtcNow;
+                UserWallet = p.UserId,
+                Symbol = p.Symbol,
+                Side = p.Side,
+                Size = p.Size,
+                EntryPrice = p.EntryPrice,
+                MarkPrice = p.MarkPrice,
+                UnrealizedPnl = p.UnrealizedPnl,
+                RealizedPnl = p.RealizedPnl,
+                Leverage = p.Leverage,
+                Margin = p.Margin,
+                PnL = p.RealizedPnl + p.UnrealizedPnl,
+                TakeProfitPrice = p.TakeProfitPrice,
+                StopLossPrice = p.StopLossPrice,
+                MaintenanceMarginRate = p.MaintenanceMarginRate,
+                IsIsolated = p.IsIsolated,
+                LiquidationPrice = p.LiquidationPrice,
+                CreatedAt = p.CreatedAt == default ? DateTime.UtcNow : p.CreatedAt,
+                UpdatedAt = DateTime.UtcNow
+            };
+            _db.Positions.Add(newDbPos);
+            // Save now so we obtain the DB-assigned Id and can map it back
+            try
+            {
+                _db.SaveChanges();
+                var oldId = p.Id;
+                p.Id = newDbPos.Id.ToString();
+
+                // If this position was already stored in the in-memory dictionary with an old key (GUID),
+                // replace the key to use the DB id so future lookups/removals match.
+                try
+                {
+                    var existingKey = _positions.Keys.FirstOrDefault(k =>
+                        _positions.TryGetValue(k, out var val) && ReferenceEquals(val, p));
+                    if (!string.IsNullOrEmpty(existingKey))
+                    {
+                        var expectedSuffix = ":" + oldId;
+                        if (existingKey.EndsWith(expectedSuffix))
+                        {
+                            // Remove old key and add new key with same object reference
+                            _positions.TryRemove(existingKey, out _);
+                            var newKey = $"{p.UserId}:{p.Symbol}:{p.Id}";
+                            _positions[newKey] = p;
+                        }
+                    }
+                }
+                catch (Exception ex2)
+                {
+                    _logger.LogWarning(ex2, "Failed to remap in-memory position key after DB insert for {User} {Sym}", p.UserId, p.Symbol);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to persist new position for user {User} {Sym}", p.UserId, p.Symbol);
             }
         }
 
@@ -949,12 +1004,13 @@ namespace InvestDapp.Application.Services.Trading
             // If conditional is reduce-only ensure it doesn't exceed current position size
             if (ord.ReduceOnly)
             {
-                var existing = await GetUserPositionAsync(ord.UserId, ord.Symbol);
-                if (existing == null) { _openConditionalOrders.TryRemove(orderId, out _); return false; }
-                if (ord.Quantity > existing.Size)
+                var existingList = (await GetUserPositionsAsync(ord.UserId)).Where(p => p.Symbol == ord.Symbol).ToList();
+                if (existingList == null || existingList.Count == 0) { _openConditionalOrders.TryRemove(orderId, out _); return false; }
+                var totalOpen = existingList.Sum(p => p.Size);
+                if (ord.Quantity > totalOpen)
                 {
-                    _logger.LogInformation("Clamp reduce-only conditional exec qty {Q}->{Size} for {U} {Sym}", ord.Quantity, existing.Size, ord.UserId, ord.Symbol);
-                    ord.Quantity = existing.Size;
+                    _logger.LogInformation("Clamp reduce-only conditional exec qty {Q}->{Size} for {U} {Sym}", ord.Quantity, totalOpen, ord.UserId, ord.Symbol);
+                    ord.Quantity = totalOpen;
                 }
             }
             await ProcessMarketOrderAsync(ord!, execPx);
@@ -966,111 +1022,130 @@ namespace InvestDapp.Application.Services.Trading
         {
             lock (_lockObject)
             {
-                var key = $"{userId}:{symbol}";
-                if (!_positions.TryGetValue(key, out var pos))
+                // Update risk fields (TP/SL) for all cached positions matching user+symbol. If none in memory, load all DB rows and cache them first.
+                var matches = _positions.Values.Where(p => p.UserId == userId && p.Symbol == symbol).ToList();
+                if (matches.Count == 0)
                 {
-                    // Thử load từ database (server restart hoặc cache miss)
-                    var dbPos = _db.Positions.FirstOrDefault(p => p.UserWallet == userId && p.Symbol == symbol);
-                    if (dbPos == null)
+                    var dbPositions = _db.Positions.Where(p => p.UserWallet == userId && p.Symbol == symbol).ToList();
+                    foreach (var dp in dbPositions)
                     {
-                        return false; // thật sự không có vị thế
+                        var k = $"{userId}:{dp.Symbol}:{dp.Id}";
+                        if (_positions.ContainsKey(k)) continue;
+                        var ip = new InternalPosition
+                        {
+                            Id = dp.Id.ToString(),
+                            UserId = userId,
+                            Symbol = dp.Symbol,
+                            Side = dp.Side,
+                            Size = dp.Size,
+                            EntryPrice = dp.EntryPrice,
+                            MarkPrice = dp.MarkPrice,
+                            UnrealizedPnl = dp.UnrealizedPnl,
+                            RealizedPnl = dp.RealizedPnl,
+                            Leverage = dp.Leverage,
+                            Margin = dp.Margin,
+                            PnL = dp.PnL,
+                            TakeProfitPrice = dp.TakeProfitPrice,
+                            StopLossPrice = dp.StopLossPrice,
+                            MaintenanceMarginRate = dp.MaintenanceMarginRate,
+                            IsIsolated = dp.IsIsolated,
+                            LiquidationPrice = dp.LiquidationPrice,
+                            CreatedAt = dp.CreatedAt,
+                            UpdatedAt = dp.UpdatedAt
+                        };
+                        _positions[k] = ip;
+                        matches.Add(ip);
                     }
-                    pos = new InternalPosition
-                    {
-                        Id = dbPos.Id.ToString(),
-                        UserId = userId,
-                        Symbol = dbPos.Symbol,
-                        Side = dbPos.Side,
-                        Size = dbPos.Size,
-                        EntryPrice = dbPos.EntryPrice,
-                        MarkPrice = dbPos.MarkPrice,
-                        UnrealizedPnl = dbPos.UnrealizedPnl,
-                        RealizedPnl = dbPos.RealizedPnl,
-                        Leverage = dbPos.Leverage,
-                        Margin = dbPos.Margin,
-                        PnL = dbPos.PnL,
-                        TakeProfitPrice = dbPos.TakeProfitPrice,
-                        StopLossPrice = dbPos.StopLossPrice,
-                        MaintenanceMarginRate = dbPos.MaintenanceMarginRate,
-                        IsIsolated = dbPos.IsIsolated,
-                        LiquidationPrice = dbPos.LiquidationPrice,
-                        CreatedAt = dbPos.CreatedAt,
-                        UpdatedAt = dbPos.UpdatedAt
-                    };
-                    _positions[key] = pos; // cache lại để các lần sau nhanh hơn
                 }
 
-                // Basic validation: TP/SL should be positive (removed strict logic validation)
+                if (matches.Count == 0) return false;
+
+                // Basic validation: TP/SL should be positive
                 if (takeProfit.HasValue && takeProfit <= 0) return false;
                 if (stopLoss.HasValue && stopLoss <= 0) return false;
 
-                if (takeProfit.HasValue)
-                    pos.TakeProfitPrice = takeProfit;
-                if (stopLoss.HasValue)
-                    pos.StopLossPrice = stopLoss;
-                // Cho phép clear TP/SL nếu gửi null values
-                if (!takeProfit.HasValue && !stopLoss.HasValue)
+                foreach (var pos in matches)
                 {
-                    // If both explicitly null (client sent nulls) keep existing; nothing to update
-                    // But still save to trigger DB update
+                    if (takeProfit.HasValue) pos.TakeProfitPrice = takeProfit;
+                    if (stopLoss.HasValue) pos.StopLossPrice = stopLoss;
+                    pos.UpdatedAt = DateTime.UtcNow;
+                    UpsertDbPosition(pos);
                 }
-
-                pos.UpdatedAt = DateTime.UtcNow;
-                _positions[key] = pos;
-                UpsertDbPosition(pos);
             }
             await _db.SaveChangesAsync();
             return true;
         }
 
-        public async Task<(bool ok, string? error)> ClosePositionAsync(string userId, string symbol)
+        public async Task<(bool ok, string? error)> ClosePositionAsync(string userId, string symbol, string? positionId = null)
         {
             symbol = NormalizeSymbol(symbol);
-            InternalPosition? pos;
-            lock (_lockObject)
+            // If a specific positionId supplied, close only that position
+            if (!string.IsNullOrEmpty(positionId))
             {
-                var key = $"{userId}:{symbol}";
-                _positions.TryGetValue(key, out pos);
-            }
-            if (pos == null)
-            {
-                // Try DB load
-                var dbPos = _db.Positions.FirstOrDefault(p => p.UserWallet == userId && p.Symbol == symbol);
-                if (dbPos == null) return (false, "No open position");
-                pos = new InternalPosition
+                if (!int.TryParse(positionId, out var pid)) return (false, "Invalid positionId");
+                var dbPosSingle = _db.Positions.FirstOrDefault(p => p.Id == pid && p.UserWallet == userId && p.Symbol == symbol);
+                if (dbPosSingle == null) return (false, "Position not found");
+
+                var closeOrderSingle = new InternalOrder
                 {
-                    Id = dbPos.Id.ToString(),
+                    Id = Guid.NewGuid().ToString(),
                     UserId = userId,
-                    Symbol = dbPos.Symbol,
-                    Side = dbPos.Side,
-                    Size = dbPos.Size,
-                    EntryPrice = dbPos.EntryPrice,
-                    MarkPrice = dbPos.MarkPrice,
-                    UnrealizedPnl = dbPos.UnrealizedPnl,
-                    RealizedPnl = dbPos.RealizedPnl,
-                    Leverage = dbPos.Leverage,
-                    Margin = dbPos.Margin,
-                    PnL = dbPos.PnL,
-                    TakeProfitPrice = dbPos.TakeProfitPrice,
-                    StopLossPrice = dbPos.StopLossPrice,
-                    MaintenanceMarginRate = dbPos.MaintenanceMarginRate,
-                    IsIsolated = dbPos.IsIsolated,
-                    LiquidationPrice = dbPos.LiquidationPrice,
-                    CreatedAt = dbPos.CreatedAt,
-                    UpdatedAt = dbPos.UpdatedAt
+                    Symbol = symbol,
+                    Side = dbPosSingle.Side,
+                    Type = OrderType.Market,
+                    Quantity = dbPosSingle.Size,
+                    Leverage = dbPosSingle.Leverage,
+                    ReduceOnly = true,
+                    Status = OrderStatus.Pending,
+                    CreatedAt = DateTime.UtcNow
                 };
-                lock (_lockObject) { _positions[$"{userId}:{symbol}"] = pos; }
+                var resSingle = await CreateOrderAsync(closeOrderSingle);
+                if (resSingle.Status == OrderStatus.Rejected) return (false, resSingle.Notes ?? "Rejected");
+                return (true, null);
             }
 
+            // Load DB positions for this symbol (most recent first)
+            var positions = _db.Positions.Where(p => p.UserWallet == userId && p.Symbol == symbol).OrderByDescending(p => p.CreatedAt).ToList();
+
+            if (positions.Count == 0)
+            {
+                // Check in-memory cache too and close the most recent in-memory position only
+                InternalOrder? preparedOrder = null;
+                lock (_lockObject)
+                {
+                    var mem = _positions.Values.Where(p => p.UserId == userId && p.Symbol == symbol).OrderByDescending(p => p.CreatedAt).ToList();
+                    if (mem.Count == 0) return (false, "No open position");
+                    var toClose = mem.First();
+                    preparedOrder = new InternalOrder
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        UserId = userId,
+                        Symbol = symbol,
+                        Side = toClose.Side,
+                        Type = OrderType.Market,
+                        Quantity = toClose.Size,
+                        Leverage = toClose.Leverage,
+                        ReduceOnly = true,
+                        Status = OrderStatus.Pending,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                }
+                var resultMem = await CreateOrderAsync(preparedOrder!);
+                if (resultMem.Status == OrderStatus.Rejected) return (false, resultMem.Notes ?? "Rejected");
+                return (true, null);
+            }
+
+            // Close the most recent DB position only (unless positionId was provided earlier)
+            var targetDbPos = positions.First();
             var closeOrder = new InternalOrder
             {
                 Id = Guid.NewGuid().ToString(),
                 UserId = userId,
                 Symbol = symbol,
-                Side = pos.Side, // Same side as position for reduce-only order to close it
+                Side = targetDbPos.Side, // Use side of the target position
                 Type = OrderType.Market,
-                Quantity = pos.Size,
-                Leverage = pos.Leverage,
+                Quantity = targetDbPos.Size,
+                Leverage = targetDbPos.Leverage,
                 ReduceOnly = true,
                 Status = OrderStatus.Pending,
                 CreatedAt = DateTime.UtcNow

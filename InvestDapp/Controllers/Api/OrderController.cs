@@ -269,6 +269,26 @@ namespace InvestDapp.Controllers.Api
             }
         }
 
+        // Debug: snapshot for arbitrary user id (AllowAnonymous for testing only)
+        [HttpGet("debug/snapshot/{userId}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SnapshotForUser(string userId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(userId)) return BadRequest(new { error = "userId required" });
+                var orders = await _orderService.GetUserOrdersAsync(userId);
+                var positions = await _orderService.GetUserPositionsAsync(userId);
+                var balance = await _orderService.GetUserBalanceAsync(userId);
+                return Ok(new { userId, orders, positions, balance });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Snapshot error for user {UserId}", userId);
+                return StatusCode(500, new { error = "Internal snapshot error" });
+            }
+        }
+
         [HttpGet("balance")]
         public async Task<IActionResult> GetUserBalance()
         {
@@ -332,7 +352,7 @@ namespace InvestDapp.Controllers.Api
                 var userId = GetTradingUserKey();
                 if (string.IsNullOrEmpty(userId)) return Unauthorized(new { error = "User not authenticated" });
                 if (string.IsNullOrWhiteSpace(req.Symbol)) return BadRequest(new { error = "Symbol required" });
-                var (ok, error) = await _orderService.ClosePositionAsync(userId, req.Symbol);
+                var (ok, error) = await _orderService.ClosePositionAsync(userId, req.Symbol, req.PositionId);
                 if (!ok) return BadRequest(new { error });
                 return Ok(new { message = "Position close order submitted", symbol = req.Symbol });
             }
@@ -401,5 +421,6 @@ namespace InvestDapp.Controllers.Api
     public class ClosePositionRequest
     {
         public string Symbol { get; set; } = string.Empty;
+    public string? PositionId { get; set; }
     }
 }
