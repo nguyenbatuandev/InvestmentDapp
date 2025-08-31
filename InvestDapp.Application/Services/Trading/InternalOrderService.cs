@@ -21,7 +21,7 @@ namespace InvestDapp.Application.Services.Trading
         Task<InternalUserBalance?> GetUserBalanceAsync(string userId);
         Task<InternalUserBalance> UpdateUserBalanceAsync(string userId, decimal balanceChange, string reason);
         IReadOnlyCollection<InternalPosition> GetAllPositions();
-        Task<bool> UpdatePositionRiskAsync(string userId, string symbol, decimal? takeProfit, decimal? stopLoss);
+    Task<bool> UpdatePositionRiskAsync(string userId, string symbol, decimal? takeProfit, decimal? stopLoss, string? positionId = null);
     Task<(bool ok, string? error)> ClosePositionAsync(string userId, string symbol, string? positionId = null);
     }
 
@@ -262,7 +262,15 @@ namespace InvestDapp.Application.Services.Trading
                 // Closing behavior: consume existing positions FIFO until order.Quantity satisfied
                 var remaining = order.Quantity;
                 var positionsToRemove = new List<InternalPosition>();
-                foreach (var pos in existingPositions)
+
+                // If the order targets a specific DB position, prioritize it first
+                List<InternalPosition> orderedPositions = existingPositions;
+                if (!string.IsNullOrEmpty(order.TargetPositionId))
+                {
+                    orderedPositions = existingPositions.OrderByDescending(p => p.Id == order.TargetPositionId ? 1 : 0).ThenBy(p => p.CreatedAt).ToList();
+                }
+
+                foreach (var pos in orderedPositions)
                 {
                     if (remaining <= 0) break;
                     var closingQty = Math.Min(pos.Size, remaining);
@@ -1018,11 +1026,72 @@ namespace InvestDapp.Application.Services.Trading
             return true;
         }
 
-        public async Task<bool> UpdatePositionRiskAsync(string userId, string symbol, decimal? takeProfit, decimal? stopLoss)
+        public async Task<bool> UpdatePositionRiskAsync(string userId, string symbol, decimal? takeProfit, decimal? stopLoss, string? positionId = null)
         {
+            symbol = NormalizeSymbol(symbol);
+
+            // Validate basic values first
+            if (takeProfit.HasValue && takeProfit <= 0) return false;
+            if (stopLoss.HasValue && stopLoss <= 0) return false;
+
             lock (_lockObject)
             {
-                // Update risk fields (TP/SL) for all cached positions matching user+symbol. If none in memory, load all DB rows and cache them first.
+                // If a specific positionId provided, update only that DB row
+                if (!string.IsNullOrEmpty(positionId))
+                {
+                    if (!int.TryParse(positionId, out var pid)) return false;
+                    var dbPos = _db.Positions.FirstOrDefault(p => p.Id == pid && p.UserWallet == userId && p.Symbol == symbol);
+                    if (dbPos == null) return false;
+
+                    if (takeProfit.HasValue) dbPos.TakeProfitPrice = takeProfit;
+                    else dbPos.TakeProfitPrice = null;
+
+                    if (stopLoss.HasValue) dbPos.StopLossPrice = stopLoss;
+                    else dbPos.StopLossPrice = null;
+
+                    dbPos.UpdatedAt = DateTime.UtcNow;
+
+                    // Update in-memory cache entry if exists, or create one
+                    var key = $"{userId}:{dbPos.Symbol}:{dbPos.Id}";
+                    if (_positions.TryGetValue(key, out var cached))
+                    {
+                        cached.TakeProfitPrice = dbPos.TakeProfitPrice;
+                        cached.StopLossPrice = dbPos.StopLossPrice;
+                        cached.UpdatedAt = DateTime.UtcNow;
+                    }
+                    else
+                    {
+                        var ip = new InternalPosition
+                        {
+                            Id = dbPos.Id.ToString(),
+                            UserId = dbPos.UserWallet,
+                            Symbol = dbPos.Symbol,
+                            Side = dbPos.Side,
+                            Size = dbPos.Size,
+                            EntryPrice = dbPos.EntryPrice,
+                            MarkPrice = dbPos.MarkPrice,
+                            UnrealizedPnl = dbPos.UnrealizedPnl,
+                            RealizedPnl = dbPos.RealizedPnl,
+                            Leverage = dbPos.Leverage,
+                            Margin = dbPos.Margin,
+                            PnL = dbPos.PnL,
+                            TakeProfitPrice = dbPos.TakeProfitPrice,
+                            StopLossPrice = dbPos.StopLossPrice,
+                            MaintenanceMarginRate = dbPos.MaintenanceMarginRate,
+                            IsIsolated = dbPos.IsIsolated,
+                            LiquidationPrice = dbPos.LiquidationPrice,
+                            CreatedAt = dbPos.CreatedAt,
+                            UpdatedAt = dbPos.UpdatedAt
+                        };
+                        _positions[key] = ip;
+                    }
+
+                    // Persist change
+                    _db.SaveChanges();
+                    return true;
+                }
+
+                // No positionId: update all positions for this user+symbol
                 var matches = _positions.Values.Where(p => p.UserId == userId && p.Symbol == symbol).ToList();
                 if (matches.Count == 0)
                 {
@@ -1060,18 +1129,19 @@ namespace InvestDapp.Application.Services.Trading
 
                 if (matches.Count == 0) return false;
 
-                // Basic validation: TP/SL should be positive
-                if (takeProfit.HasValue && takeProfit <= 0) return false;
-                if (stopLoss.HasValue && stopLoss <= 0) return false;
-
                 foreach (var pos in matches)
                 {
                     if (takeProfit.HasValue) pos.TakeProfitPrice = takeProfit;
+                    else pos.TakeProfitPrice = null;
+
                     if (stopLoss.HasValue) pos.StopLossPrice = stopLoss;
+                    else pos.StopLossPrice = null;
+
                     pos.UpdatedAt = DateTime.UtcNow;
                     UpsertDbPosition(pos);
                 }
             }
+
             await _db.SaveChangesAsync();
             return true;
         }
@@ -1096,6 +1166,7 @@ namespace InvestDapp.Application.Services.Trading
                     Quantity = dbPosSingle.Size,
                     Leverage = dbPosSingle.Leverage,
                     ReduceOnly = true,
+                    TargetPositionId = dbPosSingle.Id.ToString(),
                     Status = OrderStatus.Pending,
                     CreatedAt = DateTime.UtcNow
                 };

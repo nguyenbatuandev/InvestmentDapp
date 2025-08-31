@@ -330,7 +330,7 @@ namespace InvestDapp.Controllers.Api
                 {
                     return Unauthorized(new { error = "User not authenticated" });
                 }
-                var ok = await _orderService.UpdatePositionRiskAsync(userId, request.Symbol, request.TakeProfitPrice, request.StopLossPrice);
+                var ok = await _orderService.UpdatePositionRiskAsync(userId, request.Symbol, request.TakeProfitPrice, request.StopLossPrice, request.PositionId);
                 if (!ok)
                 {
                     return BadRequest(new { error = "Unable to update TP/SL for position" });
@@ -409,8 +409,10 @@ namespace InvestDapp.Controllers.Api
     public class UpdatePositionRiskRequest
     {
         public string Symbol { get; set; } = string.Empty;
-        public decimal? TakeProfitPrice { get; set; }
-        public decimal? StopLossPrice { get; set; }
+    public decimal? TakeProfitPrice { get; set; }
+    public decimal? StopLossPrice { get; set; }
+    // Optional position id to target a single DB row
+    public string? PositionId { get; set; }
     }
 
     public class BalanceChangeRequest
