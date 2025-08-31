@@ -18,6 +18,7 @@
             --text-color: #e0e0e0;
             --text-muted: #8a93b3;
             --gradient: linear-gradient(90deg, var(--primary), var(--primary-light));
+            --border-color: #2a2f47;
         }
 
         * {
@@ -58,6 +59,11 @@
             .btn-primary:hover {
                 background: var(--primary-light);
             }
+
+        .btn-gradient {
+            background: var(--gradient);
+            color: white;
+        }
 
         .header {
             background-color: rgba(18, 24, 43, 0.8);
@@ -541,6 +547,9 @@
                 <li><a href="/">Trang chủ</a></li>
                 <li><a asp-controller="News" asp-action="Index">Tin Tức</a></li>
                 <li><a asp-controller="Campaigns" asp-action="Index">Dự án</a></li>
+                <li><a asp-controller="TradingView" asp-action="Chart">
+                        <i class="fas fa-chart-line"></i> Trading
+                    </a>
             </ul>
             <button id="connectWalletBtn" class="btn btn-primary">Kết nối Ví</button>
             <div id="wallet-dropdown">
@@ -549,7 +558,9 @@
                     <p id="wallet-address"></p> <hr />
                     <a asp-controller="User" asp-action="Profile">👤 Hồ sơ</a>
                     <a asp-controller="Campaigns" asp-action="MyCampaigns">Chiến dịch</a>
-
+                    <a asp-controller="TradingView" asp-action="Chart">
+                        <i class="fas fa-chart-line"></i> Trading
+                    </a>
                     <a asp-controller="Conversations" asp-action="Index">
                         <i class="fab fa-facebook-messenger"></i> Messenger
                         <span id="messenger-unread-badge" style="display: none;"></span>
@@ -691,7 +702,7 @@
             const emailInput = document.getElementById('emailInput');
             const avataInput = document.getElementById('wallet-avatar');
 
-            // --- 2. HÀM NỘI BỘ (TÍNH NĂNG CŨ) ---
+            // --- 2. HÀM NỘI BỔ (TÍNH NĂNG CŨ) ---
             const shortenAddress = (addr) => addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : "";
 
             const showLoggedInState = (address) => {

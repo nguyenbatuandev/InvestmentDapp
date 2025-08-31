@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Trading Platform</title>
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico" />
+    
+    <!-- Trading Platform CSS -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Dark Theme (Default) */
+            --bg-primary: #0b0e11;
+            --bg-secondary: #161a1e;
+            --bg-tertiary: #1e2329;
+            --border-color: #2b3139;
+            --text-primary: #f0f0f0;
+            --text-secondary: #b7bdc6;
+            --text-muted: #848e9c;
+            --accent-green: #00d4aa;
+            --accent-red: #f6465d;
+            --accent-yellow: #f0b90b;
+            --accent-blue: #1e90ff;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        .light {
+            /* Light Theme */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #f1f3f6;
+            --border-color: #e4e7eb;
+            --text-primary: #181a20;
+            --text-secondary: #474d57;
+            --text-muted: #848e9c;
+            --accent-green: #00b894;
+            --accent-red: #d63384;
+            --accent-yellow: #ffc107;
+            --accent-blue: #0d6efd;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
+        /* Trading Header */
+        .trading-header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 60px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .theme-toggle {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            background: var(--border-color);
+        }
+
+        /* Main Content */
+        .trading-container {
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - 60px);
+            overflow: hidden;
+        }
+
+        .trading-main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Responsive */
+        @@media (max-width: 768px) {
+            .trading-header {
+                flex-direction: column;
+                gap: 12px;
+                padding: 16px;
+            }
+
+            .header-left,
+            .header-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .nav-links {
+                gap: 12px;
+            }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+    </style>
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <div class="trading-header">
+        <div class="header-left">
+            <a href="/" class="logo">📈 InvestDapp</a>
+            <nav class="nav-links">
+                <a href="/TradingView/Chart" class="nav-link active">Trading</a>
+                <a href="/Campaigns" class="nav-link">Campaigns</a>
+                <a href="/News" class="nav-link">News</a>
+                <a href="/User/Profile" class="nav-link">Profile</a>
+            </nav>
+        </div>
+        <div class="header-right">
+            <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+        </div>
+    </div>
+
+    <div class="trading-container">
+        <main class="trading-main">
+            @RenderBody()
+        </main>
+    </div>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+        // Theme toggle functionality
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isLight = html.classList.contains('light');
+            
+            if (isLight) {
+                html.classList.remove('light');
+                localStorage.setItem('theme', 'dark');
+                document.querySelector('.theme-toggle').textContent = '🌙';
+            } else {
+                html.classList.add('light');
+                localStorage.setItem('theme', 'light');
+                document.querySelector('.theme-toggle').textContent = '☀️';
+            }
+        }
+
+        // Apply saved theme on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            const html = document.documentElement;
+            
+            if (savedTheme === 'light') {
+                html.classList.add('light');
+                document.querySelector('.theme-toggle').textContent = '☀️';
+            } else {
+                html.classList.remove('light');
+                document.querySelector('.theme-toggle').textContent = '🌙';
+            }
+        });
+    </script>
+</body>
+</html>

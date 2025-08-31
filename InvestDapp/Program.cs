@@ -3,15 +3,19 @@ using InvestDapp.Application.AuthService;
 using InvestDapp.Application.CampaignService;
 using InvestDapp.Application.KycService;
 using InvestDapp.Application.MessageService;
+using InvestDapp.Application.Services.Trading;
 using InvestDapp.Application.UserService;
 using InvestDapp.Infrastructure.Data;
 using InvestDapp.Infrastructure.Data.Config;
 using InvestDapp.Infrastructure.Data.interfaces;
 using InvestDapp.Infrastructure.Data.Repository;
+using InvestDapp.Infrastructure.Services.Binance;
+using InvestDapp.Infrastructure.Services.Cache;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Nethereum.Web3;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,13 +25,28 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<BlockchainConfig>(builder.Configuration.GetSection("Blockchain"));
 
 // =======================
-// 2. CẤU HÌNH DATABASE (DbContext)
+// 2. CẤU HÌNH TRADING CONFIGS
+// =======================
+builder.Services.Configure<BinanceConfig>(builder.Configuration.GetSection("Binance"));
+builder.Services.Configure<TradingConfig>(builder.Configuration.GetSection("Trading"));
+
+// =======================
+// 3. CẤU HÌNH DATABASE (DbContext)
 // =======================
 builder.Services.AddDbContext<InvestDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // =======================
-// 3. ĐĂNG KÝ WEB3 LÀ SINGLETON
+// 4. ADD MEMORY CACHE AS FALLBACK
+// =======================
+builder.Services.AddMemoryCache();
+
+// =======================
+// 5. CẤU HÌNH REDIS WITH RESILIENCE (OPTIONAL)
+// =======================
+
+// =======================
+// 6. ĐĂNG KÝ WEB3 LÀ SINGLETON
 // =======================
 builder.Services.AddSingleton(provider =>
 {
@@ -36,13 +55,25 @@ builder.Services.AddSingleton(provider =>
 });
 
 // =======================
-// 4. ĐĂNG KÝ IHttpContextAccessor
-// Để có thể truy cập HttpContext trong AuthService
+// 7. ĐĂNG KÝ IHttpContextAccessor
 // =======================
 builder.Services.AddHttpContextAccessor();
 
 // =======================
-// 5. ĐĂNG KÝ REPOSITORY VÀ SERVICE
+// 8. ĐĂNG KÝ TRADING SERVICES
+// =======================
+builder.Services.AddScoped<IBinanceRestService, BinanceRestService>();
+builder.Services.AddScoped<IBinanceWebSocketService, BinanceWebSocketService>();
+builder.Services.AddScoped<IInternalOrderService, InternalOrderService>();
+builder.Services.AddScoped<IMarketPriceService, MarketPriceService>();
+
+// Register hosted services
+builder.Services.AddHostedService<MarketDataWorker>();
+builder.Services.AddHostedService<TradingEngine>();
+// Resolve ambiguity by using fully qualified names for the conflicting types
+builder.Services.AddScoped<InvestDapp.Infrastructure.Services.Binance.IBinanceWebSocketService, InvestDapp.Infrastructure.Services.Binance.BinanceWebSocketService>();
+// =======================
+// 9. ĐĂNG KÝ REPOSITORY VÀ SERVICE
 // =======================
 builder.Services.AddScoped<ICampaignEventRepository, CampaignEventRepository>();
 builder.Services.AddScoped<IUser, UserRepository>();
@@ -57,17 +88,17 @@ builder.Services.AddScoped<ICampaignPostRepository, CampaignPostRepository>();
 builder.Services.AddScoped<ICampaignPostService, CampaignPostService>();
 builder.Services.AddScoped<ICampaign, CampaignRepository>();
 builder.Services.AddScoped<CampaignEventService>();
-builder.Services.AddSignalR(options =>
-{
-    // Bật tính năng này để server gửi lỗi chi tiết về client khi đang phát triển
-    options.EnableDetailedErrors = true;
-});
-// Đăng ký CampaignEventListener như một Hosted Service (chạy ngầm)
-//builder.Services.AddHostedService<CampaignEventListener>();
 
 // =======================
-// 6. CẤU HÌNH CORS
-// Cho phép mọi origin, method, header (phục vụ phát triển hoặc API mở)
+// 10. CẤU HÌNH SIGNALR
+// =======================
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
+});
+
+// =======================
+// 11. CẤU HÌNH CORS
 // =======================
 builder.Services.AddCors(options =>
 {
@@ -78,17 +109,19 @@ builder.Services.AddCors(options =>
                .AllowAnyHeader();
     });
 });
-builder.Services.AddHttpClient(); // Thêm HttpClient để sử dụng trong các service
 
 // =======================
-// 7. CẤU HÌNH AUTHENTICATION COOKIE
+// 12. ĐĂNG KÝ HTTP CLIENT
+// =======================
+builder.Services.AddHttpClient();
+
+// =======================
+// 13. CẤU HÌNH AUTHENTICATION COOKIE
 // =======================
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/Home/Index"; // Đường dẫn đăng nhập
-
-        // Trả về 403 Forbidden nếu không đủ quyền truy cập
+        options.LoginPath = "/Home/Index";
         options.Events.OnRedirectToAccessDenied = context =>
         {
             context.Response.StatusCode = 403;
@@ -97,37 +130,44 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 // =======================
-// 8. ĐĂNG KÝ CONTROLLERS VỚI VIEWS
+// 14. ĐĂNG KÝ CONTROLLERS VỚI VIEWS
 // =======================
-
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
 // =======================
-// 9. CẤU HÌNH MIDDLEWARE PIPELINE
+// 15. CẤU HÌNH MIDDLEWARE PIPELINE
 // =======================
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error"); // Xử lý lỗi chung
-    app.UseHsts(); // Bảo mật HTTPS Strict Transport Security
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
 }
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+app.UseCors("AllowAll");
+
+app.UseRouting();
+app.UseCookiePolicy();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+// =======================
+// 16. MAP SIGNALR HUBS
+// =======================
 app.MapHub<ChatHub>("/chathub");
-app.UseHttpsRedirection(); // Chuyển hướng HTTP sang HTTPS
-app.UseStaticFiles(); // Cho phép phục vụ các file tĩnh như css, js, hình ảnh
+app.MapHub<TradingHub>("/tradingHub");
 
-app.UseCors("AllowAll"); // Sử dụng cấu hình CORS đã định nghĩa
-
-app.UseRouting(); // Xác định routing
-app.UseCookiePolicy(); // 🧩 thêm dòng này
-
-app.UseAuthentication(); // Thêm middleware xác thực (thường thêm trước Authorization)
-app.UseAuthorization();  // Thêm middleware phân quyền
-
-// Định nghĩa route mặc định
+// =======================
+// 17. MAP ROUTES
+// =======================
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.Run(); // Chạy ứng dụng
+app.Run();
