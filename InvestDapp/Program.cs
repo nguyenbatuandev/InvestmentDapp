@@ -70,8 +70,6 @@ builder.Services.AddScoped<IMarketPriceService, MarketPriceService>();
 // Register hosted services
 builder.Services.AddHostedService<MarketDataWorker>();
 builder.Services.AddHostedService<TradingEngine>();
-// Resolve ambiguity by using fully qualified names for the conflicting types
-builder.Services.AddScoped<InvestDapp.Infrastructure.Services.Binance.IBinanceWebSocketService, InvestDapp.Infrastructure.Services.Binance.BinanceWebSocketService>();
 // =======================
 // 9. ĐĂNG KÝ REPOSITORY VÀ SERVICE
 // =======================

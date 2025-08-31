@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace InvestDapp.Controllers
 {
+    
     [Route("TradingView")]
-    [Route("Trading")] // Thêm route alias
+    [Route("Trading")]
+    [Authorize]
     public class TradingViewController : Controller
     {
         // GET: TradingView/Chart hoặc Trading/Chart

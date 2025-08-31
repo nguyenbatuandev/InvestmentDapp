@@ -1098,15 +1098,21 @@
             markers: [],
         };
 
-        // DOM Elements
+        // DOM Elements — query after DOM is ready
         const $ = (sel) => document.querySelector(sel);
-        const elPrice = $('#lastPrice');
-        const elPct = $('#pctChange');
-        const elWS = $('#wsStatus');
-        const elToggle = $('#themeToggle');
+        let elPrice = null;
+        let elPct = null;
+        let elWS = null;
+        let elToggle = null;
 
         // Initialize when DOM is ready
         document.addEventListener('DOMContentLoaded', async () => {
+            // Cache DOM elements now that document is loaded so selectors find nodes
+            elPrice = $('#lastPrice');
+            elPct = $('#pctChange');
+            elWS = $('#wsStatus');
+            elToggle = $('#themeToggle');
+
             applyTheme(true);
             initChart();
             loadFut();
@@ -1550,7 +1556,7 @@
                 const [posRes, balRes, ordersRes] = await Promise.all([
                     fetch('/api/Order/positions'),
                     fetch('/api/Order/balance'),
-                    fetch('/api/Order/debug/history')
+                    fetch('/api/Order/history')
                 ]);
                 if (balRes.ok) {
                     const bal = await balRes.json();
@@ -2253,7 +2259,6 @@
     <!-- TP/SL Modal -->
     <div id="tpSlModalBackdrop" class="tp-sl-modal-backdrop hidden">
         <div class="tp-sl-modal">
-            <h3>Update TP / SL</h3>
             <div class="field">
                 <label>Take Profit</label>
                 <input type="number" id="tpInputModal" step="0.1" placeholder="e.g. 70000" />

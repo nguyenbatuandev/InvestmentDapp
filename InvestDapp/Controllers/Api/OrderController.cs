@@ -1,5 +1,6 @@
 ﻿
 using InvestDapp.Application.Services.Trading;
+using InvestDapp.Shared.Common.Request;
 using InvestDapp.Shared.Models.Trading;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -81,8 +82,7 @@ namespace InvestDapp.Controllers.Api
         }
 
         // Debug endpoint without auth
-        [HttpGet("debug/history")]
-        [AllowAnonymous]
+        [HttpGet("history")]
         public async Task<IActionResult> GetOrderHistory()
         {
             try
@@ -101,80 +101,6 @@ namespace InvestDapp.Controllers.Api
             }
         }
 
-        // Debug endpoint to create sample orders
-        [HttpPost("debug/create-sample")]
-        [AllowAnonymous]
-        public async Task<IActionResult> CreateSampleOrders()
-        {
-            try
-            {
-                var testUserId = "test-user-123";
-                
-                // Create some sample filled orders for testing
-                var sampleOrders = new[]
-                {
-                    new InternalOrder
-                    {
-                        UserId = testUserId,
-                        Symbol = "BTCUSDT",
-                        Side = OrderSide.Buy,
-                        Type = OrderType.Market,
-                        Quantity = 0.001m,
-                        Price = 108315.00m,
-                        Status = OrderStatus.Filled,
-                        FilledQuantity = 0.001m,
-                        AveragePrice = 108315.00m,
-                        Leverage = 10,
-                        CreatedAt = DateTime.UtcNow.AddMinutes(-30),
-                        UpdatedAt = DateTime.UtcNow.AddMinutes(-25)
-                    },
-                    new InternalOrder
-                    {
-                        UserId = testUserId,
-                        Symbol = "BNBUSDT", 
-                        Side = OrderSide.Sell,
-                        Type = OrderType.Market,
-                        Quantity = 0.05m,
-                        Price = 860.00m,
-                        Status = OrderStatus.Filled,
-                        FilledQuantity = 0.05m,
-                        AveragePrice = 858.50m,
-                        Leverage = 5,
-                        CreatedAt = DateTime.UtcNow.AddHours(-2),
-                        UpdatedAt = DateTime.UtcNow.AddHours(-1)
-                    },
-                    new InternalOrder
-                    {
-                        UserId = testUserId,
-                        Symbol = "ETHUSDT",
-                        Side = OrderSide.Buy,
-                        Type = OrderType.Limit,
-                        Quantity = 0.1m,
-                        Price = 4200.00m,
-                        Status = OrderStatus.Filled,
-                        FilledQuantity = 0.1m,
-                        AveragePrice = 4195.50m,
-                        Leverage = 3,
-                        CreatedAt = DateTime.UtcNow.AddDays(-1),
-                        UpdatedAt = DateTime.UtcNow.AddDays(-1).AddMinutes(15)
-                    }
-                };
-
-                var createdOrders = new List<InternalOrder>();
-                foreach (var order in sampleOrders)
-                {
-                    var created = await _orderService.CreateOrderAsync(order);
-                    createdOrders.Add(created);
-                }
-
-                return Ok(new { message = "Sample orders created", count = createdOrders.Count, orders = createdOrders });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating sample orders");
-                return StatusCode(500, new { error = "Unable to create sample orders" });
-            }
-        }
 
         [HttpGet("{orderId}")]
         public async Task<IActionResult> GetOrder(string orderId)
@@ -246,46 +172,6 @@ namespace InvestDapp.Controllers.Api
             {
                 _logger.LogError(ex, "Error getting user positions");
                 return StatusCode(500, new { error = "Unable to fetch positions" });
-            }
-        }
-
-        // Debug helper: orders + positions snapshot
-        [HttpGet("debug/snapshot")]
-        public async Task<IActionResult> Snapshot()
-        {
-            try
-            {
-                var userKey = GetTradingUserKey();
-                if (string.IsNullOrEmpty(userKey)) return Unauthorized(new { error = "User not authenticated" });
-                var orders = await _orderService.GetUserOrdersAsync(userKey);
-                var positions = await _orderService.GetUserPositionsAsync(userKey);
-                var balance = await _orderService.GetUserBalanceAsync(userKey);
-                return Ok(new { orders, positions, balance });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Snapshot error");
-                return StatusCode(500, new { error = "Internal snapshot error" });
-            }
-        }
-
-        // Debug: snapshot for arbitrary user id (AllowAnonymous for testing only)
-        [HttpGet("debug/snapshot/{userId}")]
-        [AllowAnonymous]
-        public async Task<IActionResult> SnapshotForUser(string userId)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(userId)) return BadRequest(new { error = "userId required" });
-                var orders = await _orderService.GetUserOrdersAsync(userId);
-                var positions = await _orderService.GetUserPositionsAsync(userId);
-                var balance = await _orderService.GetUserBalanceAsync(userId);
-                return Ok(new { userId, orders, positions, balance });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Snapshot error for user {UserId}", userId);
-                return StatusCode(500, new { error = "Internal snapshot error" });
             }
         }
 
@@ -387,42 +273,7 @@ namespace InvestDapp.Controllers.Api
 
         private string? GetTradingUserKey()
         {
-            // Prefer wallet address for trading identity; fallback to numeric user id
             return User.FindFirst("WalletAddress")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         }
-    }
-
-    public class CreateOrderRequest
-    {
-        public string Symbol { get; set; } = string.Empty;
-        public OrderSide Side { get; set; }
-        public OrderType Type { get; set; }
-        public decimal Quantity { get; set; }
-        public decimal? Price { get; set; }
-        public decimal? StopPrice { get; set; }
-        public int Leverage { get; set; } = 1;
-    public decimal? TakeProfitPrice { get; set; }
-    public decimal? StopLossPrice { get; set; }
-    public bool ReduceOnly { get; set; } = false;
-    }
-
-    public class UpdatePositionRiskRequest
-    {
-        public string Symbol { get; set; } = string.Empty;
-    public decimal? TakeProfitPrice { get; set; }
-    public decimal? StopLossPrice { get; set; }
-    // Optional position id to target a single DB row
-    public string? PositionId { get; set; }
-    }
-
-    public class BalanceChangeRequest
-    {
-        public decimal Amount { get; set; }
-    }
-
-    public class ClosePositionRequest
-    {
-        public string Symbol { get; set; } = string.Empty;
-    public string? PositionId { get; set; }
     }
 }
