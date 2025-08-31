@@ -1,6 +1,5 @@
 ﻿using InvestDapp.Infrastructure.Data.Config;
 using InvestDapp.Infrastructure.Services.Binance;
-using InvestDapp.Infrastructure.Services.Cache;
 using InvestDapp.Shared.Models.Trading;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +18,6 @@ namespace InvestDapp.Application.Services.Trading
         
         private IBinanceRestService? _restService;
         private IBinanceWebSocketService? _webSocketService;
-        private IRedisCacheService? _cacheService;
         private Timer? _fallbackTimer;
         private bool _isWebSocketConnected = false;
 
@@ -42,7 +40,6 @@ namespace InvestDapp.Application.Services.Trading
             using var scope = _serviceProvider.CreateScope();
             _restService = scope.ServiceProvider.GetRequiredService<IBinanceRestService>();
             _webSocketService = scope.ServiceProvider.GetRequiredService<IBinanceWebSocketService>();
-            _cacheService = scope.ServiceProvider.GetRequiredService<IRedisCacheService>();
 
             // Setup WebSocket event handlers
             _webSocketService.OnKlineUpdate += HandleKlineUpdate;
@@ -82,15 +79,13 @@ namespace InvestDapp.Application.Services.Trading
                 
                 // Load exchange info
                 var symbolsInfo = await _restService!.GetExchangeInfoAsync();
-                await _cacheService!.SetSymbolInfoAsync(symbolsInfo, TimeSpan.FromHours(6));
                 
                 // Load historical klines for each symbol and interval
                 foreach (var symbol in _binanceConfig.SupportedSymbols)
                 {
                     foreach (var interval in _binanceConfig.SupportedIntervals)
                     {
-                        var klines = await _restService.GetKlinesAsync(symbol, interval, _binanceConfig.MaxKlinesHistory);
-                        await _cacheService.SetKlineDataAsync(symbol, interval, klines, TimeSpan.FromHours(1));
+                        await _restService.GetKlinesAsync(symbol, interval, _binanceConfig.MaxKlinesHistory);
                         
                         // Small delay to avoid rate limiting
                         await Task.Delay(100);
@@ -98,15 +93,10 @@ namespace InvestDapp.Application.Services.Trading
                 }
                 
                 // Load mark prices
-                var markPrices = await _restService.GetMarkPricesAsync();
-                foreach (var markPrice in markPrices)
-                {
-                    await _cacheService.SetMarkPriceAsync(markPrice.Symbol, markPrice);
-                }
+                await _restService.GetMarkPricesAsync();
                 
                 // Load market stats
-                var marketStats = await _restService.Get24hTickerStatsAsync();
-                await _cacheService.SetMarketStatsAsync(marketStats, TimeSpan.FromMinutes(5));
+                await _restService.Get24hTickerStatsAsync();
                 
                 _logger.LogInformation("Initial market data loaded successfully");
             }
@@ -154,7 +144,6 @@ namespace InvestDapp.Application.Services.Trading
                 var markPrices = await _restService!.GetMarkPricesAsync();
                 foreach (var markPrice in markPrices)
                 {
-                    await _cacheService!.SetMarkPriceAsync(markPrice.Symbol, markPrice);
                     await _hubContext.Clients.Group($"symbol:{markPrice.Symbol}")
                         .SendAsync("markPrice", markPrice);
                 }
@@ -164,12 +153,8 @@ namespace InvestDapp.Application.Services.Trading
                 {
                     var klines = await _restService.GetKlinesAsync(symbol, "1m", 1);
                     if (klines.Count > 0)
-                    {
-                        var latestKline = klines[0];
-                        await _cacheService!.UpdateLatestKlineAsync(symbol, "1m", latestKline);
                         await _hubContext.Clients.Group($"symbol:{symbol}")
-                            .SendAsync("klineUpdate", latestKline);
-                    }
+                            .SendAsync("klineUpdate", klines[0]);
                     
                     await Task.Delay(50); // Rate limiting
                 }
@@ -185,8 +170,6 @@ namespace InvestDapp.Application.Services.Trading
             try
             {
                 // Update cache
-                await _cacheService!.UpdateLatestKlineAsync(kline.Symbol, kline.Interval, kline);
-                
                 // Send to SignalR clients subscribed to this symbol
                 await _hubContext.Clients.Group($"symbol:{kline.Symbol}")
                     .SendAsync("klineUpdate", kline);
@@ -205,8 +188,6 @@ namespace InvestDapp.Application.Services.Trading
             try
             {
                 // Update cache
-                await _cacheService!.SetMarkPriceAsync(markPrice.Symbol, markPrice, TimeSpan.FromMinutes(1));
-                
                 // Send to SignalR clients
                 await _hubContext.Clients.Group($"symbol:{markPrice.Symbol}")
                     .SendAsync("markPrice", markPrice);

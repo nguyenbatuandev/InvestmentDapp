@@ -26,9 +26,12 @@ namespace InvestDapp.Infrastructure.Data
                 entity.Property(e => e.Symbol).IsRequired().HasMaxLength(20);
                 entity.Property(e => e.UserWallet).IsRequired().HasMaxLength(42);
                 entity.Property(e => e.Price).HasPrecision(18, 8);
+                entity.Property(e => e.StopPrice).HasPrecision(18, 8);
                 entity.Property(e => e.Quantity).HasPrecision(18, 8);
                 entity.Property(e => e.FilledQuantity).HasPrecision(18, 8);
                 entity.Property(e => e.AvgPrice).HasPrecision(18, 8);
+                entity.Property(e => e.TakeProfitPrice).HasPrecision(18,8);
+                entity.Property(e => e.StopLossPrice).HasPrecision(18,8);
                 entity.HasIndex(e => e.UserWallet);
                 entity.HasIndex(e => e.Symbol);
                 entity.HasIndex(e => e.Status);
@@ -46,6 +49,10 @@ namespace InvestDapp.Infrastructure.Data
                 entity.Property(e => e.Margin).HasPrecision(18, 8);
                 entity.Property(e => e.UnrealizedPnl).HasPrecision(18, 8);
                 entity.Property(e => e.RealizedPnl).HasPrecision(18, 8);
+                entity.Property(e => e.TakeProfitPrice).HasPrecision(18,8);
+                entity.Property(e => e.StopLossPrice).HasPrecision(18,8);
+                entity.Property(e => e.MaintenanceMarginRate).HasPrecision(9,6);
+                entity.Property(e => e.LiquidationPrice).HasPrecision(18,8);
                 entity.HasIndex(e => e.UserWallet);
                 entity.HasIndex(e => e.Symbol);
             });
@@ -59,6 +66,17 @@ namespace InvestDapp.Infrastructure.Data
                 entity.Property(e => e.MarginUsed).HasPrecision(18, 8);
                 entity.Property(e => e.UnrealizedPnl).HasPrecision(18, 8);
                 entity.HasIndex(e => e.UserWallet).IsUnique();
+            });
+
+            modelBuilder.Entity<BalanceTransaction>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.UserWallet).IsRequired().HasMaxLength(42);
+                entity.Property(e => e.Amount).HasPrecision(18, 8);
+                entity.Property(e => e.Type).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.BalanceAfter).HasPrecision(18, 8);
+                entity.HasIndex(e => e.UserWallet);
+                entity.HasIndex(e => e.Type);
             });
         }
 
@@ -92,5 +110,6 @@ namespace InvestDapp.Infrastructure.Data
         public DbSet<Order> Orders { get; set; }
         public DbSet<Position> Positions { get; set; }
         public DbSet<UserBalance> UserBalances { get; set; }
+    public DbSet<BalanceTransaction> BalanceTransactions { get; set; }
     }
 }

@@ -4,6 +4,7 @@ using InvestDapp.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace InvestDapp.Infrastructure.Migrations
 {
     [DbContext(typeof(InvestDbContext))]
-    partial class InvestDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250831121343_AddTradingAdvancedFields")]
+    partial class AddTradingAdvancedFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -590,50 +593,6 @@ namespace InvestDapp.Infrastructure.Migrations
                     b.ToTable("Refunds");
                 });
 
-            modelBuilder.Entity("InvestDapp.Shared.Models.Trading.BalanceTransaction", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 8)
-                        .HasColumnType("decimal(18,8)");
-
-                    b.Property<decimal>("BalanceAfter")
-                        .HasPrecision(18, 8)
-                        .HasColumnType("decimal(18,8)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Reference")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("UserWallet")
-                        .IsRequired()
-                        .HasMaxLength(42)
-                        .HasColumnType("nvarchar(42)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Type");
-
-                    b.HasIndex("UserWallet");
-
-                    b.ToTable("BalanceTransactions");
-                });
-
             modelBuilder.Entity("InvestDapp.Shared.Models.Trading.Order", b =>
                 {
                     b.Property<int>("Id")
@@ -652,9 +611,6 @@ namespace InvestDapp.Infrastructure.Migrations
                     b.Property<decimal>("FilledQuantity")
                         .HasPrecision(18, 8)
                         .HasColumnType("decimal(18,8)");
-
-                    b.Property<string>("InternalOrderId")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Leverage")
                         .HasColumnType("int");

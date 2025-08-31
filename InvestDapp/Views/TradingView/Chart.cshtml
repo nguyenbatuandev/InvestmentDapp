@@ -525,6 +525,28 @@
                 color: var(--trading-down);
             }
 
+            /* Inline TP/SL edit chips */
+            .tp-sl-edit {
+                display: flex;
+                gap:4px;
+                align-items:center;
+            }
+            .tp-sl-value {
+                padding:2px 6px;
+                border-radius:4px;
+                background:var(--trading-panel);
+                border:1px solid var(--trading-border);
+                font-size:11px;
+                cursor:pointer;
+                transition:.15s;
+            }
+            .tp-sl-value:hover { border-color: var(--trading-accent); color: var(--trading-accent); }
+            .tp-sl-input { width:70px; background:var(--trading-panel); border:1px solid var(--trading-accent); color:var(--trading-text); border-radius:4px; padding:2px 4px; font-size:11px; }
+            .tp-sl-save { background:var(--trading-up); color:#fff; border:none; padding:2px 6px; border-radius:4px; font-size:11px; cursor:pointer; }
+            .tp-sl-cancel { background:var(--trading-down); color:#fff; border:none; padding:2px 4px; border-radius:4px; font-size:11px; cursor:pointer; }
+            .pos-actions { display:flex; gap:4px; }
+            .control-btn.inline { padding:4px 8px; font-size:11px; }
+
         .pnl-positive {
             color: var(--trading-up);
             font-weight: 600;
@@ -640,6 +662,138 @@
         .info-tabs {
             animation: slideIn 0.6s ease-out;
         }
+
+        /* Notification animations */
+        @@keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @@keyframes slideOutRight {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
+
+    /* TP/SL Modal */
+    .tp-sl-modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:3000; }
+    .tp-sl-modal { background:var(--trading-panel); border:1px solid var(--trading-border); border-radius:14px; width:360px; padding:24px; box-shadow:0 12px 40px rgba(0,0,0,.45); animation: slideIn .35s; }
+    .tp-sl-modal h3 { margin:0 0 12px; font-size:18px; font-weight:700; }
+    .tp-sl-modal .field { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+    .tp-sl-modal label { font-size:12px; font-weight:600; letter-spacing:.5px; color:var(--trading-muted); text-transform:uppercase; }
+    .tp-sl-modal input { background:var(--trading-panel-light); border:1px solid var(--trading-border); border-radius:8px; padding:10px 12px; color:var(--trading-text); font-family:'SF Mono',monospace; }
+    .tp-sl-modal input:focus { outline:none; border-color:var(--trading-accent); box-shadow:0 0 0 3px rgba(88,166,255,.15); }
+    .tp-sl-modal .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:4px; }
+    .btn { cursor:pointer; border:none; padding:10px 16px; font-weight:600; border-radius:8px; font-size:13px; letter-spacing:.3px; }
+    .btn-primary { background:var(--trading-accent); color:#fff; }
+    .btn-primary:hover { filter:brightness(1.1); }
+    .btn-outline { background:transparent; border:1px solid var(--trading-border); color:var(--trading-text); }
+    .btn-outline:hover { border-color:var(--trading-accent); color:var(--trading-accent); }
+    .hidden { display:none !important; }
+
+    /* Loading spinner */
+    .loading-spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 0.8s ease-in-out infinite;
+        margin-right: 8px;
+    }
+
+    .loading-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        backdrop-filter: blur(4px);
+    }
+
+    .loading-card {
+        background: var(--trading-panel);
+        border: 1px solid var(--trading-border);
+        border-radius: 12px;
+        padding: 24px;
+        text-align: center;
+        min-width: 200px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        animation: scaleIn 0.3s ease-out;
+    }
+
+    .loading-spinner-large {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(88, 166, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: var(--trading-accent);
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+    }
+
+    @@keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    @@keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @@keyframes fadeOut {
+        from {
+            opacity: 1;
+        }
+        to {
+            opacity: 0;
+        }
+    }
+
+    /* Button loading states */
+    .btn-loading {
+        pointer-events: none;
+        opacity: 0.8;
+        position: relative;
+    }
+
+    .btn-loading::before {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 0.8s linear infinite;
+    }
+
+    .btn-loading span {
+        opacity: 0;
+    }
     </style>
 }
 
@@ -658,6 +812,7 @@
         let latestPrice = null;
         let markPriceData = null;
         let isConnected = false;
+        let symbolPrices = {}; // Store mark prices for all symbols
 
         // Futures simulation state
         const FUT_LS_KEY = 'fut_sim_state_v2';
@@ -687,6 +842,10 @@
             await boot(currentInterval);
             await initializeSignalR();
             setupEventListeners();
+            toggleOrderTypeFields();
+            await detectBackendTrading();
+            // Periodically refresh backend positions if enabled
+            setInterval(() => refreshBackendState(), 5000);
         });
 
         // Chart functions
@@ -755,12 +914,12 @@
             console.log('Raw kline data:', k);
             const candle = {
                 time: Math.floor(k.openTime / 1000),
-                open: parseFloat(k.open),
-                high: parseFloat(k.high),
-                low: parseFloat(k.low),
-                close: parseFloat(k.close),
+                open: normalizeSymbolPrice(parseFloat(k.open), currentSymbol),
+                high: normalizeSymbolPrice(parseFloat(k.high), currentSymbol),
+                low: normalizeSymbolPrice(parseFloat(k.low), currentSymbol),
+                close: normalizeSymbolPrice(parseFloat(k.close), currentSymbol),
             };
-            console.log('Converted candle:', candle);
+            console.log('Converted candle (normalized):', candle);
             return candle;
         }
 
@@ -807,7 +966,7 @@
                     const latest = data[data.length - 1];
                     console.log('RAW API LATEST DATA:', latest);
                     console.log('CLOSE FIELD VALUE:', latest.close, 'TYPE:', typeof latest.close);
-                    latestPrice = parseFloat(latest.close);
+                    latestPrice = normalizeSymbolPrice(parseFloat(latest.close), currentSymbol);
                     console.log('PARSED LATEST PRICE:', latestPrice);
                     updatePriceTicker(latestPrice);
                     console.log(`Latest price updated: ${latestPrice}`);
@@ -848,7 +1007,7 @@
                             volumeSeries.update(volume);
                             
                             // Update price display
-                            const newPrice = parseFloat(latestKline.close);
+                            const newPrice = normalizeSymbolPrice(parseFloat(latestKline.close), currentSymbol);
                             if (newPrice !== latestPrice) {
                                 latestPrice = newPrice;
                                 updatePriceTicker(newPrice);
@@ -878,17 +1037,25 @@
                     }
                 });
 
-                connection.on("markPrice", (data) => {
+        connection.on("markPrice", (data) => {
                     console.log('RAW DATA DEBUG - Received markPrice from SignalR:', data);
                     console.log('RAW DATA DEBUG - data.symbol:', data.symbol, 'SYMBOL:', SYMBOL);
                     console.log('RAW DATA DEBUG - data.markPrice:', data.markPrice, typeof data.markPrice);
                     
+                    // Store mark price for this symbol
+                    const norm = normalizeSymbolPrice(parseFloat(data.markPrice), data.symbol);
+                    symbolPrices[data.symbol] = norm;
+                    
+                    // Update current symbol display if this is the chart symbol
                     if (data.symbol === SYMBOL) {
-                        markPriceData = data;
-                        latestPrice = data.markPrice;
-                        console.log('RAW DATA DEBUG - About to call updatePriceTicker with:', data.markPrice);
-                        updatePriceTicker(data.markPrice);
+            markPriceData = { ...data, markPrice: norm };
+            latestPrice = norm;
+            console.log('RAW DATA DEBUG - About to call updatePriceTicker with normalized:', norm);
+            updatePriceTicker(norm);
                     }
+                    
+                    // Re-render positions to update mark prices for all symbols
+                    renderPositions();
                 });
 
                 connection.on("marketDataStatus", (status) => {
@@ -908,6 +1075,60 @@
             }
         }
 
+        // Function to request mark price for a specific symbol
+        async function requestSymbolPrice(symbol) {
+            if (!connection || connection.state !== 'Connected') return;
+            try {
+                await connection.invoke("RequestMarkPrice", symbol);
+            } catch (err) {
+                console.error(`Failed to request price for ${symbol}:`, err);
+            }
+        }
+
+        // Function to subscribe to mark prices for all position symbols
+        async function subscribeToPositionSymbols() {
+            if (!connection || connection.state !== 'Connected') return;
+            
+            const positionSymbols = new Set(SimFut.positions.map(p => p.symbol || currentSymbol));
+            console.log('Position symbols to subscribe:', Array.from(positionSymbols));
+            
+            for (const symbol of positionSymbols) {
+                if (!subscribedSymbols.has(symbol)) {
+                    try {
+                        await connection.invoke("JoinSymbolRoom", symbol);
+                        subscribedSymbols.add(symbol);
+                        console.log(`✅ Subscribed to mark price for ${symbol}`);
+                        
+                        // Also request current price immediately
+                        await requestSymbolPrice(symbol);
+                    } catch (err) {
+                        console.error(`❌ Failed to subscribe to ${symbol}:`, err);
+                    }
+                }
+            }
+        }
+
+        // Start periodic position updates
+        function startPositionUpdates() {
+            if (positionUpdateInterval) {
+                clearInterval(positionUpdateInterval);
+            }
+            
+            positionUpdateInterval = setInterval(() => {
+                if (SimFut.positions.length > 0) {
+                    renderPositions();
+                }
+            }, 2000); // Update every 2 seconds
+        }
+
+        // Stop periodic position updates
+        function stopPositionUpdates() {
+            if (positionUpdateInterval) {
+                clearInterval(positionUpdateInterval);
+                positionUpdateInterval = null;
+            }
+        }
+
         function handleKlineUpdate(kline) {
             const candle = klineToCandle(kline);
             const volume = klineToVolume(kline);
@@ -915,16 +1136,18 @@
             candleSeries.update(candle);
             volumeSeries.update(volume);
 
-            latestPrice = parseFloat(kline.close);
+            latestPrice = normalizeSymbolPrice(parseFloat(kline.close), currentSymbol);
             updatePriceTicker(latestPrice);
         }
 
         // Price ticker - FORCE OVERRIDE
-        function updatePriceTicker(price) {
+    function updatePriceTicker(price) {
             console.log('FORCE OVERRIDE - updatePriceTicker called with:', price);
             if (elPrice) {
                 console.log('FORCE OVERRIDE - Raw price:', price, 'Type:', typeof price);
-                const formattedPrice = formatPrice(price);
+        const normalizedNumeric = normalizeSymbolPrice(Number(price), currentSymbol);
+        latestPrice = normalizedNumeric; // keep global normalized
+        const formattedPrice = formatPrice(normalizedNumeric);
                 console.log('FORCE OVERRIDE - Formatted price:', formattedPrice);
                 elPrice.textContent = formattedPrice; // Remove the extra '$' since formatPrice already adds it
                 
@@ -997,8 +1220,22 @@
             });
 
             // Futures controls
-            document.getElementById('btnLong')?.addEventListener('click', () => openPosition('LONG'));
-            document.getElementById('btnShort')?.addEventListener('click', () => openPosition('SHORT'));
+            document.getElementById('btnLong')?.addEventListener('click', async () => {
+                setButtonLoading('btnLong', true);
+                try {
+                    await openPosition('LONG');
+                } finally {
+                    setButtonLoading('btnLong', false);
+                }
+            });
+            document.getElementById('btnShort')?.addEventListener('click', async () => {
+                setButtonLoading('btnShort', true);
+                try {
+                    await openPosition('SHORT');
+                } finally {
+                    setButtonLoading('btnShort', false);
+                }
+            });
             document.getElementById('closeAll')?.addEventListener('click', () => {
                 if (confirm('Đóng tất cả vị thế?')) {
                     [...SimFut.positions].forEach(p => closePosition(p, 'CloseAll'));
@@ -1011,6 +1248,7 @@
             document.getElementById('levInput')?.addEventListener('input', updateOrderSummary);
             document.getElementById('tpInput')?.addEventListener('input', updateOrderSummary);
             document.getElementById('slInput')?.addEventListener('input', updateOrderSummary);
+            document.getElementById('orderTypeSelect')?.addEventListener('change', toggleOrderTypeFields);
 
             // Keyboard shortcuts
             window.addEventListener('keydown', (e) => {
@@ -1022,14 +1260,28 @@
 
             // Tabs
             document.querySelectorAll('.tab-link').forEach(link => {
-                link.addEventListener('click', () => {
+                link.addEventListener('click', async () => {
                     const tabName = link.getAttribute('data-tab');
                     document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                     link.classList.add('active');
                     document.getElementById(tabName)?.classList.add('active');
+                    
+                    // Refresh data when switching to history tab
+                    if (tabName === 'history' && useBackendTrading) {
+                        console.log('Switching to history tab, refreshing backend data...');
+                        await refreshBackendState();
+                    }
                 });
             });
+        }
+
+        function toggleOrderTypeFields(){
+            const typeVal = Number(document.getElementById('orderTypeSelect')?.value || 0);
+            const limitGrp = document.getElementById('limitPriceGroup');
+            if(limitGrp){
+                limitGrp.style.display = (typeVal === 1 ? 'flex' : 'none');
+            }
         }
 
         function selectInterval(interval) {
@@ -1088,46 +1340,291 @@
             localStorage.setItem(FUT_LS_KEY, JSON.stringify(SimFut));
         }
 
-        function openPosition(side) {
-            if (!latestPrice) {
-                alert('Chưa có giá realtime. Đợi kết nối một chút.');
-                return;
+        let useBackendTrading = false; // auto enable if backend reachable
+        let positionUpdateInterval = null; // Interval for updating positions PnL
+        let subscribedSymbols = new Set(); // Track subscribed symbols
+
+        async function detectBackendTrading() {
+            try {
+                const r = await fetch('/api/Order/positions');
+                if (r.ok) {
+                    useBackendTrading = true;
+                    const badge = document.getElementById('backendModeBadge');
+                    if(badge) badge.style.display='inline-flex';
+                    await refreshBackendState();
+                }
+            } catch { /* ignore */ }
+        }
+
+        async function refreshBackendState() {
+            if (!useBackendTrading) return;
+            try {
+                const [posRes, balRes, ordersRes] = await Promise.all([
+                    fetch('/api/Order/positions'),
+                    fetch('/api/Order/balance'),
+                    fetch('/api/Order/debug/history') // Sử dụng endpoint debug không cần auth
+                ]);
+                if (balRes.ok) {
+                    const bal = await balRes.json();
+                    // Map backend balance into SimFut for display only
+                    SimFut.balance = bal.availableBalance ?? bal.available ?? bal.AvailableBalance ?? bal.balance ?? SimFut.balance;
+                }
+                if (posRes.ok) {
+                    const positions = await posRes.json();
+                    console.log('Raw backend positions:', positions);
+                    // Adapt backend positions to UI schema (case-insensitive mapping)
+                    SimFut.positions = positions.map(raw => {
+                        // Normalize keys (build a lowercase map)
+                        const map = {};
+                        Object.keys(raw).forEach(k => map[k.toLowerCase()] = raw[k]);
+                        console.log('Processing position raw:', raw, 'mapped:', map);
+                        const sideRaw = map['side'];
+                        const side = (sideRaw === 0 || sideRaw === 'Buy' || sideRaw === 'LONG') ? 'LONG' : 'SHORT';
+                        const qty = map['size'] ?? map['quantity'] ?? 0;
+                        const entryPrice = map['entryprice'] ?? map['entryPrice'] ?? 0;
+                        const leverage = map['leverage'] ?? 1;
+                        const margin = map['margin'] ?? 0;
+                        const tp = map['takeprofitprice'] ?? map['takeProfitPrice'] ?? null;
+                        const sl = map['stoplossprice'] ?? map['stopLossPrice'] ?? null;
+                        const createdAt = map['createdat'] || map['createdAt'] || new Date().toISOString();
+                        const id = map['id'] ? String(map['id']) : `${map['symbol'] || 'SYM'}-${createdAt}`;
+                        const symbol = map['symbol'] || currentSymbol;
+                        console.log('Final mapped position ID:', id, 'original ID:', map['id']);
+                        return {
+                            id,
+                            symbol,
+                            side,
+                            qty,
+                            entryPrice,
+                            leverage,
+                            margin,
+                            tp,
+                            sl,
+                            entryTs: Date.parse(createdAt)
+                        };
+                    });
+                    console.log('Mapped backend positions:', SimFut.positions);
+                }
+                if (ordersRes.ok) {
+                    const orders = await ordersRes.json();
+                    console.log('Raw backend orders:', orders);
+                    
+                    // Group orders by symbol and process reduce-only orders only
+                    const completedTrades = [];
+                    
+                    // Filter for filled reduce-only orders (close orders)
+                    const closeOrders = orders.filter(order => {
+                        const map = {};
+                        Object.keys(order).forEach(k => map[k.toLowerCase()] = order[k]);
+                        const status = map['status'];
+                        const reduceOnly = map['reduceonly'];
+                        return (status === 1 || status === 'Filled') && reduceOnly === true;
+                    });
+                    
+                    console.log('Close orders (reduceOnly):', closeOrders);
+                    
+                    // For each close order, find corresponding open order
+                    for (const closeOrder of closeOrders) {
+                        const closeMap = {};
+                        Object.keys(closeOrder).forEach(k => closeMap[k.toLowerCase()] = closeOrder[k]);
+                        
+                        const symbol = closeMap['symbol'];
+                        const closeSide = closeMap['side'];
+                        const closeTime = new Date(closeMap['createdat'] || closeMap['createdAt']);
+                        
+                        // Find the most recent open order for same symbol and side before close time
+                        const openOrder = orders.find(order => {
+                            const openMap = {};
+                            Object.keys(order).forEach(k => openMap[k.toLowerCase()] = order[k]);
+                            const openTime = new Date(openMap['createdat'] || openMap['createdAt']);
+                            const status = openMap['status'];
+                            const reduceOnly = openMap['reduceonly'];
+                            
+                            return openMap['symbol'] === symbol &&
+                                   openMap['side'] === closeSide &&
+                                   (status === 1 || status === 'Filled') &&
+                                   reduceOnly !== true &&
+                                   openTime < closeTime;
+                        });
+                        
+                        if (openOrder) {
+                            const openMap = {};
+                            Object.keys(openOrder).forEach(k => openMap[k.toLowerCase()] = openOrder[k]);
+                            
+                            const sideRaw = closeMap['side'];
+                            const side = (sideRaw === 0 || sideRaw === 'Buy' || sideRaw === 'LONG') ? 'LONG' : 'SHORT';
+                            const qty = closeMap['quantity'] ?? closeMap['filledquantity'] ?? 0;
+                            const entryPrice = openMap['averageprice'] ?? openMap['price'] ?? 0; // Use open order price
+                            const exitPrice = closeMap['averageprice'] ?? closeMap['price'] ?? 0; // Use close order price
+                            const createdAt = openMap['createdat'] || openMap['createdAt'] || new Date().toISOString();
+                            const updatedAt = closeMap['createdat'] || closeMap['createdAt'] || new Date().toISOString();
+                            const id = closeMap['id'] ? String(closeMap['id']) : Date.now();
+                            
+                            // Calculate PnL
+                            const sideSign = side === 'LONG' ? 1 : -1;
+                            const pnl = sideSign * (exitPrice - entryPrice) * qty;
+                            const fees = (entryPrice * qty + exitPrice * qty) * 0.0002; // 0.02% per side
+                            
+                            completedTrades.push({
+                                id,
+                                symbol,
+                                side,
+                                qty,
+                                entryPrice,
+                                exitPrice,
+                                entryTs: Date.parse(createdAt),
+                                exitTs: Date.parse(updatedAt),
+                                leverage: closeMap['leverage'] ?? 1,
+                                pnl,
+                                fees,
+                                note: 'Backend Trade'
+                            });
+                        } else {
+                            console.warn('No matching open order found for close order:', closeOrder);
+                        }
+                    }
+                    
+                    SimFut.history = completedTrades;
+                    console.log('Processed completed trades:', SimFut.history);
+                } else {
+                    console.warn('Failed to fetch orders:', ordersRes.status, ordersRes.statusText);
+                }
+                renderFut();
+                
+                // Subscribe to mark prices for all position symbols
+                await subscribeToPositionSymbols();
+                
+                // Start position updates if we have positions
+                if (SimFut.positions.length > 0) {
+                    startPositionUpdates();
+                } else {
+                    stopPositionUpdates();
+                }
+            } catch (e) { console.warn('Refresh backend state failed', e); }
+        }
+
+        async function openPosition(side) {
+            // Show loading immediately
+            showLoading(`Đang mở lệnh ${side}...`);
+            
+            try {
+                if (useBackendTrading) {
+                    showNotification(`🚀 Đang tạo lệnh ${side}...`, 'info');
+                    await createBackendOrder(side);
+                    await refreshBackendState();
+                    hideLoading();
+                    showNotification(`✅ Lệnh ${side} đã được tạo thành công!`, 'success');
+                    return;
+                }
+                
+                const orderType = Number(document.getElementById('orderTypeSelect')?.value || 0);
+                if(orderType !== 0){
+                    hideLoading();
+                    showNotification('❌ Limit chỉ hỗ trợ khi kết nối backend.', 'danger');
+                    return;
+                }
+                
+                // Fallback local simulation
+                if (!latestPrice) { 
+                    hideLoading();
+                    showNotification('❌ Chưa có giá realtime.', 'danger');
+                    return; 
+                }
+                
+                const qty = Math.max(0.0001, Number(document.getElementById('qtyInput')?.value || 0));
+                const lev = Math.min(125, Math.max(1, Number(document.getElementById('levInput')?.value || 20)));
+                const price = normalizeSymbolPrice(latestPrice, currentSymbol);
+                const mgn = (price * qty) / lev;
+                const openFee = (price * qty) * (SimFut.feeRate / 100);
+                const need = mgn + openFee;
+                
+                if (SimFut.balance < need) { 
+                    hideLoading();
+                    showNotification('❌ Số dư không đủ (cần ' + formatMoney(need) + ' USDT)', 'danger');
+                    return; 
+                }
+                
+                // Check if total margin usage exceeds available balance
+                const currentMarginUsed = SimFut.positions.reduce((sum, p) => sum + (p.margin || 0), 0);
+                const totalMarginAfter = currentMarginUsed + mgn;
+                const maxMarginAllowed = SimFut.balance * 0.95; // Use max 95% of balance
+                
+                if (totalMarginAfter > maxMarginAllowed) {
+                    hideLoading();
+                    showNotification('❌ Tổng margin vượt quá giới hạn an toàn (' + formatMoney(totalMarginAfter) + ' > ' + formatMoney(maxMarginAllowed) + ')', 'danger');
+                    return;
+                }
+                
+                const tp = Number(document.getElementById('tpInput')?.value || NaN);
+                const sl = Number(document.getElementById('slInput')?.value || NaN);
+                const pos = { id: SimFut.nextId++, side, qty, entryPrice: price, entryTs: Date.now(), leverage: lev, margin: mgn, openFee, tp: Number.isFinite(tp) ? tp : null, sl: Number.isFinite(sl) ? sl : null, symbol: currentSymbol };
+                SimFut.balance -= need; SimFut.positions.unshift(pos); saveFut(); 
+                
+                // Simulate processing delay
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                hideLoading();
+                renderFut();
+                showNotification(`🎉 Vị thế ${side} #${pos.id} đã được mở tại $${formatMoney(price)}!`, 'success');
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Open position error:', error);
+                showNotification('❌ Lỗi khi mở lệnh: ' + error.message, 'danger');
             }
+        }
 
-            const qty = Math.max(0.0001, Number(document.getElementById('qtyInput')?.value || 0));
-            const lev = Math.min(125, Math.max(1, Number(document.getElementById('levInput')?.value || 20)));
-            const price = latestPrice;
-            const mgn = (price * qty) / lev;
-            const openFee = (price * qty) * (SimFut.feeRate / 100);
-            const need = mgn + openFee;
-
-            if (SimFut.balance < need) {
-                alert('Số dư không đủ (cần ' + formatMoney(need) + ' USDT).');
-                return;
+        async function createBackendOrder(side) {
+            try {
+                const qty = Math.max(0.0001, Number(document.getElementById('qtyInput')?.value || 0));
+                const lev = Math.min(125, Math.max(1, Number(document.getElementById('levInput')?.value || 20)));
+                const tp = document.getElementById('tpInput')?.value;
+                const sl = document.getElementById('slInput')?.value;
+                const orderType = Number(document.getElementById('orderTypeSelect')?.value || 0); // 0=Market,1=Limit
+                const limitPriceVal = document.getElementById('limitPriceInput')?.value;
+                if(orderType === 1 && (!limitPriceVal || Number(limitPriceVal) <= 0)){
+                    alert('Nhập giá Limit hợp lệ.');
+                    return;
+                }
+                const body = {
+                    symbol: currentSymbol,
+                    side: side === 'LONG' ? 0 : 1, // OrderSide enum
+                    type: orderType, // Market / Limit
+                    quantity: qty,
+                    price: orderType === 1 ? Number(limitPriceVal) : null,
+                    leverage: lev,
+                    takeProfitPrice: tp ? Number(tp) : null,
+                    stopLossPrice: sl ? Number(sl) : null
+                };
+                const r = await fetch('/api/Order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                if (r.status === 401) { 
+                    useBackendTrading = false; 
+                    alert('Chưa đăng nhập hoặc phiên hết hạn. Vui lòng đăng nhập lại.');
+                    return; 
+                }
+                let data = null;
+                try { data = await r.json(); } catch {}
+                const statusVal = (data && (data.status ?? data.Status));
+                const notesVal = data && (data.notes ?? data.Notes ?? data.error);
+                // status enum: 0 Pending,1 Filled,2 PartiallyFilled,3 Cancelled,4 Rejected
+                if (!r.ok || statusVal === 4 || notesVal === 'Rejected') {
+                    alert('Tạo lệnh thất bại: ' + (notesVal || 'Unknown'));
+                } else {
+                    console.log('Order created', data);
+                    // Force immediate positions refresh (some async delay for processing)
+                    setTimeout(()=>refreshBackendState(), 300);
+                    setTimeout(()=>refreshBackendState(), 1000);
+                }
+            } catch (e) {
+                console.error('Create backend order error', e);
+                alert('Lỗi tạo lệnh (xem console).');
             }
-
-            const tp = Number(document.getElementById('tpInput')?.value || NaN);
-            const sl = Number(document.getElementById('slInput')?.value || NaN);
-
-            const pos = {
-                id: SimFut.nextId++,
-                side, qty, entryPrice: price, entryTs: Date.now(),
-                leverage: lev, margin: mgn, openFee,
-                tp: Number.isFinite(tp) ? tp : null,
-                sl: Number.isFinite(sl) ? sl : null,
-            };
-
-            SimFut.balance -= need;
-            SimFut.positions.unshift(pos);
-
-            saveFut();
-            renderFut();
         }
 
         function closePosition(pos, reason = 'Manual') {
             if (!latestPrice) return;
 
-            const exitPrice = latestPrice;
+            const exitPrice = normalizeSymbolPrice(latestPrice, currentSymbol);
             const closeFee = (exitPrice * pos.qty) * (SimFut.feeRate / 100);
             const sideSign = pos.side === 'LONG' ? 1 : -1;
             const pnlGross = sideSign * (exitPrice - pos.entryPrice) * pos.qty;
@@ -1142,10 +1639,22 @@
                 pnl: pnlNet, fees: pos.openFee + closeFee, note: reason,
             };
             SimFut.history.unshift(rec);
+            
+            // Clean up tracking sets khi đóng position
+            const posSymbol = pos.symbol || currentSymbol;
+            const positionKey = `${pos.id}-${posSymbol}`;
+            triggeredPositions.delete(positionKey);
+            liquidatedPositions.delete(positionKey);
+            
             SimFut.positions = SimFut.positions.filter(p => p.id !== pos.id);
 
             saveFut();
             renderFut();
+            
+            // Show success notification
+            const pnlText = pnlNet >= 0 ? '+$' + formatMoney(pnlNet) : '-$' + formatMoney(Math.abs(pnlNet));
+            const pnlColor = pnlNet >= 0 ? 'success' : 'danger';
+            showNotification('✅ Vị thế #' + pos.id + ' đã đóng. PnL: ' + pnlText, pnlColor);
         }
 
         function resetFutures() {
@@ -1163,6 +1672,16 @@
             renderFutHeader();
             renderPositions();
             renderHistory();
+            
+            // Manage position updates based on whether we have positions
+            if (SimFut.positions.length > 0) {
+                // Subscribe to symbols and start updates
+                subscribeToPositionSymbols();
+                startPositionUpdates();
+            } else {
+                // Stop updates if no positions
+                stopPositionUpdates();
+            }
         }
 
         function renderFutHeader() {
@@ -1176,31 +1695,165 @@
             const posBody = document.getElementById('posBody');
             if (!posBody) return;
 
-            const mark = latestPrice || 0;
+            // First, identify symbols that need price updates
+            const missingPriceSymbols = new Set();
+            console.log('🔄 Rendering positions - symbolPrices:', symbolPrices);
+            
             posBody.innerHTML = SimFut.positions.map(p => {
+                // Use the correct mark price for this position's symbol
+                const positionSymbol = p.symbol || currentSymbol;
+                let mark = symbolPrices[positionSymbol];
+                
+                // Only use latestPrice if this position is for the current chart symbol
+                if (!mark && positionSymbol === currentSymbol) {
+                    mark = latestPrice;
+                }
+                
+                // If still no price, mark for price request
+                if (!mark && positionSymbol !== currentSymbol) {
+                    missingPriceSymbols.add(positionSymbol);
+                    // Use entry price as temporary fallback to avoid showing wrong price
+                    mark = p.entryPrice;
+                }
+                
+                mark = mark || 0;
+                
                 const sideSign = p.side === 'LONG' ? 1 : -1;
                 const uPnL = sideSign * (mark - p.entryPrice) * p.qty;
                 const roe = p.margin > 0 ? (uPnL / p.margin * 100) : 0;
                 const pnlCls = uPnL >= 0 ? 'pnl-positive' : 'pnl-negative';
                 const tpSl = `${p.tp ? formatMoney(p.tp) : '-'} / ${p.sl ? formatMoney(p.sl) : '-'}`;
-
-                return `<tr>
-                    <td>#${p.id}</td>
-                    <td><span class="position-tag ${p.side.toLowerCase()}">${p.side}</span></td>
-                    <td>${p.qty}</td>
-                    <td>$${formatMoney(p.entryPrice)}</td>
-                    <td>$${mark ? formatMoney(mark) : '-'}</td>
-                    <td>${p.leverage}x</td>
-                    <td>$${formatMoney(p.margin)}</td>
-                    <td>$${formatMoney(p.entryPrice * 0.9)}</td>
-                    <td>${tpSl}</td>
-                    <td class="${pnlCls}">$${formatMoney(uPnL)} / ${roe.toFixed(2)}%</td>
-                    <td>
-                        <button class="control-btn danger" onclick="window.__closePos(${p.id})">Đóng</button>
-                    </td>
-                </tr>`;
-            }).join('') || `<tr><td colspan="11" style="text-align:center; padding: 24px; color: var(--trading-muted);">Chưa có vị thế mở</td></tr>`;
+                
+                // Calculate accurate liquidation price
+                const liquidationPrice = calculateLiquidationPrice(p, mark);
+                
+                // Show if price is from entry (temporary)
+                const priceDisplay = !symbolPrices[positionSymbol] && positionSymbol !== currentSymbol ? 
+                    '$' + formatMoney(mark) + ' (entry)' : '$' + formatMoney(mark);
+                
+                console.log('📊 Position ' + p.id + ' (' + positionSymbol + '): mark=' + mark + ', entry=' + p.entryPrice + ', PnL=' + uPnL);
+                
+                return '<tr data-posid="' + p.id + '">' +
+                    '<td>#' + p.id + '</td>' +
+                    '<td>' + positionSymbol + '</td>' +
+                    '<td><span class="position-tag ' + p.side.toLowerCase() + '">' + p.side + '</span></td>' +
+                    '<td>' + p.qty + '</td>' +
+                    '<td>$' + formatMoney(p.entryPrice) + '</td>' +
+                    '<td>' + priceDisplay + '</td>' +
+                    '<td>' + p.leverage + 'x</td>' +
+                    '<td>$' + formatMoney(p.margin) + '</td>' +
+                    '<td>$' + formatMoney(liquidationPrice) + '</td>' +
+                    '<td><button class="control-btn inline" onclick="window.__editTpSl(' + p.id + ')">TP:' + (p.tp?formatMoney(p.tp):'-') + ' / SL:' + (p.sl?formatMoney(p.sl):'-') + '</button></td>' +
+                    '<td class="' + pnlCls + '">$' + formatMoney(uPnL) + ' / ' + roe.toFixed(2) + '%</td>' +
+                    '<td class="pos-actions">' +
+                        '<button class="control-btn inline danger" onclick="window.__closePos(' + p.id + ')">Đóng</button>' +
+                    '</td>' +
+                '</tr>';
+            }).join('') || '<tr><td colspan="12" style="text-align:center; padding: 24px; color: var(--trading-muted);">Chưa có vị thế mở</td></tr>';
+            
+            // Request prices for missing symbols
+            missingPriceSymbols.forEach(symbol => {
+                console.log('🔍 Requesting price for missing symbol: ' + symbol);
+                requestSymbolPrice(symbol);
+            });
         }
+
+        // Calculate accurate liquidation price
+        function calculateLiquidationPrice(position, currentPrice) {
+            const leverage = position.leverage || 1;
+            const mmRate = SimFut.mmRate / 100; // Convert percentage to decimal
+            const entryPrice = position.entryPrice;
+            
+            let liquidationPrice;
+            
+            if (position.side === 'LONG') {
+                // For LONG: Liq Price = Entry * (1 - (1/leverage) + mmRate)
+                liquidationPrice = entryPrice * (1 - (1/leverage) + mmRate);
+            } else {
+                // For SHORT: Liq Price = Entry * (1 + (1/leverage) - mmRate)  
+                liquidationPrice = entryPrice * (1 + (1/leverage) - mmRate);
+            }
+            
+            // Ensure liquidation price is positive and reasonable
+            return Math.max(0.01, liquidationPrice);
+        }
+
+        // Popup TP/SL
+        let editingPosId = null;
+        window.__editTpSl = function(id){
+            const pos = SimFut.positions.find(p => String(p.id) === String(id));
+            if(!pos) return;
+            editingPosId = id;
+            document.getElementById('tpInputModal').value = pos.tp ?? '';
+            document.getElementById('slInputModal').value = pos.sl ?? '';
+            document.getElementById('tpSlModalBackdrop').classList.remove('hidden');
+        };
+        window.__closeTpSlModal = function(){
+            editingPosId = null;
+            document.getElementById('tpSlModalBackdrop').classList.add('hidden');
+        };
+        window.__saveTpSl = async function(){
+            if(editingPosId==null) return;
+            const pos = SimFut.positions.find(p => String(p.id) === String(editingPosId));
+            if(!pos) { window.__closeTpSlModal(); return; }
+            const newTp = document.getElementById('tpInputModal').value ? Number(document.getElementById('tpInputModal').value) : null;
+            const newSl = document.getElementById('slInputModal').value ? Number(document.getElementById('slInputModal').value) : null;
+            
+            // Validate TP/SL logic
+            if (newTp && newTp <= 0) {
+                showNotification('❌ Take Profit phải > 0', 'danger');
+                return;
+            }
+            if (newSl && newSl <= 0) {
+                showNotification('❌ Stop Loss phải > 0', 'danger');
+                return;
+            }
+            
+            // Check TP/SL direction for position side
+            if (pos.side === 'LONG') {
+                if (newTp && newTp <= pos.entryPrice) {
+                    showNotification('❌ Take Profit LONG phải > Entry Price', 'danger');
+                    return;
+                }
+                if (newSl && newSl >= pos.entryPrice) {
+                    showNotification('❌ Stop Loss LONG phải < Entry Price', 'danger');
+                    return;
+                }
+            } else { // SHORT
+                if (newTp && newTp >= pos.entryPrice) {
+                    showNotification('❌ Take Profit SHORT phải < Entry Price', 'danger');
+                    return;
+                }
+                if (newSl && newSl <= pos.entryPrice) {
+                    showNotification('❌ Stop Loss SHORT phải > Entry Price', 'danger');
+                    return;
+                }
+            }
+            // Local update
+            pos.tp = newTp; pos.sl = newSl; saveFut();
+            // Backend update if available (needs symbol from pos.symbol or currentSymbol)
+            if(useBackendTrading){
+                try {
+                    console.log('Updating TP/SL for symbol:', pos.symbol || currentSymbol, 'TP:', newTp, 'SL:', newSl);
+                    const r = await fetch('/api/Order/positions/risk',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol: pos.symbol || currentSymbol, takeProfitPrice: newTp, stopLossPrice: newSl }) });
+                    if(!r.ok){
+                        const t = await r.text();
+                        console.error('TP/SL update failed:', t);
+                        alert('Lưu TP/SL thất bại: '+t);
+                    } else {
+                        console.log('TP/SL updated successfully');
+                        showNotification('✅ TP/SL đã được cập nhật', 'success');
+                        // force refresh positions for DB confirmation
+                        setTimeout(()=>refreshBackendState(),300);
+                    }
+                } catch(e){ 
+                    console.error('Update TP/SL backend error:', e); 
+                    alert('Lỗi kết nối khi lưu TP/SL: ' + e.message);
+                }
+            }
+            window.__closeTpSlModal();
+            renderPositions();
+        };
 
         function renderHistory() {
             const histBody = document.getElementById('histBody');
@@ -1208,19 +1861,20 @@
 
             histBody.innerHTML = SimFut.history.map(h => {
                 const pnlCls = h.pnl >= 0 ? 'pnl-positive' : 'pnl-negative';
-                return `<tr>
-                    <td>#${h.id}</td>
-                    <td>${formatTime(h.entryTs)}</td>
-                    <td>${formatTime(h.exitTs)}</td>
-                    <td><span class="position-tag ${h.side.toLowerCase()}">${h.side}</span></td>
-                    <td>${h.qty}</td>
-                    <td>$${formatMoney(h.entryPrice)}</td>
-                    <td>$${formatMoney(h.exitPrice)}</td>
-                    <td class="${pnlCls}">$${formatMoney(h.pnl)}</td>
-                    <td>$${formatMoney(h.fees, 4)}</td>
-                    <td>${h.note || '-'}</td>
-                </tr>`;
-            }).join('') || `<tr><td colspan="10" style="text-align:center; padding: 24px; color: var(--trading-muted);">Chưa có lịch sử</td></tr>`;
+                return '<tr>' +
+                    '<td>#' + h.id + '</td>' +
+                    '<td>' + (h.symbol || currentSymbol) + '</td>' +
+                    '<td>' + formatTime(h.entryTs) + '</td>' +
+                    '<td>' + formatTime(h.exitTs) + '</td>' +
+                    '<td><span class="position-tag ' + h.side.toLowerCase() + '">' + h.side + '</span></td>' +
+                    '<td>' + h.qty + '</td>' +
+                    '<td>$' + formatMoney(h.entryPrice) + '</td>' +
+                    '<td>$' + formatMoney(h.exitPrice) + '</td>' +
+                    '<td class="' + pnlCls + '">$' + formatMoney(h.pnl) + '</td>' +
+                    '<td>$' + formatMoney(h.fees, 4) + '</td>' +
+                    '<td>' + (h.note || '-') + '</td>' +
+                '</tr>';
+            }).join('') || '<tr><td colspan="10" style="text-align:center; padding: 24px; color: var(--trading-muted);">Chưa có lịch sử</td></tr>';
         }
 
         function updateOrderSummary() {
@@ -1228,9 +1882,103 @@
         }
 
         // Global function for buttons
+        async function closeBackendPosition(p){
+            showLoading('Đang đóng vị thế...');
+            showNotification('🔄 Đang đóng vị thế #' + p.id + '...', 'info');
+            
+            try {
+                // Đảm bảo có symbol từ position hoặc fallback currentSymbol
+                const symbol = p.symbol || currentSymbol;
+                console.log('=== CLOSE BACKEND POSITION DEBUG ===');
+                console.log('Position:', p);
+                console.log('Symbol to close:', symbol);
+                console.log('Current symbol:', currentSymbol);
+                
+                if (!symbol) {
+                    hideLoading();
+                    showNotification('❌ Không xác định được symbol để đóng lệnh', 'danger');
+                    return;
+                }
+                
+                // Thử endpoint chuyên dụng /positions/close trước
+                console.log('Attempting close position API call...');
+                let resp = await fetch('/api/Order/positions/close', { 
+                    method:'POST', 
+                    headers:{'Content-Type':'application/json'}, 
+                    body: JSON.stringify({ symbol }) 
+                });
+                
+                console.log('Close position response status:', resp.status);
+                
+                if(!resp.ok){
+                    const errorText = await resp.text();
+                    console.warn('ClosePosition endpoint failed:', errorText, 'fallback to reduceOnly order');
+                    
+                    // Fallback gửi reduce-only order thủ công
+                    const body = {
+                        symbol,
+                        side: p.side === 'LONG' ? 0 : 1, // Same side as position for reduce-only (0=Buy/LONG, 1=Sell/SHORT)
+                        type: 0, // Market order
+                        quantity: p.qty || p.size || 0, // Support cả qty và size
+                        leverage: p.leverage || 1,
+                        reduceOnly: true
+                    };
+                    console.log('Sending fallback reduceOnly order:', body);
+                    resp = await fetch('/api/Order',{
+                        method:'POST', 
+                        headers:{'Content-Type':'application/json'}, 
+                        body: JSON.stringify(body)
+                    });
+                    
+                    console.log('Fallback order response status:', resp.status);
+                }
+                
+                if(!resp.ok){
+                    const txt = await resp.text();
+                    console.error('Close position failed:', txt);
+                    hideLoading();
+                    showNotification('❌ Đóng lệnh backend lỗi: ' + txt, 'danger');
+                    return;
+                }
+                
+                const result = await resp.json();
+                console.log('Close position response:', result);
+                
+                hideLoading();
+                showNotification('✅ Vị thế #' + p.id + ' đã được đóng thành công!', 'success');
+
+                // Refresh positions multiple times to ensure update
+                setTimeout(()=>refreshBackendState(),300);
+                setTimeout(()=>refreshBackendState(),1000);
+                setTimeout(()=>refreshBackendState(),2000);
+            } catch(e){
+                console.error('closeBackendPosition error', e);
+                hideLoading();
+                showNotification('❌ Lỗi đóng lệnh: ' + e.message, 'danger');
+            }
+        }
         window.__closePos = function(id) {
-            const p = SimFut.positions.find(x => x.id === id);
-            if (p) closePosition(p);
+            console.log('=== CLOSE POSITION DEBUG ===');
+            console.log('Position ID:', id, '(type:', typeof id, ')');
+            console.log('useBackendTrading:', useBackendTrading);
+            console.log('All positions:', SimFut.positions);
+            
+            // Tìm position theo ID (support cả string và number)
+            const p = SimFut.positions.find(x => String(x.id) === String(id));
+            console.log('Found position:', p);
+            
+            if(!p) {
+                alert('Không tìm thấy vị thế với ID: ' + id + '. Available IDs: ' + SimFut.positions.map(x => x.id).join(', '));
+                return;
+            }
+            
+            if(useBackendTrading){ 
+                console.log('Calling closeBackendPosition with:', p);
+                closeBackendPosition(p); 
+            } else { 
+                console.log('Calling local closePosition with:', p);
+                closePosition(p); 
+            }
         };
 
         // Utility functions
@@ -1315,15 +2063,232 @@
             refresh24hTicker();
         }
 
-        // Auto-update intervals
+        // Auto-update intervals với TP/SL checking và margin call
         setInterval(() => {
             renderPositions();
-            // Auto TP/SL logic could go here
+            checkTPSLTriggers();
+            checkMarginCalls();
         }, 500);
 
         setInterval(refresh24hTicker, 30000);
 
+        // TP/SL Auto Trigger System - Với ngăn chặn lặp lại
+        let triggeredPositions = new Set(); // Track positions đã được trigger để tránh lặp lại
+        
+        function checkTPSLTriggers() {
+            if (!latestPrice || SimFut.positions.length === 0) return;
+            
+            [...SimFut.positions].forEach(pos => {
+                const posSymbol = pos.symbol || currentSymbol;
+                const currentPrice = symbolPrices[posSymbol] || (posSymbol === currentSymbol ? latestPrice : null);
+                
+                if (!currentPrice) return;
+                
+                // Kiểm tra nếu position này đã được trigger rồi thì skip
+                const positionKey = `${pos.id}-${posSymbol}`;
+                if (triggeredPositions.has(positionKey)) return;
+                
+                let shouldClose = false;
+                let reason = '';
+                
+                // Check Take Profit
+                if (pos.tp && pos.tp > 0) {
+                    if ((pos.side === 'LONG' && currentPrice >= pos.tp) || 
+                        (pos.side === 'SHORT' && currentPrice <= pos.tp)) {
+                        shouldClose = true;
+                        reason = 'Take Profit Hit at $' + formatMoney(pos.tp);
+                    }
+                }
+                
+                // Check Stop Loss
+                if (pos.sl && pos.sl > 0) {
+                    if ((pos.side === 'LONG' && currentPrice <= pos.sl) || 
+                        (pos.side === 'SHORT' && currentPrice >= pos.sl)) {
+                        shouldClose = true;
+                        reason = 'Stop Loss Hit at $' + formatMoney(pos.sl);
+                    }
+                }
+                
+                if (shouldClose) {
+                    console.log('TP/SL Triggered for position ' + pos.id + ': ' + reason);
+                    
+                    // Đánh dấu position này đã được trigger để tránh lặp lại
+                    triggeredPositions.add(positionKey);
+                    
+                    // Xóa khỏi set sau 30 giây để cho phép trigger lại nếu position vẫn tồn tại
+                    setTimeout(() => {
+                        triggeredPositions.delete(positionKey);
+                    }, 30000);
+                    
+                    if (useBackendTrading) {
+                        // For backend, try to close position
+                        closeBackendPosition(pos);
+                        // Add notification
+                        showNotification('🎯 ' + reason, 'success');
+                    } else {
+                        // Update exit price for local simulation
+                        const originalLatest = latestPrice;
+                        latestPrice = currentPrice; // Temporarily use trigger price
+                        closePosition(pos, reason);
+                        latestPrice = originalLatest; // Restore
+                        // Add notification
+                        showNotification('🎯 ' + reason, 'success');
+                    }
+                }
+            });
+        }
+        
+        // Margin Call System - Với ngăn chặn lặp lại
+        let liquidatedPositions = new Set(); // Track positions đã được liquidate để tránh lặp lại
+        
+        function checkMarginCalls() {
+            if (!latestPrice || SimFut.positions.length === 0) return;
+            
+            [...SimFut.positions].forEach(pos => {
+                const posSymbol = pos.symbol || currentSymbol;
+                const currentPrice = symbolPrices[posSymbol] || (posSymbol === currentSymbol ? latestPrice : null);
+                
+                if (!currentPrice) return;
+                
+                // Kiểm tra nếu position này đã được liquidate rồi thì skip
+                const positionKey = `${pos.id}-${posSymbol}`;
+                if (liquidatedPositions.has(positionKey)) return;
+                
+                // Calculate unrealized PnL
+                const sideSign = pos.side === 'LONG' ? 1 : -1;
+                const uPnL = sideSign * (currentPrice - pos.entryPrice) * pos.qty;
+                
+                // Calculate current equity (margin + PnL)
+                const currentEquity = pos.margin + uPnL;
+                
+                // Calculate minimum margin requirement (using maintenance margin rate)
+                const maintenanceMargin = (currentPrice * pos.qty * SimFut.mmRate) / 100;
+                
+                // Check if position should be liquidated
+                if (currentEquity <= maintenanceMargin) {
+                    console.log('MARGIN CALL! Position ' + pos.id + ' equity: $' + formatMoney(currentEquity) + ', required: $' + formatMoney(maintenanceMargin));
+                    
+                    // Đánh dấu position này đã được liquidate để tránh lặp lại
+                    liquidatedPositions.add(positionKey);
+                    
+                    // Xóa khỏi set sau 60 giây để cho phép check lại nếu cần
+                    setTimeout(() => {
+                        liquidatedPositions.delete(positionKey);
+                    }, 60000);
+                    
+                    const reason = 'Liquidated at $' + formatMoney(currentPrice) + ' (Margin Call)';
+                    
+                    if (useBackendTrading) {
+                        closeBackendPosition(pos);
+                        showNotification('💀 THANH LÝ VỊ THẾ #' + pos.id + ' at $' + formatMoney(currentPrice), 'danger');
+                    } else {
+                        // Force liquidation at current price
+                        const originalLatest = latestPrice;
+                        latestPrice = currentPrice;
+                        closePosition(pos, reason);
+                        latestPrice = originalLatest;
+                        showNotification('💀 THANH LÝ VỊ THẾ #' + pos.id + ' at $' + formatMoney(currentPrice), 'danger');
+                    }
+                    
+                    // Show detailed warning to user
+                    setTimeout(() => {
+                        alert('⚠️ THANH LÝ VỊ THẾ #' + pos.id + '\nSymbol: ' + posSymbol + '\nGiá thanh lý: $' + formatMoney(currentPrice) + '\nLý do: Không đủ margin\nEquity: $' + formatMoney(currentEquity) + ' < Required: $' + formatMoney(maintenanceMargin));
+                    }, 1000);
+                }
+            });
+        }
+
+        // Notification system
+        function showNotification(message, type = 'info') {
+            // Remove existing notifications
+            const existing = document.querySelectorAll('.notification');
+            existing.forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                background: ${type === 'success' ? 'var(--trading-up)' : type === 'danger' ? 'var(--trading-down)' : 'var(--trading-accent)'};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-weight: 600;
+                font-size: 14px;
+                z-index: 9999;
+                max-width: 300px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                animation: slideInRight 0.3s ease-out;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.style.animation = 'slideOutRight 0.3s ease-in';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // Loading overlay system
+        function showLoading(message = 'Đang xử lý...') {
+            hideLoading(); // Remove existing loading first
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'loading-overlay';
+            overlay.id = 'loadingOverlay';
+            
+            overlay.innerHTML = `
+                <div class="loading-card">
+                    <div class="loading-spinner-large"></div>
+                    <div style="color: var(--trading-text); font-weight: 600;">${message}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+        }
+
+        function hideLoading() {
+            const existing = document.getElementById('loadingOverlay');
+            if (existing) {
+                existing.style.animation = 'fadeOut 0.3s ease-in';
+                setTimeout(() => existing.remove(), 300);
+            }
+        }
+
+        // Button loading state
+        function setButtonLoading(buttonId, loading = true) {
+            const btn = document.getElementById(buttonId);
+            if (!btn) return;
+            
+            if (loading) {
+                btn.classList.add('btn-loading');
+                btn.disabled = true;
+                // Store original text
+                if (!btn.dataset.originalText) {
+                    btn.dataset.originalText = btn.innerHTML;
+                }
+                btn.innerHTML = `<span>${btn.dataset.originalText}</span>`;
+            } else {
+                btn.classList.remove('btn-loading');
+                btn.disabled = false;
+                if (btn.dataset.originalText) {
+                    btn.innerHTML = btn.dataset.originalText;
+                }
+            }
+        }
+
+        setInterval(refresh24hTicker, 30000);
+
         window.addEventListener('resize', () => chart?.applyOptions({ autoSize: true }));
+
+        // Khởi động phát hiện backend sau khi DOM sẵn sàng
+        document.addEventListener('DOMContentLoaded', ()=>{
+            detectBackendTrading();
+        });
     </script>
 }
 
@@ -1334,12 +2299,14 @@
             <div class="price-display">
                 <div class="current-price" id="lastPrice">$0.00</div>
                 <div class="price-change up" id="pctChange">+0.00%</div>
+    <div id="backendModeBadge" style="display:none; background:#1f6feb; color:#fff; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:600; letter-spacing:.5px;">BACKEND</div>
             </div>
             <div class="connection-status" id="connectionStatus">
                 <div class="status-dot status-connecting"></div>
                 <span class="status-text">Connecting</span>
             </div>
         </div>
+        
 
         <div class="trading-header-right">
             <select id="symbol-selector" class="symbol-selector">
@@ -1379,6 +2346,17 @@
             <div class="control-section">
                 <div class="section-title">📊 Place Order</div>
                 <div class="input-grid">
+                    <div class="input-group">
+                        <label class="input-label">Order Type</label>
+                        <select id="orderTypeSelect" class="input-field" style="padding:11px 16px;">
+                            <option value="0" selected>Market</option>
+                            <option value="1">Limit</option>
+                        </select>
+                    </div>
+                    <div class="input-group" id="limitPriceGroup" style="display:none;">
+                        <label class="input-label">Limit Price</label>
+                        <input type="number" id="limitPriceInput" class="input-field" step="0.1" placeholder="65000" />
+                    </div>
                     <div class="input-group">
                         <label class="input-label">Quantity</label>
                         <input type="number" id="qtyInput" class="input-field" min="0.0001" step="0.0001" value="0.001" placeholder="0.001" />
@@ -1421,6 +2399,7 @@
                     <thead>
                         <tr>
                             <th>ID</th>
+                            <th>Symbol</th>
                             <th>Side</th>
                             <th>Size</th>
                             <th>Entry Price</th>
@@ -1443,6 +2422,7 @@
                     <thead>
                         <tr>
                             <th>ID</th>
+                            <th>Symbol</th>
                             <th>Open Time</th>
                             <th>Close Time</th>
                             <th>Side</th>
@@ -1473,6 +2453,25 @@
             <div class="legend-item">
                 <span>Data: Real-time Binance API • Press R to refresh</span>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- TP/SL Modal -->
+<div id="tpSlModalBackdrop" class="tp-sl-modal-backdrop hidden">
+    <div class="tp-sl-modal">
+        <h3>Cập nhật TP / SL</h3>
+        <div class="field">
+            <label>Take Profit</label>
+            <input type="number" id="tpInputModal" step="0.1" placeholder="Ví dụ: 70000" />
+        </div>
+        <div class="field">
+            <label>Stop Loss</label>
+            <input type="number" id="slInputModal" step="0.1" placeholder="Ví dụ: 60000" />
+        </div>
+        <div class="actions">
+            <button class="btn btn-outline" onclick="window.__closeTpSlModal()">Hủy</button>
+            <button class="btn btn-primary" onclick="window.__saveTpSl()">Lưu</button>
         </div>
     </div>
 </div>

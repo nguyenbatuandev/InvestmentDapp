@@ -1,19 +1,15 @@
-﻿using InvestDapp.Infrastructure.Services.Cache;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.SignalR;
 
 namespace InvestDapp.Application.Services.Trading
 {
     public class TradingHub : Hub
     {
-        private readonly IRedisCacheService _cacheService;
         private readonly ILogger<TradingHub> _logger;
 
         public TradingHub(
-            IRedisCacheService cacheService,
             ILogger<TradingHub> logger)
         {
-            _cacheService = cacheService;
             _logger = logger;
         }
 
@@ -22,14 +18,6 @@ namespace InvestDapp.Application.Services.Trading
             try
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, $"symbol:{symbol}");
-                
-                // Send current data to the new client
-                var markPrice = await _cacheService.GetMarkPriceAsync(symbol);
-                if (markPrice != null)
-                {
-                    await Clients.Caller.SendAsync("markPrice", markPrice);
-                }
-                
                 _logger.LogDebug("Client {ConnectionId} joined symbol room: {Symbol}", Context.ConnectionId, symbol);
             }
             catch (Exception ex)
@@ -81,10 +69,9 @@ namespace InvestDapp.Application.Services.Trading
         {
             try
             {
-                var klines = await _cacheService.GetKlineDataAsync(symbol, interval);
-                await Clients.Caller.SendAsync("klineInit", new { symbol, interval, data = klines });
-                
-                _logger.LogDebug("Sent kline history for {Symbol} {Interval} to {ConnectionId}", symbol, interval, Context.ConnectionId);
+                // Cache removed: return empty array placeholder
+                await Clients.Caller.SendAsync("klineInit", new { symbol, interval, data = Array.Empty<object>() });
+                _logger.LogDebug("Sent empty kline history (cache disabled) for {Symbol} {Interval} to {ConnectionId}", symbol, interval, Context.ConnectionId);
             }
             catch (Exception ex)
             {

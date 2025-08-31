@@ -29,7 +29,6 @@ builder.Services.Configure<BlockchainConfig>(builder.Configuration.GetSection("B
 // =======================
 builder.Services.Configure<BinanceConfig>(builder.Configuration.GetSection("Binance"));
 builder.Services.Configure<TradingConfig>(builder.Configuration.GetSection("Trading"));
-builder.Services.Configure<RedisConfig>(builder.Configuration.GetSection("Redis"));
 
 // =======================
 // 3. CẤU HÌNH DATABASE (DbContext)
@@ -45,42 +44,6 @@ builder.Services.AddMemoryCache();
 // =======================
 // 5. CẤU HÌNH REDIS WITH RESILIENCE (OPTIONAL)
 // =======================
-builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
-{
-    var config = provider.GetRequiredService<IOptions<RedisConfig>>().Value;
-    var logger = provider.GetRequiredService<ILogger<Program>>();
-    
-    try
-    {
-        var configurationOptions = ConfigurationOptions.Parse(config.ConnectionString);
-        configurationOptions.AbortOnConnectFail = false;
-        configurationOptions.ConnectRetry = 3;
-        configurationOptions.ConnectTimeout = 5000;
-        configurationOptions.SyncTimeout = 5000;
-        configurationOptions.ReconnectRetryPolicy = new ExponentialRetry(1000);
-        
-        var multiplexer = ConnectionMultiplexer.Connect(configurationOptions);
-        
-        multiplexer.ConnectionFailed += (sender, e) =>
-        {
-            logger.LogWarning("Redis connection failed: {Exception}", e.Exception?.Message);
-        };
-        
-        multiplexer.ConnectionRestored += (sender, e) =>
-        {
-            logger.LogInformation("Redis connection restored");
-        };
-        
-        logger.LogInformation("Redis connected successfully");
-        return multiplexer;
-    }
-    catch (Exception ex)
-    {
-        logger.LogWarning(ex, "Failed to connect to Redis. Will use in-memory cache as fallback.");
-        // Return null to indicate Redis is not available
-        return null!;
-    }
-});
 
 // =======================
 // 6. ĐĂNG KÝ WEB3 LÀ SINGLETON
@@ -101,11 +64,12 @@ builder.Services.AddHttpContextAccessor();
 // =======================
 builder.Services.AddScoped<IBinanceRestService, BinanceRestService>();
 builder.Services.AddScoped<IBinanceWebSocketService, BinanceWebSocketService>();
-builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
 builder.Services.AddScoped<IInternalOrderService, InternalOrderService>();
+builder.Services.AddScoped<IMarketPriceService, MarketPriceService>();
 
-// Register MarketDataWorker as hosted service
+// Register hosted services
 builder.Services.AddHostedService<MarketDataWorker>();
+builder.Services.AddHostedService<TradingEngine>();
 // Resolve ambiguity by using fully qualified names for the conflicting types
 builder.Services.AddScoped<InvestDapp.Infrastructure.Services.Binance.IBinanceWebSocketService, InvestDapp.Infrastructure.Services.Binance.BinanceWebSocketService>();
 // =======================

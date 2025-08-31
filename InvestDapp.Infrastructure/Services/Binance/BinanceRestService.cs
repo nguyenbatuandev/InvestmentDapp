@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Globalization;
 
 namespace InvestDapp.Infrastructure.Services.Binance
 {
@@ -63,8 +64,8 @@ namespace InvestDapp.Infrastructure.Services.Binance
                         result.Add(new SymbolInfo
                         {
                             Symbol = symbolName,
-                            PriceFilter = decimal.Parse(priceFilter?["tickSize"]?.ToString() ?? "0.01"),
-                            LotSizeFilter = decimal.Parse(lotSizeFilter?["stepSize"]?.ToString() ?? "0.001"),
+                            PriceFilter = decimal.Parse(priceFilter?["tickSize"]?.ToString() ?? "0.01", CultureInfo.InvariantCulture),
+                            LotSizeFilter = decimal.Parse(lotSizeFilter?["stepSize"]?.ToString() ?? "0.001", CultureInfo.InvariantCulture),
                             MaxLeverage = 125, // Will be updated from leverageBracket endpoint
                             Status = symbol["status"]?.ToString() ?? "TRADING"
                         });
@@ -99,11 +100,11 @@ namespace InvestDapp.Infrastructure.Services.Binance
                         Symbol = symbol,
                         Interval = interval,
                         OpenTime = long.Parse(item[0]?.ToString() ?? "0"),
-                        Open = decimal.Parse(item[1]?.ToString() ?? "0"),
-                        High = decimal.Parse(item[2]?.ToString() ?? "0"),
-                        Low = decimal.Parse(item[3]?.ToString() ?? "0"),
-                        Close = decimal.Parse(item[4]?.ToString() ?? "0"),
-                        Volume = decimal.Parse(item[5]?.ToString() ?? "0"),
+                        Open = decimal.Parse(item[1]?.ToString() ?? "0", CultureInfo.InvariantCulture),
+                        High = decimal.Parse(item[2]?.ToString() ?? "0", CultureInfo.InvariantCulture),
+                        Low = decimal.Parse(item[3]?.ToString() ?? "0", CultureInfo.InvariantCulture),
+                        Close = decimal.Parse(item[4]?.ToString() ?? "0", CultureInfo.InvariantCulture),
+                        Volume = decimal.Parse(item[5]?.ToString() ?? "0", CultureInfo.InvariantCulture),
                         CloseTime = long.Parse(item[6]?.ToString() ?? "0"),
                         IsKlineClosed = true
                     };
@@ -141,9 +142,9 @@ namespace InvestDapp.Infrastructure.Services.Binance
                     var markPrice = new MarkPriceData
                     {
                         Symbol = symbol,
-                        MarkPrice = decimal.Parse(item["markPrice"]?.ToString() ?? "0"),
-                        IndexPrice = decimal.Parse(item["indexPrice"]?.ToString() ?? "0"),
-                        FundingRate = decimal.Parse(item["lastFundingRate"]?.ToString() ?? "0"),
+                        MarkPrice = decimal.Parse(item["markPrice"]?.ToString() ?? "0", CultureInfo.InvariantCulture),
+                        IndexPrice = decimal.Parse(item["indexPrice"]?.ToString() ?? "0", CultureInfo.InvariantCulture),
+                        FundingRate = decimal.Parse(item["lastFundingRate"]?.ToString() ?? "0", CultureInfo.InvariantCulture),
                         NextFundingTime = long.Parse(item["nextFundingTime"]?.ToString() ?? "0"),
                         EventTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                     };
@@ -173,9 +174,9 @@ namespace InvestDapp.Infrastructure.Services.Binance
                 return new MarkPriceData
                 {
                     Symbol = symbol,
-                    MarkPrice = decimal.Parse(data["markPrice"]?.ToString() ?? "0"),
-                    IndexPrice = decimal.Parse(data["indexPrice"]?.ToString() ?? "0"),
-                    FundingRate = decimal.Parse(data["lastFundingRate"]?.ToString() ?? "0"),
+                    MarkPrice = decimal.Parse(data["markPrice"]?.ToString() ?? "0", CultureInfo.InvariantCulture),
+                    IndexPrice = decimal.Parse(data["indexPrice"]?.ToString() ?? "0", CultureInfo.InvariantCulture),
+                    FundingRate = decimal.Parse(data["lastFundingRate"]?.ToString() ?? "0", CultureInfo.InvariantCulture),
                     NextFundingTime = long.Parse(data["nextFundingTime"]?.ToString() ?? "0"),
                     EventTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                 };
@@ -208,7 +209,7 @@ namespace InvestDapp.Infrastructure.Services.Binance
                     var fundingRate = new FundingRateData
                     {
                         Symbol = symbol,
-                        FundingRate = decimal.Parse(item["fundingRate"]?.ToString() ?? "0"),
+                        FundingRate = decimal.Parse(item["fundingRate"]?.ToString() ?? "0", CultureInfo.InvariantCulture),
                         FundingTime = long.Parse(item["fundingTime"]?.ToString() ?? "0")
                     };
                     
@@ -245,14 +246,14 @@ namespace InvestDapp.Infrastructure.Services.Binance
                     var stats = new MarketStats
                     {
                         Symbol = symbol,
-                        LastPrice = decimal.Parse(item["lastPrice"]?.ToString() ?? "0"),
-                        PriceChange = decimal.Parse(item["priceChange"]?.ToString() ?? "0"),
-                        PriceChangePercent = decimal.Parse(item["priceChangePercent"]?.ToString() ?? "0"),
-                        Volume = decimal.Parse(item["volume"]?.ToString() ?? "0"),
-                        QuoteVolume = decimal.Parse(item["quoteVolume"]?.ToString() ?? "0"),
-                        High24h = decimal.Parse(item["highPrice"]?.ToString() ?? "0"),
-                        Low24h = decimal.Parse(item["lowPrice"]?.ToString() ?? "0"),
-                        OpenPrice = decimal.Parse(item["openPrice"]?.ToString() ?? "0"),
+                        LastPrice = decimal.Parse(item["lastPrice"]?.ToString() ?? "0", CultureInfo.InvariantCulture),
+                        PriceChange = decimal.Parse(item["priceChange"]?.ToString() ?? "0", CultureInfo.InvariantCulture),
+                        PriceChangePercent = decimal.Parse(item["priceChangePercent"]?.ToString() ?? "0", CultureInfo.InvariantCulture),
+                        Volume = decimal.Parse(item["volume"]?.ToString() ?? "0", CultureInfo.InvariantCulture),
+                        QuoteVolume = decimal.Parse(item["quoteVolume"]?.ToString() ?? "0", CultureInfo.InvariantCulture),
+                        High24h = decimal.Parse(item["highPrice"]?.ToString() ?? "0", CultureInfo.InvariantCulture),
+                        Low24h = decimal.Parse(item["lowPrice"]?.ToString() ?? "0", CultureInfo.InvariantCulture),
+                        OpenPrice = decimal.Parse(item["openPrice"]?.ToString() ?? "0", CultureInfo.InvariantCulture),
                         Count = long.Parse(item["count"]?.ToString() ?? "0")
                     };
                     

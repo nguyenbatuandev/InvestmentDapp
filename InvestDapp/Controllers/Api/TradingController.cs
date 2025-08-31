@@ -1,6 +1,5 @@
 ﻿using InvestDapp.Application.Services.Trading;
 using InvestDapp.Infrastructure.Services.Binance;
-using InvestDapp.Infrastructure.Services.Cache;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InvestDapp.Controllers.Api
@@ -10,18 +9,15 @@ namespace InvestDapp.Controllers.Api
     public class TradingController : ControllerBase
     {
         private readonly InvestDapp.Infrastructure.Services.Binance.IBinanceRestService _binanceService;
-        private readonly IRedisCacheService _cacheService;
         private readonly IInternalOrderService _orderService;
         private readonly ILogger<TradingController> _logger;
 
         public TradingController(
             InvestDapp.Infrastructure.Services.Binance.IBinanceRestService binanceService,
-            IRedisCacheService cacheService,
             IInternalOrderService orderService,
             ILogger<TradingController> logger)
         {
             _binanceService = binanceService;
-            _cacheService = cacheService;
             _orderService = orderService;
             _logger = logger;
         }
@@ -31,16 +27,7 @@ namespace InvestDapp.Controllers.Api
         {
             try
             {
-                // Try cache first
-                var cachedSymbols = await _cacheService.GetSymbolInfoAsync();
-                if (cachedSymbols.Count > 0)
-                {
-                    return Ok(cachedSymbols);
-                }
-
-                // Fallback to API
                 var symbols = await _binanceService.GetExchangeInfoAsync();
-                await _cacheService.SetSymbolInfoAsync(symbols, TimeSpan.FromHours(6));
                 
                 return Ok(symbols);
             }
@@ -64,16 +51,7 @@ namespace InvestDapp.Controllers.Api
                     return BadRequest(new { error = "Symbol is required" });
                 }
 
-                // Try cache first
-                var cachedKlines = await _cacheService.GetKlineDataAsync(symbol, interval);
-                if (cachedKlines.Count > 0)
-                {
-                    return Ok(cachedKlines.TakeLast(limit));
-                }
-
-                // Fallback to API
                 var klines = await _binanceService.GetKlinesAsync(symbol, interval, limit);
-                await _cacheService.SetKlineDataAsync(symbol, interval, klines, TimeSpan.FromHours(1));
                 
                 return Ok(klines);
             }
@@ -92,18 +70,8 @@ namespace InvestDapp.Controllers.Api
                 if (!string.IsNullOrEmpty(symbol))
                 {
                     // Single symbol
-                    var cachedPrice = await _cacheService.GetMarkPriceAsync(symbol);
-                    if (cachedPrice != null)
-                    {
-                        return Ok(cachedPrice);
-                    }
-
                     var markPrice = await _binanceService.GetMarkPriceAsync(symbol);
-                    if (markPrice != null)
-                    {
-                        await _cacheService.SetMarkPriceAsync(symbol, markPrice);
-                        return Ok(markPrice);
-                    }
+                    if (markPrice != null) return Ok(markPrice);
 
                     return NotFound(new { error = "Symbol not found" });
                 }
@@ -141,16 +109,7 @@ namespace InvestDapp.Controllers.Api
         {
             try
             {
-                // Try cache first
-                var cachedStats = await _cacheService.GetMarketStatsAsync();
-                if (cachedStats.Count > 0)
-                {
-                    return Ok(cachedStats);
-                }
-
-                // Fallback to API
                 var stats = await _binanceService.Get24hTickerStatsAsync();
-                await _cacheService.SetMarketStatsAsync(stats, TimeSpan.FromMinutes(5));
                 
                 return Ok(stats);
             }
