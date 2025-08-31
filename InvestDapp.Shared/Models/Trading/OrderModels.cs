@@ -110,6 +110,8 @@
         public decimal? StopPrice { get; set; }
     public decimal? TakeProfitPrice { get; set; }
     public decimal? StopLossPrice { get; set; }
+    // Optional: when set, reduce-only execution should target this specific DB position id first
+    public string? TargetPositionId { get; set; }
     public bool ReduceOnly { get; set; } = false;
         public int Leverage { get; set; } = 1;
         public OrderStatus Status { get; set; } = OrderStatus.Pending;

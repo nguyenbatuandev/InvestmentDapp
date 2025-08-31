@@ -1,9 +1,18 @@
 ﻿@{
-    ViewData["Title"] = "Chart - " + ViewBag.Symbol;
-    Layout = "~/Pages/_Layout.cshtml";
+    Layout = null;
 }
 
-@section Styles {
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group Chat UI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@latest/index.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
     <style>
         *, *::before, *::after {
             box-sizing: border-box;
@@ -29,6 +38,12 @@
             --trading-yellow: #f59e0b;
             --trading-blue: #0ea5e9;
             --trading-purple: #8b5cf6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body.light {
@@ -116,6 +131,27 @@
             .price-change.down {
                 color: var(--trading-down);
                 background: rgba(255, 71, 71, 0.1);
+            }
+
+        .total-pnl-badge {
+            font-size: 14px;
+            font-weight: 700;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-family: 'SF Mono', Monaco, Consolas, monospace;
+            background: rgba(255,255,255,0.04);
+            color: var(--trading-text);
+            border: 1px solid var(--trading-border);
+        }
+
+            .total-pnl-badge.up {
+                color: var(--trading-up);
+                background: rgba(0,212,170,0.06);
+            }
+
+            .total-pnl-badge.down {
+                color: var(--trading-down);
+                background: rgba(255,71,71,0.06);
             }
 
         .connection-status {
@@ -304,10 +340,10 @@
             transition: all 0.3s ease;
         }
 
-        .control-section:hover {
-            border-color: var(--trading-accent);
-            box-shadow: 0 4px 16px rgba(88, 166, 255, 0.1);
-        }
+            .control-section:hover {
+                border-color: var(--trading-accent);
+                box-shadow: 0 4px 16px rgba(88, 166, 255, 0.1);
+            }
 
         .section-title {
             font-size: 15px;
@@ -363,11 +399,11 @@
             text-align: center;
         }
 
-        .order-type-btn.active {
-            background: var(--trading-accent);
-            color: white;
-            box-shadow: 0 2px 8px rgba(88, 166, 255, 0.3);
-        }
+            .order-type-btn.active {
+                background: var(--trading-accent);
+                color: white;
+                box-shadow: 0 2px 8px rgba(88, 166, 255, 0.3);
+            }
 
         #order-form-body {
             display: flex;
@@ -380,15 +416,15 @@
             gap: 10px;
         }
 
-        .tp-sl-group .input-group {
-            flex: 1;
-            min-width: 0;
-        }
+            .tp-sl-group .input-group {
+                flex: 1;
+                min-width: 0;
+            }
 
-        .tp-sl-group .input-field {
-            width: 100%;
-            min-width: 0;
-        }
+            .tp-sl-group .input-field {
+                width: 100%;
+                min-width: 0;
+            }
 
         /* Form inputs */
         .input-grid {
@@ -615,27 +651,67 @@
                 color: var(--trading-down);
             }
 
-            /* Inline TP/SL edit chips */
-            .tp-sl-edit {
-                display: flex;
-                gap:4px;
-                align-items:center;
+        /* Inline TP/SL edit chips */
+        .tp-sl-edit {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .tp-sl-value {
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: var(--trading-panel);
+            border: 1px solid var(--trading-border);
+            font-size: 11px;
+            cursor: pointer;
+            transition: .15s;
+        }
+
+            .tp-sl-value:hover {
+                border-color: var(--trading-accent);
+                color: var(--trading-accent);
             }
-            .tp-sl-value {
-                padding:2px 6px;
-                border-radius:4px;
-                background:var(--trading-panel);
-                border:1px solid var(--trading-border);
-                font-size:11px;
-                cursor:pointer;
-                transition:.15s;
-            }
-            .tp-sl-value:hover { border-color: var(--trading-accent); color: var(--trading-accent); }
-            .tp-sl-input { width:70px; background:var(--trading-panel); border:1px solid var(--trading-accent); color:var(--trading-text); border-radius:4px; padding:2px 4px; font-size:11px; }
-            .tp-sl-save { background:var(--trading-up); color:#fff; border:none; padding:2px 6px; border-radius:4px; font-size:11px; cursor:pointer; }
-            .tp-sl-cancel { background:var(--trading-down); color:#fff; border:none; padding:2px 4px; border-radius:4px; font-size:11px; cursor:pointer; }
-            .pos-actions { display:flex; gap:4px; }
-            .control-btn.inline { padding:4px 8px; font-size:11px; }
+
+        .tp-sl-input {
+            width: 70px;
+            background: var(--trading-panel);
+            border: 1px solid var(--trading-accent);
+            color: var(--trading-text);
+            border-radius: 4px;
+            padding: 2px 4px;
+            font-size: 11px;
+        }
+
+        .tp-sl-save {
+            background: var(--trading-up);
+            color: #fff;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .tp-sl-cancel {
+            background: var(--trading-down);
+            color: #fff;
+            border: none;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .pos-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .control-btn.inline {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
 
         .pnl-positive {
             color: var(--trading-up);
@@ -652,9 +728,11 @@
             .trading-container {
                 flex-direction: column;
             }
+
             .trading-sidebar {
                 width: 100%;
             }
+
             .chart-container {
                 height: 500px;
                 flex: none;
@@ -761,6 +839,7 @@
                 opacity: 0;
                 transform: translateX(100%);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
@@ -772,133 +851,223 @@
                 opacity: 1;
                 transform: translateX(0);
             }
+
             to {
                 opacity: 0;
                 transform: translateX(100%);
             }
         }
 
-    /* TP/SL Modal */
-    .tp-sl-modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:3000; }
-    .tp-sl-modal { background:var(--trading-panel); border:1px solid var(--trading-border); border-radius:14px; width:360px; padding:24px; box-shadow:0 12px 40px rgba(0,0,0,.45); animation: slideIn .35s; }
-    .tp-sl-modal h3 { margin:0 0 12px; font-size:18px; font-weight:700; }
-    .tp-sl-modal .field { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
-    .tp-sl-modal label { font-size:12px; font-weight:600; letter-spacing:.5px; color:var(--trading-muted); text-transform:uppercase; }
-    .tp-sl-modal input { background:var(--trading-panel-light); border:1px solid var(--trading-border); border-radius:8px; padding:10px 12px; color:var(--trading-text); font-family:'SF Mono',monospace; }
-    .tp-sl-modal input:focus { outline:none; border-color:var(--trading-accent); box-shadow:0 0 0 3px rgba(88,166,255,.15); }
-    .tp-sl-modal .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:4px; }
-    .btn { cursor:pointer; border:none; padding:10px 16px; font-weight:600; border-radius:8px; font-size:13px; letter-spacing:.3px; }
-    .btn-primary { background:var(--trading-accent); color:#fff; }
-    .btn-primary:hover { filter:brightness(1.1); }
-    .btn-outline { background:transparent; border:1px solid var(--trading-border); color:var(--trading-text); }
-    .btn-outline:hover { border-color:var(--trading-accent); color:var(--trading-accent); }
-    .hidden { display:none !important; }
-
-    /* TP/SL modal inline errors */
-    .tp-sl-modal .field { position: relative; }
-    .tp-sl-modal .field .error {
-        color: #ff6b6b;
-        font-size: 12px;
-        margin-top: 6px;
-        display: block;
-    }
-
-    /* Loading spinner */
-    .loading-spinner {
-        display: inline-block;
-        width: 16px;
-        height: 16px;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        border-top-color: #fff;
-        animation: spin 0.8s ease-in-out infinite;
-        margin-right: 8px;
-    }
-
-    .loading-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        backdrop-filter: blur(4px);
-    }
-
-    .loading-card {
-        background: var(--trading-panel);
-        border: 1px solid var(--trading-border);
-        border-radius: 12px;
-        padding: 24px;
-        text-align: center;
-        min-width: 200px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        animation: scaleIn 0.3s ease-out;
-    }
-
-    .loading-spinner-large {
-        width: 40px;
-        height: 40px;
-        border: 3px solid rgba(88, 166, 255, 0.3);
-        border-radius: 50%;
-        border-top-color: var(--trading-accent);
-        animation: spin 1s linear infinite;
-        margin: 0 auto 16px;
-    }
-
-    @@keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-
-    @@keyframes scaleIn {
-        from {
-            opacity: 0;
-            transform: scale(0.9);
+        /* TP/SL Modal */
+        .tp-sl-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
         }
-        to {
-            opacity: 1;
-            transform: scale(1);
+
+        .tp-sl-modal {
+            background: var(--trading-panel);
+            border: 1px solid var(--trading-border);
+            border-radius: 14px;
+            width: 360px;
+            padding: 24px;
+            box-shadow: 0 12px 40px rgba(0,0,0,.45);
+            animation: slideIn .35s;
         }
-    }
 
-    @@keyframes fadeOut {
-        from {
-            opacity: 1;
+            .tp-sl-modal h3 {
+                margin: 0 0 12px;
+                font-size: 18px;
+                font-weight: 700;
+            }
+
+            .tp-sl-modal .field {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                margin-bottom: 14px;
+            }
+
+            .tp-sl-modal label {
+                font-size: 12px;
+                font-weight: 600;
+                letter-spacing: .5px;
+                color: var(--trading-muted);
+                text-transform: uppercase;
+            }
+
+            .tp-sl-modal input {
+                background: var(--trading-panel-light);
+                border: 1px solid var(--trading-border);
+                border-radius: 8px;
+                padding: 10px 12px;
+                color: var(--trading-text);
+                font-family: 'SF Mono',monospace;
+            }
+
+                .tp-sl-modal input:focus {
+                    outline: none;
+                    border-color: var(--trading-accent);
+                    box-shadow: 0 0 0 3px rgba(88,166,255,.15);
+                }
+
+            .tp-sl-modal .actions {
+                display: flex;
+                gap: 10px;
+                justify-content: flex-end;
+                margin-top: 4px;
+            }
+
+        .btn {
+            cursor: pointer;
+            border: none;
+            padding: 10px 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            font-size: 13px;
+            letter-spacing: .3px;
         }
-        to {
-            opacity: 0;
+
+        .btn-primary {
+            background: var(--trading-accent);
+            color: #fff;
         }
-    }
 
-    /* Button loading states */
-    .btn-loading {
-        pointer-events: none;
-        opacity: 0.8;
-        position: relative;
-    }
+            .btn-primary:hover {
+                filter: brightness(1.1);
+            }
 
-    .btn-loading::before {
-        content: '';
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        width: 16px;
-        height: 16px;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        border-top-color: #fff;
-        animation: spin 0.8s linear infinite;
-    }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--trading-border);
+            color: var(--trading-text);
+        }
 
-    .btn-loading span {
-        opacity: 0;
-    }
+            .btn-outline:hover {
+                border-color: var(--trading-accent);
+                color: var(--trading-accent);
+            }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* TP/SL modal inline errors */
+        .tp-sl-modal .field {
+            position: relative;
+        }
+
+            .tp-sl-modal .field .error {
+                color: #ff6b6b;
+                font-size: 12px;
+                margin-top: 6px;
+                display: block;
+            }
+
+        /* Loading spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s ease-in-out infinite;
+            margin-right: 8px;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+        }
+
+        .loading-card {
+            background: var(--trading-panel);
+            border: 1px solid var(--trading-border);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            min-width: 200px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            animation: scaleIn 0.3s ease-out;
+        }
+
+        .loading-spinner-large {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(88, 166, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--trading-accent);
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @@keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @@keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @@keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
+        }
+
+        /* Button loading states */
+        .btn-loading {
+            pointer-events: none;
+            opacity: 0.8;
+            position: relative;
+        }
+
+            .btn-loading::before {
+                content: '';
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                width: 16px;
+                height: 16px;
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                border-top-color: #fff;
+                animation: spin 0.8s linear infinite;
+            }
+
+            .btn-loading span {
+                opacity: 0;
+            }
     </style>
-}
+</head>
+<body>
 
-@section Scripts {
     <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
     <script>
@@ -920,6 +1089,7 @@
         const FUT_LS_KEY = 'fut_sim_state_v2';
         const SimFut = {
             balance: 10000,
+            initialBalance: 10000, // preserved baseline for Net PnL calculations
             feeRate: 0.04,
             mmRate: 0.5,
             positions: [],
@@ -1028,9 +1198,9 @@
             const close = parseFloat(k.close);
             const isUp = close >= open;
             const color = isUp ? '#00d4aa' : '#ff4747';
-            
+
             const rawVolume = parseFloat(k.volume);
-            
+
             return {
                 time: Math.floor(k.openTime / 1000),
                 value: rawVolume,
@@ -1045,7 +1215,7 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const data = await response.json();
-                
+
                 if (!data || data.length === 0) {
                     updateConnectionStatus({ status: 'disconnected' });
                     return;
@@ -1065,7 +1235,7 @@
                 }
 
                 updateConnectionStatus({ status: 'connected' });
-                
+
                 startRealtimePolling();
 
             } catch (error) {
@@ -1078,7 +1248,7 @@
         let realtimeInterval;
         function startRealtimePolling() {
             if (realtimeInterval) clearInterval(realtimeInterval);
-            
+
             realtimeInterval = setInterval(async () => {
                 try {
                     const response = await fetch(`${API_BASE}/klines?symbol=${SYMBOL}&interval=${currentInterval}&limit=1`);
@@ -1088,10 +1258,10 @@
                             const latestKline = data[0];
                             const candle = klineToCandle(latestKline);
                             const volume = klineToVolume(latestKline);
-                            
+
                             candleSeries.update(candle);
                             volumeSeries.update(volume);
-                            
+
                             const newPrice = normalizeSymbolPrice(parseFloat(latestKline.close), currentSymbol);
                             if (newPrice !== latestPrice) {
                                 latestPrice = newPrice;
@@ -1123,13 +1293,13 @@
                 connection.on("markPrice", (data) => {
                     const norm = normalizeSymbolPrice(parseFloat(data.markPrice), data.symbol);
                     symbolPrices[data.symbol] = norm;
-                    
+
                     if (data.symbol === SYMBOL) {
                         markPriceData = { ...data, markPrice: norm };
                         latestPrice = norm;
                         updatePriceTicker(norm);
                     }
-                    
+
                     renderPositions();
                 });
 
@@ -1161,9 +1331,9 @@
 
         async function subscribeToPositionSymbols() {
             if (!connection || connection.state !== 'Connected') return;
-            
+
             const positionSymbols = new Set(SimFut.positions.map(p => p.symbol || currentSymbol));
-            
+
             for (const symbol of positionSymbols) {
                 if (!subscribedSymbols.has(symbol)) {
                     try {
@@ -1179,7 +1349,7 @@
 
         function startPositionUpdates() {
             if (positionUpdateInterval) clearInterval(positionUpdateInterval);
-            
+
             positionUpdateInterval = setInterval(() => {
                 if (SimFut.positions.length > 0) renderPositions();
             }, 2000);
@@ -1265,7 +1435,7 @@
                     const orderType = btn.dataset.type;
                     document.querySelectorAll('.order-type-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-                    
+
                     const limitGrp = document.getElementById('limitPriceGroup');
                     if(limitGrp){
                         limitGrp.style.display = (orderType === '1' ? 'flex' : 'none');
@@ -1294,7 +1464,7 @@
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                     link.classList.add('active');
                     document.getElementById(tabName)?.classList.add('active');
-                    
+
                     if (tabName === 'history' && useBackendTrading) {
                         await refreshBackendState();
                     }
@@ -1347,7 +1517,7 @@
             if (!raw) return;
             try {
                 const d = JSON.parse(raw);
-                for (const k of ['balance','feeRate','mmRate','nextId']) if (d[k] != null) SimFut[k] = d[k];
+                for (const k of ['balance','initialBalance','feeRate','mmRate','nextId']) if (d[k] != null) SimFut[k] = d[k];
                 if (Array.isArray(d.positions)) SimFut.positions = d.positions;
                 if (Array.isArray(d.history)) SimFut.history = d.history;
                 if (Array.isArray(d.markers)) SimFut.markers = d.markers;
@@ -1384,7 +1554,10 @@
                 ]);
                 if (balRes.ok) {
                     const bal = await balRes.json();
-                    SimFut.balance = bal.availableBalance ?? bal.available ?? bal.AvailableBalance ?? bal.balance ?? SimFut.balance;
+                    const newBal = bal.availableBalance ?? bal.available ?? bal.AvailableBalance ?? bal.balance ?? SimFut.balance;
+                    // if initialBalance not present, set it equal to first fetched balance
+                    if (!Number.isFinite(SimFut.initialBalance)) SimFut.initialBalance = newBal;
+                    SimFut.balance = newBal;
                 }
                 if (posRes.ok) {
                     const positions = await posRes.json();
@@ -1411,7 +1584,7 @@
                     const orders = await ordersRes.json();
                     const completedTrades = [];
                     const closeOrders = orders.filter(o => (o.status === 1 || o.status === 'Filled') && o.reduceOnly === true);
-                    
+
                     for (const closeOrder of closeOrders) {
                         const openOrder = orders.find(o => o.symbol === closeOrder.symbol && o.side === closeOrder.side && (o.status === 1 || o.status === 'Filled') && o.reduceOnly !== true && new Date(o.createdAt) < new Date(closeOrder.createdAt));
                         if (openOrder) {
@@ -1452,38 +1625,38 @@
                     showNotification(`✅ Lệnh ${side} đã được tạo!`, 'success');
                     return;
                 }
-                
+
                 const orderType = Number(document.querySelector('.order-type-btn.active')?.dataset.type || 0);
                 if(orderType !== 0){
                     hideLoading();
                     showNotification('❌ Limit orders only supported with backend.', 'danger');
                     return;
                 }
-                
+
                 if (!latestPrice) { hideLoading(); showNotification('❌ No real-time price.', 'danger'); return; }
-                
+
                 const qty = Math.max(0.0001, Number($('#qtyInput')?.value || 0));
                 const lev = Math.min(125, Math.max(1, Number($('#levInput')?.value || 20)));
                 const price = normalizeSymbolPrice(latestPrice, currentSymbol);
                 const mgn = (price * qty) / lev;
                 const openFee = (price * qty) * (SimFut.feeRate / 100);
                 const need = mgn + openFee;
-                
+
                 if (SimFut.balance < need) { hideLoading(); showNotification('❌ Insufficient balance (need ' + formatMoney(need) + ' USDT)', 'danger'); return; }
-                
+
                 const currentMarginUsed = SimFut.positions.reduce((sum, p) => sum + (p.margin || 0), 0);
                 if (currentMarginUsed + mgn > SimFut.balance * 0.95) { hideLoading(); showNotification('❌ Total margin exceeds safety limit.', 'danger'); return; }
-                
+
                 const tp = Number($('#tpInput')?.value || NaN);
                 const sl = Number($('#slInput')?.value || NaN);
                 const pos = { id: SimFut.nextId++, side, qty, entryPrice: price, entryTs: Date.now(), leverage: lev, margin: mgn, openFee, tp: Number.isFinite(tp) ? tp : null, sl: Number.isFinite(sl) ? sl : null, symbol: currentSymbol };
-                SimFut.balance -= need; SimFut.positions.unshift(pos); saveFut(); 
-                
+                SimFut.balance -= need; SimFut.positions.unshift(pos); saveFut();
+
                 await new Promise(r => setTimeout(r, 500));
                 hideLoading();
                 renderFut();
                 showNotification(`🎉 ${side} position #${pos.id} opened at $${formatMoney(price)}!`, 'success');
-                
+
             } catch (error) {
                 hideLoading();
                 console.error('Open position error:', error);
@@ -1530,15 +1703,15 @@
 
             SimFut.balance += pos.margin + pnlNet;
             SimFut.history.unshift({ ...pos, exitPrice, exitTs: Date.now(), pnl: pnlNet, fees: pos.openFee + closeFee, note: reason });
-            
+
             triggeredPositions.delete(`${pos.id}-${pos.symbol || currentSymbol}`);
             liquidatedPositions.delete(`${pos.id}-${pos.symbol || currentSymbol}`);
-            
+
             SimFut.positions = SimFut.positions.filter(p => p.id !== pos.id);
 
             saveFut();
             renderFut();
-            
+
             const pnlText = pnlNet >= 0 ? '+$' + formatMoney(pnlNet) : '-$' + formatMoney(Math.abs(pnlNet));
             showNotification(`✅ Position #${pos.id} closed. PnL: ${pnlText}`, pnlNet >= 0 ? 'success' : 'danger');
         }
@@ -1547,7 +1720,7 @@
             renderFutHeader();
             renderPositions();
             renderHistory();
-            
+
             if (SimFut.positions.length > 0) {
                 subscribeToPositionSymbols();
                 startPositionUpdates();
@@ -1559,6 +1732,26 @@
         function renderFutHeader() {
             $('#futBalance').textContent = formatMoney(SimFut.balance);
             $('#feeRateView').textContent = SimFut.feeRate.toFixed(2);
+            try {
+                // Unrealized PnL across open positions (mark - entry) signed by side
+                const totalUnreal = SimFut.positions.reduce((acc, p) => {
+                    const posSymbol = p.symbol || currentSymbol;
+                    const mark = symbolPrices[posSymbol] || (posSymbol === currentSymbol ? latestPrice : null) || p.entryPrice;
+                    const u = (p.side === 'LONG' ? 1 : -1) * (mark - p.entryPrice) * p.qty;
+                    return acc + (Number.isFinite(u) ? u : 0);
+                }, 0);
+
+                // Show only total unrealized PnL for open positions
+                const el = document.getElementById('totalPnlBadge');
+                if (el) {
+                    el.textContent = `Open PnL: $${formatMoney(totalUnreal)}`;
+                    el.classList.remove('up','down');
+                    if (totalUnreal > 0) el.classList.add('up');
+                    else if (totalUnreal < 0) el.classList.add('down');
+                }
+            } catch (e) {
+                console.error('renderFutHeader PnL calc error', e);
+            }
         }
 
         function renderPositions() {
@@ -1566,20 +1759,20 @@
             if (!posBody) return;
 
             const missingPriceSymbols = new Set();
-            
+
             posBody.innerHTML = SimFut.positions.map(p => {
                 const positionSymbol = p.symbol || currentSymbol;
                 let mark = symbolPrices[positionSymbol] || (positionSymbol === currentSymbol ? latestPrice : null);
-                
+
                 if (!mark) {
                     missingPriceSymbols.add(positionSymbol);
                     mark = p.entryPrice;
                 }
-                
+
                 const uPnL = (p.side === 'LONG' ? 1 : -1) * (mark - p.entryPrice) * p.qty;
                 const roe = p.margin > 0 ? (uPnL / p.margin * 100) : 0;
                 const liquidationPrice = calculateLiquidationPrice(p);
-                
+
                 return `<tr data-posid="${p.id}">
                     <td>#${p.id}</td>
                     <td>${positionSymbol}</td>
@@ -1595,7 +1788,7 @@
                     <td class="pos-actions"><button class="control-btn inline danger" onclick="window.__closePos('${p.id}')">Close</button></td>
                 </tr>`;
             }).join('') || '<tr><td colspan="12" style="text-align:center; padding: 24px; color: var(--trading-muted);">No open positions</td></tr>';
-            
+
             missingPriceSymbols.forEach(symbol => requestSymbolPrice(symbol));
         }
 
@@ -1670,8 +1863,8 @@
 
             if(useBackendTrading){
                 try {
-                    const r = await fetch('/api/Order/positions/risk',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol: pos.symbol || currentSymbol, takeProfitPrice: pos.tp, stopLossPrice: pos.sl }) });
-                    if(!r.ok) { const t = await r.text(); alert('Failed to save TP/SL: '+t); } 
+                    const r = await fetch('/api/Order/positions/risk',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol: pos.symbol || currentSymbol, takeProfitPrice: pos.tp, stopLossPrice: pos.sl, positionId: String(pos.id) }) });
+                    if(!r.ok) { const t = await r.text(); alert('Failed to save TP/SL: '+t); }
                     else { showNotification('✅ TP/SL updated.', 'success'); setTimeout(()=>refreshBackendState(),300); }
                 } catch(e){ alert('Connection error saving TP/SL: ' + e.message); }
             }
@@ -1705,15 +1898,15 @@
             showLoading('Closing position...');
             try {
                 const symbol = p.symbol || currentSymbol;
-                let resp = await fetch('/api/Order/positions/close', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol }) });
-                
+                let resp = await fetch('/api/Order/positions/close', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol, positionId: String(p.id) }) });
+
                 if(!resp.ok){
                     const body = { symbol, side: p.side === 'LONG' ? 1 : 0, type: 0, quantity: p.qty, leverage: p.leverage, reduceOnly: true };
                     resp = await fetch('/api/Order',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
                 }
-                
+
                 if(!resp.ok){ const txt = await resp.text(); hideLoading(); showNotification('❌ Error closing position: ' + txt, 'danger'); return; }
-                
+
                 hideLoading();
                 showNotification(`✅ Position #${p.id} closed!`, 'success');
                 setTimeout(()=>refreshBackendState(), 300);
@@ -1725,7 +1918,7 @@
         window.__closePos = function(id) {
             const p = SimFut.positions.find(x => String(x.id) === String(id));
             if(!p) { alert('Position not found: ' + id); return; }
-            if(useBackendTrading) closeBackendPosition(p); else closePosition(p); 
+            if(useBackendTrading) closeBackendPosition(p); else closePosition(p);
         };
 
         // Utility functions
@@ -1778,15 +1971,15 @@
         let triggeredPositions = new Set();
         function checkTPSLTriggers() {
             if (SimFut.positions.length === 0) return;
-            
+
             [...SimFut.positions].forEach(pos => {
                 const posSymbol = pos.symbol || currentSymbol;
                 const currentPrice = symbolPrices[posSymbol] || (posSymbol === currentSymbol ? latestPrice : null);
                 if (!currentPrice) return;
-                
+
                 const positionKey = `${pos.id}-${posSymbol}`;
                 if (triggeredPositions.has(positionKey)) return;
-                
+
                 let shouldClose = false, reason = '';
                 if (pos.tp && ((pos.side === 'LONG' && currentPrice >= pos.tp) || (pos.side === 'SHORT' && currentPrice <= pos.tp))) {
                     shouldClose = true; reason = 'Take Profit Hit';
@@ -1794,21 +1987,21 @@
                 if (pos.sl && ((pos.side === 'LONG' && currentPrice <= pos.sl) || (pos.side === 'SHORT' && currentPrice >= pos.sl))) {
                     shouldClose = true; reason = 'Stop Loss Hit';
                 }
-                
+
                 if (shouldClose) {
                     triggeredPositions.add(positionKey);
                     setTimeout(() => triggeredPositions.delete(positionKey), 30000);
-                    
+
                     if (useBackendTrading) closeBackendPosition(pos); else closePosition(pos, reason);
                     showNotification(`🎯 ${reason} for #${pos.id}`, 'success');
                 }
             });
         }
-        
+
         let liquidatedPositions = new Set();
         function checkMarginCalls() {
             if (SimFut.positions.length === 0) return;
-            
+
             [...SimFut.positions].forEach(pos => {
                 const posSymbol = pos.symbol || currentSymbol;
                 const currentPrice = symbolPrices[posSymbol] || (posSymbol === currentSymbol ? latestPrice : null);
@@ -1820,11 +2013,11 @@
                 const uPnL = (pos.side === 'LONG' ? 1 : -1) * (currentPrice - pos.entryPrice) * pos.qty;
                 const currentEquity = pos.margin + uPnL;
                 const maintenanceMargin = (currentPrice * pos.qty * SimFut.mmRate) / 100;
-                
+
                 if (currentEquity <= maintenanceMargin) {
                     liquidatedPositions.add(positionKey);
                     setTimeout(() => liquidatedPositions.delete(positionKey), 60000);
-                    
+
                     const reason = 'Liquidated (Margin Call)';
                     if (useBackendTrading) closeBackendPosition(pos); else closePosition(pos, reason);
                     showNotification(`💀 Position #${pos.id} Liquidated!`, 'danger');
@@ -1834,7 +2027,7 @@
 
         function showNotification(message, type = 'info') {
             document.querySelectorAll('.notification').forEach(n => n.remove());
-            
+
             const notification = document.createElement('div');
             notification.className = `notification notification-${type}`;
             notification.style.cssText = `
@@ -1846,7 +2039,7 @@
             `;
             notification.textContent = message;
             document.body.appendChild(notification);
-            
+
             setTimeout(() => {
                 if (notification.parentNode) {
                     notification.style.animation = 'slideOutRight 0.3s ease-in';
@@ -1875,7 +2068,7 @@
         function setButtonLoading(buttonId, loading = true) {
             const btn = document.getElementById(buttonId);
             if (!btn) return;
-            
+
             if (loading) {
                 btn.classList.add('btn-loading');
                 btn.disabled = true;
@@ -1890,191 +2083,192 @@
 
         window.addEventListener('resize', () => chart?.applyOptions({ autoSize: true }));
     </script>
-}
-
-<div class="trading-page">
-    <div class="trading-header">
-        <div class="trading-header-left">
-            <div class="trading-symbol">@ViewBag.Symbol</div>
-            <div class="price-display">
-                <div class="current-price" id="lastPrice">$0.00</div>
-                <div class="price-change up" id="pctChange">+0.00%</div>
-            </div>
-            <div class="connection-status" id="connectionStatus">
-                <div class="status-dot status-connecting"></div>
-                <span class="status-text">Connecting</span>
-            </div>
-        </div>
-        
-
-        <div class="trading-header-right">
-            <select id="symbol-selector" class="symbol-selector">
-                <option value="BTCUSDT" selected="@(ViewBag.Symbol == "BTCUSDT")">BTC/USDT</option>
-                <option value="ETHUSDT" selected="@(ViewBag.Symbol == "ETHUSDT")">ETH/USDT</option>
-                <option value="BNBUSDT" selected="@(ViewBag.Symbol == "BNBUSDT")">BNB/USDT</option>
-            </select>
-
-            <div class="interval-selector">
-                <button class="interval-btn" data-interval="1m">1m</button>
-                <button class="interval-btn" data-interval="5m">5m</button>
-                <button class="interval-btn" data-interval="15m">15m</button>
-                <button class="interval-btn" data-interval="30m">30m</button>
-                <button class="interval-btn active" data-interval="1h">1h</button>
-                <button class="interval-btn" data-interval="4h">4h</button>
-                <button class="interval-btn" data-interval="1d">1d</button>
-            </div>
-
-            <button id="themeToggle" class="theme-toggle">🌙</button>
-        </div>
-    </div>
-
-    <div class="trading-container">
-        <div class="trading-top-panel">
-            <div class="trading-main-content">
-                <div class="chart-container">
-                    <div id="chart"></div>
+    <div class="trading-page">
+        <div class="trading-header">
+            <div class="trading-header-left">
+                <div class="trading-symbol">@ViewBag.Symbol</div>
+                <div class="price-display">
+                    <div class="current-price" id="lastPrice">$0.00</div>
+                    <div class="price-change up" id="pctChange">+0.00%</div>
+                </div>
+                <div style="margin-left:12px;"><div id="totalPnlBadge" class="total-pnl-badge">PnL: $0.00</div></div>
+                <div class="connection-status" id="connectionStatus">
+                    <div class="status-dot status-connecting"></div>
+                    <span class="status-text">Connecting</span>
                 </div>
             </div>
 
-            <aside class="trading-sidebar">
-                <div class="trading-controls">
-                    <div class="control-section">
-                        <div class="section-title">💰 Account Balance</div>
-                        <div class="balance-display">
-                            <div class="balance-amount" id="futBalance">$10,000.00</div>
-                            <div class="fee-rate">Fee: <span id="feeRateView">0.04</span>%</div>
-                        </div>
-                    </div>
 
-                    <div class="control-section">
-                        <div class="section-title">📊 Place Order</div>
+            <div class="trading-header-right">
+                <select id="symbol-selector" class="symbol-selector">
+                    <option value="BTCUSDT" selected="@(ViewBag.Symbol == "BTCUSDT")">BTC/USDT</option>
+                    <option value="ETHUSDT" selected="@(ViewBag.Symbol == "ETHUSDT")">ETH/USDT</option>
+                    <option value="BNBUSDT" selected="@(ViewBag.Symbol == "BNBUSDT")">BNB/USDT</option>
+                </select>
 
-                        <div class="order-type-switcher">
-                            <button class="order-type-btn active" data-type="0">Market</button>
-                            <button class="order-type-btn" data-type="1">Limit</button>
-                        </div>
+                <div class="interval-selector">
+                    <button class="interval-btn" data-interval="1m">1m</button>
+                    <button class="interval-btn" data-interval="5m">5m</button>
+                    <button class="interval-btn" data-interval="15m">15m</button>
+                    <button class="interval-btn" data-interval="30m">30m</button>
+                    <button class="interval-btn active" data-interval="1h">1h</button>
+                    <button class="interval-btn" data-interval="4h">4h</button>
+                    <button class="interval-btn" data-interval="1d">1d</button>
+                </div>
 
-                        <div id="order-form-body">
-                            <div class="input-group" id="limitPriceGroup" style="display:none;">
-                                <label class="input-label">Limit Price</label>
-                                <input type="number" id="limitPriceInput" class="input-field" step="0.1" placeholder="e.g. 65000" />
-                            </div>
-                            <div class="input-group">
-                                <label class="input-label">Quantity</label>
-                                <input type="number" id="qtyInput" class="input-field" min="0.0001" step="0.0001" value="0.001" placeholder="0.001" />
-                            </div>
-                            <div class="input-group">
-                                <label class="input-label">Leverage</label>
-                                <input type="number" id="levInput" class="input-field" min="1" max="125" step="1" value="20" placeholder="20x" />
-                            </div>
-                            <div class="tp-sl-group">
-                                <div class="input-group">
-                                    <label class="input-label">Take Profit</label>
-                                    <input type="number" id="tpInput" class="input-field" step="0.1" placeholder="Optional" />
-                                </div>
-                                <div class="input-group">
-                                    <label class="input-label">Stop Loss</label>
-                                    <input type="number" id="slInput" class="input-field" step="0.1" placeholder="Optional" />
-                                </div>
-                            </div>
-                        </div>
+                <button id="themeToggle" class="theme-toggle">🌙</button>
+            </div>
+        </div>
 
-                        <div class="action-buttons">
-                            <button class="action-btn btn-long" id="btnLong"><span>🚀</span> Open Long</button>
-                            <button class="action-btn btn-short" id="btnShort"><span>📉</span> Open Short</button>
-                        </div>
+        <div class="trading-container">
+            <div class="trading-top-panel">
+                <div class="trading-main-content">
+                    <div class="chart-container">
+                        <div id="chart"></div>
                     </div>
                 </div>
-            </aside>
-        </div>
 
-        <div class="info-tabs">
-            <div class="tab-header">
-                <button class="tab-link active" data-tab="positions">📈 Open Positions</button>
-                <button class="tab-link" data-tab="history">� Trade History</button>
+                <aside class="trading-sidebar">
+                    <div class="trading-controls">
+                        <div class="control-section">
+                            <div class="section-title">💰 Account Balance</div>
+                            <div class="balance-display">
+                                <div class="balance-amount" id="futBalance">$10,000.00</div>
+                                <div class="fee-rate">Fee: <span id="feeRateView">0.04</span>%</div>
+                            </div>
+                        </div>
+
+                        <div class="control-section">
+                            <div class="section-title">📊 Place Order</div>
+
+                            <div class="order-type-switcher">
+                                <button class="order-type-btn active" data-type="0">Market</button>
+                                <button class="order-type-btn" data-type="1">Limit</button>
+                            </div>
+
+                            <div id="order-form-body">
+                                <div class="input-group" id="limitPriceGroup" style="display:none;">
+                                    <label class="input-label">Limit Price</label>
+                                    <input type="number" id="limitPriceInput" class="input-field" step="0.1" placeholder="e.g. 65000" />
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label">Quantity</label>
+                                    <input type="number" id="qtyInput" class="input-field" min="0.0001" step="0.0001" value="0.001" placeholder="0.001" />
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label">Leverage</label>
+                                    <input type="number" id="levInput" class="input-field" min="1" max="125" step="1" value="20" placeholder="20x" />
+                                </div>
+                                <div class="tp-sl-group">
+                                    <div class="input-group">
+                                        <label class="input-label">Take Profit</label>
+                                        <input type="number" id="tpInput" class="input-field" step="0.1" placeholder="Optional" />
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="input-label">Stop Loss</label>
+                                        <input type="number" id="slInput" class="input-field" step="0.1" placeholder="Optional" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="action-buttons">
+                                <button class="action-btn btn-long" id="btnLong"><span>🚀</span> Open Long</button>
+                                <button class="action-btn btn-short" id="btnShort"><span>📉</span> Open Short</button>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
             </div>
-            <div id="positions" class="tab-content active">
-                <div class="table-wrapper">
-                    <table class="trading-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Symbol</th>
-                                <th>Side</th>
-                                <th>Size</th>
-                                <th>Entry Price</th>
-                                <th>Mark Price</th>
-                                <th>Leverage</th>
-                                <th>Margin</th>
-                                <th>Liq. Price</th>
-                                <th>TP / SL</th>
-                                <th>Unrealized PnL</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="posBody"></tbody>
-                    </table>
+
+            <div class="info-tabs">
+                <div class="tab-header">
+                    <button class="tab-link active" data-tab="positions">📈 Open Positions</button>
+                    <button class="tab-link" data-tab="history">� Trade History</button>
+                </div>
+                <div id="positions" class="tab-content active">
+                    <div class="table-wrapper">
+                        <table class="trading-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Symbol</th>
+                                    <th>Side</th>
+                                    <th>Size</th>
+                                    <th>Entry Price</th>
+                                    <th>Mark Price</th>
+                                    <th>Leverage</th>
+                                    <th>Margin</th>
+                                    <th>Liq. Price</th>
+                                    <th>TP / SL</th>
+                                    <th>Unrealized PnL</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="posBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="history" class="tab-content">
+                    <div class="table-wrapper">
+                        <table class="trading-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Symbol</th>
+                                    <th>Open Time</th>
+                                    <th>Close Time</th>
+                                    <th>Side</th>
+                                    <th>Size</th>
+                                    <th>Entry Price</th>
+                                    <th>Exit Price</th>
+                                    <th>Realized PnL</th>
+                                    <th>Fees</th>
+                                    <th>Note</th>
+                                </tr>
+                            </thead>
+                            <tbody id="histBody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-            <div id="history" class="tab-content">
-                <div class="table-wrapper">
-                    <table class="trading-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Symbol</th>
-                                <th>Open Time</th>
-                                <th>Close Time</th>
-                                <th>Side</th>
-                                <th>Size</th>
-                                <th>Entry Price</th>
-                                <th>Exit Price</th>
-                                <th>Realized PnL</th>
-                                <th>Fees</th>
-                                <th>Note</th>
-                            </tr>
-                        </thead>
-                        <tbody id="histBody"></tbody>
-                    </table>
+        </div>
+
+        <div class="trading-footer">
+            <div class="footer-legend">
+                <div class="legend-item">
+                    <div class="legend-dot up"></div>
+                    <span>Bullish Candle</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot down"></div>
+                    <span>Bearish Candle</span>
+                </div>
+                <div class="legend-item">
+                    <span>Data: Real-time Binance API • Press R to refresh</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="trading-footer">
-        <div class="footer-legend">
-            <div class="legend-item">
-                <div class="legend-dot up"></div>
-                <span>Bullish Candle</span>
+    <!-- TP/SL Modal -->
+    <div id="tpSlModalBackdrop" class="tp-sl-modal-backdrop hidden">
+        <div class="tp-sl-modal">
+            <h3>Update TP / SL</h3>
+            <div class="field">
+                <label>Take Profit</label>
+                <input type="number" id="tpInputModal" step="0.1" placeholder="e.g. 70000" />
+                <span id="tpModalError" class="error" aria-live="polite"></span>
             </div>
-            <div class="legend-item">
-                <div class="legend-dot down"></div>
-                <span>Bearish Candle</span>
+            <div class="field">
+                <label>Stop Loss</label>
+                <input type="number" id="slInputModal" step="0.1" placeholder="e.g. 60000" />
+                <span id="slModalError" class="error" aria-live="polite"></span>
             </div>
-            <div class="legend-item">
-                <span>Data: Real-time Binance API • Press R to refresh</span>
+            <div class="actions">
+                <button class="btn btn-outline" onclick="window.__closeTpSlModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="window.__saveTpSl()">Save</button>
             </div>
         </div>
     </div>
-</div>
-
-<!-- TP/SL Modal -->
-<div id="tpSlModalBackdrop" class="tp-sl-modal-backdrop hidden">
-    <div class="tp-sl-modal">
-        <h3>Update TP / SL</h3>
-        <div class="field">
-            <label>Take Profit</label>
-            <input type="number" id="tpInputModal" step="0.1" placeholder="e.g. 70000" />
-            <span id="tpModalError" class="error" aria-live="polite"></span>
-        </div>
-        <div class="field">
-            <label>Stop Loss</label>
-            <input type="number" id="slInputModal" step="0.1" placeholder="e.g. 60000" />
-            <span id="slModalError" class="error" aria-live="polite"></span>
-        </div>
-        <div class="actions">
-            <button class="btn btn-outline" onclick="window.__closeTpSlModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="window.__saveTpSl()">Save</button>
-        </div>
-    </div>
-</div>
+</body>
+</html>
