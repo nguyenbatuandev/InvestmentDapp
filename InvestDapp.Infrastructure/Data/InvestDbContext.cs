@@ -3,6 +3,7 @@ using InvestDapp.Shared.Models;
 using InvestDapp.Shared.Models.BlockchainModels;
 using InvestDapp.Shared.Models.Kyc;
 using InvestDapp.Shared.Models.Message;
+using InvestDapp.Shared.Models.Trading;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
@@ -17,7 +18,50 @@ namespace InvestDapp.Infrastructure.Data
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+
+            // Trading model configurations
+            modelBuilder.Entity<Order>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Symbol).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.UserWallet).IsRequired().HasMaxLength(42);
+                entity.Property(e => e.Price).HasPrecision(18, 8);
+                entity.Property(e => e.Quantity).HasPrecision(18, 8);
+                entity.Property(e => e.FilledQuantity).HasPrecision(18, 8);
+                entity.Property(e => e.AvgPrice).HasPrecision(18, 8);
+                entity.HasIndex(e => e.UserWallet);
+                entity.HasIndex(e => e.Symbol);
+                entity.HasIndex(e => e.Status);
+            });
+
+            modelBuilder.Entity<Position>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Symbol).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.UserWallet).IsRequired().HasMaxLength(42);
+                entity.Property(e => e.Size).HasPrecision(18, 8);
+                entity.Property(e => e.EntryPrice).HasPrecision(18, 8);
+                entity.Property(e => e.MarkPrice).HasPrecision(18, 8);
+                entity.Property(e => e.PnL).HasPrecision(18, 8);
+                entity.Property(e => e.Margin).HasPrecision(18, 8);
+                entity.Property(e => e.UnrealizedPnl).HasPrecision(18, 8);
+                entity.Property(e => e.RealizedPnl).HasPrecision(18, 8);
+                entity.HasIndex(e => e.UserWallet);
+                entity.HasIndex(e => e.Symbol);
+            });
+
+            modelBuilder.Entity<UserBalance>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.UserWallet).IsRequired().HasMaxLength(42);
+                entity.Property(e => e.Balance).HasPrecision(18, 8);
+                entity.Property(e => e.AvailableBalance).HasPrecision(18, 8);
+                entity.Property(e => e.MarginUsed).HasPrecision(18, 8);
+                entity.Property(e => e.UnrealizedPnl).HasPrecision(18, 8);
+                entity.HasIndex(e => e.UserWallet).IsUnique();
+            });
         }
+
         public DbSet<Campaign> Campaigns { get; set; }
         public DbSet<Category> Category { get; set; }
         public DbSet<Investment> Investment { get; set; }
@@ -44,5 +88,9 @@ namespace InvestDapp.Infrastructure.Data
         public DbSet<MessageReadStatus> MessageReadStatuses { get; set; }
         public DbSet<CampaignPost> CampaignPosts { get; set; }
 
+        // Trading Models
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<Position> Positions { get; set; }
+        public DbSet<UserBalance> UserBalances { get; set; }
     }
 }

@@ -58,6 +58,75 @@ namespace InvestDapp.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Orders",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserWallet = table.Column<string>(type: "nvarchar(42)", maxLength: 42, nullable: false),
+                    Symbol = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    Side = table.Column<int>(type: "int", nullable: false),
+                    Type = table.Column<int>(type: "int", nullable: false),
+                    Quantity = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    Price = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: true),
+                    StopPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    Leverage = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    FilledQuantity = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    AvgPrice = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    Notes = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Orders", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Positions",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserWallet = table.Column<string>(type: "nvarchar(42)", maxLength: 42, nullable: false),
+                    Symbol = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    Side = table.Column<int>(type: "int", nullable: false),
+                    Size = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    EntryPrice = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    MarkPrice = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    UnrealizedPnl = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    RealizedPnl = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    Leverage = table.Column<int>(type: "int", nullable: false),
+                    Margin = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    PnL = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Positions", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserBalances",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserWallet = table.Column<string>(type: "nvarchar(42)", maxLength: 42, nullable: false),
+                    Balance = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    AvailableBalance = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    MarginUsed = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    UnrealizedPnl = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserBalances", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
@@ -530,14 +599,45 @@ namespace InvestDapp.Infrastructure.Migrations
                 column: "UserID");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Orders_Status",
+                table: "Orders",
+                column: "Status");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Orders_Symbol",
+                table: "Orders",
+                column: "Symbol");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Orders_UserWallet",
+                table: "Orders",
+                column: "UserWallet");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Participants_ConversationId",
                 table: "Participants",
                 column: "ConversationId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Positions_Symbol",
+                table: "Positions",
+                column: "Symbol");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Positions_UserWallet",
+                table: "Positions",
+                column: "UserWallet");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Profits_CampaignId",
                 table: "Profits",
                 column: "CampaignId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserBalances_UserWallet",
+                table: "UserBalances",
+                column: "UserWallet",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Vote_WithdrawalRequestId",
@@ -594,13 +694,22 @@ namespace InvestDapp.Infrastructure.Migrations
                 name: "Notifications");
 
             migrationBuilder.DropTable(
+                name: "Orders");
+
+            migrationBuilder.DropTable(
                 name: "Participants");
+
+            migrationBuilder.DropTable(
+                name: "Positions");
 
             migrationBuilder.DropTable(
                 name: "Profits");
 
             migrationBuilder.DropTable(
                 name: "Refunds");
+
+            migrationBuilder.DropTable(
+                name: "UserBalances");
 
             migrationBuilder.DropTable(
                 name: "Vote");

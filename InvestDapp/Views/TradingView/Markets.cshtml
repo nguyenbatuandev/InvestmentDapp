@@ -1,0 +1,527 @@
+﻿
+@{
+    Layout = null;
+}
+
+@section Styles {
+    <style>
+        .markets-container {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .markets-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--secondary);
+        }
+
+        .markets-title {
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .market-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .search-box {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--secondary);
+            background-color: var(--bg-light);
+            color: var(--text-color);
+            min-width: 200px;
+        }
+
+        .filter-dropdown {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--secondary);
+            background-color: var(--bg-light);
+            color: var(--text-color);
+        }
+
+        .markets-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: var(--bg-light);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+            .markets-table th {
+                background-color: var(--secondary);
+                padding: 15px;
+                text-align: left;
+                font-weight: 600;
+                color: var(--text-color);
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            .markets-table td {
+                padding: 15px;
+                border-bottom: 1px solid var(--border-color);
+                vertical-align: middle;
+            }
+
+            .markets-table tr:hover {
+                background-color: var(--secondary);
+                cursor: pointer;
+            }
+
+        .symbol-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .symbol-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .symbol-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .symbol-name {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .symbol-description {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .price-cell {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .price-positive {
+            color: #00ff88;
+        }
+
+        .price-negative {
+            color: #ff4d4d;
+        }
+
+        .change-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .change-percent {
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .change-positive {
+            background-color: rgba(0, 255, 136, 0.1);
+            color: #00ff88;
+        }
+
+        .change-negative {
+            background-color: rgba(255, 77, 77, 0.1);
+            color: #ff4d4d;
+        }
+
+        .funding-rate {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .funding-countdown {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .sparkline {
+            width: 80px;
+            height: 40px;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-connected {
+            background-color: #00ff88;
+        }
+
+        .status-disconnected {
+            background-color: #ff4d4d;
+        }
+
+        .status-connecting {
+            background-color: #ffaa00;
+            animation: pulse 1.5s infinite;
+        }
+
+        @@keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .volume-bar {
+            height: 4px;
+            background-color: var(--secondary);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .volume-fill {
+            height: 100%;
+            background: var(--gradient);
+            border-radius: 2px;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        let connection = null;
+        let markPrices = new Map();
+        let marketStats = new Map();
+        let isConnected = false;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadMarketsData();
+            await initializeSignalR();
+        });
+
+        async function loadMarketsData() {
+            try {
+                showLoading(true);
+
+                // Load market stats
+                const statsResponse = await fetch('/api/trading/markets');
+                if (statsResponse.ok) {
+                    const stats = await statsResponse.json();
+                    stats.forEach(stat => marketStats.set(stat.symbol, stat));
+                }
+
+                // Load mark prices
+                const markPriceResponse = await fetch('/api/trading/markprice');
+                if (markPriceResponse.ok) {
+                    const prices = await markPriceResponse.json();
+                    prices.forEach(price => markPrices.set(price.symbol, price));
+                }
+
+                renderMarketsTable();
+                showLoading(false);
+            } catch (error) {
+                console.error('Error loading markets data:', error);
+                showLoading(false);
+            }
+        }
+
+        async function initializeSignalR() {
+            try {
+                connection = new signalR.HubConnectionBuilder()
+                    .withUrl("/tradingHub")
+                    .build();
+
+                connection.on("markPrice", (data) => {
+                    markPrices.set(data.symbol, data);
+                    updateMarketRow(data.symbol);
+                });
+
+                connection.on("marketDataStatus", (status) => {
+                    updateConnectionStatus(status);
+                });
+
+                await connection.start();
+                updateConnectionStatus({ status: 'connected' });
+                console.log("SignalR Connected");
+
+            } catch (err) {
+                console.error("SignalR Connection Error: ", err);
+                updateConnectionStatus({ status: 'disconnected' });
+
+                // Retry connection
+                setTimeout(initializeSignalR, 5000);
+            }
+        }
+
+        function renderMarketsTable() {
+            const tbody = document.getElementById('markets-tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            // Get symbols from either markPrices or marketStats
+            const allSymbols = new Set([...markPrices.keys(), ...marketStats.keys()]);
+
+            Array.from(allSymbols).forEach(symbol => {
+                const row = createMarketRow(symbol);
+                tbody.appendChild(row);
+            });
+        }
+
+        function createMarketRow(symbol) {
+            const tr = document.createElement('tr');
+            tr.dataset.symbol = symbol;
+            tr.onclick = () => window.location.href = `/Trading/Chart?symbol=${symbol}`;
+
+            const markPrice = markPrices.get(symbol);
+            const stats = marketStats.get(symbol);
+
+            const baseAsset = symbol.replace('USDT', '');
+            const price = markPrice?.markPrice || stats?.lastPrice || 0;
+            const change24h = stats?.priceChangePercent || 0;
+            const volume = stats?.volume || 0;
+            const fundingRate = markPrice?.fundingRate || 0;
+            const nextFunding = markPrice?.nextFundingTime || 0;
+
+            tr.innerHTML = `
+                <td>
+                    <div class="symbol-cell">
+                        <div class="symbol-icon">${baseAsset.substring(0, 2)}</div>
+                        <div class="symbol-info">
+                            <div class="symbol-name">${symbol}</div>
+                            <div class="symbol-description">${baseAsset}/USDT Perpetual</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="price-cell ${change24h >= 0 ? 'price-positive' : 'price-negative'}">
+                        $${formatPrice(price)}
+                    </div>
+                </td>
+                <td>
+                    <div class="change-cell">
+                        <span class="change-percent ${change24h >= 0 ? 'change-positive' : 'change-negative'}">
+                            ${change24h >= 0 ? '+' : ''}${change24h.toFixed(2)}%
+                        </span>
+                        <div class="volume-bar">
+                            <div class="volume-fill" style="width: ${Math.min(volume / 1000000 * 100, 100)}%"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="funding-rate ${fundingRate >= 0 ? 'price-positive' : 'price-negative'}">
+                        ${(fundingRate * 100).toFixed(4)}%
+                    </div>
+                    <div class="funding-countdown" id="countdown-${symbol}">
+                        ${formatCountdown(nextFunding)}
+                    </div>
+                </td>
+                <td>
+                    <canvas class="sparkline" id="sparkline-${symbol}"></canvas>
+                </td>
+            `;
+
+            return tr;
+        }
+
+        function updateMarketRow(symbol) {
+            const row = document.querySelector(`tr[data-symbol="${symbol}"]`);
+            if (!row) return;
+
+            const markPrice = markPrices.get(symbol);
+            const stats = marketStats.get(symbol);
+
+            if (markPrice) {
+                const priceCell = row.querySelector('.price-cell');
+                if (priceCell) {
+                    priceCell.textContent = `$${formatPrice(markPrice.markPrice)}`;
+                    priceCell.classList.remove('price-positive', 'price-negative');
+                    priceCell.classList.add(markPrice.markPrice >= 0 ? 'price-positive' : 'price-negative');
+                }
+
+                const fundingCell = row.querySelector('.funding-rate');
+                if (fundingCell) {
+                    fundingCell.textContent = `${(markPrice.fundingRate * 100).toFixed(4)}%`;
+                    fundingCell.classList.remove('price-positive', 'price-negative');
+                    fundingCell.classList.add(markPrice.fundingRate >= 0 ? 'price-positive' : 'price-negative');
+                }
+
+                const countdownElement = row.querySelector(`#countdown-${symbol}`);
+                if (countdownElement) {
+                    countdownElement.textContent = formatCountdown(markPrice.nextFundingTime);
+                }
+            }
+        }
+
+        function formatPrice(price) {
+            if (price >= 1) {
+                return price.toFixed(2);
+            } else if (price >= 0.1) {
+                return price.toFixed(4);
+            } else {
+                return price.toFixed(6);
+            }
+        }
+
+        function formatCountdown(timestamp) {
+            if (!timestamp) return 'N/A';
+
+            const now = Date.now();
+            const diff = timestamp - now;
+
+            if (diff <= 0) return 'Now';
+
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+            return `${hours}h ${minutes}m`;
+        }
+
+        function updateConnectionStatus(status) {
+            const statusElement = document.getElementById('connection-status');
+            if (!statusElement) return;
+
+            const dot = statusElement.querySelector('.status-dot');
+            const text = statusElement.querySelector('.status-text');
+
+            dot.className = 'status-dot';
+
+            switch (status.status) {
+                case 'connected':
+                    dot.classList.add('status-connected');
+                    text.textContent = 'Live Data';
+                    isConnected = true;
+                    break;
+                case 'disconnected':
+                    dot.classList.add('status-disconnected');
+                    text.textContent = 'Disconnected';
+                    isConnected = false;
+                    break;
+                case 'connecting':
+                    dot.classList.add('status-connecting');
+                    text.textContent = 'Connecting...';
+                    isConnected = false;
+                    break;
+            }
+        }
+
+        function showLoading(show) {
+            const loading = document.getElementById('loading-state');
+            const table = document.getElementById('markets-table');
+
+            if (show) {
+                loading.style.display = 'block';
+                table.style.display = 'none';
+            } else {
+                loading.style.display = 'none';
+                table.style.display = 'table';
+            }
+        }
+
+        function filterMarkets() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const rows = document.querySelectorAll('#markets-tbody tr');
+
+            rows.forEach(row => {
+                const symbol = row.dataset.symbol.toLowerCase();
+                if (symbol.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Update funding countdowns every minute
+        setInterval(() => {
+            markPrices.forEach((markPrice, symbol) => {
+                const countdownElement = document.getElementById(`countdown-${symbol}`);
+                if (countdownElement) {
+                    countdownElement.textContent = formatCountdown(markPrice.nextFundingTime);
+                }
+            });
+        }, 60000);
+    </script>
+}
+
+<div class="markets-container">
+    <div class="markets-header">
+        <h1 class="markets-title">Futures Markets</h1>
+        <div class="market-controls">
+            <div id="connection-status" class="connection-status">
+                <div class="status-dot status-connecting"></div>
+                <span class="status-text">Connecting...</span>
+            </div>
+            <input type="text"
+                   id="search-input"
+                   class="search-box"
+                   placeholder="Search symbols..."
+                   oninput="filterMarkets()" />
+            <select class="filter-dropdown">
+                <option value="all">All Markets</option>
+                <option value="volume">High Volume</option>
+                <option value="gainers">Top Gainers</option>
+                <option value="losers">Top Losers</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="loading-state" class="loading-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Loading market data...</p>
+    </div>
+
+    <table id="markets-table" class="markets-table" style="display: none;">
+        <thead>
+            <tr>
+                <th>Symbol</th>
+                <th>Mark Price</th>
+                <th>24h Change</th>
+                <th>Funding Rate</th>
+                <th>24h Volume Chart</th>
+            </tr>
+        </thead>
+        <tbody id="markets-tbody">
+            <!-- Rows will be populated by JavaScript -->
+        </tbody>
+    </table>
+</div>
