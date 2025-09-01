@@ -15,10 +15,12 @@
     {
         public Dictionary<string, int> MaxLeveragePerSymbol { get; set; } = new();
         public decimal DefaultBalance { get; set; } = 10000;
-    public decimal MinOrderSize { get; set; } = 0.0001m; // allow smaller granularity
-    public decimal MaxOrderSize { get; set; } = 100; // tighter cap to mitigate accidental huge notional
-    // Max raw notional (price * qty) allowed per order AFTER price sanitization
-    public decimal MaxNotionalPerOrder { get; set; } = 50_000_000m; // configurable instead of hard-coded in service
+        public decimal MinOrderSize { get; set; } = 0.0001m; // allow smaller granularity
+        public decimal MaxOrderSize { get; set; } = 100; // tighter cap to mitigate accidental huge notional
+        // Max raw notional (price * qty) allowed per order AFTER price sanitization
+        public decimal MaxNotionalPerOrder { get; set; } = 50_000_000m; // configurable instead of hard-coded in service
+        // Fee rate in percent (example: 0.04 means 0.04%)
+        public decimal FeeRatePercent { get; set; } = 0.04m;
     }
 
     public class RedisConfig

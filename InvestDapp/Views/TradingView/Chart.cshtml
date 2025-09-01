@@ -1187,6 +1187,60 @@
             });
         }
 
+        // Price line helpers (TP/SL visualization)
+        const _posLines = new Map(); // key -> {line, label}
+
+        function _makePriceLine(id, price, color, text) {
+            if (!candleSeries || !price) return null;
+            try {
+                const opts = {
+                    price: normalizeSymbolPrice(Number(price), currentSymbol),
+                    color: color,
+                    lineWidth: 1,
+                    lineStyle: LightweightCharts.LineStyle.Dashed,
+                    axisLabelVisible: true,
+                    title: text || ''
+                };
+                // createPriceLine is on the series in lightweight-charts v4
+                const line = candleSeries.createPriceLine(opts);
+                return line;
+            } catch (e) { console.error('createPriceLine failed', e); return null; }
+        }
+
+        function showPositionLines(pos) {
+            clearPositionLines();
+            if (!pos) return;
+            const id = String(pos.id);
+            if (pos.tp != null && Number.isFinite(Number(pos.tp))) {
+                const tpLine = _makePriceLine(id + '_tp', pos.tp, '#0ea5e9', `TP #${id}`);
+                if (tpLine) _posLines.set(id + '_tp', tpLine);
+            }
+            if (pos.sl != null && Number.isFinite(Number(pos.sl))) {
+                const slLine = _makePriceLine(id + '_sl', pos.sl, '#ff4747', `SL #${id}`);
+                if (slLine) _posLines.set(id + '_sl', slLine);
+            }
+            // keep chart centered near entry price if available
+            if (pos.entryPrice && chart && typeof chart.timeScale === 'function') {
+                // no-op for now: we rely on user panning/zooming; future improvement: center view
+            }
+        }
+
+        function clearPositionLines() {
+            try {
+                for (const [k, line] of _posLines.entries()) {
+                    try {
+                        // preferred removal via series
+                        if (candleSeries && typeof candleSeries.removePriceLine === 'function') {
+                            candleSeries.removePriceLine(line);
+                        } else if (line && typeof line.remove === 'function') {
+                            line.remove();
+                        }
+                    } catch (e) { /* ignore per-line */ }
+                }
+            } catch (e) { /* ignore */ }
+            _posLines.clear();
+        }
+
         // Data helpers
         function klineToCandle(k) {
             const candle = {
@@ -1617,6 +1671,22 @@
                 renderFut();
                 await subscribeToPositionSymbols();
                 if (SimFut.positions.length > 0) startPositionUpdates(); else stopPositionUpdates();
+                // If the URL requested a focused position, show its TP/SL lines
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    const focusId = params.get('focusPosition');
+                    if (focusId) {
+                        const p = SimFut.positions.find(x => String(x.id) === String(focusId));
+                        if (p) {
+                            // small delay to ensure chart is ready
+                            setTimeout(() => showPositionLines(p), 250);
+                            // remove focusPosition from URL to avoid repeated actions
+                            params.delete('focusPosition');
+                            const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+                            window.history.replaceState({}, '', newUrl);
+                        }
+                    }
+                } catch (e) { /* ignore */ }
             } catch (e) { console.warn('Refresh backend state failed', e); }
         }
 
@@ -1796,6 +1866,31 @@
             }).join('') || '<tr><td colspan="12" style="text-align:center; padding: 24px; color: var(--trading-muted);">No open positions</td></tr>';
 
             missingPriceSymbols.forEach(symbol => requestSymbolPrice(symbol));
+
+            // Attach click handlers to rows so clicking a position will focus it on the chart
+            posBody.querySelectorAll('tr[data-posid]').forEach(row => {
+                // remove previous handler if any
+                row.onclick = null;
+                row.addEventListener('click', (ev) => {
+                    // ignore clicks on buttons inside the row (Close / TP/SL edit)
+                    if (ev.target.closest('button')) return;
+                    const id = row.getAttribute('data-posid');
+                    const pos = SimFut.positions.find(p => String(p.id) === String(id));
+                    if (!pos) return;
+
+                    // If position symbol differs, navigate to that chart and request focus
+                    const posSymbol = pos.symbol || currentSymbol;
+                    if (posSymbol !== currentSymbol) {
+                        // preserve a focusPosition param so after navigation the line is shown
+                        const href = `/Trading/Chart?symbol=${encodeURIComponent(posSymbol)}&focusPosition=${encodeURIComponent(String(pos.id))}`;
+                        window.location.href = href;
+                        return;
+                    }
+
+                    // Same symbol: show TP/SL lines directly
+                    showPositionLines(pos);
+                });
+            });
         }
 
         function calculateLiquidationPrice(position) {
@@ -2123,6 +2218,7 @@
                 </div>
 
                 <button id="themeToggle" class="theme-toggle">🌙</button>
+                <a id="openPortfolioBtn" class="theme-toggle" href="/Trading/Portfolio" title="Mở Portfolio">📁</a>
             </div>
         </div>
 
