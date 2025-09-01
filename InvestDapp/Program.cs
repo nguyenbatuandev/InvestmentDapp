@@ -66,6 +66,7 @@ builder.Services.AddScoped<IBinanceRestService, BinanceRestService>();
 builder.Services.AddScoped<IBinanceWebSocketService, BinanceWebSocketService>();
 builder.Services.AddScoped<IInternalOrderService, InternalOrderService>();
 builder.Services.AddScoped<IMarketPriceService, MarketPriceService>();
+builder.Services.AddScoped<ITradingRepository, TradingRepository>();
 
 // Register hosted services
 builder.Services.AddHostedService<MarketDataWorker>();

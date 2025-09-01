@@ -37,7 +37,7 @@ namespace InvestDapp.Controllers.Api
 
                 var order = new InternalOrder
                 {
-                    UserId = userKey, // use wallet address as trading key
+                    UserId = userKey,
                     Symbol = request.Symbol,
                     Side = request.Side,
                     Type = request.Type,
@@ -81,13 +81,11 @@ namespace InvestDapp.Controllers.Api
             }
         }
 
-        // Debug endpoint without auth
         [HttpGet("history")]
         public async Task<IActionResult> GetOrderHistory()
         {
             try
             {
-                // Lấy wallet từ session hoặc claims nếu có
                 var userWallet = User?.FindFirst("WalletAddress")?.Value;
                 _logger.LogInformation("Getting order history for wallet: {Wallet}", userWallet);
                 var orders = await _orderService.GetUserOrdersAsync(userWallet);

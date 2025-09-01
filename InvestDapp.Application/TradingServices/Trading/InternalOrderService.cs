@@ -3,9 +3,8 @@ using InvestDapp.Infrastructure.Data;
 using InvestDapp.Shared.Models.Trading;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
-using System.Linq;
+using InvestDapp.Infrastructure.Data.interfaces;
 
 namespace InvestDapp.Application.Services.Trading
 {
@@ -21,8 +20,8 @@ namespace InvestDapp.Application.Services.Trading
         Task<InternalUserBalance?> GetUserBalanceAsync(string userId);
         Task<InternalUserBalance> UpdateUserBalanceAsync(string userId, decimal balanceChange, string reason);
         IReadOnlyCollection<InternalPosition> GetAllPositions();
-    Task<bool> UpdatePositionRiskAsync(string userId, string symbol, decimal? takeProfit, decimal? stopLoss, string? positionId = null);
-    Task<(bool ok, string? error)> ClosePositionAsync(string userId, string symbol, string? positionId = null);
+        Task<bool> UpdatePositionRiskAsync(string userId, string symbol, decimal? takeProfit, decimal? stopLoss, string? positionId = null);
+        Task<(bool ok, string? error)> ClosePositionAsync(string userId, string symbol, string? positionId = null);
     }
 
     public class InternalOrderService : IInternalOrderService
@@ -30,17 +29,17 @@ namespace InvestDapp.Application.Services.Trading
         private readonly ConcurrentDictionary<string, InternalOrder> _orders;
         private readonly ConcurrentDictionary<string, InternalPosition> _positions;
         private readonly ConcurrentDictionary<string, InternalUserBalance> _balances;
-    // Track pending conditional (non-market) orders
-    private readonly ConcurrentDictionary<string, InternalOrder> _openConditionalOrders = new();
-    private readonly TradingConfig _tradingConfig;
-    private readonly InvestDbContext _db;
-    private readonly IMarketPriceService _priceService;
+        // Track pending conditional (non-market) orders
+        private readonly ConcurrentDictionary<string, InternalOrder> _openConditionalOrders = new();
+        private readonly TradingConfig _tradingConfig;
+        private readonly ITradingRepository _repo;
+        private readonly IMarketPriceService _priceService;
         private readonly ILogger<InternalOrderService> _logger;
         private readonly object _lockObject = new();
 
         public InternalOrderService(IOptions<TradingConfig> tradingConfig,
             ILogger<InternalOrderService> logger,
-            InvestDbContext db,
+            ITradingRepository repo,
             IMarketPriceService priceService)
         {
             _orders = new ConcurrentDictionary<string, InternalOrder>();
@@ -48,7 +47,7 @@ namespace InvestDapp.Application.Services.Trading
             _balances = new ConcurrentDictionary<string, InternalUserBalance>();
             _tradingConfig = tradingConfig.Value;
             _logger = logger;
-            _db = db;
+            _repo = repo;
             _priceService = priceService;
         }
 
@@ -87,8 +86,8 @@ namespace InvestDapp.Application.Services.Trading
                 Status = order.Status,
                 CreatedAt = order.CreatedAt
             };
-            _db.Orders.Add(dbOrder);
-            await _db.SaveChangesAsync();
+            await _repo.AddOrderAsync(dbOrder);
+            await _repo.SaveChangesAsync();
 
             // If market order -> execute immediately
             if (order.Type == OrderType.Market)
@@ -104,7 +103,6 @@ namespace InvestDapp.Application.Services.Trading
             }
             else
             {
-                // Index conditional orders for execution by mark price engine
                 IndexConditionalOrder(order);
             }
 
@@ -153,7 +151,7 @@ namespace InvestDapp.Application.Services.Trading
                 currentOrder.UpdatedAt = DateTime.UtcNow;
                 _orders[order.Id] = currentOrder;
 
-                var dbOrder = _db.Orders.FirstOrDefault(o => o.InternalOrderId == currentOrder.Id);
+                var dbOrder = _repo.GetOrderByInternalIdAsync(currentOrder.Id).GetAwaiter().GetResult();
                 if (dbOrder != null)
                 {
                     dbOrder.Status = OrderStatus.Filled;
@@ -168,28 +166,16 @@ namespace InvestDapp.Application.Services.Trading
                 var balance = GetUserBalanceSync(currentOrder.UserId);
                 if (balance != null)
                 {
-                    var dbBalance = _db.UserBalances.FirstOrDefault(b => b.UserWallet == currentOrder.UserId);
-                    if (dbBalance == null)
+                    var toPersist = new UserBalance
                     {
-                        dbBalance = new UserBalance
-                        {
-                            UserWallet = currentOrder.UserId,
-                            Balance = balance.Balance,
-                            AvailableBalance = balance.AvailableBalance,
-                            MarginUsed = balance.UsedMargin,
-                            UnrealizedPnl = balance.UnrealizedPnl,
-                            UpdatedAt = DateTime.UtcNow
-                        };
-                        _db.UserBalances.Add(dbBalance);
-                    }
-                    else
-                    {
-                        dbBalance.Balance = balance.Balance;
-                        dbBalance.AvailableBalance = balance.AvailableBalance;
-                        dbBalance.MarginUsed = balance.UsedMargin;
-                        dbBalance.UnrealizedPnl = balance.UnrealizedPnl;
-                        dbBalance.UpdatedAt = DateTime.UtcNow;
-                    }
+                        UserWallet = currentOrder.UserId,
+                        Balance = balance.Balance,
+                        AvailableBalance = balance.AvailableBalance,
+                        MarginUsed = balance.UsedMargin,
+                        UnrealizedPnl = balance.UnrealizedPnl,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    _repo.AddOrUpdateUserBalanceAsync(toPersist).GetAwaiter().GetResult();
                 }
 
                     // Persist all in-memory positions for this user+symbol.
@@ -205,7 +191,7 @@ namespace InvestDapp.Application.Services.Trading
                     }
             }
 
-            await _db.SaveChangesAsync();
+            await _repo.SaveChangesAsync();
             _logger.LogInformation("Market order executed: {OrderId} at price {Price}", order.Id, executionPrice);
         }
 
@@ -221,7 +207,7 @@ namespace InvestDapp.Application.Services.Trading
             {
                 try
                 {
-                    var dbPositions = _db.Positions.Where(p => p.UserWallet == order.UserId && p.Symbol == order.Symbol).OrderBy(p => p.CreatedAt).ToList();
+                    var dbPositions = _repo.GetPositionsByUserSymbolAsync(order.UserId, order.Symbol).GetAwaiter().GetResult();
                     foreach (var dp in dbPositions)
                     {
                         var ip = new InternalPosition
@@ -316,21 +302,22 @@ namespace InvestDapp.Application.Services.Trading
                     {
                         if (int.TryParse(closedPos.Id, out var dbId))
                         {
-                            var dbPos = _db.Positions.FirstOrDefault(p => p.Id == dbId && p.UserWallet == closedPos.UserId && p.Symbol == closedPos.Symbol);
-                            if (dbPos != null) { _db.Positions.Remove(dbPos); removedAny = true; }
+                            var dbPos = _repo.GetPositionByIdAsync(dbId).GetAwaiter().GetResult();
+                            if (dbPos != null) { _repo.RemovePositionAsync(dbPos).GetAwaiter().GetResult(); removedAny = true; }
                         }
                         else
                         {
                             // best-effort: find a matching DB row for this user+symbol+side+entryprice
                             // Narrow fallback match to include Size and Leverage to avoid removing unrelated rows with same entry price
-                            var dbPos = _db.Positions.Where(p => p.UserWallet == closedPos.UserId
+                            var dbList = _repo.GetPositionsByUserSymbolAsync(closedPos.UserId, closedPos.Symbol).GetAwaiter().GetResult();
+                            var dbPos = dbList.Where(p => p.UserWallet == closedPos.UserId
                                                                   && p.Symbol == closedPos.Symbol
                                                                   && p.Side == closedPos.Side
                                                                   && p.EntryPrice == closedPos.EntryPrice
                                                                   && p.Size == closedPos.Size
                                                                   && p.Leverage == closedPos.Leverage)
                                 .OrderBy(p => p.CreatedAt).FirstOrDefault();
-                            if (dbPos != null) { _db.Positions.Remove(dbPos); removedAny = true; }
+                            if (dbPos != null) { _repo.RemovePositionAsync(dbPos).GetAwaiter().GetResult(); removedAny = true; }
                         }
                     }
                     catch (Exception ex)
@@ -344,7 +331,7 @@ namespace InvestDapp.Application.Services.Trading
                 {
                     try
                     {
-                        _db.SaveChanges();
+                        _repo.SaveChangesAsync().GetAwaiter().GetResult();
                     }
                     catch (Exception ex)
                     {
@@ -447,10 +434,7 @@ namespace InvestDapp.Application.Services.Trading
             try
             {
                 // Lấy từ database để có lịch sử đầy đủ, bao gồm cả orders đã đóng
-                var dbOrders = await _db.Orders
-                    .Where(o => o.UserWallet == userId)
-                    .OrderByDescending(o => o.CreatedAt)
-                    .ToListAsync();
+                var dbOrders = await _repo.GetOrdersByUserAsync(userId);
 
                 // Convert từ Order entity sang InternalOrder
                 var internalOrders = dbOrders.Select(o => new InternalOrder
@@ -521,9 +505,8 @@ namespace InvestDapp.Application.Services.Trading
         {
             // Always prefer DB as source-of-truth. Load latest positions for this user+symbol and return the first.
             symbol = NormalizeSymbol(symbol);
-            var dp = await _db.Positions.Where(p => p.UserWallet == userId && p.Symbol == symbol)
-                .OrderByDescending(p => p.CreatedAt)
-                .FirstOrDefaultAsync();
+            var dpList = await _repo.GetPositionsByUserSymbolAsync(userId, symbol);
+            var dp = dpList.OrderByDescending(p => p.CreatedAt).FirstOrDefault();
 
             if (dp == null) return null;
 
@@ -559,7 +542,7 @@ namespace InvestDapp.Application.Services.Trading
         public async Task<List<InternalPosition>> GetUserPositionsAsync(string userId)
         {
             // DB is source-of-truth. Load all positions for the user from DB and sync in-memory cache.
-            var dbPositions = await _db.Positions.Where(p => p.UserWallet == userId).OrderBy(p => p.CreatedAt).ToListAsync();
+            var dbPositions = await _repo.GetPositionsByUserAsync(userId);
             var result = new List<InternalPosition>(dbPositions.Count);
 
             // Remove any in-memory positions for this user to avoid stale entries, then repopulate from DB
@@ -601,7 +584,7 @@ namespace InvestDapp.Application.Services.Trading
         public async Task<InternalUserBalance?> GetUserBalanceAsync(string userId)
         {
             // Always read latest from DB and update memory cache
-            var dbBal = await _db.UserBalances.FirstOrDefaultAsync(b => b.UserWallet == userId);
+            var dbBal = await _repo.GetUserBalanceAsync(userId);
             InternalUserBalance bal;
             if (dbBal != null)
             {
@@ -634,7 +617,7 @@ namespace InvestDapp.Application.Services.Trading
         {
             // Sync from DB synchronously (used from within locks)
             if (_balances.TryGetValue(userId, out var existing)) return existing;
-            var dbBal = _db.UserBalances.FirstOrDefault(b => b.UserWallet == userId);
+            var dbBal = _repo.GetUserBalanceAsync(userId).GetAwaiter().GetResult();
             InternalUserBalance bal;
             if (dbBal != null)
             {
@@ -668,17 +651,17 @@ namespace InvestDapp.Application.Services.Trading
             {
                 if (!_balances.TryGetValue(userId, out var balance))
                 {
-            var existingDbBal = _db.UserBalances.FirstOrDefault(b => b.UserWallet == userId);
-            if (existingDbBal != null)
+                    var existingDbBal = _repo.GetUserBalanceAsync(userId).GetAwaiter().GetResult();
+                    if (existingDbBal != null)
                     {
                         balance = new InternalUserBalance
                         {
                             UserId = userId,
-                Balance = existingDbBal.Balance,
-                AvailableBalance = existingDbBal.AvailableBalance,
-                UsedMargin = existingDbBal.MarginUsed,
-                UnrealizedPnl = existingDbBal.UnrealizedPnl,
-                UpdatedAt = existingDbBal.UpdatedAt
+                            Balance = existingDbBal.Balance,
+                            AvailableBalance = existingDbBal.AvailableBalance,
+                            UsedMargin = existingDbBal.MarginUsed,
+                            UnrealizedPnl = existingDbBal.UnrealizedPnl,
+                            UpdatedAt = existingDbBal.UpdatedAt
                         };
                     }
                     else
@@ -698,31 +681,18 @@ namespace InvestDapp.Application.Services.Trading
                 balance.UpdatedAt = DateTime.UtcNow;
                 _balances[userId] = balance;
 
-                // Persist to DB (UserBalance + transaction record)
-                var dbBal = _db.UserBalances.FirstOrDefault(b => b.UserWallet == userId);
-                if (dbBal == null)
+                // Persist to DB (UserBalance + transaction record) via repository
+                var toPersist = new UserBalance
                 {
-                    dbBal = new UserBalance
-                    {
-                        UserWallet = userId,
-                        Balance = balance.Balance,
-                        AvailableBalance = balance.AvailableBalance,
-                        MarginUsed = balance.UsedMargin,
-                        UnrealizedPnl = balance.UnrealizedPnl,
-                        UpdatedAt = balance.UpdatedAt
-                    };
-                    _db.UserBalances.Add(dbBal);
-                }
-                else
-                {
-                    dbBal.Balance = balance.Balance;
-                    dbBal.AvailableBalance = balance.AvailableBalance;
-                    dbBal.MarginUsed = balance.UsedMargin;
-                    dbBal.UnrealizedPnl = balance.UnrealizedPnl;
-                    dbBal.UpdatedAt = balance.UpdatedAt;
-                }
-
-                _db.BalanceTransactions.Add(new BalanceTransaction
+                    UserWallet = userId,
+                    Balance = balance.Balance,
+                    AvailableBalance = balance.AvailableBalance,
+                    MarginUsed = balance.UsedMargin,
+                    UnrealizedPnl = balance.UnrealizedPnl,
+                    UpdatedAt = balance.UpdatedAt
+                };
+                _repo.AddOrUpdateUserBalanceAsync(toPersist).GetAwaiter().GetResult();
+                _repo.AddBalanceTransactionAsync(new BalanceTransaction
                 {
                     UserWallet = userId,
                     Amount = balanceChange,
@@ -730,9 +700,9 @@ namespace InvestDapp.Application.Services.Trading
                     BalanceAfter = balance.Balance,
                     Description = reason,
                     CreatedAt = DateTime.UtcNow
-                });
+                }).GetAwaiter().GetResult();
 
-                _db.SaveChanges();
+                _repo.SaveChangesAsync().GetAwaiter().GetResult();
                 _logger.LogInformation("Balance updated for user {UserId}: {Change} ({Reason})", userId, balanceChange, reason);
                 return balance;
             }
@@ -756,7 +726,7 @@ namespace InvestDapp.Application.Services.Trading
             {
                 // Reduce-only: ensure there is an existing position to reduce (same symbol) and clamp quantity if oversized
                 // Reduce-only: ensure there are positions in DB for this user+symbol and clamp to total open size
-                var dbPositions = await _db.Positions.Where(p => p.UserWallet == order.UserId && p.Symbol == order.Symbol).ToListAsync();
+                var dbPositions = await _repo.GetPositionsByUserSymbolAsync(order.UserId, order.Symbol);
                 var totalOpen = dbPositions.Sum(p => p.Size);
                 if (totalOpen <= 0)
                 {
@@ -869,10 +839,10 @@ namespace InvestDapp.Application.Services.Trading
 
         private void UpsertDbPosition(InternalPosition p)
         {
-            // Try to interpret InternalPosition.Id as DB id. If parse succeeds, update that DB row.
+            // If Id parses to DB id -> update via repo
             if (int.TryParse(p.Id, out var dbId))
             {
-                var dbPos = _db.Positions.FirstOrDefault(x => x.Id == dbId && x.UserWallet == p.UserId && x.Symbol == p.Symbol);
+                var dbPos = _repo.GetPositionByIdAsync(dbId).GetAwaiter().GetResult();
                 if (dbPos != null)
                 {
                     dbPos.Side = p.Side;
@@ -890,12 +860,12 @@ namespace InvestDapp.Application.Services.Trading
                     dbPos.IsIsolated = p.IsIsolated;
                     dbPos.LiquidationPrice = p.LiquidationPrice;
                     dbPos.UpdatedAt = DateTime.UtcNow;
+                    _repo.UpsertPositionAsync(dbPos).GetAwaiter().GetResult();
                 }
                 return;
             }
 
-            // Insert a new DB row (allow multiple DB positions per symbol).
-            // Persist immediately and map the generated DB id back onto the InternalPosition
+            // Insert a new DB row (allow multiple DB positions per symbol) and map generated id back
             var newDbPos = new Position
             {
                 UserWallet = p.UserId,
@@ -917,16 +887,12 @@ namespace InvestDapp.Application.Services.Trading
                 CreatedAt = p.CreatedAt == default ? DateTime.UtcNow : p.CreatedAt,
                 UpdatedAt = DateTime.UtcNow
             };
-            _db.Positions.Add(newDbPos);
-            // Save now so we obtain the DB-assigned Id and can map it back
             try
             {
-                _db.SaveChanges();
+                var persisted = _repo.UpsertPositionAsync(newDbPos).GetAwaiter().GetResult();
                 var oldId = p.Id;
-                p.Id = newDbPos.Id.ToString();
+                p.Id = persisted.Id.ToString();
 
-                // If this position was already stored in the in-memory dictionary with an old key (GUID),
-                // replace the key to use the DB id so future lookups/removals match.
                 try
                 {
                     var existingKey = _positions.Keys.FirstOrDefault(k =>
@@ -936,7 +902,6 @@ namespace InvestDapp.Application.Services.Trading
                         var expectedSuffix = ":" + oldId;
                         if (existingKey.EndsWith(expectedSuffix))
                         {
-                            // Remove old key and add new key with same object reference
                             _positions.TryRemove(existingKey, out _);
                             var newKey = $"{p.UserId}:{p.Symbol}:{p.Id}";
                             _positions[newKey] = p;
@@ -1040,8 +1005,8 @@ namespace InvestDapp.Application.Services.Trading
                 if (!string.IsNullOrEmpty(positionId))
                 {
                     if (!int.TryParse(positionId, out var pid)) return false;
-                    var dbPos = _db.Positions.FirstOrDefault(p => p.Id == pid && p.UserWallet == userId && p.Symbol == symbol);
-                    if (dbPos == null) return false;
+                    var dbPos = _repo.GetPositionByIdAsync(pid).GetAwaiter().GetResult();
+                    if (dbPos == null || dbPos.UserWallet != userId || dbPos.Symbol != symbol) return false;
 
                     if (takeProfit.HasValue) dbPos.TakeProfitPrice = takeProfit;
                     else dbPos.TakeProfitPrice = null;
@@ -1087,7 +1052,8 @@ namespace InvestDapp.Application.Services.Trading
                     }
 
                     // Persist change
-                    _db.SaveChanges();
+                    _repo.UpsertPositionAsync(dbPos).GetAwaiter().GetResult();
+                    _repo.SaveChangesAsync().GetAwaiter().GetResult();
                     return true;
                 }
 
@@ -1095,7 +1061,7 @@ namespace InvestDapp.Application.Services.Trading
                 var matches = _positions.Values.Where(p => p.UserId == userId && p.Symbol == symbol).ToList();
                 if (matches.Count == 0)
                 {
-                    var dbPositions = _db.Positions.Where(p => p.UserWallet == userId && p.Symbol == symbol).ToList();
+                    var dbPositions = _repo.GetPositionsByUserSymbolAsync(userId, symbol).GetAwaiter().GetResult();
                     foreach (var dp in dbPositions)
                     {
                         var k = $"{userId}:{dp.Symbol}:{dp.Id}";
@@ -1142,7 +1108,7 @@ namespace InvestDapp.Application.Services.Trading
                 }
             }
 
-            await _db.SaveChangesAsync();
+            await _repo.SaveChangesAsync();
             return true;
         }
 
@@ -1153,8 +1119,8 @@ namespace InvestDapp.Application.Services.Trading
             if (!string.IsNullOrEmpty(positionId))
             {
                 if (!int.TryParse(positionId, out var pid)) return (false, "Invalid positionId");
-                var dbPosSingle = _db.Positions.FirstOrDefault(p => p.Id == pid && p.UserWallet == userId && p.Symbol == symbol);
-                if (dbPosSingle == null) return (false, "Position not found");
+                var dbPosSingle = _repo.GetPositionByIdAsync(pid).GetAwaiter().GetResult();
+                if (dbPosSingle == null || dbPosSingle.UserWallet != userId || dbPosSingle.Symbol != symbol) return (false, "Position not found");
 
                 var closeOrderSingle = new InternalOrder
                 {
@@ -1176,7 +1142,7 @@ namespace InvestDapp.Application.Services.Trading
             }
 
             // Load DB positions for this symbol (most recent first)
-            var positions = _db.Positions.Where(p => p.UserWallet == userId && p.Symbol == symbol).OrderByDescending(p => p.CreatedAt).ToList();
+            var positions = _repo.GetPositionsByUserSymbolAsync(userId, symbol).GetAwaiter().GetResult().OrderByDescending(p => p.CreatedAt).ToList();
 
             if (positions.Count == 0)
             {
