@@ -426,17 +426,7 @@
                 elTotalPnl.textContent = formatMoney(totalPnl); // PnL thuần (không bao gồm phí)
                 elTotalFees.textContent = formatMoney(-totalFees); // Fees riêng biệt (hiển thị âm)
                 elBalance.textContent = formatMoney(balanceVal); // Balance từ API (đã trừ phí)
-                
-                // Add debug info to UI if there's still a mismatch
-                if (Math.abs(balanceVal - expectedBalance) > 1) {
-                    console.warn('Balance mismatch detected!');
-                    const debugInfo = document.createElement('div');
-                    debugInfo.style.cssText = 'color: orange; font-size: 12px; margin-top: 5px;';
-                    debugInfo.textContent = `Debug: Expected $${expectedBalance.toFixed(2)}, API $${balanceVal.toFixed(2)}`;
-                    document.querySelector('.summary').appendChild(debugInfo);
-                } else {
-                    console.log('✅ Balance logic is correct!');
-                }
+            
 
                 // Build chart data - dùng PnL thuần cho biểu đồ
                 let chartData = [];
@@ -468,11 +458,12 @@
                     }
                 }
 
-                // Render trade history table
+                // Render trade history table - Sort by exit time descending (newest first)
                 if (!completedTrades || completedTrades.length === 0) {
                     elTxBody.innerHTML = '<tr><td colspan="9" style="padding:18px; color:var(--muted)">No transactions</td></tr>';
                 } else {
-                    elTxBody.innerHTML = completedTrades.map((t, index) => {
+                    const sortedTrades = [...completedTrades].sort((a, b) => b.exitTs - a.exitTs);
+                    elTxBody.innerHTML = sortedTrades.map((t, index) => {
                         const time = new Date(t.exitTs).toLocaleString('vi-VN');
                         const symbol = t.symbol || '-';
                         const side = t.side;

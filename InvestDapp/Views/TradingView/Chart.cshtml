@@ -2090,7 +2090,10 @@
             const histBody = $('#histBody');
             if (!histBody) return;
 
-            histBody.innerHTML = SimFut.history.map(h => {
+            // Sort history by exit time descending (newest first)
+            const sortedHistory = [...SimFut.history].sort((a, b) => b.exitTs - a.exitTs);
+            
+            histBody.innerHTML = sortedHistory.map(h => {
                 return `<tr>
                     <td>#${h.id}</td>
                     <td>${h.symbol || currentSymbol}</td>
@@ -2445,8 +2448,8 @@
 
             <div class="info-tabs">
                 <div class="tab-header">
-                    <button class="tab-link active" data-tab="positions">📈 Open Positions</button>
-                    <button class="tab-link" data-tab="history">� Trade History</button>
+                    <button class="tab-link active" data-tab="positions"><i class="fa-solid fa-arrow-trend-up"></i> Open Positions</button>
+                    <button class="tab-link" data-tab="history"><i class="fas fa-history"></i> Trade History</button>
                 </div>
                 <div id="positions" class="tab-content active">
                     <div class="table-wrapper">
