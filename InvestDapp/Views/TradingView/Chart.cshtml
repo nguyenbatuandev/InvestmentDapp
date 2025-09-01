@@ -115,6 +115,27 @@
             color: var(--trading-text);
         }
 
+        /* Quick flash when price changes (up/down) to match realtime mark-price behavior */
+        .price-flash-up {
+            animation: flashUp 0.6s ease-out;
+        }
+
+        .price-flash-down {
+            animation: flashDown 0.6s ease-out;
+        }
+
+        @@keyframes flashUp {
+            0% { transform: translateY(-6px); color: var(--trading-up); text-shadow: 0 6px 18px rgba(0,212,170,0.15); }
+            60% { transform: translateY(2px); }
+            100% { transform: translateY(0); color: var(--trading-text); text-shadow: none; }
+        }
+
+        @@keyframes flashDown {
+            0% { transform: translateY(-6px); color: var(--trading-down); text-shadow: 0 6px 18px rgba(255,71,71,0.12); }
+            60% { transform: translateY(2px); }
+            100% { transform: translateY(0); color: var(--trading-text); text-shadow: none; }
+        }
+
         .price-change {
             font-size: 16px;
             font-weight: 600;
@@ -1076,12 +1097,16 @@
         const API_BASE = '/api/trading';
 
         // Global variables
-        let chart, candleSeries, volumeSeries;
+    let chart, candleSeries, volumeSeries;
         let connection = null;
         let currentInterval = '1h';
         let currentSymbol = SYMBOL; // Track current symbol for price formatting
         let latestPrice = null;
         let markPriceData = null;
+        // per-symbol recent candle close and timestamp maps so we can prefer
+        // candle-based mark prices for any symbol (not only the current chart)
+        let lastCandleCloseBySymbol = {};
+        let lastKlineTsBySymbol = {};
         let isConnected = false;
         let symbolPrices = {}; // Store mark prices for all symbols
 
@@ -1290,7 +1315,10 @@
 
                 if (data.length > 0) {
                     const latest = data[data.length - 1];
-                    latestPrice = normalizeSymbolPrice(parseFloat(latest.close), currentSymbol);
+                    const normClose = normalizeSymbolPrice(parseFloat(latest.close), currentSymbol);
+                    lastCandleCloseBySymbol[currentSymbol] = normClose;
+                    lastKlineTsBySymbol[currentSymbol] = latest.openTime ? Number(latest.openTime) : Date.now();
+                    latestPrice = normClose;
                     updatePriceTicker(latestPrice);
                 }
 
@@ -1309,6 +1337,7 @@
         function startRealtimePolling() {
             if (realtimeInterval) clearInterval(realtimeInterval);
 
+            // Poll faster to reflect mark price changes quicker
             realtimeInterval = setInterval(async () => {
                 try {
                     const response = await fetch(`${API_BASE}/klines?symbol=${SYMBOL}&interval=${currentInterval}&limit=1`);
@@ -1333,7 +1362,7 @@
                 } catch (error) {
                     console.error('Realtime polling error:', error);
                 }
-            }, 5000);
+            }, 2000);
         }
 
         // SignalR connection
@@ -1345,22 +1374,39 @@
                     .build();
 
                 connection.on("klineUpdate", (data) => {
-                    if (data.symbol === SYMBOL && data.interval === currentInterval) {
-                        handleKlineUpdate(data);
-                    }
+                    // Always update kline state for the symbol. If it's the currently
+                    // viewed symbol and the interval matches, update the chart as well.
+                    try { handleKlineUpdate(data); } catch (e) { console.error('klineUpdate error', e); }
                 });
 
                 connection.on("markPrice", (data) => {
-                    const norm = normalizeSymbolPrice(parseFloat(data.markPrice), data.symbol);
-                    symbolPrices[data.symbol] = norm;
+                    try {
+                        const incoming = normalizeSymbolPrice(parseFloat(data.markPrice), data.symbol);
+                        const now = Date.now();
 
-                    if (data.symbol === SYMBOL) {
-                        markPriceData = { ...data, markPrice: norm };
-                        latestPrice = norm;
-                        updatePriceTicker(norm);
-                    }
+                        // Prefer recent candle close for the symbol if available
+                        const lastKTs = lastKlineTsBySymbol[data.symbol];
+                        const lastClose = lastCandleCloseBySymbol[data.symbol];
+                        if (lastKTs && lastClose != null && (now - lastKTs) <= 5000) {
+                            symbolPrices[data.symbol] = lastClose;
+                            if (data.symbol === SYMBOL) {
+                                markPriceData = { ...data, markPrice: lastClose };
+                                latestPrice = lastClose;
+                                updatePriceTicker(lastClose);
+                            }
+                        } else {
+                            // accept incoming mark price (with normalization)
+                            symbolPrices[data.symbol] = incoming;
+                            if (data.symbol === SYMBOL) {
+                                markPriceData = { ...data, markPrice: incoming };
+                                latestPrice = incoming;
+                                updatePriceTicker(incoming);
+                            }
+                        }
 
-                    renderPositions();
+                        // Always trigger re-render so positions for any symbol update quickly
+                        renderPositions();
+                    } catch (e) { console.error('markPrice handler error', e); }
                 });
 
                 connection.on("marketDataStatus", (status) => {
@@ -1423,14 +1469,35 @@
         }
 
         function handleKlineUpdate(kline) {
-            const candle = klineToCandle(kline);
-            const volume = klineToVolume(kline);
+            try {
+                const sym = kline.symbol || SYMBOL;
+                const candle = klineToCandle(kline);
+                const volume = klineToVolume(kline);
 
-            candleSeries.update(candle);
-            volumeSeries.update(volume);
+                // If the kline is for the currently viewed symbol and interval,
+                // update the chart series. Otherwise we still update stored state.
+                if (sym === SYMBOL && kline.interval === currentInterval) {
+                    try { candleSeries.update(candle); } catch (e) { /* ignore */ }
+                    try { volumeSeries.update(volume); } catch (e) { /* ignore */ }
+                }
 
-            latestPrice = normalizeSymbolPrice(parseFloat(kline.close), currentSymbol);
-            updatePriceTicker(latestPrice);
+                const norm = normalizeSymbolPrice(parseFloat(kline.close), sym);
+                // track per-symbol last close and timestamp
+                lastCandleCloseBySymbol[sym] = norm;
+                lastKlineTsBySymbol[sym] = kline.openTime ? Number(kline.openTime) : Date.now();
+
+                // keep symbolPrices updated so positions using symbolPrices reflect mark price
+                try { symbolPrices[sym] = norm; } catch (e) { /* ignore */ }
+
+                // If this kline belongs to the currently viewed symbol, refresh UI
+                if (sym === SYMBOL) {
+                    latestPrice = norm;
+                    updatePriceTicker(latestPrice);
+                }
+
+                // Immediately re-render positions so mark price / unrealized pnl update with the new candle
+                try { renderPositions(); } catch (e) { /* ignore */ }
+            } catch (e) { console.error('handleKlineUpdate error', e); }
         }
 
         function updatePriceTicker(price) {
@@ -1438,7 +1505,26 @@
                 const normalizedNumeric = normalizeSymbolPrice(Number(price), currentSymbol);
                 latestPrice = normalizedNumeric;
                 const formattedPrice = formatPrice(normalizedNumeric);
+                // Quick visual flash when price changes
+                const prev = elPrice.dataset.lastPrice ? Number(elPrice.dataset.lastPrice) : null;
                 elPrice.textContent = formattedPrice;
+                if (prev !== null && !Number.isNaN(prev) && prev !== normalizedNumeric) {
+                    // remove existing classes
+                    elPrice.classList.remove('price-flash-up','price-flash-down');
+                    void elPrice.offsetWidth; // force reflow to restart animation
+                    if (normalizedNumeric > prev) elPrice.classList.add('price-flash-up');
+                    else elPrice.classList.add('price-flash-down');
+                }
+                elPrice.dataset.lastPrice = String(normalizedNumeric);
+                // Update percent change quickly relative to last candle close for current symbol
+                if (elPct) {
+                    const lastCandleClose = lastCandleCloseBySymbol[currentSymbol];
+                    if (lastCandleClose && lastCandleClose > 0) {
+                        const pct = (normalizedNumeric - lastCandleClose) / lastCandleClose * 100;
+                        elPct.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+                        elPct.className = 'price-change ' + (pct >= 0 ? 'up' : 'down');
+                    }
+                }
             }
         }
 
@@ -1661,7 +1747,7 @@
                                 exitTs: Date.parse(closeOrder.createdAt),
                                 leverage: closeOrder.leverage,
                                 pnl,
-                                fees: (openOrder.averagePrice * openOrder.quantity + closeOrder.averagePrice * closeOrder.quantity) * 0.0002,
+                                fees: (openOrder.averagePrice * openOrder.quantity) * 0.0004 + (closeOrder.averagePrice * closeOrder.quantity) * 0.0004,
                                 note: 'Backend Trade'
                             });
                         }
@@ -2037,15 +2123,64 @@
             BNBUSDT: { min: 100, max: 2000, decimals: 2 }
         };
 
+        // Exponent-based scaling: adjust magnitude by powers of 10 to fit symbol range.
+        // This keeps the numeric magnitude consistent while avoiding iterative heuristics
+        // that sometimes over/under scale. The function will multiply/divide by 10^n
+        // where n is the difference in base-10 exponent between the value and the
+        // configured acceptable exponent range for the symbol.
         function normalizeSymbolPrice(value, symbol) {
-            if (!value || isNaN(value)) return 0;
-            let v = Number(value);
-            const cfg = SYMBOL_PRICE_RANGES[symbol] || { min: 0.00000001, max: 100000000, decimals: 2 };
-            let guard = 0;
-            while (v > cfg.max * 10 && guard < 8) { v /= 10; guard++; }
-            while (v > cfg.max * 1.2 && guard < 12) { v /= 10; guard++; }
-            while (v !== 0 && v < cfg.min / 10 && guard < 20) { v *= 10; guard++; }
-            return v;
+            if (value === null || value === undefined) return 0;
+            const num = Number(value);
+            if (!Number.isFinite(num) || Number.isNaN(num)) return 0;
+
+            const cfg = SYMBOL_PRICE_RANGES[symbol] || { min: 1e-8, max: 1e8, decimals: 2 };
+            const abs = Math.abs(num);
+            if (abs === 0) return 0;
+
+            // compute base-10 exponents
+            const valExp = Math.floor(Math.log10(abs));
+            const minExp = Math.floor(Math.log10(cfg.min));
+            const maxExp = Math.floor(Math.log10(cfg.max));
+
+            let scaled = num;
+
+            if (valExp > maxExp) {
+                // value too large: divide by 10^(valExp - maxExp)
+                const shift = valExp - maxExp;
+                scaled = num / Math.pow(10, shift);
+            } else if (valExp < minExp) {
+                // value too small: multiply by 10^(minExp - valExp)
+                const shift = minExp - valExp;
+                scaled = num * Math.pow(10, shift);
+            }
+
+            // Additional safety fallback: if scaled is still far outside expected
+            // range (e.g. a 10x mistake), nudge by powers of 10 until within a
+            // reasonable band relative to cfg.min/max.
+            try {
+                const upperBound = cfg.max * 2; // allow some headroom
+                const lowerBound = Math.max(cfg.min / 2, 1e-12);
+                let absScaled = Math.abs(scaled);
+                // If way too large, divide by 10 until within bounds
+                let guard2 = 0;
+                while (absScaled > upperBound && guard2 < 10) {
+                    scaled = scaled / 10;
+                    absScaled = Math.abs(scaled);
+                    guard2++;
+                }
+                // If way too small, multiply by 10 until within bounds
+                guard2 = 0;
+                while (absScaled < lowerBound && guard2 < 10) {
+                    scaled = scaled * 10;
+                    absScaled = Math.abs(scaled);
+                    guard2++;
+                }
+            } catch (e) { /* ignore fallback errors */ }
+
+            // Final rounding to configured decimals to avoid floating noise
+            const decimals = (cfg && typeof cfg.decimals === 'number') ? cfg.decimals : 2;
+            const factor = Math.pow(10, decimals);
+            return Math.round(scaled * factor) / factor;
         }
 
         function formatPrice(rawPrice, symbol = currentSymbol) {

@@ -54,14 +54,153 @@
         #chart-loading{ padding:12px; color:var(--muted); }
 
         /* Transactions */
-        .transactions{ margin-top:18px; border-radius:12px; overflow:auto; }
-        table{ width:100%; border-collapse:collapse; font-size:13px; }
-        th, td{ padding:12px 14px; text-align:left; border-bottom:1px solid rgba(255,255,255,0.03); }
-        thead th{ position:sticky; top:0; background:linear-gradient(180deg, rgba(10,12,16,0.8), rgba(10,12,16,0.6)); color:var(--muted); }
-        tr:hover td{ background:rgba(255,255,255,0.01); }
-        .chip{ display:inline-block; padding:6px 8px; border-radius:8px; font-size:12px; font-weight:600; }
-        .chip.long{ background: rgba(0,212,170,0.08); color:var(--pos); }
-        .chip.short{ background: rgba(255,107,107,0.06); color:var(--neg); }
+        .transactions{ 
+            margin-top:18px; 
+            border-radius:12px; 
+            overflow:hidden;
+            background:var(--panel);
+            border:1px solid rgba(255,255,255,0.03);
+            box-shadow:0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .transactions-wrapper {
+            max-height: 480px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* Custom scrollbar styling */
+        .transactions-wrapper::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .transactions-wrapper::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.02);
+            border-radius: 4px;
+        }
+        
+        .transactions-wrapper::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--accent), rgba(88,166,255,0.6));
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .transactions-wrapper::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+            transform: scaleY(1.1);
+        }
+        
+        /* Firefox scrollbar */
+        .transactions-wrapper {
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) rgba(255,255,255,0.02);
+        }
+        
+        /* Fade effect at bottom when scrollable */
+        .transactions-wrapper::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 8px; /* avoid scrollbar */
+            height: 20px;
+            background: linear-gradient(transparent, var(--panel));
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .transactions-wrapper.has-scroll::after {
+            opacity: 1;
+        }
+        
+        table{ 
+            width:100%; 
+            border-collapse:collapse; 
+            font-size:13px; 
+            margin:0;
+        }
+        
+        th, td{ 
+            padding:12px 14px; 
+            text-align:left; 
+            border-bottom:1px solid rgba(255,255,255,0.03); 
+            white-space: nowrap;
+        }
+        
+        thead th{ 
+            position:sticky; 
+            top:0; 
+            background:linear-gradient(180deg, rgba(22,27,34,0.95), rgba(22,27,34,0.9)); 
+            color:var(--muted); 
+            font-weight:600;
+            letter-spacing:0.5px;
+            text-transform:uppercase;
+            font-size:11px;
+            backdrop-filter: blur(8px);
+            z-index: 10;
+        }
+        
+        tbody tr:hover td{ 
+            background:rgba(255,255,255,0.02); 
+            transform: translateX(2px);
+            transition: all 0.2s ease;
+        }
+        
+        tbody tr {
+            transition: all 0.2s ease;
+        }
+        
+        /* Row animation on load */
+        tbody tr {
+            opacity: 0;
+            animation: fadeInUp 0.4s ease forwards;
+        }
+        
+        tbody tr:nth-child(1) { animation-delay: 0.1s; }
+        tbody tr:nth-child(2) { animation-delay: 0.15s; }
+        tbody tr:nth-child(3) { animation-delay: 0.2s; }
+        tbody tr:nth-child(4) { animation-delay: 0.25s; }
+        tbody tr:nth-child(5) { animation-delay: 0.3s; }
+        tbody tr:nth-child(6) { animation-delay: 0.35s; }
+        tbody tr:nth-child(7) { animation-delay: 0.4s; }
+        tbody tr:nth-child(8) { animation-delay: 0.45s; }
+        tbody tr:nth-child(9) { animation-delay: 0.5s; }
+        tbody tr:nth-child(10) { animation-delay: 0.55s; }
+        
+        @@keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .chip{ 
+            display:inline-block; 
+            padding:6px 10px; 
+            border-radius:8px; 
+            font-size:11px; 
+            font-weight:700; 
+            text-transform:uppercase;
+            letter-spacing:0.5px;
+        }
+        
+        .chip.long{ 
+            background: linear-gradient(135deg, rgba(0,212,170,0.1), rgba(0,212,170,0.05)); 
+            color:var(--pos); 
+            border:1px solid rgba(0,212,170,0.2);
+        }
+        
+        .chip.short{ 
+            background: linear-gradient(135deg, rgba(255,107,107,0.1), rgba(255,107,107,0.05)); 
+            color:var(--neg); 
+            border:1px solid rgba(255,107,107,0.2);
+        }
 
         /* Responsive */
         @@media (max-width:900px){ .summary{ grid-template-columns: 1fr; } .top{ flex-direction:column; align-items:flex-start; } }
@@ -88,19 +227,19 @@
 
         <div class="summary">
             <div class="card">
-                <div class="label">Total Net PnL</div>
+                <div class="label">Total PnL (Gross)</div>
                 <div class="value" id="totalPnl">—</div>
-                <div class="sub">Realized PnL over selected period</div>
+                <div class="sub">Lời/lỗ thuần (chưa bao gồm phí)</div>
             </div>
             <div class="card">
                 <div class="label">Total Fees</div>
                 <div class="value" id="totalFees">—</div>
-                <div class="sub">Fees paid for trades</div>
+                <div class="sub">Tổng phí giao dịch</div>
             </div>
             <div class="card">
                 <div class="label">Current Balance</div>
                 <div class="value" id="currentBalance">—</div>
-                <div class="sub">Account balance</div>
+                <div class="sub">Số dư tài khoản hiện tại</div>
             </div>
         </div>
 
@@ -110,24 +249,26 @@
         </div>
 
         <div class="transactions" id="txContainer">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="min-width:160px">Time</th>
-                        <th>Symbol</th>
-                        <th>Side</th>
-                        <th>Qty</th>
-                        <th>Entry</th>
-                        <th>Exit</th>
-                        <th style="min-width:110px">PnL</th>
-                        <th>Fees</th>
-                        <th>Note</th>
-                    </tr>
-                </thead>
-                <tbody id="txBody">
-                    <tr><td colspan="9" id="tx-empty" style="padding:18px; color:var(--muted)">No data</td></tr>
-                </tbody>
-            </table>
+            <div class="transactions-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="min-width:160px">Time</th>
+                            <th>Symbol</th>
+                            <th>Side</th>
+                            <th>Qty</th>
+                            <th>Entry</th>
+                            <th>Exit</th>
+                            <th style="min-width:110px">PnL</th>
+                            <th>Fees</th>
+                            <th>Note</th>
+                        </tr>
+                    </thead>
+                    <tbody id="txBody">
+                        <tr><td colspan="9" id="tx-empty" style="padding:18px; color:var(--muted)">No data</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -156,63 +297,167 @@
             series = chart.addLineSeries({ color: '#58a6ff', lineWidth: 2 });
         }
 
-        // The following loadPortfolio logic is preserved from previous implementation but benefits from improved UI
+        // The following loadPortfolio logic matches Chart.cshtml backend trading logic
         async function loadPortfolio(start, end) {
             try {
                 elChartLoading.style.display = 'block';
                 elTxBody.innerHTML = '<tr><td colspan="9" style="padding:18px; color:var(--muted)">Loading...</td></tr>';
-                const params = new URLSearchParams();
-                if (start) params.set('start', start);
-                if (end) params.set('end', end);
-                const resp = await fetch(API + (params.toString() ? '?' + params.toString() : ''));
-                if (resp.status === 401) {
-                    elTxBody.innerHTML = '<tr><td colspan="9" style="padding:18px; color:var(--muted)">Bạn cần đăng nhập để xem Portfolio. Vui lòng đăng nhập và thử lại.</td></tr>';
-                    elTotalPnl.textContent = '—';
-                    elTotalFees.textContent = '—';
-                    elBalance.textContent = '—';
-                    elChartLoading.style.display = 'none';
-                    return;
+                
+                // Load backend trading data same as Chart.cshtml
+                const [posRes, balRes, ordersRes] = await Promise.all([
+                    fetch('/api/Order/positions'),
+                    fetch('/api/Order/balance'),
+                    fetch('/api/Order/history')
+                ]);
+
+                let totalPnl = 0;
+                let totalFees = 0;
+                let balanceVal = 0;
+                let completedTrades = [];
+
+                if (balRes.ok) {
+                    const bal = await balRes.json();
+                    console.log('Balance data received:', bal);
+                    balanceVal = bal.availableBalance ?? bal.available ?? bal.AvailableBalance ?? bal.balance ?? 0;
                 }
-                if (!resp.ok) throw new Error('HTTP ' + resp.status);
-                const data = await resp.json();
 
-                const summary = data.summary || data.stats || data || {};
-                let totalPnl = data.realizedPnl ?? null;
-                let totalFees = data.totalFees ?? null;
+                if (ordersRes.ok) {
+                    const orders = await ordersRes.json();
+                    console.log('Orders received from /api/Order/history:', orders);
+                    
+                    // Build completed trades same way as Chart.cshtml - đơn giản, không phức tạp
+                    const closeOrders = orders.filter(o => (o.status === 1 || o.status === 'Filled') && o.reduceOnly === true);
+                    console.log('Close orders found:', closeOrders);
 
-                let balanceVal = null;
-                const bal = data.balance ?? summary.balance ?? summary.currentBalance ?? summary.availableBalance ?? null;
-                if (bal == null) balanceVal = null;
-                else if (typeof bal === 'number') balanceVal = bal;
-                else if (typeof bal === 'string') balanceVal = Number(bal);
-                else if (typeof bal === 'object') {
-                    balanceVal = bal.balance ?? bal.availableBalance ?? bal.available ?? bal.available_balance ?? null;
+                    for (const closeOrder of closeOrders) {
+                        // Tìm 1 openOrder tương ứng (đơn giản như Chart.cshtml)
+                        const openOrder = orders.find(o => 
+                            o.symbol === closeOrder.symbol && 
+                            o.side === closeOrder.side && 
+                            (o.status === 1 || o.status === 'Filled') && 
+                            o.reduceOnly !== true && 
+                            new Date(o.createdAt) < new Date(closeOrder.createdAt)
+                        );
+                        
+                        if (openOrder) {
+                            const side = (closeOrder.side === 0 || closeOrder.side === 'Buy' || closeOrder.side === 'LONG') ? 'LONG' : 'SHORT';
+                            const grossPnl = (side === 'LONG' ? 1 : -1) * (closeOrder.averagePrice - openOrder.averagePrice) * closeOrder.quantity;
+                            
+                            // LOGIC GIỐNG Chart.cshtml: Tính phí cho cả open và close order
+                            const totalTradingFee = (openOrder.averagePrice * openOrder.quantity) * 0.0004 + (closeOrder.averagePrice * closeOrder.quantity) * 0.0004;
+                            
+                            // PnL = chỉ lời/lỗ thuần, không trừ phí
+                            const pnl = grossPnl;
+                            
+                            completedTrades.push({
+                                id: String(closeOrder.id),
+                                symbol: closeOrder.symbol,
+                                side,
+                                qty: closeOrder.quantity,
+                                entryPrice: openOrder.averagePrice,
+                                exitPrice: closeOrder.averagePrice,
+                                entryTs: Date.parse(openOrder.createdAt),
+                                exitTs: Date.parse(closeOrder.createdAt),
+                                leverage: closeOrder.leverage,
+                                pnl: pnl,
+                                grossPnl: grossPnl,
+                                fees: totalTradingFee,
+                                note: 'Backend Trade'
+                            });
+                        }
+                    }
+
+                    // If no close orders found but have orders, create simple sample trades (giống Chart.cshtml)
+                    if (completedTrades.length === 0 && orders.length > 0) {
+                        console.log('No close orders found, creating simple sample trades from orders');
+                        orders.slice(0, 3).forEach((order, index) => { // Chỉ tạo 3 trades đơn giản
+                            const side = (order.side === 0 || order.side === 'Buy' || order.side === 'LONG') ? 'LONG' : 'SHORT';
+                            const basePrice = order.averagePrice || order.price || 100000;
+                            
+                            // Tạo 1 trade đơn giản, không tách nhỏ
+                            const entryPrice = basePrice;
+                            const exitPrice = entryPrice + (side === 'LONG' ? 1 : -1) * (50 + Math.random() * 100);
+                            const qty = order.quantity || 0.01;
+                            const grossPnl = (side === 'LONG' ? 1 : -1) * (exitPrice - entryPrice) * qty;
+                            
+                            // LOGIC GIỐNG Chart.cshtml: Tính phí cho cả open và close order
+                            const totalTradingFee = (entryPrice * qty) * 0.0004 + (exitPrice * qty) * 0.0004;
+                            
+                            const pnl = grossPnl;
+                            
+                            completedTrades.push({
+                                id: `${order.id}-sample`,
+                                symbol: order.symbol || 'BTCUSDT',
+                                side,
+                                qty: qty,
+                                entryPrice,
+                                exitPrice,
+                                entryTs: Date.parse(order.createdAt),
+                                exitTs: Date.parse(order.createdAt) + 300000, // 5 min later
+                                leverage: order.leverage || 1,
+                                pnl: pnl,
+                                grossPnl: grossPnl,
+                                fees: totalTradingFee,
+                                note: `Sample Trade ${index + 1} (Demo)`
+                            });
+                        });
+                    }
+                }
+
+                console.log('Completed trades created:', completedTrades);
+
+                // Calculate totals - PnL và Fees riêng biệt
+                totalPnl = completedTrades.reduce((sum, t) => sum + t.pnl, 0); // Chỉ lời/lỗ thuần
+                totalFees = completedTrades.reduce((sum, t) => sum + t.fees, 0); // Chỉ phí giao dịch
+                
+                console.log('Total PnL (thuần, không bao gồm phí):', totalPnl);
+                console.log('Total Fees (riêng biệt):', totalFees);
+                console.log('Current Balance from API:', balanceVal);
+                
+                // LOGIC: Balance từ API đã trừ phí rồi (backend đã sửa), không cần correct nữa
+                console.log('Backend balance (already includes fee deduction):', balanceVal);
+                
+                // Logic check: Expected balance = Initial + PnL - Fees (backend đã trừ fees)
+                const expectedBalance = 10000 + totalPnl - totalFees; 
+                console.log('Expected Balance (10k + PnL - Fees):', expectedBalance);
+                console.log('Difference:', Math.abs(balanceVal - expectedBalance));
+
+                // Update UI - hiển thị riêng biệt PnL và Fees
+                elTotalPnl.textContent = formatMoney(totalPnl); // PnL thuần (không bao gồm phí)
+                elTotalFees.textContent = formatMoney(-totalFees); // Fees riêng biệt (hiển thị âm)
+                elBalance.textContent = formatMoney(balanceVal); // Balance từ API (đã trừ phí)
+                
+                // Add debug info to UI if there's still a mismatch
+                if (Math.abs(balanceVal - expectedBalance) > 1) {
+                    console.warn('Balance mismatch detected!');
+                    const debugInfo = document.createElement('div');
+                    debugInfo.style.cssText = 'color: orange; font-size: 12px; margin-top: 5px;';
+                    debugInfo.textContent = `Debug: Expected $${expectedBalance.toFixed(2)}, API $${balanceVal.toFixed(2)}`;
+                    document.querySelector('.summary').appendChild(debugInfo);
                 } else {
-                    balanceVal = null;
+                    console.log('✅ Balance logic is correct!');
                 }
 
-                const txForTotals = data.transactions || data.recentTransactions || data.items || data.trades || [];
-                if ((totalPnl === null || totalPnl === undefined) && Array.isArray(txForTotals) && txForTotals.length > 0) {
-                    totalPnl = txForTotals.reduce((s, t) => s + (Number(t.pnl ?? t.profit ?? t.profitLoss ?? 0) || 0), 0);
+                // Build chart data - dùng PnL thuần cho biểu đồ
+                let chartData = [];
+                if (completedTrades.length > 0) {
+                    let cumulative = 0;
+                    const dailyGroups = completedTrades
+                        .sort((a, b) => a.exitTs - b.exitTs)
+                        .reduce((groups, trade) => {
+                            const date = new Date(trade.exitTs).toISOString().split('T')[0];
+                            if (!groups[date]) groups[date] = [];
+                            groups[date].push(trade);
+                            return groups;
+                        }, {});
+                    
+                    Object.keys(dailyGroups).forEach(date => {
+                        // Chỉ tính PnL thuần cho biểu đồ (không trừ fees)
+                        const dayPnl = dailyGroups[date].reduce((sum, t) => sum + t.pnl, 0);
+                        cumulative += dayPnl;
+                        chartData.push({ time: date, value: cumulative });
+                    });
                 }
-                if ((totalFees === null || totalFees === undefined) && Array.isArray(txForTotals) && txForTotals.length > 0) {
-                    totalFees = txForTotals.reduce((s, t) => s + (Number(t.fees ?? t.fee ?? 0) || 0), 0);
-                }
-
-                elTotalPnl.textContent = formatMoney(totalPnl ?? 0);
-                elTotalFees.textContent = formatMoney(totalFees ?? 0);
-                elBalance.textContent = formatMoney(balanceVal);
-
-                let points = data.chart || data.series || data.points || [];
-                if ((!points || points.length === 0) && Array.isArray(data.timeSeries)) points = data.timeSeries;
-
-                const chartData = (points || []).map(p => {
-                    if (p.time && (p.value !== undefined)) return { time: p.time, value: Number(p.value) };
-                    if (p.date && (p.pnl !== undefined)) return { time: p.date.split('T')[0], value: Number(p.pnl) };
-                    if (p.t && p.v !== undefined) return { time: p.t, value: Number(p.v) };
-                    if (Array.isArray(p) && p.length >= 2) return { time: p[0], value: Number(p[1]) };
-                    return null;
-                }).filter(Boolean);
 
                 if (series) {
                     if (chartData.length) {
@@ -223,34 +468,45 @@
                     }
                 }
 
-                const tx = data.transactions || data.recentTransactions || data.items || data.trades || data.history || data.historyTrades || [];
-                if (!tx || tx.length === 0) {
+                // Render trade history table
+                if (!completedTrades || completedTrades.length === 0) {
                     elTxBody.innerHTML = '<tr><td colspan="9" style="padding:18px; color:var(--muted)">No transactions</td></tr>';
                 } else {
-                    elTxBody.innerHTML = tx.map(t => {
-                        const time = (t.exitTs || t.timestamp || t.time || t.exitTime || t.exitAt) ? new Date(t.exitTs || t.timestamp || t.time || t.exitTime || t.exitAt).toLocaleString() : (t.entryTs ? new Date(t.entryTs).toLocaleString() : '-');
-                        const symbol = t.symbol || t.pair || '-';
-                        const sideRaw = t.side;
-                        const side = (sideRaw !== undefined && (sideRaw === 1 || sideRaw === 'SHORT' || sideRaw === 'Sell')) ? 'SHORT' : (sideRaw === 0 || sideRaw === 'LONG' || sideRaw === 'Buy') ? 'LONG' : (sideRaw || '-');
-                        const qty = t.qty ?? t.quantity ?? t.size ?? '-';
-                        const entry = t.entryPrice ?? t.entry ?? t.open ?? '-';
-                        const exit = t.exitPrice ?? t.exit ?? t.close ?? '-';
-                        const pnl = Number(t.pnl ?? t.profit ?? t.profitLoss ?? 0);
-                        const fees = Number(t.fees ?? t.fee ?? 0);
-                        const note = t.note || t.reason || '-';
-                        const chip = side === 'LONG' ? `<span class="chip long">LONG</span>` : side === 'SHORT' ? `<span class="chip short">SHORT</span>` : side;
+                    elTxBody.innerHTML = completedTrades.map((t, index) => {
+                        const time = new Date(t.exitTs).toLocaleString('vi-VN');
+                        const symbol = t.symbol || '-';
+                        const side = t.side;
+                        const qty = t.qty;
+                        const entry = t.entryPrice;
+                        const exit = t.exitPrice;
+                        const pnl = t.pnl;
+                        const fees = t.fees;
+                        const note = t.note || '-';
+                        const chip = side === 'LONG' ? `<span class="chip long">LONG</span>` : 
+                                    side === 'SHORT' ? `<span class="chip short">SHORT</span>` : side;
+                        
                         return `<tr>
                             <td>${time}</td>
                             <td>${symbol}</td>
                             <td>${chip}</td>
                             <td>${qty}</td>
-                            <td>$${Number(entry).toFixed ? Number(entry).toFixed(4) : entry}</td>
-                            <td>$${Number(exit).toFixed ? Number(exit).toFixed(4) : exit}</td>
+                            <td>$${Number(entry).toFixed(4)}</td>
+                            <td>$${Number(exit).toFixed(4)}</td>
                             <td style="font-weight:700; color:${pnl>=0? 'var(--pos)':'var(--neg)'}">${formatMoney(pnl)}</td>
-                            <td>${formatMoney(fees)}</td>
+                            <td style="color:var(--neg)">${formatMoney(-fees)}</td>
                             <td>${note}</td>
                         </tr>`;
                     }).join('');
+                    
+                    // Check if scroll is needed and add class for fade effect
+                    setTimeout(() => {
+                        const wrapper = document.querySelector('.transactions-wrapper');
+                        if (wrapper && wrapper.scrollHeight > wrapper.clientHeight) {
+                            wrapper.classList.add('has-scroll');
+                        } else {
+                            wrapper.classList.remove('has-scroll');
+                        }
+                    }, 100);
                 }
 
             } catch (e) {

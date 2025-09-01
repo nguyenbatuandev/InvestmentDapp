@@ -163,9 +163,20 @@ namespace InvestDapp.Application.Services.Trading
                 // Update in-memory positions and balances
                 UpdateUserPosition(currentOrder, executionPrice);
 
+                var tradingFeeRate = _tradingConfig.FeeRatePercent / 100m; // Convert percent to decimal (0.04% -> 0.0004)
+                var tradingFee = (currentOrder.Quantity * executionPrice) * tradingFeeRate;
+                
                 var balance = GetUserBalanceSync(currentOrder.UserId);
                 if (balance != null)
                 {
+                    balance.Balance -= tradingFee;
+                    balance.AvailableBalance -= tradingFee;
+                    balance.UpdatedAt = DateTime.UtcNow;
+                    _balances[currentOrder.UserId] = balance;
+                    
+                    _logger.LogInformation("Trading fee deducted: {Fee} for order {OrderId}, user {UserId}", 
+                        tradingFee, currentOrder.Id, currentOrder.UserId);
+
                     var toPersist = new UserBalance
                     {
                         UserWallet = currentOrder.UserId,
@@ -176,11 +187,19 @@ namespace InvestDapp.Application.Services.Trading
                         UpdatedAt = DateTime.UtcNow
                     };
                     _repo.AddOrUpdateUserBalanceAsync(toPersist).GetAwaiter().GetResult();
+                    
+                    // Tạo transaction record cho phí giao dịch
+                    _repo.AddBalanceTransactionAsync(new BalanceTransaction
+                    {
+                        UserWallet = currentOrder.UserId,
+                        Amount = -tradingFee,
+                        Type = "TRADING_FEE",
+                        Reference = currentOrder.Id,
+                        Description = $"Trading fee for {currentOrder.Side} {currentOrder.Quantity} {currentOrder.Symbol}",
+                        BalanceAfter = balance.Balance,
+                        CreatedAt = DateTime.UtcNow
+                    }).GetAwaiter().GetResult();
                 }
-
-                    // Persist all in-memory positions for this user+symbol.
-                    // Note: do NOT delete DB rows here. Each opening order should create its own DB row
-                    // and historical rows should only be removed when a position is explicitly closed.
                     var memPositions = _positions.Values.Where(p => p.UserId == currentOrder.UserId && p.Symbol == currentOrder.Symbol).ToList();
                     if (memPositions.Count > 0)
                     {

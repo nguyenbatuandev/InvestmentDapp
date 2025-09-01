@@ -6,11 +6,14 @@ namespace InvestDapp.Application.Services.Trading
     public class TradingHub : Hub
     {
         private readonly ILogger<TradingHub> _logger;
+        private readonly IMarketPriceService _marketPriceService;
 
         public TradingHub(
-            ILogger<TradingHub> logger)
+            ILogger<TradingHub> logger,
+            IMarketPriceService marketPriceService)
         {
             _logger = logger;
+            _marketPriceService = marketPriceService;
         }
 
         public async Task JoinSymbolRoom(string symbol)
@@ -76,6 +79,22 @@ namespace InvestDapp.Application.Services.Trading
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting kline history for {Symbol} {Interval}", symbol, interval);
+            }
+        }
+
+        public async Task RequestMarkPrice(string symbol)
+        {
+            if (string.IsNullOrEmpty(symbol)) return;
+            try
+            {
+                var px = await _marketPriceService.GetMarkPriceAsync(symbol);
+                var payload = new { symbol = symbol, markPrice = px, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() };
+                await Clients.Caller.SendAsync("markPrice", payload);
+                _logger.LogDebug("RequestMarkPrice: sent mark price for {Symbol} to {ConnectionId}", symbol, Context.ConnectionId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "RequestMarkPrice failed for {Symbol}", symbol);
             }
         }
 
