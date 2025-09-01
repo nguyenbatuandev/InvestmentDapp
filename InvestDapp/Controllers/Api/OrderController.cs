@@ -32,6 +32,7 @@ namespace InvestDapp.Controllers.Api
             _repo = repo;
             _tradingConfig = tradingConfig;
         }
+        
         [HttpPost]
         public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest request)
         {
@@ -59,6 +60,12 @@ namespace InvestDapp.Controllers.Api
                 };
 
                 var result = await _orderService.CreateOrderAsync(order);
+                
+                if (result.Status == OrderStatus.Rejected)
+                {
+                    return BadRequest(new { error = result.Notes ?? "Order rejected" });
+                }
+                
                 return Ok(result);
             }
             catch (Exception ex)

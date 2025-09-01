@@ -1780,12 +1780,18 @@
             showLoading(`Đang mở lệnh ${side}...`);
             try {
                 if (useBackendTrading) {
-                    await createBackendOrder(side);
-                    await new Promise(r => setTimeout(r, 500));
-                    await refreshBackendState();
-                    hideLoading();
-                    showNotification(`✅ Lệnh ${side} đã được tạo!`, 'success');
-                    return;
+                    try {
+                        await createBackendOrder(side);
+                        await new Promise(r => setTimeout(r, 500));
+                        await refreshBackendState();
+                        hideLoading();
+                        showNotification(`✅ Lệnh ${side} đã được tạo thành công!`, 'success');
+                        return;
+                    } catch (error) {
+                        hideLoading();
+                        showNotification(`❌ ${error.message}`, 'danger');
+                        return;
+                    }
                 }
 
                 const orderType = Number(document.querySelector('.order-type-btn.active')?.dataset.type || 0);
@@ -1827,33 +1833,53 @@
         }
 
         async function createBackendOrder(side) {
-            try {
-                const orderType = Number(document.querySelector('.order-type-btn.active')?.dataset.type || 0);
-                const limitPriceVal = $('#limitPriceInput')?.value;
-                if(orderType === 1 && (!limitPriceVal || Number(limitPriceVal) <= 0)){
-                    alert('Please enter a valid limit price.');
-                    return;
-                }
-                const body = {
-                    symbol: currentSymbol,
-                    side: side === 'LONG' ? 0 : 1,
-                    type: orderType,
-                    quantity: Math.max(0.0001, Number($('#qtyInput')?.value || 0)),
-                    price: orderType === 1 ? Number(limitPriceVal) : null,
-                    leverage: Math.min(125, Math.max(1, Number($('#levInput')?.value || 20))),
-                    takeProfitPrice: $('#tpInput')?.value ? Number($('#tpInput')?.value) : null,
-                    stopLossPrice: $('#slInput')?.value ? Number($('#slInput')?.value) : null
-                };
-                const r = await fetch('/api/Order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-                if (r.status === 401) { useBackendTrading = false; alert('Not logged in or session expired. Please log in again.'); return; }
-                if (!r.ok) {
-                    const err = await r.text();
-                    alert('Failed to create order: ' + err);
-                }
-            } catch (e) {
-                console.error('Create backend order error', e);
-                alert('Error creating order (see console).');
+            const orderType = Number(document.querySelector('.order-type-btn.active')?.dataset.type || 0);
+            const limitPriceVal = $('#limitPriceInput')?.value;
+            if(orderType === 1 && (!limitPriceVal || Number(limitPriceVal) <= 0)){
+                throw new Error('Please enter a valid limit price.');
             }
+            const body = {
+                symbol: currentSymbol,
+                side: side === 'LONG' ? 0 : 1,
+                type: orderType,
+                quantity: Math.max(0.0001, Number($('#qtyInput')?.value || 0)),
+                price: orderType === 1 ? Number(limitPriceVal) : null,
+                leverage: Math.min(125, Math.max(1, Number($('#levInput')?.value || 20))),
+                takeProfitPrice: $('#tpInput')?.value ? Number($('#tpInput')?.value) : null,
+                stopLossPrice: $('#slInput')?.value ? Number($('#slInput')?.value) : null
+            };
+            const r = await fetch('/api/Order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            if (r.status === 401) { 
+                useBackendTrading = false; 
+                throw new Error('Not logged in or session expired. Please log in again.'); 
+            }
+            if (!r.ok) {
+                let errorMessage = 'Failed to create order';
+                try {
+                    const errorResponse = await r.json();
+                    if (errorResponse.error) {
+                        // Check if it's an insufficient balance error
+                        if (errorResponse.error.includes('Insufficient balance')) {
+                            const match = errorResponse.error.match(/Need ([\d,\.]+), available ([\d,\.]+)/);
+                            if (match) {
+                                const needed = parseFloat(match[1].replace(/,/g, ''));
+                                const available = parseFloat(match[2].replace(/,/g, ''));
+                                errorMessage = `Không đủ tiền! Cần ${formatMoney(needed)} USDT, chỉ có ${formatMoney(available)} USDT`;
+                            } else {
+                                errorMessage = 'Không đủ tiền để mở lệnh!';
+                            }
+                        } else {
+                            errorMessage = errorResponse.error;
+                        }
+                    }
+                } catch {
+                    // If JSON parsing fails, use the raw text
+                    const errorText = await r.text();
+                    errorMessage = errorText || 'Unknown error occurred';
+                }
+                throw new Error(errorMessage);
+            }
+            return await r.json(); // Return response for success handling
         }
 
         function closePosition(pos, reason = 'Manual') {

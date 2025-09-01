@@ -36,10 +36,9 @@
         public decimal Quantity { get; set; }
         public decimal? Price { get; set; }
         public decimal? StopPrice { get; set; }
-    // New advanced trading fields
-    public decimal? TakeProfitPrice { get; set; }
-    public decimal? StopLossPrice { get; set; }
-    public bool ReduceOnly { get; set; } = false;
+        public decimal? TakeProfitPrice { get; set; }
+        public decimal? StopLossPrice { get; set; }
+        public bool ReduceOnly { get; set; } = false;
         public int Leverage { get; set; } = 1;
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -63,12 +62,11 @@
         public int Leverage { get; set; }
         public decimal Margin { get; set; }
         public decimal PnL { get; set; }
-    // New risk / TP-SL fields
-    public decimal? TakeProfitPrice { get; set; }
-    public decimal? StopLossPrice { get; set; }
-    public decimal MaintenanceMarginRate { get; set; } = 0.005m; // 0.5% default
-    public bool IsIsolated { get; set; } = true;
-    public decimal? LiquidationPrice { get; set; }
+        public decimal? TakeProfitPrice { get; set; }
+        public decimal? StopLossPrice { get; set; }
+        public decimal MaintenanceMarginRate { get; set; } = 0.005m; // 0.5% default
+        public bool IsIsolated { get; set; } = true;
+        public decimal? LiquidationPrice { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
@@ -108,11 +106,10 @@
         public decimal Quantity { get; set; }
         public decimal? Price { get; set; }
         public decimal? StopPrice { get; set; }
-    public decimal? TakeProfitPrice { get; set; }
-    public decimal? StopLossPrice { get; set; }
-    // Optional: when set, reduce-only execution should target this specific DB position id first
-    public string? TargetPositionId { get; set; }
-    public bool ReduceOnly { get; set; } = false;
+        public decimal? TakeProfitPrice { get; set; }
+        public decimal? StopLossPrice { get; set; }
+        public string? TargetPositionId { get; set; }
+        public bool ReduceOnly { get; set; } = false;
         public int Leverage { get; set; } = 1;
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -135,12 +132,12 @@
         public decimal RealizedPnl { get; set; }
         public int Leverage { get; set; }
         public decimal Margin { get; set; }
-    public decimal PnL { get; set; } // convenience aggregate (Realized + Unrealized)
-    public decimal? TakeProfitPrice { get; set; }
-    public decimal? StopLossPrice { get; set; }
-    public decimal MaintenanceMarginRate { get; set; } = 0.005m;
-    public bool IsIsolated { get; set; } = true;
-    public decimal? LiquidationPrice { get; set; }
+        public decimal PnL { get; set; } 
+        public decimal? TakeProfitPrice { get; set; }
+        public decimal? StopLossPrice { get; set; }
+        public decimal MaintenanceMarginRate { get; set; } = 0.005m;
+        public bool IsIsolated { get; set; } = true;
+        public decimal? LiquidationPrice { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
