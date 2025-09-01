@@ -1,0 +1,280 @@
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Portfolio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            /* Match trading/chart theme colors for visual consistency */
+            --bg: #0d1117; /* page background */
+            --panel: #161b22; /* main panel */
+            --panel-light: #21262d; /* lighter panel */
+            --text: #e6edf3; /* primary text */
+            --muted: #8b949e; /* muted text */
+            --accent: #58a6ff; /* primary accent */
+            --card: #161b22; /* card background */
+            --glass: rgba(255,255,255,0.03);
+            --pos: #00d4aa; /* positive / up color */
+            --neg: #ff4747; /* negative / down color (match chart) */
+            --border: #30363d;
+        }
+        html,body{height:100%;}
+        body { font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(180deg,#05060a 0%, var(--bg) 100%); color: #e6edf3; margin:0; padding:28px; }
+        .container { max-width:1200px; margin:0 auto; }
+
+        /* Header */
+        .top { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:20px; }
+        .title { display:flex; flex-direction:column; }
+        .title h1{ margin:0; font-size:20px; letter-spacing:0.2px; color:var(--accent); }
+        .title p{ margin:2px 0 0 0; font-size:13px; color:var(--muted); }
+
+        /* Controls */
+        .controls { display:flex; gap:10px; align-items:center; }
+        .filter { display:flex; gap:8px; align-items:center; background:var(--glass); padding:8px; border-radius:10px; border:1px solid rgba(255,255,255,0.03); }
+        .filter label{ color:var(--muted); font-size:13px; }
+        input[type=date] { background:transparent; border:none; color:#e6edf3; padding:6px 8px; border-radius:6px; outline:none; }
+        button { background:var(--accent); color:#081122; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:600; }
+
+        /* Summary cards */
+        .summary { display:grid; grid-template-columns: repeat(3,1fr); gap:14px; margin-top:10px; }
+        .card { background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent); border:1px solid rgba(255,255,255,0.04); padding:14px; border-radius:12px; }
+        .card .label{ color:var(--muted); font-size:13px; margin-bottom:6px; }
+        .card .value{ font-size:18px; font-weight:700; }
+        .card .sub{ font-size:12px; color:var(--muted); margin-top:6px; }
+
+        /* Chart */
+        #chart-wrapper{ margin-top:20px; background:var(--panel); border-radius:12px; padding:12px; border:1px solid rgba(255,255,255,0.03); }
+        #portfolio-chart{ width:100%; height:360px; }
+        #chart-loading{ padding:12px; color:var(--muted); }
+
+        /* Transactions */
+        .transactions{ margin-top:18px; border-radius:12px; overflow:auto; }
+        table{ width:100%; border-collapse:collapse; font-size:13px; }
+        th, td{ padding:12px 14px; text-align:left; border-bottom:1px solid rgba(255,255,255,0.03); }
+        thead th{ position:sticky; top:0; background:linear-gradient(180deg, rgba(10,12,16,0.8), rgba(10,12,16,0.6)); color:var(--muted); }
+        tr:hover td{ background:rgba(255,255,255,0.01); }
+        .chip{ display:inline-block; padding:6px 8px; border-radius:8px; font-size:12px; font-weight:600; }
+        .chip.long{ background: rgba(0,212,170,0.08); color:var(--pos); }
+        .chip.short{ background: rgba(255,107,107,0.06); color:var(--neg); }
+
+        /* Responsive */
+        @@media (max-width:900px){ .summary{ grid-template-columns: 1fr; } .top{ flex-direction:column; align-items:flex-start; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="top">
+            <div class="title">
+                <h1>Portfolio & Statistics</h1>
+                <p>Tổng quan lời/lỗ, phí và lịch sử giao dịch của bạn</p>
+            </div>
+
+            <div class="controls">
+                <div class="filter">
+                    <label for="start">From</label>
+                    <input id="start" type="date" />
+                    <label for="end">To</label>
+                    <input id="end" type="date" />
+                </div>
+                <button id="applyBtn">Apply</button>
+            </div>
+        </div>
+
+        <div class="summary">
+            <div class="card">
+                <div class="label">Total Net PnL</div>
+                <div class="value" id="totalPnl">—</div>
+                <div class="sub">Realized PnL over selected period</div>
+            </div>
+            <div class="card">
+                <div class="label">Total Fees</div>
+                <div class="value" id="totalFees">—</div>
+                <div class="sub">Fees paid for trades</div>
+            </div>
+            <div class="card">
+                <div class="label">Current Balance</div>
+                <div class="value" id="currentBalance">—</div>
+                <div class="sub">Account balance</div>
+            </div>
+        </div>
+
+        <div id="chart-wrapper">
+            <div id="portfolio-chart"></div>
+            <div id="chart-loading">Loading chart...</div>
+        </div>
+
+        <div class="transactions" id="txContainer">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="min-width:160px">Time</th>
+                        <th>Symbol</th>
+                        <th>Side</th>
+                        <th>Qty</th>
+                        <th>Entry</th>
+                        <th>Exit</th>
+                        <th style="min-width:110px">PnL</th>
+                        <th>Fees</th>
+                        <th>Note</th>
+                    </tr>
+                </thead>
+                <tbody id="txBody">
+                    <tr><td colspan="9" id="tx-empty" style="padding:18px; color:var(--muted)">No data</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+    <script>
+        // Keep original API and element ids so backend integration remains unchanged
+        const API = '/api/Order/portfolio';
+        const elTotalPnl = document.getElementById('totalPnl');
+        const elTotalFees = document.getElementById('totalFees');
+        const elBalance = document.getElementById('currentBalance');
+        const elTxBody = document.getElementById('txBody');
+        const elChartLoading = document.getElementById('chart-loading');
+
+        let chart, series;
+
+        function formatMoney(v) {
+            if (v == null || Number.isNaN(Number(v))) return '—';
+            const n = Number(v);
+            return (n >= 0 ? '+' : '-') + new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Math.abs(n));
+        }
+
+        function initChart() {
+            const container = document.getElementById('portfolio-chart');
+            if (!container) return;
+            chart = LightweightCharts.createChart(container, { layout: { background: { color: 'transparent' }, textColor: '#e6edf3' }, timeScale: { rightOffset: 12 } });
+            series = chart.addLineSeries({ color: '#58a6ff', lineWidth: 2 });
+        }
+
+        // The following loadPortfolio logic is preserved from previous implementation but benefits from improved UI
+        async function loadPortfolio(start, end) {
+            try {
+                elChartLoading.style.display = 'block';
+                elTxBody.innerHTML = '<tr><td colspan="9" style="padding:18px; color:var(--muted)">Loading...</td></tr>';
+                const params = new URLSearchParams();
+                if (start) params.set('start', start);
+                if (end) params.set('end', end);
+                const resp = await fetch(API + (params.toString() ? '?' + params.toString() : ''));
+                if (resp.status === 401) {
+                    elTxBody.innerHTML = '<tr><td colspan="9" style="padding:18px; color:var(--muted)">Bạn cần đăng nhập để xem Portfolio. Vui lòng đăng nhập và thử lại.</td></tr>';
+                    elTotalPnl.textContent = '—';
+                    elTotalFees.textContent = '—';
+                    elBalance.textContent = '—';
+                    elChartLoading.style.display = 'none';
+                    return;
+                }
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                const data = await resp.json();
+
+                const summary = data.summary || data.stats || data || {};
+                let totalPnl = data.realizedPnl ?? null;
+                let totalFees = data.totalFees ?? null;
+
+                let balanceVal = null;
+                const bal = data.balance ?? summary.balance ?? summary.currentBalance ?? summary.availableBalance ?? null;
+                if (bal == null) balanceVal = null;
+                else if (typeof bal === 'number') balanceVal = bal;
+                else if (typeof bal === 'string') balanceVal = Number(bal);
+                else if (typeof bal === 'object') {
+                    balanceVal = bal.balance ?? bal.availableBalance ?? bal.available ?? bal.available_balance ?? null;
+                } else {
+                    balanceVal = null;
+                }
+
+                const txForTotals = data.transactions || data.recentTransactions || data.items || data.trades || [];
+                if ((totalPnl === null || totalPnl === undefined) && Array.isArray(txForTotals) && txForTotals.length > 0) {
+                    totalPnl = txForTotals.reduce((s, t) => s + (Number(t.pnl ?? t.profit ?? t.profitLoss ?? 0) || 0), 0);
+                }
+                if ((totalFees === null || totalFees === undefined) && Array.isArray(txForTotals) && txForTotals.length > 0) {
+                    totalFees = txForTotals.reduce((s, t) => s + (Number(t.fees ?? t.fee ?? 0) || 0), 0);
+                }
+
+                elTotalPnl.textContent = formatMoney(totalPnl ?? 0);
+                elTotalFees.textContent = formatMoney(totalFees ?? 0);
+                elBalance.textContent = formatMoney(balanceVal);
+
+                let points = data.chart || data.series || data.points || [];
+                if ((!points || points.length === 0) && Array.isArray(data.timeSeries)) points = data.timeSeries;
+
+                const chartData = (points || []).map(p => {
+                    if (p.time && (p.value !== undefined)) return { time: p.time, value: Number(p.value) };
+                    if (p.date && (p.pnl !== undefined)) return { time: p.date.split('T')[0], value: Number(p.pnl) };
+                    if (p.t && p.v !== undefined) return { time: p.t, value: Number(p.v) };
+                    if (Array.isArray(p) && p.length >= 2) return { time: p[0], value: Number(p[1]) };
+                    return null;
+                }).filter(Boolean);
+
+                if (series) {
+                    if (chartData.length) {
+                        series.setData(chartData);
+                        chart.timeScale().fitContent();
+                    } else {
+                        series.setData([]);
+                    }
+                }
+
+                const tx = data.transactions || data.recentTransactions || data.items || data.trades || data.history || data.historyTrades || [];
+                if (!tx || tx.length === 0) {
+                    elTxBody.innerHTML = '<tr><td colspan="9" style="padding:18px; color:var(--muted)">No transactions</td></tr>';
+                } else {
+                    elTxBody.innerHTML = tx.map(t => {
+                        const time = (t.exitTs || t.timestamp || t.time || t.exitTime || t.exitAt) ? new Date(t.exitTs || t.timestamp || t.time || t.exitTime || t.exitAt).toLocaleString() : (t.entryTs ? new Date(t.entryTs).toLocaleString() : '-');
+                        const symbol = t.symbol || t.pair || '-';
+                        const sideRaw = t.side;
+                        const side = (sideRaw !== undefined && (sideRaw === 1 || sideRaw === 'SHORT' || sideRaw === 'Sell')) ? 'SHORT' : (sideRaw === 0 || sideRaw === 'LONG' || sideRaw === 'Buy') ? 'LONG' : (sideRaw || '-');
+                        const qty = t.qty ?? t.quantity ?? t.size ?? '-';
+                        const entry = t.entryPrice ?? t.entry ?? t.open ?? '-';
+                        const exit = t.exitPrice ?? t.exit ?? t.close ?? '-';
+                        const pnl = Number(t.pnl ?? t.profit ?? t.profitLoss ?? 0);
+                        const fees = Number(t.fees ?? t.fee ?? 0);
+                        const note = t.note || t.reason || '-';
+                        const chip = side === 'LONG' ? `<span class="chip long">LONG</span>` : side === 'SHORT' ? `<span class="chip short">SHORT</span>` : side;
+                        return `<tr>
+                            <td>${time}</td>
+                            <td>${symbol}</td>
+                            <td>${chip}</td>
+                            <td>${qty}</td>
+                            <td>$${Number(entry).toFixed ? Number(entry).toFixed(4) : entry}</td>
+                            <td>$${Number(exit).toFixed ? Number(exit).toFixed(4) : exit}</td>
+                            <td style="font-weight:700; color:${pnl>=0? 'var(--pos)':'var(--neg)'}">${formatMoney(pnl)}</td>
+                            <td>${formatMoney(fees)}</td>
+                            <td>${note}</td>
+                        </tr>`;
+                    }).join('');
+                }
+
+            } catch (e) {
+                console.error('Failed to load portfolio', e);
+                elTxBody.innerHTML = '<tr><td colspan="9" style="padding:18px; color:var(--muted)">Failed to load data</td></tr>';
+            } finally {
+                elChartLoading.style.display = 'none';
+            }
+        }
+
+        document.getElementById('applyBtn').addEventListener('click', () => {
+            const start = document.getElementById('start').value;
+            const end = document.getElementById('end').value;
+            loadPortfolio(start, end);
+        });
+
+        initChart();
+        (function setDefaultDates(){
+            const end = new Date();
+            const start = new Date(); start.setDate(end.getDate()-30);
+            document.getElementById('start').value = start.toISOString().slice(0,10);
+            document.getElementById('end').value = end.toISOString().slice(0,10);
+        })();
+        loadPortfolio(document.getElementById('start').value, document.getElementById('end').value);
+    </script>
+</body>
+</html>
