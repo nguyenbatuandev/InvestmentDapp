@@ -17,6 +17,8 @@ namespace InvestDapp.Infrastructure.Data.interfaces
 
         Task AddBalanceTransactionAsync(BalanceTransaction tx);
 
+        Task AddWalletWithdrawalRequestAsync(WalletWithdrawalRequest req);
+
         Task<List<Position>> GetPositionsByUserSymbolAsync(string userWallet, string symbol);
         Task<List<Position>> GetPositionsByUserAsync(string userWallet);
         Task<Position?> GetPositionByIdAsync(int id);

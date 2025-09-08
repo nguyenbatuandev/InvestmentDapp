@@ -4,6 +4,7 @@ using InvestDapp.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace InvestDapp.Infrastructure.Migrations
 {
     [DbContext(typeof(InvestDbContext))]
-    partial class InvestDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250902175234_UpdateModel2025")]
+    partial class UpdateModel2025
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -842,46 +845,6 @@ namespace InvestDapp.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("UserBalances");
-                });
-
-            modelBuilder.Entity("InvestDapp.Shared.Models.Trading.WalletWithdrawalRequest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AdminNotes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 8)
-                        .HasColumnType("decimal(18,8)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("RecipientAddress")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserWallet")
-                        .IsRequired()
-                        .HasMaxLength(42)
-                        .HasColumnType("nvarchar(42)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Status");
-
-                    b.HasIndex("UserWallet");
-
-                    b.ToTable("WalletWithdrawalRequests");
                 });
 
             modelBuilder.Entity("InvestDapp.Shared.Models.User", b =>

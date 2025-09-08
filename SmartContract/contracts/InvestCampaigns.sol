@@ -98,7 +98,8 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
     event WithdrawalRequestCanceled(uint256 indexed campaignId, uint256 indexed requestId);
     event SetFees(address indexed receiver, uint16 fees);
     event SetAddressReceiver(address indexed receiver, address indexed admin);
-
+    event DepositBNBTrading(address indexed sender, uint256 amount);
+    event WithdrawBNBTrading(address indexed receiver, uint256 amount);
     // --- MODIFIERS ---
     // Modifiers là các "bộ lọc" có thể tái sử dụng để kiểm tra các điều kiện trước khi một hàm được thực thi.
     modifier onlyAdmin() {
@@ -446,5 +447,18 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         }));
 
         emit WithdrawalRequested(_campaignId, id, msg.sender, amountToWithdraw, _reason, voteEndTime);
+    }
+
+    function depositBNBTrading() external payable {
+        require(msg.value > 0, "Amount must be greater than zero");
+        emit DepositBNBTrading(msg.sender, msg.value);
+    }   
+
+    function withdrawBNBTrading(uint256 _amount) external nonReentrant {
+        require(_amount > 0, "Amount must be greater than zero");
+        require(address(this).balance >= _amount, "Insufficient contract balance");
+        (bool sent, ) = msg.sender.call{value: _amount}("");
+        require(sent, "Withdrawal failed");
+        emit WithdrawBNBTrading(msg.sender, _amount);
     }
 }

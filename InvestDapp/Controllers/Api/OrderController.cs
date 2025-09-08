@@ -272,8 +272,18 @@ namespace InvestDapp.Controllers.Api
             if (req.Amount <= 0) return BadRequest(new { error = "Amount must be > 0" });
             var userKey = GetTradingUserKey();
             if (string.IsNullOrEmpty(userKey)) return Unauthorized();
-            var bal = await _orderService.UpdateUserBalanceAsync(userKey, req.Amount, "DEPOSIT");
-            return Ok(bal);
+            _logger.LogInformation("Deposit requested by {User} Amount={Amount}", userKey, req.Amount);
+            try
+            {
+                var bal = await _orderService.UpdateUserBalanceAsync(userKey, req.Amount, "DEPOSIT");
+                _logger.LogInformation("Deposit processed for {User}: new balance available={Available}", userKey, bal?.AvailableBalance);
+                return Ok(bal);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing deposit for {User} Amount={Amount}", userKey, req.Amount);
+                return StatusCode(500, new { error = "Unable to process deposit" });
+            }
         }
 
         [HttpPost("balance/withdraw")]
@@ -282,10 +292,67 @@ namespace InvestDapp.Controllers.Api
             if (req.Amount <= 0) return BadRequest(new { error = "Amount must be > 0" });
             var userKey = GetTradingUserKey();
             if (string.IsNullOrEmpty(userKey)) return Unauthorized();
+            _logger.LogInformation("Withdraw requested by {User} Amount={Amount}", userKey, req.Amount);
             var bal = await _orderService.GetUserBalanceAsync(userKey);
-            if (bal == null || bal.AvailableBalance < req.Amount) return BadRequest(new { error = "Insufficient available balance" });
-            var updated = await _orderService.UpdateUserBalanceAsync(userKey, -req.Amount, "WITHDRAW");
-            return Ok(updated);
+            if (bal == null)
+            {
+                _logger.LogWarning("Withdraw attempt but balance record missing for {User}", userKey);
+                return BadRequest(new { error = "Insufficient available balance" });
+            }
+            if (bal.AvailableBalance < req.Amount)
+            {
+                _logger.LogWarning("Withdraw denied for {User}: available={Available} requested={Requested}", userKey, bal.AvailableBalance, req.Amount);
+                return BadRequest(new { error = "Insufficient available balance" });
+            }
+            try
+            {
+                InternalUserBalance updated;
+                try
+                {
+                    updated = await _orderService.UpdateUserBalanceAsync(userKey, -req.Amount, "WITHDRAW_REQUEST");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error updating balance during withdraw request for {User} Amount={Amount}", userKey, req.Amount);
+                    return StatusCode(500, new { error = "Unable to reserve funds for withdraw: " + (ex.Message ?? ex.ToString()) });
+                }
+
+                if (_repo != null)
+                {
+                    var recipient = (req.RecipientAddress ?? string.Empty).Trim();
+                    if (string.IsNullOrEmpty(recipient)) recipient = userKey;
+                    if (recipient.Length > 100) recipient = recipient.Substring(0, 100);
+
+                    var wreq = new InvestDapp.Shared.Models.Trading.WalletWithdrawalRequest
+                    {
+                        UserWallet = userKey,
+                        RecipientAddress = recipient,
+                        Amount = req.Amount,
+                        Status = InvestDapp.Shared.Enums.WithdrawalStatus.Pending,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    try
+                    {
+                        await _repo.AddWalletWithdrawalRequestAsync(wreq);
+                        await _repo.SaveChangesAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error saving withdrawal request for {User} Amount={Amount} Recipient={Recipient}", userKey, req.Amount, recipient);
+                        try { await _orderService.UpdateUserBalanceAsync(userKey, req.Amount, "WITHDRAW_REQUEST_ROLLBACK"); } catch (Exception rbEx) { _logger.LogError(rbEx, "Rollback failed for {User}", userKey); }
+                        var errMsg = ex.InnerException?.Message ?? ex.Message;
+                        return StatusCode(500, new { error = "Unable to create withdraw request: " + errMsg });
+                    }
+                }
+
+                _logger.LogInformation("Withdraw request created for {User}: amount={Amount}", userKey, req.Amount);
+                return Ok(new { message = "Withdrawal request created and pending admin approval", balance = updated });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating withdraw request for {User} Amount={Amount}", userKey, req.Amount);
+                return StatusCode(500, new { error = "Unable to create withdraw request: " + (ex.Message ?? ex.ToString()) });
+            }
         }
 
         private string? GetTradingUserKey()

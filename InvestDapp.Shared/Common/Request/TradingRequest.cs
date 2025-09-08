@@ -27,6 +27,7 @@ namespace InvestDapp.Shared.Common.Request
     public class BalanceChangeRequest
     {
         public decimal Amount { get; set; }
+        public string? RecipientAddress { get; set; }
     }
 
     public class ClosePositionRequest

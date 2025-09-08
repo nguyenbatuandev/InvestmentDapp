@@ -62,6 +62,12 @@ namespace InvestDapp.Infrastructure.Data.Repository
             await Task.CompletedTask;
         }
 
+        public async Task AddWalletWithdrawalRequestAsync(InvestDapp.Shared.Models.Trading.WalletWithdrawalRequest req)
+        {
+            _db.WalletWithdrawalRequests.Add(req);
+            await Task.CompletedTask;
+        }
+
         public async Task<List<Position>> GetPositionsByUserSymbolAsync(string userWallet, string symbol)
         {
             return await _db.Positions.Where(p => p.UserWallet == userWallet && p.Symbol == symbol).OrderBy(p => p.CreatedAt).ToListAsync();

@@ -78,6 +78,17 @@ namespace InvestDapp.Infrastructure.Data
                 entity.HasIndex(e => e.UserWallet);
                 entity.HasIndex(e => e.Type);
             });
+
+            modelBuilder.Entity<WalletWithdrawalRequest>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.UserWallet).IsRequired().HasMaxLength(42);
+                entity.Property(e => e.RecipientAddress).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Amount).HasPrecision(18, 8);
+                entity.Property(e => e.Status).HasConversion<int>();
+                entity.HasIndex(e => e.UserWallet);
+                entity.HasIndex(e => e.Status);
+            });
         }
 
         public DbSet<Campaign> Campaigns { get; set; }
@@ -85,6 +96,7 @@ namespace InvestDapp.Infrastructure.Data
         public DbSet<Investment> Investment { get; set; }
         public DbSet<Vote> Vote { get; set; }
         public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
+        public DbSet<WalletWithdrawalRequest> WalletWithdrawalRequests { get; set; }
 
         public DbSet<EventLogBlockchain> EventLogBlockchain { get; set; }
 

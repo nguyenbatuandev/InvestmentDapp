@@ -1088,16 +1088,125 @@
     </style>
 </head>
 <body>
-
+    <script src="~/js/contract-config.js?v=@DateTime.Now.Ticks"></script>
+    <script id="ethers-cdn" src="https://unpkg.com/ethers@6.10.0/bundles/ethers.umd.min.js"></script>
     <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
     <script>
+        // ===== LẤY CONFIG với fallback =====
+        const CFG = window.CONTRACT_CONFIG || {};
+        const EXPECTED_CHAIN_ID = CFG.EXPECTED_CHAIN_ID_HEX || CFG.EXPECTED_CHAIN_ID || '0x61';
+        const CONTRACT_ADDRESS  = CFG.CONTRACT_ADDRESS;
+        const CONTRACT_ABI      = CFG.CONTRACT_ABI;
+
+        // Debug log để kiểm tra config
+        console.log('CONTRACT_CONFIG loaded:', !!window.CONTRACT_CONFIG);
+        console.log('CONTRACT_ADDRESS from config:', CONTRACT_ADDRESS);
+        console.log('CONTRACT_ABI length:', CONTRACT_ABI?.length || 0);
+        
+        // ===== ETHERS LOADER =====
+        let _ethersLoadingPromise = null;
+        function injectScript(src){
+          return new Promise((resolve,reject)=>{
+            const s=document.createElement('script');
+            s.src=src; s.async=true; s.onload=resolve; s.onerror=reject;
+            document.head.appendChild(s);
+          });
+        }
+        async function loadEthersIfNeeded(){
+          if(window.ethers) return;
+          if(_ethersLoadingPromise){ await _ethersLoadingPromise; return; }
+          const primary = document.getElementById('ethers-cdn');
+          _ethersLoadingPromise = (async ()=>{
+            if(primary && !primary.complete){
+              for(let i=0;i<10 && !window.ethers;i++){ await new Promise(r=>setTimeout(r,200)); }
+              if(window.ethers) return;
+            }
+            // Fallback CDNs
+            const cdns = [
+              'https://cdnjs.cloudflare.com/ajax/libs/ethers/6.10.0/ethers.umd.min.js',
+              'https://unpkg.com/ethers@6.10.0/bundles/ethers.umd.min.js'
+            ];
+            for(const url of cdns){
+              try{ await injectScript(url); if(window.ethers) return; }catch{}
+            }
+          })();
+          await _ethersLoadingPromise;
+        }
+        async function ensureEthersReady(){
+          if(window.ethers) return;
+          await loadEthersIfNeeded();
+          for(let i=0;i<10 && !window.ethers;i++){ await new Promise(r=>setTimeout(r,300)); }
+          if(!window.ethers) throw new Error('Không thể tải ethers.');
+        }
+
+        // ===== WALLET / CHAIN =====
+        async function ensureWalletConnected(){
+          if(!window.ethereum) throw new Error('Chưa cài MetaMask.');
+          
+          // 🔥 KIỂM TRA XEM ĐÃ KẾT NỐI CHƯA - TRÁNH GỌI LẠI eth_requestAccounts
+          let accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          
+          // Nếu chưa có tài khoản nào được kết nối, mới yêu cầu kết nối
+          if(!accounts || accounts.length === 0) {
+            accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          }
+          
+          if(!accounts?.length) throw new Error('Không kết nối được ví.');
+
+          let chainId = await window.ethereum.request({ method:'eth_chainId' });
+          if(chainId !== EXPECTED_CHAIN_ID){
+            try{
+              await window.ethereum.request({ method:'wallet_switchEthereumChain', params:[{ chainId: EXPECTED_CHAIN_ID }] });
+            }catch(err){
+              if(err?.code === 4902){
+                await window.ethereum.request({
+                  method:'wallet_addEthereumChain',
+                  params:[{
+                    chainId: EXPECTED_CHAIN_ID,
+                    chainName:'BSC Testnet',
+                    nativeCurrency:{ name:'tBNB', symbol:'tBNB', decimals:18 },
+                    rpcUrls:['https://data-seed-prebsc-1-s1.binance.org:8545'],
+                    blockExplorerUrls:['https://testnet.bscscan.com']
+                  }]
+                });
+              }else{
+                throw new Error('Vui lòng chuyển sang BSC Testnet trong MetaMask.');
+              }
+            }
+          }
+          return accounts[0];
+        }
+
+        // ===== CONTRACT WRITER =====
+        async function getContract(){
+          await ensureEthersReady();
+          await ensureWalletConnected();
+          
+          // Validate contract address
+          if(!CONTRACT_ADDRESS || CONTRACT_ADDRESS === 'PASTE_YOUR_CONTRACT_ADDRESS_HERE'){
+            throw new Error('Chưa cấu hình CONTRACT_ADDRESS. Vui lòng cập nhật trong contract-config.js');
+          }
+          
+          if(!window.ethers.isAddress(CONTRACT_ADDRESS)){
+            throw new Error(`CONTRACT_ADDRESS không hợp lệ: ${CONTRACT_ADDRESS}`);
+          }
+          
+          if(!CONTRACT_ABI || CONTRACT_ABI.length === 0){
+            throw new Error('CONTRACT_ABI chưa được cấu hình hoặc rỗng.');
+          }
+          
+          const provider = new window.ethers.BrowserProvider(window.ethereum);
+          const signer = await provider.getSigner();
+          return new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        }
         // Configuration
         const SYMBOL = '@ViewBag.Symbol' || 'BTCUSDT';
         const API_BASE = '/api/trading';
 
         // Global variables
-    let chart, candleSeries, volumeSeries;
+        let chart, candleSeries, volumeSeries;
         let connection = null;
         let currentInterval = '1h';
         let currentSymbol = SYMBOL; // Track current symbol for price formatting
@@ -2314,7 +2423,8 @@
         }
 
         function showLoading(message = 'Processing...') {
-            hideLoading();
+            // Remove any existing overlay first to avoid duplicates
+            try { const existing = document.getElementById('loadingOverlay'); if (existing) existing.remove(); } catch (e) { /* ignore */ }
             const overlay = document.createElement('div');
             overlay.className = 'loading-overlay';
             overlay.id = 'loadingOverlay';
@@ -2323,11 +2433,14 @@
         }
 
         function hideLoading() {
-            const existing = $('#loadingOverlay');
-            if (existing) {
-                existing.style.animation = 'fadeOut 0.3s ease-in';
-                setTimeout(() => existing.remove(), 300);
-            }
+            try {
+                const existing = document.getElementById('loadingOverlay');
+                if (existing) {
+                    existing.style.animation = 'fadeOut 0.3s ease-in';
+                    setTimeout(() => { try { existing.remove(); } catch(e){} }, 300);
+                }
+            } catch (e) { /* ignore */ }
+            try { const cb = document.getElementById('fundConfirmBtn'); if (cb) { cb.classList.remove('btn-loading'); cb.disabled = false; } } catch(e){}
         }
 
         function setButtonLoading(buttonId, loading = true) {
@@ -2345,6 +2458,296 @@
                 if (btn.dataset.originalText) btn.innerHTML = btn.dataset.originalText;
             }
         }
+
+        // Deposit / Withdraw handlers
+        // --- On-chain helpers: send deposit/withdraw and wait for confirmation ---
+        async function sendDepositOnchain(amountBnb){
+            // amountBnb is a Number representing BNB (e.g. 0.5)
+            await ensureEthersReady();
+            await ensureWalletConnected();
+            const provider = new window.ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const contract = await getContract();
+            // Convert BNB amount to wei
+            const value = window.ethers.parseEther(String(amountBnb));
+            try {
+                // Solidity: function depositBNBTrading() external payable
+                // No "to" parameter — value is sent with the call
+                const tx = await contract.depositBNBTrading({ value });
+                return await tx.wait();
+            } catch (err) {
+                console.error('depositBNBTrading failed', err);
+                const reason = err?.reason || err?.message || String(err);
+                throw new Error('Giao dịch on-chain nạp BNB thất bại: ' + reason);
+            }
+        }
+
+        async function sendWithdrawOnchain(amountUsdt){
+            // amountUsdt is a Number representing USDT (display units). We assume the contract expects 18-decimal units.
+            // NOTE: Assumption: USDT is treated with 18 decimals in the contract. If your USDT uses 6 decimals, change the decimals below.
+            const USDT_DECIMALS = 18; // assumption; change if needed
+            await ensureEthersReady();
+            await ensureWalletConnected();
+            const provider = new window.ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const contract = await getContract();
+            const amountUnits = window.ethers.parseUnits(String(amountUsdt), USDT_DECIMALS);
+            try {
+                // Solidity: function withdrawBNBTrading(uint256 _amount) external onlyAdmin nonReentrant
+                // The contract expects a single _amount argument and is restricted to admin.
+                const tx = await contract.withdrawBNBTrading(amountUnits);
+                return await tx.wait();
+            } catch (err) {
+                console.error('withdrawBNBTrading failed', err);
+                const msg = err?.reason || err?.message || String(err);
+                const lower = String(msg).toLowerCase();
+                if (lower.includes('onlyadmin') || lower.includes('admin') || lower.includes('caller is not')) {
+                    throw new Error('Giao dịch rút thất bại: hàm rút chỉ được phép gọi bởi Admin (ví của bạn không phải admin).');
+                }
+                throw new Error('Giao dịch on-chain rút tiền thất bại: ' + msg);
+            }
+        }
+
+        let fundMode = null; // 'deposit' | 'withdraw'
+        function openFundModal(mode){
+            // Defensive: if modal elements are not yet in DOM (script above markup), retry a few times
+            try {
+                fundMode = mode;
+                const title = mode === 'deposit' ? 'Nạp BNB' : 'Rút (USDT -> BNB)';
+                const titleEl = document.getElementById('fundModalTitle');
+                const amountEl = document.getElementById('fundAmountInput');
+                const errEl = document.getElementById('fundModalError');
+
+                // If key elements missing, defer slightly and retry (max 20 tries)
+                if (!titleEl || !amountEl || !errEl) {
+                    const backdrop = document.getElementById('fundModalBackdrop');
+                    const tries = backdrop ? Number(backdrop.dataset.openTries || 0) : 0;
+                    if (tries >= 20) {
+                        console.warn('openFundModal: modal elements not found after retries');
+                        return;
+                    }
+                    if (backdrop) backdrop.dataset.openTries = String(tries + 1);
+                    // Retry after short delay
+                    setTimeout(() => openFundModal(mode), 50);
+                    return;
+                }
+
+                // reset retry counter
+                const bb = document.getElementById('fundModalBackdrop'); if (bb) delete bb.dataset.openTries;
+
+                titleEl.textContent = title;
+                amountEl.value = '';
+                errEl.textContent = '';
+            // update label and currency hint
+            const amtLabel = document.getElementById('fundAmountLabel');
+            const hint = document.querySelector('#fundAmountInput + div');
+            if (fundMode === 'deposit') {
+                if (amtLabel) amtLabel.textContent = 'Số lượng BNB';
+                if (hint) hint.textContent = 'BNB';
+                // make clear on the confirm button which action will be sent
+                const cb = document.getElementById('fundConfirmBtn'); if(cb) cb.textContent = 'Xác nhận nạp';
+            } else {
+                if (amtLabel) amtLabel.textContent = 'Số tiền (USDT)';
+                if (hint) hint.textContent = 'USDT';
+                const cb = document.getElementById('fundConfirmBtn'); if(cb) cb.textContent = 'Xác nhận rút';
+            }
+            const backdrop = document.getElementById('fundModalBackdrop');
+            if (backdrop) {
+                backdrop.dataset.fundMode = mode; // persist mode on DOM for resilience
+                backdrop.classList.remove('hidden');
+            }
+            // enable confirm button when modal properly opened
+            const cb = document.getElementById('fundConfirmBtn'); if (cb) cb.disabled = false;
+            document.getElementById('fundAmountInput').focus();
+        } catch (e) {
+            console.warn('openFundModal unexpected error', e);
+        }
+        }
+        function closeFundModal(){
+            fundMode = null;
+            const backdrop = document.getElementById('fundModalBackdrop');
+            if (backdrop) { backdrop.classList.add('hidden'); delete backdrop.dataset.fundMode; }
+            const cb = document.getElementById('fundConfirmBtn'); if (cb) cb.disabled = true;
+        }
+
+    async function confirmFundAction(){
+            // safe reads: elements may be missing if DOM not yet ready
+            const rawEl = document.getElementById('fundAmountInput');
+            const raw = rawEl ? rawEl.value : '';
+            const currency = 'BNB'; // force BNB-only deposit UI
+            const errEl = document.getElementById('fundModalError');
+            if (errEl) errEl.textContent = '';
+
+            // Debug: capture the mode at the start so UI changes (close modal) won't null it later
+            console.log('confirmFundAction called, fundMode=', fundMode, 'raw=', raw);
+            // fallback: try reading dataset from modal in case fundMode was lost (script reload/navigation)
+            const backdrop = document.getElementById('fundModalBackdrop');
+            let actionMode = fundMode;
+            if (!actionMode && backdrop && backdrop.dataset && backdrop.dataset.fundMode) {
+                console.warn('fundMode was null, falling back to backdrop.dataset.fundMode=', backdrop.dataset.fundMode);
+                actionMode = backdrop.dataset.fundMode;
+            }
+
+            if (actionMode !== 'deposit' && actionMode !== 'withdraw') {
+                errEl.textContent = 'Hành động không xác định. Vui lòng mở modal bằng nút Nạp hoặc Rút.';
+                console.warn('confirmFundAction aborted: invalid actionMode', actionMode);
+                // extra safety: disable confirm button to avoid further clicks
+                const cbFail = document.getElementById('fundConfirmBtn'); if (cbFail) cbFail.disabled = true;
+                return;
+            }
+
+            const amount = Number(raw);
+            if (!Number.isFinite(amount) || amount <= 0) { errEl.textContent = 'Vui lòng nhập số tiền hợp lệ.'; return; }
+
+            // Convert if currency is BNB -> USDT using current BNBUSDT mark price
+            // If deposit: amount is BNB -> convert to USDT;
+            // If withdraw: amount is USDT -> convert to BNB
+            let amountUsdt = 0;
+            let amountBnb = 0;
+            // Try to get known BNB price first
+            let bnbPrice = symbolPrices['BNBUSDT'];
+            if (!bnbPrice) {
+                try { await requestSymbolPrice('BNBUSDT'); } catch(e){}
+                await new Promise(r => setTimeout(r, 300));
+                bnbPrice = symbolPrices['BNBUSDT'] || lastCandleCloseBySymbol['BNBUSDT'] || null;
+            }
+            if (!bnbPrice) { errEl.textContent = 'Không lấy được giá BNB hiện tại. Vui lòng thử lại.'; return; }
+            if (actionMode === 'deposit') {
+                amountBnb = Number(amount);
+                amountUsdt = amountBnb * Number(bnbPrice);
+            } else {
+                // withdraw: user entered USDT to withdraw; convert to BNB quantity
+                amountUsdt = Number(amount);
+                amountBnb = amountUsdt / Number(bnbPrice);
+            }
+            // On-chain behavior: deposits should execute on-chain; withdrawals must NOT be called on-chain from the frontend.
+            // Deposit: call sendDepositOnchain(amountBnb) and await confirmation (or at least the submission).
+            // Withdraw: skip on-chain call and only create a backend withdrawal request for admin approval.
+            if (actionMode === 'deposit') {
+                try {
+                    // Show loading while user confirms transaction in wallet
+                    showLoading('Đang thực hiện giao dịch on-chain...');
+                    await sendDepositOnchain(amountBnb);
+                    hideLoading();
+                    showNotification('✅ Giao dịch nạp BNB đã được gửi (on-chain).', 'success');
+                } catch (e) {
+                    hideLoading();
+                    console.warn('On-chain deposit failed', e);
+                    if (errEl) errEl.textContent = e?.message || String(e);
+                    return; // abort further processing
+                }
+            } else {
+                // withdraw - do not call on-chain here; backend will create a pending request for admin approval
+            }
+
+            // Local simulation update (USDT balance)
+            if (actionMode === 'deposit') {
+                SimFut.balance += amountUsdt;
+                SimFut.history.unshift({ id: `fund-${Date.now()}`, symbol: 'BNB', side: 'DEPOSIT', qty: amountBnb, entryPrice: Number(bnbPrice), exitPrice: 0, entryTs: Date.now(), exitTs: Date.now(), pnl: 0, fees: 0, note: `Deposit (BNB)` });
+                saveFut(); renderFut(); closeFundModal(); showNotification(`✅ Nạp ${amountBnb} BNB (~${formatMoney(amountUsdt)} USDT) thành công (local).`, 'success');
+            } else if (actionMode === 'withdraw') {
+                if (SimFut.balance < amountUsdt) { errEl.textContent = 'Số dư không đủ để rút.'; return; }
+                // Deduct USDT value from balance and record BNB qty withdrawn
+                SimFut.balance -= amountUsdt;
+                SimFut.history.unshift({ id: `fund-${Date.now()}`, symbol: 'BNB', side: 'WITHDRAW', qty: amountBnb, entryPrice: Number(bnbPrice), exitPrice: 0, entryTs: Date.now(), exitTs: Date.now(), pnl: 0, fees: 0, note: `Withdraw (BNB)` });
+                saveFut(); renderFut(); closeFundModal(); showNotification(`✅ Rút ${amountBnb.toFixed(8)} BNB (~${formatMoney(amountUsdt)} USDT) thành công (local).`, 'success');
+            }
+
+            // Attempt backend call if using backend trading — only after on-chain success above
+            if (useBackendTrading) {
+                try {
+                    showLoading('Gửi dữ liệu tới backend...');
+                    // Ensure we only ever call deposit when user asked to deposit
+                    let url = null;
+                    if (actionMode === 'deposit') url = `${window.location.origin}/api/Order/balance/deposit`;
+                    else if (actionMode === 'withdraw') url = `${window.location.origin}/api/Order/balance/withdraw`;
+                    // Frontend no longer sends note/recipient. Backend will use authenticated user info to create requests.
+                    const payload = { Amount: Number(amountUsdt) };
+                    console.log('Posting fund payload to', url, payload, 'fundMode=', fundMode);
+                    // Defensive: if url is null/undefined, abort to avoid fetch(null) -> POST /currentPath/null
+                    if (!url) {
+                        hideLoading();
+                        errEl.textContent = 'Lỗi nội bộ: hành động chưa được xác định. Vui lòng đóng modal và thử lại.';
+                        console.warn('Aborting backend request: url is null or undefined. fundMode=', fundMode);
+                        return;
+                    }
+                    const resp = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                    hideLoading();
+                    if (!resp.ok) {
+                        let text = '';
+                        try { text = await resp.text(); } catch(e) { text = String(e); }
+                        // Try parse JSON error body for clearer message
+                        try {
+                            const j = JSON.parse(text);
+                            text = j.error || text;
+                        } catch(e) { /* ignore */ }
+                        console.warn('Backend returned error', resp.status, text);
+                        hideLoading();
+                        // cleanup button state
+                        try { const cb = document.getElementById('fundConfirmBtn'); if (cb) { cb.classList.remove('btn-loading'); cb.disabled = false; } } catch(e){}
+                        showNotification('⚠️ Backend: ' + (text || 'Yêu cầu thất bại'), 'danger');
+                    } else {
+                        const json = await resp.json().catch(() => null);
+                        console.log('Backend deposit/withdraw response', json);
+                        hideLoading();
+                        try { const cb = document.getElementById('fundConfirmBtn'); if (cb) { cb.classList.remove('btn-loading'); cb.disabled = false; } } catch(e){}
+                        showNotification('✅ Gửi yêu cầu tới backend thành công.', 'success');
+                        setTimeout(()=>refreshBackendState(),300);
+                    }
+                } catch (e) {
+                    hideLoading();
+                    console.warn('Backend fund request failed', e);
+                    showNotification('⚠️ Không thể liên hệ backend.', 'danger');
+                }
+            }
+        }
+
+        // Wire modal buttons after DOM ready
+        document.addEventListener('DOMContentLoaded', () => {
+            const dep = document.getElementById('depositBtn');
+            const wit = document.getElementById('withdrawBtn');
+            const cancel = document.getElementById('fundCancelBtn');
+            const confirmBtn = document.getElementById('fundConfirmBtn');
+            if (!dep) console.warn('depositBtn not found during DOMContentLoaded wiring');
+            if (!wit) console.warn('withdrawBtn not found during DOMContentLoaded wiring');
+            if (!cancel) console.warn('fundCancelBtn not found during DOMContentLoaded wiring');
+            if (!confirmBtn) console.warn('fundConfirmBtn not found during DOMContentLoaded wiring');
+
+            dep?.addEventListener('click', () => openFundModal('deposit'));
+            wit?.addEventListener('click', () => openFundModal('withdraw'));
+            cancel?.addEventListener('click', closeFundModal);
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', confirmFundAction);
+                // start disabled to avoid accidental submits when modal open state not set
+                confirmBtn.disabled = true;
+            }
+            // live update conversion view (BNB -> USDT)
+            const amtEl = document.getElementById('fundAmountInput');
+            const convEl = document.getElementById('fundConvertedView');
+            if (amtEl && convEl) {
+                // prevent Enter key submitting in an ambiguous state
+                amtEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); const cb = document.getElementById('fundConfirmBtn'); if (cb && !cb.disabled) confirmFundAction(); } });
+                amtEl.addEventListener('input', async () => {
+                    const v = Number(amtEl.value || 0);
+                    if (!Number.isFinite(v) || v <= 0) { convEl.textContent = fundMode === 'deposit' ? '~$0.00 USDT' : '~0.00000000 BNB'; return; }
+                    let bnbPrice = symbolPrices['BNBUSDT'];
+                    if (!bnbPrice) {
+                        try { await requestSymbolPrice('BNBUSDT'); } catch(e){}
+                        await new Promise(r => setTimeout(r, 300));
+                        bnbPrice = symbolPrices['BNBUSDT'] || lastCandleCloseBySymbol['BNBUSDT'] || null;
+                    }
+                    if (!bnbPrice) { convEl.textContent = 'Không có giá BNB'; return; }
+                    if (fundMode === 'deposit') {
+                        convEl.textContent = `~${formatMoney(v * Number(bnbPrice))} USDT`;
+                    } else {
+                        const bnb = v / Number(bnbPrice);
+                        convEl.textContent = `~${bnb.toFixed(8)} BNB`;
+                    }
+                });
+            }
+            // allow ESC to close
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeFundModal(); });
+        });
 
         window.addEventListener('resize', () => chart?.applyOptions({ autoSize: true }));
     </script>
@@ -2399,9 +2802,13 @@
                         <div class="control-section">
                             <div class="section-title">💰 Account Balance</div>
                             <div class="balance-display">
-                                <div class="balance-amount" id="futBalance">$10,000.00</div>
-                                <div class="fee-rate">Fee: <span id="feeRateView">0.04</span>%</div>
-                            </div>
+                                    <div class="balance-amount" id="futBalance">$10,000.00</div>
+                                    <div class="fee-rate">Fee: <span id="feeRateView">0.04</span>%</div>
+                                </div>
+                                <div style="margin-top:10px; display:flex; gap:8px;">
+                                    <button id="depositBtn" class="control-btn" title="Nạp tiền" onclick="openFundModal('deposit')">💸 Nạp BNB</button>
+                                    <button id="withdrawBtn" class="control-btn" title="Rút tiền" onclick="openFundModal('withdraw')">🏧 Rút BNB</button>
+                                </div>
                         </div>
 
                         <div class="control-section">
@@ -2516,7 +2923,29 @@
         </div>
     </div>
 
+    <!-- On-chain contract config (set ViewBag.ContractAddress in server) -->
+    <div id="onchainConfig" data-address="@(ViewBag.ContractAddress ?? "")" style="display:none"></div>
+
     <!-- TP/SL Modal -->
+    <!-- Deposit / Withdraw Modal -->
+    <div id="fundModalBackdrop" class="tp-sl-modal-backdrop hidden">
+        <div class="tp-sl-modal" style="width:420px;">
+            <h3 id="fundModalTitle" style="color:white">Nạp tiền</h3>
+            <div class="field">
+                <label id="fundAmountLabel">Số lượng BNB</label>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="number" id="fundAmountInput" step="0.00000001" class="input-field" placeholder="ví dụ: 0.5" style="flex:1;" />
+                    <div style="min-width:110px; text-align:center; color:var(--trading-muted);">BNB</div>
+                </div>
+                <span id="fundModalError" class="error" aria-live="polite"></span>
+                <div style="margin-top:8px; font-size:13px; color:var(--trading-muted);">Giá quy đổi: <strong id="fundConvertedView">~$0.00 USDT</strong></div>
+            </div>
+            <div class="actions">
+                <button class="btn btn-outline" id="fundCancelBtn">Huỷ</button>
+                <button class="btn btn-primary" id="fundConfirmBtn">Xác nhận</button>
+            </div>
+        </div>
+    </div>
     <div id="tpSlModalBackdrop" class="tp-sl-modal-backdrop hidden">
         <div class="tp-sl-modal">
             <div class="field">
