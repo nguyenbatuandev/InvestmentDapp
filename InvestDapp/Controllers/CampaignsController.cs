@@ -153,7 +153,6 @@ namespace InvestDapp.Controllers
 
                 TempData["SuccessMessage"] = "Chiến dịch đã được tạo thành công!";
 
-                // Redirect to CreatePost instead of MyCampaigns
                 return RedirectToAction("CreatePost", new { campaignId = campaign.Id });
             }
             catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx)
@@ -310,10 +309,10 @@ namespace InvestDapp.Controllers
         }
 
         // POST: /Campaign/DeletePost/5
-        [HttpDelete]
+        [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "KycVerified,Admin")]
-        public async Task<IActionResult> DeletePost(int id)
+        public async Task<IActionResult> DeletePost(int id, string? returnUrl = null)
         {
             try
             {
@@ -322,21 +321,51 @@ namespace InvestDapp.Controllers
 
                 if (post == null)
                 {
+                    if (Request.Headers["Content-Type"].ToString().Contains("application/json") || 
+                        Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new { success = false, message = "Không tìm thấy bài viết." });
+                    }
                     return NotFound();
                 }
 
                 await _campaignPostService.DeletePostAsync(id, wallet);
+                
+                if (Request.Headers["Content-Type"].ToString().Contains("application/json") || 
+                    Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                    Request.ContentType?.Contains("multipart/form-data") == true)
+                {
+                    return Json(new { success = true, message = "Bài viết đã được xóa thành công." });
+                }
+
                 TempData["SuccessMessage"] = "Bài viết đã được xóa thành công.";
+
+                if (!string.IsNullOrEmpty(returnUrl))
+                {
+                    return Redirect(returnUrl);
+                }
 
                 return RedirectToAction("Posts", new { campaignId = post.CampaignId });
             }
             catch (UnauthorizedAccessException ex)
             {
+                if (Request.Headers["Content-Type"].ToString().Contains("application/json") || 
+                    Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                    Request.ContentType?.Contains("multipart/form-data") == true)
+                {
+                    return Json(new { success = false, message = ex.Message });
+                }
                 TempData["ErrorMessage"] = ex.Message;
                 return RedirectToAction("Index", "Home");
             }
             catch (Exception ex)
             {
+                if (Request.Headers["Content-Type"].ToString().Contains("application/json") || 
+                    Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                    Request.ContentType?.Contains("multipart/form-data") == true)
+                {
+                    return Json(new { success = false, message = "Đã xảy ra lỗi khi xóa bài viết." });
+                }
                 TempData["ErrorMessage"] = "Đã xảy ra lỗi khi xóa bài viết.";
                 return RedirectToAction("Index", "Home");
             }

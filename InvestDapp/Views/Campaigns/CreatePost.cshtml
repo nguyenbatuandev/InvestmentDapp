@@ -393,9 +393,14 @@
             color: var(--danger);
             font-size: 0.85rem;
             margin-top: 5px;
-            display: flex;
+            display: none; /* Hide by default */
             align-items: center;
             gap: 5px;
+        }
+
+        /* Show validation errors only when they contain actual error text */
+        .text-danger:not(:empty) {
+            display: flex;
         }
 
         /* Responsive */
@@ -455,23 +460,33 @@
 }
 
 <div class="post-wizard-container">
-    <!-- Progress Steps -->
-    <div class="wizard-steps">
-        <div class="step completed">
-            <div class="step-number"><i class="fas fa-check"></i></div>
-            <span>Tạo Chiến Dịch</span>
+    @{
+        var hasExistingPosts = campaign?.Posts?.Any() ?? false;
+        var isFirstPost = !hasExistingPosts;
+        var isApproved = campaign?.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved;
+    }
+
+    @* Chỉ hiển thị progress steps cho bài viết đầu tiên *@
+    @if (isFirstPost)
+    {
+        <!-- Progress Steps - Chỉ cho bài viết đầu tiên -->
+        <div class="wizard-steps">
+            <div class="step completed">
+                <div class="step-number"><i class="fas fa-check"></i></div>
+                <span>Tạo Chiến Dịch</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step active">
+                <div class="step-number">2</div>
+                <span>Tạo Bài Viết</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <span>Chờ Duyệt</span>
+            </div>
         </div>
-        <div class="step-connector"></div>
-        <div class="step active">
-            <div class="step-number">2</div>
-            <span>Tạo Bài Viết</span>
-        </div>
-        <div class="step-connector"></div>
-        <div class="step">
-            <div class="step-number">3</div>
-            <span>Chờ Duyệt</span>
-        </div>
-    </div>
+    }
 
     <!-- Campaign Info -->
     <div class="campaign-info-card">
@@ -496,11 +511,9 @@
     <!-- Main Form -->
     <div class="form-container">
         <div class="form-header">
-            <h2><i class="fas fa-pen-fancy"></i> Tạo Bài Viết Đầu Tiên</h2>
-            <p>Viết bài giới thiệu hoặc cập nhật cho chiến dịch của bạn</p>
             <h2>
                 <i class="fas fa-pen-fancy"></i>
-                @if (!(campaign?.Posts?.Any() ?? false))
+                @if (isFirstPost)
                 {
                     <text>Tạo Bài Viết Đầu Tiên</text>
                 }
@@ -510,9 +523,9 @@
                 }
             </h2>
             <p>
-                @if (!(campaign?.Posts?.Any() ?? false))
+                @if (isFirstPost)
                 {
-                    <text>Viết bài giới thiệu cho chiến dịch của bạn. Bài viết này sẽ được tự động phê duyệt!</text>
+                    <text>Viết bài giới thiệu cho chiến dịch của bạn. Bài viết này cần được admin phê duyệt!</text>
                 }
                 else
                 {
@@ -577,9 +590,7 @@
                         <i class="fas fa-heading"></i> Tiêu Đề <span class="required">*</span>
                     </label>
                     <input asp-for="Title" class="form-control" placeholder="VD: Chính thức Mở bán Công khai (IDO) Project Astra!" />
-                    <span asp-validation-for="Title" class="text-danger">
-                        <i class="fas fa-exclamation-circle"></i>
-                    </span>
+                    <span asp-validation-for="Title" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
@@ -589,9 +600,7 @@
                     <div class="editor-container">
                         <textarea asp-for="Content" id="tinymce-editor"></textarea>
                     </div>
-                    <span asp-validation-for="Content" class="text-danger">
-                        <i class="fas fa-exclamation-circle"></i>
-                    </span>
+                    <span asp-validation-for="Content" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
@@ -599,9 +608,7 @@
                         <i class="fas fa-image"></i> URL Hình Ảnh Đại Diện
                     </label>
                     <input asp-for="ImageUrl" type="url" class="form-control" placeholder="https://example.com/featured-image.jpg" />
-                    <span asp-validation-for="ImageUrl" class="text-danger">
-                        <i class="fas fa-exclamation-circle"></i>
-                    </span>
+                    <span asp-validation-for="ImageUrl" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
@@ -609,9 +616,7 @@
                         <i class="fas fa-tags"></i> Tags (Phân cách bằng dấu phẩy)
                     </label>
                     <input asp-for="Tags" class="form-control" placeholder="blockchain, startup, technology, IDO, crypto" />
-                    <span asp-validation-for="Tags" class="text-danger">
-                        <i class="fas fa-exclamation-circle"></i>
-                    </span>
+                    <span asp-validation-for="Tags" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
@@ -653,13 +658,13 @@
         tinymce.init({
             selector: '#tinymce-editor',
             height: 500,
-            language: 'vi',
-            menubar: 'file edit view insert format tools table help',
-            plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'table', 'help', 'wordcount', 'emoticons',
-                'codesample', 'hr', 'pagebreak', 'nonbreaking', 'toc'
+        language: 'en',
+        menubar: 'file edit view insert format tools table help',
+        plugins: [
+            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+            'insertdatetime', 'media', 'table', 'help', 'wordcount', 'emoticons',
+            'codesample', 'pagebreak', 'nonbreaking'
             ],
             toolbar: 'undo redo | styles | bold italic underline strikethrough | ' +
                     'alignleft aligncenter alignright alignjustify | ' +
@@ -671,7 +676,6 @@
                     'preview code | ' +
                     'fullscreen help',
 
-            // Content styling for dark theme
             content_style: `
                 body {
                     font-family: 'Poppins', Arial, sans-serif;
@@ -723,12 +727,13 @@
             // Enhanced configuration
             branding: false,
             promotion: false,
+            // Add GPL license key to avoid evaluation warning in console
+            license_key: 'gpl',
             resize: true,
             statusbar: true,
 
-            // Image upload (nếu cần)
+            // Image upload (nếu cần) - keep disabled by default
             automatic_uploads: false,
-            images_upload_url: false,
 
             // Content filtering
             paste_data_images: true,

@@ -454,7 +454,7 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         emit DepositBNBTrading(msg.sender, msg.value);
     }   
 
-    function withdrawBNBTrading(uint256 _amount) external nonReentrant {
+    function withdrawBNBTrading(uint256 _amount) external onlyAdmin() nonReentrant {
         require(_amount > 0, "Amount must be greater than zero");
         require(address(this).balance >= _amount, "Insufficient contract balance");
         (bool sent, ) = msg.sender.call{value: _amount}("");

@@ -2,7 +2,7 @@
 
 namespace InvestDapp.Areas.admin.Controllers
 {
-    [Area("Admin")]  // Khai báo Area
+    [Area("Admin")]
     [Route("admin/[controller]/[action]")]  
     public class DashboardController : Controller
     {

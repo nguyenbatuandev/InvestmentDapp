@@ -414,117 +414,188 @@
     </style>
 }
 
+@{
+    var postCount = posts?.Count() ?? 0;
+    var isApproved = campaign?.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved;
+    var firstPost = posts?.OrderBy(p => p.CreatedAt).FirstOrDefault();
+    var isFirstPostPending = firstPost != null && firstPost.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Pending;
+}
+
 <div class="approval-container">
-    <!-- Progress Steps - All Completed -->
-    <div class="wizard-steps">
-        <div class="step completed">
-            <div class="step-number"><i class="fas fa-check"></i></div>
-            <span>Tạo Chiến Dịch</span>
-        </div>
-        <div class="step-connector"></div>
-        <div class="step completed">
-            <div class="step-number"><i class="fas fa-check"></i></div>
-            <span>Tạo Bài Viết</span>
-        </div>
-        <div class="step-connector"></div>
-        <div class="step active">
-            <div class="step-number"><i class="fas fa-clock"></i></div>
-            <span>Chờ Duyệt</span>
-        </div>
-    </div>
 
-    <!-- Success Message -->
-    <div class="success-card">
-        <div class="success-icon">🎉</div>
-        <h2>Hoàn Thành Xuất Sắc!</h2>
-        <p>
-            Bạn đã tạo thành công chiến dịch "<strong>@campaign?.Name</strong>" và bài viết đầu tiên.
-            Hiện tại đang chờ admin xem xét và phê duyệt. Chúng tôi sẽ thông báo kết quả sớm nhất có thể.
-        </p>
-    </div>
+    @* If there's at least one post and campaign is not approved -> show progress for the first post *@
+    @if (isFirstPostPending && !isApproved)
+    {
+        <!-- Progress Steps - First post pending -->
+        <div class="wizard-steps">
+            <div class="step completed">
+                <div class="step-number"><i class="fas fa-check"></i></div>
+                <span>Tạo Chiến Dịch</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step completed">
+                <div class="step-number"><i class="fas fa-check"></i></div>
+                <span>Tạo Bài Viết</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step active">
+                <div class="step-number"><i class="fas fa-clock"></i></div>
+                <span>Chờ Duyệt</span>
+            </div>
+        </div>
 
-    <!-- Status Overview -->
-    <div class="status-grid">
-        <div class="status-card campaign-status">
-            <div class="status-header">
-                <div class="status-icon">
-                    <i class="fas fa-rocket"></i>
+        <!-- Success Message (first post created) -->
+        <div class="success-card">
+            <div class="success-icon">🎉</div>
+            <h2>Hoàn Thành Bước Tạo Bài Viết Đầu Tiên</h2>
+            <p>
+                Bài viết đầu tiên cho chiến dịch "<strong>@campaign?.Name</strong>" đã được tạo và đang chờ admin phê duyệt.
+                Bạn sẽ không thể tạo thêm bài viết cho tới khi chiến dịch được duyệt.
+            </p>
+        </div>
+
+        <!-- Status Overview -->
+        <div class="status-grid">
+            <div class="status-card campaign-status">
+                <div class="status-header">
+                    <div class="status-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <div class="status-title">Trạng Thái Chiến Dịch</div>
                 </div>
-                <div class="status-title">Trạng Thái Chiến Dịch</div>
-            </div>
-            <div class="status-value status-pending">
-                @campaign?.ApprovalStatus
-            </div>
-            <div class="status-description">
-                Chiến dịch đang được admin xem xét về tính khả thi và tuân thủ quy định.
-            </div>
-        </div>
-
-        <div class="status-card post-status">
-            <div class="status-header">
-                <div class="status-icon">
-                    <i class="fas fa-pen-fancy"></i>
+                <div class="status-value status-pending">
+                    @campaign?.ApprovalStatus
                 </div>
-                <div class="status-title">Bài Viết</div>
+                <div class="status-description">
+                    Chiến dịch đang được admin xem xét. Bạn sẽ được thông báo khi phê duyệt.
+                </div>
             </div>
-            <div class="status-value status-pending">
-                @posts?.Count() bài viết chờ duyệt
-            </div>
-            <div class="status-description">
-                Tất cả bài viết sẽ được kiểm tra nội dung và phê duyệt cùng với chiến dịch.
+
+            <div class="status-card post-status">
+                <div class="status-header">
+                    <div class="status-icon">
+                        <i class="fas fa-pen-fancy"></i>
+                    </div>
+                    <div class="status-title">Bài Viết</div>
+                </div>
+                <div class="status-value status-pending">
+                    @postCount bài viết đã tạo
+                </div>
+                <div class="status-description">
+                    Bài viết đầu tiên đang chờ duyệt; bạn không thể tạo thêm bài viết cho tới khi chiến dịch được phê duyệt.
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Process Timeline -->
-    <div class="timeline-card">
-        <div class="timeline-header">
-            <div class="timeline-icon">
-                <i class="fas fa-tasks"></i>
+        <!-- Timeline -->
+        <div class="timeline-card">
+            <div class="timeline-header">
+                <div class="timeline-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <div class="timeline-title">Quy Trình Duyệt</div>
             </div>
-            <div class="timeline-title">Quy Trình Duyệt</div>
+
+            <ul class="timeline-list">
+                <li class="timeline-item">
+                    <div class="timeline-step">✅ Tạo chiến dịch</div>
+                    <div class="timeline-desc">Bạn đã tạo chiến dịch thành công.</div>
+                    <div class="timeline-time">Đã hoàn thành</div>
+                </li>
+                <li class="timeline-item">
+                    <div class="timeline-step">✅ Tạo bài viết đầu tiên</div>
+                    <div class="timeline-desc">Bài viết đầu tiên đã được gửi để chờ phê duyệt.</div>
+                    <div class="timeline-time">Đã hoàn thành</div>
+                </li>
+                <li class="timeline-item pending">
+                    <div class="timeline-step">⏳ Xem xét của Admin</div>
+                    <div class="timeline-desc">Admin đang xem xét nội dung và tính hợp lệ của dự án.</div>
+                    <div class="timeline-time">Đang thực hiện</div>
+                </li>
+            </ul>
         </div>
 
-        <ul class="timeline-list">
-            <li class="timeline-item">
-                <div class="timeline-step">✅ Tạo chiến dịch</div>
-                <div class="timeline-desc">Bạn đã điền đầy đủ thông tin và tạo chiến dịch thành công</div>
-                <div class="timeline-time">Đã hoàn thành</div>
-            </li>
-            <li class="timeline-item">
-                <div class="timeline-step">✅ Tạo bài viết</div>
-                <div class="timeline-desc">Bài viết giới thiệu dự án đã được tạo với TinyMCE editor</div>
-                <div class="timeline-time">Đã hoàn thành</div>
-            </li>
-            <li class="timeline-item pending">
-                <div class="timeline-step">⏳ Xem xét của Admin</div>
-                <div class="timeline-desc">Admin đang xem xét tính khả thi, nội dung và tính hợp lệ của dự án</div>
-                <div class="timeline-time">Đang thực hiện (1-3 ngày làm việc)</div>
-            </li>
-            <li class="timeline-item future">
-                <div class="timeline-step">📧 Thông báo kết quả</div>
-                <div class="timeline-desc">Bạn sẽ nhận được email thông báo về kết quả phê duyệt</div>
-                <div class="timeline-time">Sắp tới</div>
-            </li>
-            <li class="timeline-item future">
-                <div class="timeline-step">🚀 Chiến dịch đi vào hoạt động</div>
-                <div class="timeline-desc">Nếu được phê duyệt, chiến dịch sẽ hiển thị công khai và bắt đầu huy động vốn</div>
-                <div class="timeline-time">Sau khi được phê duyệt</div>
-            </li>
-        </ul>
-    </div>
+        <!-- Action Buttons (disable create post) -->
+        <div class="action-buttons">
+            <a href="@Url.Action("MyCampaigns")" class="btn btn-primary">
+                <i class="fas fa-folder-open"></i>
+                Xem Tất Cả Chiến Dịch
+            </a>
+            <a class="btn btn-primary" style="opacity:0.6; pointer-events:none;">
+                <i class="fas fa-plus"></i>
+                Tạo Bài Viết (bị khóa - chờ phê duyệt)
+            </a>
+            <a href="/" class="btn btn-secondary">
+                <i class="fas fa-home"></i>
+                Về Trang Chủ
+            </a>
+        </div>
+    }
+    else
+    {
+        @* Either no posts yet, or campaign already approved: allow creating posts and hide progress *@
+        <div class="status-grid">
+            <div class="status-card campaign-status">
+                <div class="status-header">
+                    <div class="status-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <div class="status-title">Trạng Thái Chiến Dịch</div>
+                </div>
+                <div class="status-value">
+                    @campaign?.ApprovalStatus
+                </div>
+                <div class="status-description">
+                    @if (isApproved)
+                    {
+                        <text>Chiến dịch đã được phê duyệt. Bạn có thể tạo thêm bài viết.</text>
+                    }
+                    else
+                    {
+                        <text>Chưa có bài viết nào. Hãy tạo bài viết đầu tiên để bắt đầu.</text>
+                    }
+                </div>
+            </div>
 
-    <!-- Action Buttons -->
-    <div class="action-buttons">
-        <a href="@Url.Action("MyCampaigns")" class="btn btn-primary">
-            <i class="fas fa-folder-open"></i>
-            Xem Tất Cả Chiến Dịch
-        </a>
-        <a href="/" class="btn btn-secondary">
-            <i class="fas fa-home"></i>
-            Về Trang Chủ
-        </a>
-    </div>
+            <div class="status-card post-status">
+                <div class="status-header">
+                    <div class="status-icon">
+                        <i class="fas fa-pen-fancy"></i>
+                    </div>
+                    <div class="status-title">Bài Viết</div>
+                </div>
+                <div class="status-value">
+                    @postCount bài viết
+                </div>
+                <div class="status-description">
+                    @if (postCount == 0)
+                    {
+                        <text>Chưa có bài viết nào. Tạo bài viết giới thiệu để admin duyệt.</text>
+                    }
+                    else
+                    {
+                        <text>Các bài viết đã được phê duyệt sẽ hiển thị công khai.</text>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <a href="@Url.Action("CreatePost", "Campaigns", new { campaignId = campaign?.Id })" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                Tạo Bài Viết
+            </a>
+            <a href="@Url.Action("MyCampaigns")" class="btn btn-secondary">
+                <i class="fas fa-folder-open"></i>
+                Xem Tất Cả Chiến Dịch
+            </a>
+            <a href="/" class="btn btn-secondary">
+                <i class="fas fa-home"></i>
+                Về Trang Chủ
+            </a>
+        </div>
+    }
+
 </div>
 
 @section Scripts {

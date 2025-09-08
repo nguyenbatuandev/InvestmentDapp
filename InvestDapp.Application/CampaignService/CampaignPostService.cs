@@ -10,11 +10,13 @@ namespace InvestDapp.Application.CampaignService
     {
         private readonly ICampaignPostRepository _repository;
         private readonly ICampaign _campaignRepository;
+        private readonly IUser _userRepository;
 
-        public CampaignPostService(ICampaignPostRepository repository, ICampaign campaignRepository)
+        public CampaignPostService(ICampaignPostRepository repository, ICampaign campaignRepository, IUser userRepository)
         {
             _repository = repository;
             _campaignRepository = campaignRepository;
+            _userRepository = userRepository;
         }
 
         #region Campaign Post Services
@@ -32,12 +34,6 @@ namespace InvestDapp.Application.CampaignService
             
             // Kiểm tra xem đây có phải là bài viết đầu tiên không
             bool isFirstPost = !existingPosts.Any();
-            
-            // Nếu không phải bài viết đầu tiên, cần kiểm tra campaign đã được approve chưa
-            if (!isFirstPost && campaign.ApprovalStatus != ApprovalStatus.Approved)
-            {
-                throw new UnauthorizedAccessException("Chiến dịch cần được admin phê duyệt trước khi có thể tạo thêm bài viết.");
-            }
 
             var post = new CampaignPost
             {
@@ -49,17 +45,16 @@ namespace InvestDapp.Application.CampaignService
                 AuthorAddress = authorAddress,
                 Tags = request.Tags,
                 IsFeatured = request.IsFeatured,
-                // Bài viết đầu tiên được tự động approve, các bài sau cần chờ duyệt
-                ApprovalStatus = isFirstPost ? ApprovalStatus.Approved : ApprovalStatus.Pending,
+                ApprovalStatus = isFirstPost ? ApprovalStatus.Pending : ApprovalStatus.Approved,
                 CreatedAt = DateTime.UtcNow,
                 ViewCount = 0,
-                ApprovedAt = isFirstPost ? DateTime.UtcNow : null,
-                ApprovedBy = isFirstPost ? "SYSTEM_AUTO_APPROVE" : null
+                ApprovedAt = isFirstPost ? null : DateTime.UtcNow,
+                ApprovedBy = isFirstPost ? null : "SYSTEM_AUTO_APPROVE"
             };
 
             var result = await _repository.CreatePostAsync(post);
 
-            // Cập nhật trạng thái campaign nếu đây là bài viết đầu tiên
+            // Cập nhật trạng thái campaign nếu đây là bài viết đầu tiên (vẫn giữ như trước)
             if (isFirstPost && campaign != null)
             {
                 campaign.Status = CampaignStatus.PendingApproval;
@@ -105,13 +100,11 @@ namespace InvestDapp.Application.CampaignService
             var post = await _repository.GetPostByIdAsync(id);
             if (post == null) return false;
 
-            // Kiểm tra quyền chỉnh sửa
             if (post.AuthorAddress.ToLower() != authorAddress.ToLower())
             {
                 throw new UnauthorizedAccessException("Bạn không có quyền chỉnh sửa bài viết này.");
             }
 
-            // Chỉ cho phép chỉnh sửa nếu chưa được duyệt hoặc bị từ chối
             if (post.ApprovalStatus == ApprovalStatus.Approved)
             {
                 throw new InvalidOperationException("Không thể chỉnh sửa bài viết đã được duyệt.");
@@ -123,19 +116,21 @@ namespace InvestDapp.Application.CampaignService
             post.ImageUrl = request.ImageUrl;
             post.Tags = request.Tags;
             post.IsFeatured = request.IsFeatured;
-            post.ApprovalStatus = ApprovalStatus.Pending; // Reset về pending khi chỉnh sửa
+            post.ApprovalStatus = ApprovalStatus.Pending;
             post.UpdatedAt = DateTime.UtcNow;
 
             return await _repository.UpdatePostAsync(post);
         }
 
-        public async Task<bool> DeletePostAsync(int id, string authorAddress)
+        public async Task<bool> DeletePostAsync(int id, string userAddress)
         {
             var post = await _repository.GetPostByIdAsync(id);
             if (post == null) return false;
 
-            // Kiểm tra quyền xóa
-            if (post.AuthorAddress.ToLower() != authorAddress.ToLower())
+            var user = await _userRepository.GetUserByWalletAddressAsync(userAddress);
+            bool isAdmin = user?.Role == "Admin";
+
+            if (!isAdmin && post.AuthorAddress.ToLower() != userAddress.ToLower())
             {
                 throw new UnauthorizedAccessException("Bạn không có quyền xóa bài viết này.");
             }
@@ -191,11 +186,13 @@ namespace InvestDapp.Application.CampaignService
         public async Task<bool> ApproveCampaignAsync(int id, string adminWallet, string? adminNotes = null)
         {
             var campaign = await _repository.GetCampaignByIdAsync(id);
+            var posts = await _repository.GetPostsByCampaignIdAsync(id);
+            var firstPost = posts.OrderBy(p => p.CreatedAt).FirstOrDefault();
             if (campaign == null) return false;
 
             // Cập nhật trạng thái campaign khi được approve
             campaign.Status = CampaignStatus.Active;
-            
+            firstPost.ApprovalStatus = ApprovalStatus.Approved;
             var result = await _repository.ApproveCampaignAsync(id, adminNotes, adminWallet);
             return result;
         }
@@ -205,16 +202,13 @@ namespace InvestDapp.Application.CampaignService
             var campaign = await _repository.GetCampaignByIdAsync(id);
             if (campaign == null) return false;
 
-            // Cập nhật trạng thái campaign khi bị reject
             campaign.Status = CampaignStatus.Failed;
 
-            // Khi reject campaign, cần xóa bài viết đầu tiên (nếu có)
             var posts = await _repository.GetPostsByCampaignIdAsync(id);
             var firstPost = posts.OrderBy(p => p.CreatedAt).FirstOrDefault();
             
             if (firstPost != null && firstPost.ApprovedBy == "SYSTEM_AUTO_APPROVE")
             {
-                // Xóa bài viết đầu tiên được tự động approve
                 await _repository.DeletePostAsync(firstPost.Id);
             }
 
@@ -244,18 +238,13 @@ namespace InvestDapp.Application.CampaignService
             {
                 return false;
             }
-
-            // Kiểm tra xem đã có bài viết nào chưa
             var existingPosts = await _repository.GetPostsByCampaignIdAsync(campaignId);
             bool hasExistingPosts = existingPosts.Any();
-
-            // Nếu chưa có bài viết nào, cho phép tạo bài viết đầu tiên
             if (!hasExistingPosts)
             {
                 return true;
             }
 
-            // Nếu đã có bài viết, chỉ cho phép tạo thêm khi campaign đã được approve
             return campaign.ApprovalStatus == ApprovalStatus.Approved;
         }
         #endregion

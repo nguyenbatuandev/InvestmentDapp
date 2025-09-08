@@ -468,6 +468,29 @@
     gap: 12px;
 }
 
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    transition: all 0.3s;
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-icon:hover {
+    background: rgba(0, 0, 0, 0.05);
+    transform: scale(1.1);
+}
+
+.btn-icon ion-icon {
+    font-size: 18px;
+}
+
 /* Admin info */
 .admin-info {
     display: grid;
@@ -564,6 +587,137 @@
     .header-content h1 {
         font-size: 24px;
     }
+}
+
+@@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.confirm-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.confirm-modal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.confirm-modal-content {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    transform: scale(0.7);
+    transition: transform 0.3s ease;
+    text-align: center;
+}
+
+.confirm-modal.show .confirm-modal-content {
+    transform: scale(1);
+}
+
+.confirm-modal-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 36px;
+}
+
+.confirm-modal-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--black1);
+    margin-bottom: 12px;
+}
+
+.confirm-modal-message {
+    font-size: 16px;
+    color: var(--gray-dark);
+    margin-bottom: 32px;
+    line-height: 1.5;
+}
+
+.confirm-modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.confirm-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 100px;
+}
+
+.confirm-btn-cancel {
+    background: #f3f4f6;
+    color: var(--gray-dark);
+    border: 1px solid #d1d5db;
+}
+
+.confirm-btn-cancel:hover {
+    background: #e5e7eb;
+    transform: translateY(-1px);
+}
+
+.confirm-btn-confirm {
+    background: var(--danger);
+    color: white;
+}
+
+.confirm-btn-confirm:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.confirm-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
 }
 </style>
 }
@@ -839,6 +993,14 @@
                                         }
                                         <span class="status-badge @postStatusClass">@postStatusText</span>
                                         <span class="post-date">@post.CreatedAt.ToString("dd/MM/yyyy")</span>
+                                        <div class="post-actions" style="display: flex; gap: 8px; margin-left: auto;">
+                                            <a href="/campaigns/postdetails/@post.Id" class="btn-icon" title="Xem bài viết" style="color: var(--blue); font-size: 18px; padding: 4px; text-decoration: none;">
+                                                <ion-icon name="eye-outline"></ion-icon>
+                                            </a>
+                                            <button onclick="deletePost(@post.Id)" class="btn-icon" title="Xóa bài viết" style="color: var(--danger); background: none; border: none; font-size: 18px; padding: 4px; cursor: pointer;">
+                                                <ion-icon name="trash-outline"></ion-icon>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="post-content">
@@ -966,6 +1128,30 @@
     </div>
 </div>
 
+<!-- Confirm Delete Modal -->
+<div id="confirmModal" class="confirm-modal">
+    <div class="confirm-modal-content">
+        <div class="confirm-modal-icon">
+            <ion-icon name="trash-outline"></ion-icon>
+        </div>
+        <h3 class="confirm-modal-title">Xác nhận xóa bài viết</h3>
+        <p class="confirm-modal-message">
+            Bạn có chắc chắn muốn xóa bài viết này không?<br>
+            <strong>Hành động này không thể hoàn tác!</strong>
+        </p>
+        <div class="confirm-modal-actions">
+            <button type="button" class="confirm-btn confirm-btn-cancel" onclick="hideConfirmModal()">
+                <ion-icon name="close-outline"></ion-icon>
+                Hủy bỏ
+            </button>
+            <button type="button" class="confirm-btn confirm-btn-confirm" id="confirmDeleteBtn">
+                <ion-icon name="trash-outline"></ion-icon>
+                Xóa bài viết
+            </button>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
 function approveCampaign(id) {
@@ -1026,6 +1212,156 @@ function rejectCampaign(id) {
         alert('Vui lòng nhập lý do từ chối.');
     }
 }
+
+function deletePost(id) {
+    // Hiển thị modal xác nhận
+    showConfirmModal(id);
+}
+
+function showConfirmModal(postId) {
+    const modal = document.getElementById('confirmModal');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    
+    // Gắn sự kiện cho nút xác nhận
+    confirmBtn.onclick = () => confirmDeletePost(postId);
+    
+    // Hiển thị modal
+    modal.classList.add('show');
+    
+    // Đóng modal khi click outside
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            hideConfirmModal();
+        }
+    };
+}
+
+function hideConfirmModal() {
+    const modal = document.getElementById('confirmModal');
+    modal.classList.remove('show');
+}
+
+function confirmDeletePost(id) {
+    // Ẩn modal
+    hideConfirmModal();
+    
+    // Tìm element của bài viết để xóa sau
+    const postElement = document.querySelector(`button[onclick="deletePost(${id})"]`).closest('.post-item');
+    
+    const formData = new FormData();
+    const csrfToken = '@Html.AntiForgeryToken()'.match(/value="([^"]+)"/)?.[1];
+    if (csrfToken) {
+        formData.append('__RequestVerificationToken', csrfToken);
+    }
+    formData.append('returnUrl', `/admin/manage-campaigns/details/@Model.Id`);
+
+    // Disable button để tránh click nhiều lần
+    const deleteBtn = document.querySelector(`button[onclick="deletePost(${id})"]`);
+    deleteBtn.disabled = true;
+    deleteBtn.innerHTML = '<ion-icon name="hourglass-outline"></ion-icon>';
+
+    fetch(`/campaigns/deletepost/${id}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            // Xóa thành công - remove element khỏi DOM
+            postElement.style.transition = 'all 0.3s ease';
+            postElement.style.opacity = '0';
+            postElement.style.transform = 'translateX(-100%)';
+            
+            setTimeout(() => {
+                postElement.remove();
+                
+                // Cập nhật số lượng bài viết trong header
+                const postCountElement = document.querySelector('.card-header h3');
+                if (postCountElement) {
+                    const currentCount = parseInt(postCountElement.textContent.match(/\((\d+)\)/)?.[1] || '0');
+                    const newCount = Math.max(0, currentCount - 1);
+                    postCountElement.innerHTML = postCountElement.innerHTML.replace(/\(\d+\)/, `(${newCount})`);
+                }
+                
+                // Hiện thông báo thành công
+                showSuccessMessage('Bài viết đã được xóa thành công.');
+                
+                // Nếu không còn bài viết nào, ẩn section
+                const remainingPosts = document.querySelectorAll('.post-item');
+                if (remainingPosts.length === 0) {
+                    const postsSection = document.querySelector('.post-list').closest('.campaign-card');
+                    postsSection.style.display = 'none';
+                }
+            }, 300);
+        } else {
+            // Xóa thất bại
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = '<ion-icon name="trash-outline"></ion-icon>';
+            showErrorMessage('Có lỗi khi xóa bài viết. Vui lòng thử lại.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        deleteBtn.disabled = false;
+        deleteBtn.innerHTML = '<ion-icon name="trash-outline"></ion-icon>';
+        showErrorMessage('Có lỗi khi xóa bài viết. Vui lòng thử lại.');
+    });
+}
+
+function showSuccessMessage(message) {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--success);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        z-index: 9999;
+        animation: slideIn 0.3s ease;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+function showErrorMessage(message) {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--danger);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        z-index: 9999;
+        animation: slideIn 0.3s ease;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Keyboard support for modal
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('confirmModal');
+        if (modal.classList.contains('show')) {
+            hideConfirmModal();
+        }
+    }
+});
 </script>
 }
 
