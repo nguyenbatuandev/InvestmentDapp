@@ -1,4 +1,5 @@
 ﻿using InvestDapp.Application.CampaignService;
+using InvestDapp.Application.MessageService;
 using InvestDapp.Application.UserService;
 using InvestDapp.Shared.Common.Request;
 using Microsoft.AspNetCore.Authorization;
@@ -11,13 +12,16 @@ namespace InvestDapp.Controllers
     {
         private readonly ICampaignPostService _campaignPostService;
         private readonly IUserService _userService;
+        private readonly IConversationService _conversationService;
 
         public CampaignsController(
             ICampaignPostService campaignPostService,
-            IUserService userService)
+            IUserService userService,
+            IConversationService conversationService)
         {
             _campaignPostService = campaignPostService;
             _userService = userService;
+            _conversationService = conversationService;
         }
 
         [Authorize(Roles = "KycVerified,Admin")]
@@ -278,18 +282,42 @@ namespace InvestDapp.Controllers
 
                 var post = await _campaignPostService.CreatePostAsync(request, wallet);
 
-                // Kiểm tra xem đây có phải bài viết đầu tiên không
+                // Lấy thông tin user để có UserId
+                var user = await _userService.GetUserByWalletAddressAsync(wallet);
+                if (user != null)
+                {
+                    var postUrl = Url.Action("PostDetails", "Campaigns", new { id = post.Id }, Request.Scheme);
+                    
+                    Console.WriteLine($"DEBUG: Đang gửi thông báo post - CampaignId: {request.CampaignId}, UserId: {user.Data.ID}, PostTitle: {post.Title}");
+                    
+                    try
+                    {
+                        await _conversationService.SendPostNotificationToCampaignGroupAsync(
+                            request.CampaignId, 
+                            user.Data.ID, 
+                            post.Title, 
+                            postUrl);
+                        
+                        Console.WriteLine($"DEBUG: Đã hoàn thành gửi thông báo post cho campaign {request.CampaignId}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error sending post notification: {ex.Message}");
+                        Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                    }
+                }
+
                 var campaign = await _campaignPostService.GetCampaignByIdAsync(request.CampaignId);
                 var allPosts = await _campaignPostService.GetPostsByCampaignIdAsync(request.CampaignId);
-                bool isFirstPost = allPosts.Count() == 1; // Chỉ có 1 bài viết là bài vừa tạo
+                bool isFirstPost = allPosts.Count() == 1; 
 
                 if (isFirstPost)
                 {
-                    TempData["SuccessMessage"] = "Bài viết đầu tiên đã được tạo và tự động phê duyệt! Chiến dịch hiện đang chờ admin duyệt.";
+                    TempData["SuccessMessage"] = "Bài viết đầu tiên đã được tạo và tự động phê duyệt! Chiến dịch hiện đang chờ admin duyệt. Thông báo đã được gửi vào group chat.";
                 }
                 else
                 {
-                    TempData["SuccessMessage"] = "Bài viết đã được tạo thành công và đang chờ admin duyệt.";
+                    TempData["SuccessMessage"] = "Bài viết đã được tạo thành công và đang chờ admin duyệt. Thông báo đã được gửi vào group chat.";
                 }
 
                 return RedirectToAction("AwaitingApproval", new { campaignId = request.CampaignId });

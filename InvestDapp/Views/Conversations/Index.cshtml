@@ -419,6 +419,13 @@
             align-items: flex-start;
         }
 
+        .sender-info {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
         .message-bubble {
             padding: 12px 18px;
             border-radius: 20px;
@@ -1076,6 +1083,7 @@
                         let displayName = convo.name || "Conversation";
                         let displayAvatar = convo.avatarURL || `https://i.pravatar.cc/150?u=group${convoId}`;
                         let statusClass = '';
+                        let roleInfo = '';
 
                         if (convo.type === 0 && convo.participants && currentUser) {
                             const partnerParticipant = convo.participants.find(p => String(p.user.userId) !== String(currentUser.id));
@@ -1085,6 +1093,17 @@
                                 displayName = partner.fullName || "Partner";
                                 displayAvatar = partner.avatarURL || `https://i.pravatar.cc/150?u=user${partnerIdStr}`;
                                 if (onlineUsers.has(partnerIdStr)) statusClass = 'online';
+                                
+                                // Hiển thị role nếu có
+                                const roleNames = { 0: 'Admin', 1: 'Member' };
+                                roleInfo = roleNames[partnerParticipant.role] || '';
+                            }
+                        } else if (convo.type === 1 && convo.participants) {
+                            // Group chat - hiển thị số thành viên và role của user hiện tại
+                            const currentParticipant = convo.participants.find(p => String(p.user.userId) === String(currentUser.id));
+                            if (currentParticipant) {
+                                const roleNames = { 0: 'Admin', 1: 'Member' };
+                                roleInfo = roleNames[currentParticipant.role] || '';
                             }
                         }
 
@@ -1098,9 +1117,17 @@
 
                             // Kiểm tra nếu tin nhắn là một đường dẫn hình ảnh
                             const isImg = typeof lastMessage.content === 'string' && lastMessage.content.match(/\.(jpeg|jpg|gif|png)$/i) != null;
+                            // Kiểm tra nếu tin nhắn là URL
+                            const isUrl = typeof lastMessage.content === 'string' && lastMessage.content.match(/^https?:\/\//) != null;
 
                             // Tạo ra chuỗi hiển thị cuối cùng
-                            lastMessageText = isImg ? `${prefix}[Hình ảnh]` : prefix + (lastMessage.content || "");
+                            if (isImg) {
+                                lastMessageText = `${prefix}[Hình ảnh]`;
+                            } else if (isUrl) {
+                                lastMessageText = `${prefix}[Link]`;
+                            } else {
+                                lastMessageText = prefix + (lastMessage.content || "");
+                            }
                         }
                               const time1 = activeConversationId === convoId && convo.lastMessage?.sentAt
                                 ? (() => {
@@ -1130,7 +1157,7 @@
                                 <div class="status-dot ${statusClass}"></div>
                             </div>
                             <div class="conversation-details">
-                                <p class="name">${displayName}</p>
+                                <p class="name">${displayName}${roleInfo ? ` (${roleInfo})` : ''}</p>
                                 <p class="last-message">${lastMessageText}</p>
                                 <p class="last-message">${time1}</p>
                             </div>`;
@@ -1179,18 +1206,54 @@
                 msgGroup.dataset.messageId = message.messageId;
 
                 let avatarHtml = '';
+                let senderInfoHtml = '';
+                
                 if (messageTypeClass === 'received') {
                     const avatarSrc = message.sender?.avatarURL || `https://i.pravatar.cc/150?u=user${senderId}`;
                     avatarHtml = `<img src="${avatarSrc}" alt="Avatar" class="sender-avatar">`;
+                    
+                    // Hiển thị tên và role của người gửi
+                    const senderName = message.sender?.fullName || message.sender?.name || 'Unknown';
+                    let roleInfo = '';
+                    
+                    // Tìm role của người gửi trong cuộc hội thoại hiện tại
+                    if (activeConversationId) {
+                        const convo = conversationsCache.find(c => String(c.conversationId) === String(activeConversationId));
+                        if (convo && convo.participants) {
+                            const senderParticipant = convo.participants.find(p => String(p.user.userId) === String(senderId));
+                            if (senderParticipant) {
+                                const roleNames = { 0: 'Admin', 1: 'Member' };
+                                roleInfo = roleNames[senderParticipant.role] || '';
+                            }
+                        }
+                    }
+                    
+                    senderInfoHtml = `<div class="sender-info" style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">${senderName}${roleInfo ? ` (${roleInfo})` : ''}</div>`;
                 }
 
                 const isImg = typeof message.content === 'string' && message.content.match(/\.(jpeg|jpg|gif|png)$/i) != null;
+                const isUrl = typeof message.content === 'string' && message.content.match(/^https?:\/\//) != null;
                 const sanitizedContent = message.content ? message.content.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
-                const messageBubbleContent = isImg ? `<img src="${message.content}" alt="Sent image">` : `<p>${sanitizedContent}</p>`;
+                
+                let messageBubbleContent;
+                if (isImg) {
+                    messageBubbleContent = `<img src="${message.content}" alt="Sent image">`;
+                } else if (isUrl) {
+                    messageBubbleContent = `<p><a href="${message.content}" target="_blank" style="color: var(--primary); text-decoration: underline;">${sanitizedContent}</a></p>`;
+                } else {
+                    // Check for URLs within the message content and make them clickable
+                    const urlPattern = /(https?:\/\/[^\s]+)/g;
+                    let processedContent = sanitizedContent;
+                    if (processedContent.match(urlPattern)) {
+                        processedContent = processedContent.replace(urlPattern, '<a href="$1" target="_blank" style="color: var(--primary); text-decoration: underline;">$1</a>');
+                    }
+                    messageBubbleContent = `<p>${processedContent}</p>`;
+                }
 
                 msgGroup.innerHTML = `
                     ${avatarHtml}
                     <div class="message-content">
+                        ${senderInfoHtml}
                         <div class="message-bubble">${messageBubbleContent}</div>
                         <p class="message-timestamp">${formatTimestamp(message.sentAt)}</p>
                     </div>`;
@@ -1452,6 +1515,7 @@
                 let displayName = convo.name || "Conversation";
                 let displayAvatar = convo.avatarURL || `https://i.pravatar.cc/150?u=group${convoId}`;
                 let membersText = `${convo.participants?.length || 1} thành viên`;
+                let roleInfo = '';
 
                 if (convo.type === 0 && convo.participants && currentUser?.id != null) {
                     const partnerParticipant = convo.participants.find(p => String(p.user.userId) !== String(currentUser.id));
@@ -1460,9 +1524,23 @@
                         displayName = partner.fullName || "Partner";
                         displayAvatar = partner.avatarURL || `https://i.pravatar.cc/150?u=user${partner.userId}`;
                         membersText = onlineUsers.has(partner.userId.toString()) ? 'Online' : 'Offline';
+                        
+                        // Hiển thị role của partner
+                        const roleNames = { 0: 'Admin', 1: 'Member' };
+                        roleInfo = roleNames[partnerParticipant.role] || '';
+                    }
+                } else if (convo.type === 1 && convo.participants && currentUser?.id != null) {
+                    // Group chat - hiển thị role của user hiện tại
+                    const currentParticipant = convo.participants.find(p => String(p.user.userId) === String(currentUser.id));
+                    if (currentParticipant) {
+                        const roleNames = { 0: 'Admin', 1: 'Member' };
+                        roleInfo = roleNames[currentParticipant.role] || '';
+                        membersText += roleInfo ? ` • Bạn là ${roleInfo}` : '';
                     }
                 }
-                chatHeaderInfo.innerHTML = `<img src="${displayAvatar}" alt="Avatar"><div><p class="group-name">${displayName}</p><p class="group-members">${membersText}</p></div>`;
+
+                const finalDisplayName = displayName + (roleInfo && convo.type === 0 ? ` (${roleInfo})` : '');
+                chatHeaderInfo.innerHTML = `<img src="${displayAvatar}" alt="Avatar"><div><p class="group-name">${finalDisplayName}</p><p class="group-members">${membersText}</p></div>`;
             }
 
             // =================================================================

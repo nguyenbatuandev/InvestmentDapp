@@ -7,6 +7,8 @@ namespace InvestDapp.Application.MessageService
     public interface IConversationService
     {
         Task CreateAndSendMessageAsync(int conversationId, int senderId, string content);
+        Task SendPostNotificationToCampaignGroupAsync(int campaignId, int authorUserId, string postTitle, string postUrl);
+        Task CreateCampaignGroupAsync(int campaignId, string groupName, int ownerId);
 
         Task<Conversation> StartPrivateChatAsync(int currentUserId, int partnerId);
         Task<Conversation> CreateGroupAsync(int creatorId, string name, List<int> participantIds);
