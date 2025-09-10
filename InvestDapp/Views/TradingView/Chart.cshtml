@@ -2656,7 +2656,7 @@
             // Attempt backend call if using backend trading — only after on-chain success above
             if (useBackendTrading) {
                 try {
-                    showLoading('Gửi dữ liệu tới backend...');
+                    showLoading('Đang xử lý ...');
                     // Ensure we only ever call deposit when user asked to deposit
                     let url = null;
                     if (actionMode === 'deposit') url = `${window.location.origin}/api/Order/balance/deposit`;
@@ -2691,7 +2691,7 @@
                         console.log('Backend deposit/withdraw response', json);
                         hideLoading();
                         try { const cb = document.getElementById('fundConfirmBtn'); if (cb) { cb.classList.remove('btn-loading'); cb.disabled = false; } } catch(e){}
-                        showNotification('✅ Gửi yêu cầu tới backend thành công.', 'success');
+                        showNotification('✅ Nạp tiền thành công.', 'success');
                         setTimeout(()=>refreshBackendState(),300);
                     }
                 } catch (e) {

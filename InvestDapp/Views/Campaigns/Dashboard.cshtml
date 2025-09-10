@@ -244,9 +244,174 @@
             text-align: center;
         }
 
-        .btn.btn-primary:hover {
+        .btn.btn-primary:hover:not(:disabled) {
             transform: translateY(-3px);
             box-shadow: 0 8px 25px rgba(0, 170, 255, 0.4);
+        }
+
+        .btn.btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn.btn-success {
+            background: linear-gradient(135deg, var(--success), #10b981);
+            color: white;
+            border: none;
+        }
+
+        .btn.btn-success:hover:not(:disabled) {
+            background: linear-gradient(135deg, #10b981, var(--success));
+            transform: translateY(-2px);
+        }
+
+        .btn.btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+        }
+
+        .btn.btn-danger:hover:not(:disabled) {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            transform: translateY(-2px);
+        }
+
+        /* Voting Interface Styles */
+        .voting-section {
+            margin-top: 1rem;
+        }
+
+        .withdrawal-requests {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .withdrawal-request {
+            background: var(--bg-dark);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .request-amount {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .request-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .status-pending {
+            background: var(--warning);
+            color: var(--bg-dark);
+        }
+
+        .status-approved {
+            background: var(--success);
+            color: white;
+        }
+
+        .status-rejected {
+            background: var(--danger);
+            color: white;
+        }
+
+        .vote-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .vote-stat {
+            text-align: center;
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+        }
+
+        .vote-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .vote-buttons .btn {
+            flex: 1;
+        }
+
+        /* Profit Interface Styles */
+        .profit-list {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 1rem;
+        }
+
+        .profit-item {
+            background: var(--bg-dark);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--success);
+        }
+
+        .profit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .profit-amount {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--success);
+        }
+
+        .profit-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .status-claimable {
+            background: var(--success);
+            color: white;
+        }
+
+        .status-claimed {
+            background: var(--text-muted);
+            color: white;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 2rem;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+
+        .status-message h3 {
+            color: var(--primary);
+            margin-bottom: 1rem;
         }
 
         .panel-footer {
@@ -624,6 +789,40 @@
             box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
         }
 
+        /* --- NOTIFICATION SYSTEM --- */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideInRight 0.3s ease;
+        }
+
+        .notification.success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .notification.error {
+            background: linear-gradient(135deg, #dc3545, #e74c3c);
+        }
+
+        @@keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
         /* --- RESPONSIVE DESIGN --- */
         @@media (max-width: 1200px) {
             .dashboard-container { 
@@ -667,12 +866,13 @@
             @if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Active && 
                  Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
             {
+                <!-- Investment Interface for Active Campaigns -->
                 <h3><i class="fa-solid fa-rocket"></i> Bảng điều khiển đầu tư</h3>
                 <div class="form-group">
                     <label for="investment-amount">Số tiền đầu tư (BNB)</label>
                     <div class="input-wrapper">
                         <span>₿</span>
-                        <input type="number" id="investment-amount" placeholder="1" min="0.1" step="0.1">
+                        <input type="number" id="investment-amount" placeholder="1" min="0.01" step="0.01">
                     </div>
                 </div>
 
@@ -685,135 +885,69 @@
                 </div>
 
                 <div class="min-max-info">
-                    <span>Tối thiểu: 0.1 BNB</span>
+                    <span>Tối thiểu: 0.01 BNB</span>
                     <span>Tối đa: @(Model.GoalAmount - Model.CurrentRaisedAmount) BNB</span>
                 </div>
+
+                <button class="btn btn-primary" onclick="investInCampaign(@Model.Id)" id="invest-btn">
+                    <i class="fas fa-rocket"></i> Đầu tư ngay
+                </button>
             }
             else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Voting)
             {
-                var currentUserWallet = User.FindFirst("WalletAddress")?.Value;
-                var userInvestment = Model.Investments?.FirstOrDefault(i => i.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase));
-                var isInvestor = userInvestment != null;
-
-                <h3><i class="fa-solid fa-vote-yea"></i> Bảng điều khiển bỏ phiếu</h3>
-                
-                if (isInvestor)
-                {
-                    <div class="vote-info">
-                        <p>Dự án đang trong giai đoạn bỏ phiếu.</p>
-                        <p>Bạn đã đầu tư <strong>@userInvestment.Amount.ToString("F2") BNB</strong> vào dự án này.</p>
-                        <p>Hãy tham gia quyết định tương lai của dự án!</p>
+                <!-- Voting Interface for Voting Status -->
+                <h3><i class="fa-solid fa-vote-yea"></i> Bỏ phiếu rút tiền</h3>
+                <div class="voting-section">
+                    <div class="withdrawal-requests" id="withdrawal-requests">
+                        <p>Đang tải danh sách yêu cầu rút tiền...</p>
                     </div>
-                    
-                    <div class="voting-stats">
-                        <div class="vote-stat">
-                            <span class="vote-label">Quyền vote của bạn:</span>
-                            <span class="vote-value">@userInvestment.Amount.ToString("F2") BNB</span>
-                        </div>
-                        <div class="vote-stat">
-                            <span class="vote-label">Phần trăm quyền vote:</span>
-                            <span class="vote-value">@((userInvestment.Amount / Model.CurrentRaisedAmount * 100).ToString("F2"))%</span>
-                        </div>
-                    </div>
-                    
-                    <div class="voting-stats">
-                        <div class="vote-stat">
-                            <span class="vote-label">Phiếu ủng hộ:</span>
-                            <span class="vote-value">--%</span>
-                        </div>
-                        <div class="vote-stat">
-                            <span class="vote-label">Phiếu phản đối:</span>
-                            <span class="vote-value">--%</span>
-                        </div>
-                    </div>
-                }
-                else
-                {
-                    <div class="vote-info">
-                        <p>Dự án đang trong giai đoạn bỏ phiếu.</p>
-                        <p style="color: var(--warning);">⚠️ Chỉ nhà đầu tư mới có quyền bỏ phiếu.</p>
-                        <p>Bạn cần đầu tư vào dự án để tham gia quyết định.</p>
-                    </div>
-                    
-                    <div class="voting-stats">
-                        <div class="vote-stat">
-                            <span class="vote-label">Tổng vốn đầu tư:</span>
-                            <span class="vote-value">@Model.CurrentRaisedAmount.ToString("F2") BNB</span>
-                        </div>
-                        <div class="vote-stat">
-                            <span class="vote-label">Số nhà đầu tư:</span>
-                            <span class="vote-value">@Model.InvestorCount người</span>
-                        </div>
-                    </div>
-                }
-            }
-            else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Failed)
-            {
-                var currentUserWallet = User.FindFirst("WalletAddress")?.Value;
-                var userInvestment = Model.Investments?.FirstOrDefault(i => i.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase));
-                var isInvestor = userInvestment != null;
-
-                <h3><i class="fa-solid fa-money-bill-wave"></i> Hoàn tiền đầu tư</h3>
-                
-                if (isInvestor)
-                {
-                    <div class="refund-info">
-                        <p>Dự án đã thất bại hoặc bị hủy bỏ.</p>
-                        <p>Bạn đã đầu tư <strong>@userInvestment.Amount.ToString("F2") BNB</strong> vào dự án này.</p>
-                        <p>Bạn có thể claim lại toàn bộ số tiền đã đầu tư.</p>
-                    </div>
-                    
-                    <div class="refund-stats">
-                        <div class="refund-stat">
-                            <span class="refund-label">Số tiền có thể claim:</span>
-                            <span class="refund-value">@userInvestment.Amount.ToString("F2") BNB</span>
-                        </div>
-                        <div class="refund-stat">
-                            <span class="refund-label">Ngày đầu tư:</span>
-                            <span class="refund-value">@userInvestment.Timestamp.ToString("dd/MM/yyyy")</span>
-                        </div>
-                    </div>
-                }
-                else
-                {
-                    <div class="refund-info">
-                        <p>Dự án đã thất bại hoặc bị hủy bỏ.</p>
-                        <p style="color: var(--warning);">⚠️ Chỉ nhà đầu tư mới có thể claim refund.</p>
-                        <p>Bạn không có khoản đầu tư nào trong dự án này.</p>
-                    </div>
-                    
-                    <div class="refund-stats">
-                        <div class="refund-stat">
-                            <span class="refund-label">Tổng vốn cần hoàn:</span>
-                            <span class="refund-value">@Model.CurrentRaisedAmount.ToString("F2") BNB</span>
-                        </div>
-                        <div class="refund-stat">
-                            <span class="refund-label">Số nhà đầu tư:</span>
-                            <span class="refund-value">@Model.InvestorCount người</span>
-                        </div>
-                    </div>
-                }
+                </div>
             }
             else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Completed)
             {
-                <h3><i class="fa-solid fa-trophy"></i> Dự án hoàn thành</h3>
-                <div class="completed-info">
-                    <p>Chúc mừng! Dự án đã hoàn thành thành công.</p>
-                    <p>Lợi nhuận sẽ được phân phối tự động.</p>
-                </div>
-                <div class="profit-stats">
-                    <div class="profit-stat">
-                        <span class="profit-label">Lợi nhuận nhận được:</span>
-                        <span class="profit-value">-- BNB</span>
+                <!-- Completed Campaign Interface -->
+                <div id="completed-interface">
+                    <!-- Owner Interface: Add Profit -->
+                    <div id="owner-section" style="display: none;">
+                        <h3><i class="fa-solid fa-plus-circle"></i> Thêm lợi nhuận</h3>
+                        <div class="form-group">
+                            <label for="profit-amount">Số tiền lợi nhuận (BNB)</label>
+                            <div class="input-wrapper">
+                                <span>₿</span>
+                                <input type="number" id="profit-amount" placeholder="0.1" min="0.01" step="0.01">
+                            </div>
+                        </div>
+                        <button class="btn btn-success" onclick="addProfit(@Model.Id)" id="add-profit-btn">
+                            <i class="fas fa-plus"></i> Thêm lợi nhuận
+                        </button>
+                    </div>
+
+                    <!-- Investor Interface: Claim Profit -->
+                    <div id="investor-section">
+                        <h3><i class="fa-solid fa-money-bill-wave"></i> Nhận lợi nhuận</h3>
+                        <div class="profit-list" id="profit-list">
+                            <p>Đang tải danh sách lợi nhuận...</p>
+                        </div>
                     </div>
                 </div>
             }
             else
             {
-                <h3><i class="fa-solid fa-info-circle"></i> Thông tin dự án</h3>
-                <div class="project-status-info">
-                    <p>Dự án đang ở giai đoạn chuẩn bị.</p>
-                    <p>Vui lòng chờ đợi thêm thông tin.</p>
+                <div class="status-message">
+                    <h3><i class="fa-solid fa-info-circle"></i> Trạng thái chiến dịch</h3>
+                    <p>Chiến dịch đang ở trạng thái: <strong>@Model.Status</strong></p>
+                    @if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Draft)
+                    {
+                        <p>Chiến dịch đang được soạn thảo.</p>
+                    }
+                    else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.PendingApproval)
+                    {
+                        <p>Chiến dịch đang chờ phê duyệt.</p>
+                    }
+                    else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Failed)
+                    {
+                        <p>Chiến dịch đã thất bại.</p>
+                    }
                 </div>
             }
         </div>
@@ -1180,12 +1314,112 @@
 </div>
 
 @section Scripts {
+    <!-- Load Ethers.js v5 for compatibility -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        // Fallback loading for Ethers.js
+        function ensureEthersLoaded() {
+            return new Promise((resolve, reject) => {
+                if (typeof ethers !== 'undefined') {
+                    console.log('Ethers.js already loaded');
+                    resolve();
+                    return;
+                }
+                
+                console.log('Loading Ethers.js fallback...');
+                const fallbackScript = document.createElement('script');
+                fallbackScript.src = 'https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js';
+                fallbackScript.onload = () => {
+                    console.log('Ethers.js loaded via fallback');
+                    resolve();
+                };
+                fallbackScript.onerror = () => {
+                    console.error('Failed to load Ethers.js');
+                    reject(new Error('Failed to load Ethers.js'));
+                };
+                document.head.appendChild(fallbackScript);
+            });
+        }
+    </script>
+    <script src="~/js/contract-config.js"></script>
+    <script>
+        // Global variables
+        let web3;
+        let contract;
+        let userAccount;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Debug: Check if ethers is available
+                console.log('DOMContentLoaded - checking ethers:', typeof ethers);
+                
+                // Ensure Ethers.js is loaded before proceeding
+                await ensureEthersLoaded();
+                
+                // Debug: Verify ethers after ensuring loaded
+                console.log('After ensureEthersLoaded - ethers:', typeof ethers);
+                console.log('ethers.providers:', typeof ethers?.providers);
+                console.log('ethers.providers.Web3Provider:', typeof ethers?.providers?.Web3Provider);
+                
+                // Initialize Web3 and contract
+                await initializeWeb3();
+                
+                // Setup MetaMask event listeners
+                if (typeof window.ethereum !== 'undefined') {
+                    // Handle account changes
+                    window.ethereum.on('accountsChanged', async (accounts) => {
+                        console.log('Accounts changed:', accounts);
+                        if (accounts.length === 0) {
+                            console.log('MetaMask disconnected');
+                            showError('MetaMask đã ngắt kết nối. Vui lòng kết nối lại!');
+                            userAccount = null;
+                            web3 = null;
+                            contract = null;
+                        } else {
+                            console.log('Account switched, reinitializing...');
+                            await initializeWeb3();
+                        }
+                    });
+
+                    // Handle network changes
+                    window.ethereum.on('chainChanged', async (chainId) => {
+                        console.log('Network changed to:', chainId);
+                        const chainIdDec = parseInt(chainId, 16);
+                        
+                        if (chainIdDec !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC) {
+                            showError('Vui lòng chuyển về BSC Testnet để sử dụng ứng dụng!');
+                            // Optionally try to switch back automatically
+                            // await switchToBSCTestnet();
+                        } else {
+                            console.log('Switched to correct network, reinitializing...');
+                            await initializeWeb3();
+                        }
+                    });
+
+                    // Handle MetaMask connection
+                    window.ethereum.on('connect', (connectInfo) => {
+                        console.log('MetaMask connected:', connectInfo);
+                    });
+
+                    // Handle MetaMask disconnection
+                    window.ethereum.on('disconnect', (error) => {
+                        console.log('MetaMask disconnected:', error);
+                        showError('Kết nối MetaMask bị ngắt. Vui lòng kết nối lại!');
+                        userAccount = null;
+                        web3 = null;
+                        contract = null;
+                    });
+                }
+                
+            } catch (error) {
+                console.error('Error loading Ethers.js:', error);
+                showError('Không thể tải thư viện blockchain. Vui lòng kiểm tra kết nối internet!');
+            }
             
             // --- COUNTDOWN TIMER ---
             const countdownElement = document.getElementById('countdown');
-            const campaignEndDate = new Date('@Model.EndTime.ToString("yyyy-MM-ddTHH:mm:ss")Z').getTime();
+            // Use Unix timestamp to avoid date parsing issues
+            const campaignEndDate = @(((DateTimeOffset)Model.EndTime).ToUnixTimeMilliseconds());
 
             const updateCountdown = () => {
                 const now = new Date().getTime();
@@ -1211,7 +1445,7 @@
             // --- INVESTMENT CALCULATOR ---
             const investmentAmountInput = document.getElementById('investment-amount');
             const ownershipPercentageElement = document.getElementById('ownership-percentage');
-            const goalAmount = @Model.GoalAmount;
+            const goalAmount = @(Model.GoalAmount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
 
             const updateOwnershipValue = () => {
                 const amount = parseFloat(investmentAmountInput.value);
@@ -1223,18 +1457,371 @@
                 ownershipPercentageElement.textContent = ownership.toFixed(2);
             };
             
-            investmentAmountInput.addEventListener('input', updateOwnershipValue);
-            updateOwnershipValue(); // Initial calculation
+            if (investmentAmountInput) {
+                investmentAmountInput.addEventListener('input', updateOwnershipValue);
+                updateOwnershipValue(); // Initial calculation
+            }
         });
 
-        function investInCampaign(campaignId) {
-            const amount = document.getElementById('investment-amount').value;
-            if (!amount || parseFloat(amount) <= 0) {
-                alert('Vui lòng nhập số tiền đầu tư hợp lệ!');
-                return;
+        // Initialize Web3 and contract with robust error handling
+        async function initializeWeb3() {
+            try {
+                console.log('Initializing Web3...');
+                
+                // Check if Ethers.js is available
+                if (typeof ethers === 'undefined') {
+                    console.error('Ethers.js not loaded');
+                    showError('Thư viện blockchain chưa được tải. Vui lòng refresh trang!');
+                    return false;
+                }
+                
+                // Check if window.ethereum exists
+                if (typeof window.ethereum === 'undefined') {
+                    console.error('MetaMask not installed');
+                    showError('Vui lòng cài đặt MetaMask để sử dụng tính năng đầu tư!');
+                    return false;
+                }
+
+                // Create Web3 provider (Ethers v5 syntax)
+                web3 = new ethers.providers.Web3Provider(window.ethereum);
+                console.log('Web3 provider created');
+
+                // Request accounts with timeout
+                const accounts = await Promise.race([
+                    window.ethereum.request({ method: 'eth_requestAccounts' }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 15000))
+                ]);
+
+                if (!accounts || accounts.length === 0) {
+                    throw new Error('No accounts found');
+                }
+
+                console.log('Accounts retrieved:', accounts);
+
+                // Get signer
+                const signer = web3.getSigner();
+                userAccount = await signer.getAddress();
+                console.log('User account:', userAccount);
+
+                // Check network first
+                const network = await web3.getNetwork();
+                console.log('Current network:', network);
+                
+                if (network.chainId !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC) {
+                    console.log('Wrong network, switching to BSC Testnet...');
+                    const switched = await switchToBSCTestnet();
+                    if (!switched) {
+                        throw new Error('Failed to switch network');
+                    }
+                    // Re-create web3 after network switch (Ethers v5 syntax)
+                    web3 = new ethers.providers.Web3Provider(window.ethereum);
+                }
+
+                // Initialize contract
+                try {
+                    contract = new ethers.Contract(
+                        CONTRACT_CONFIG.CONTRACT_ADDRESS,
+                        CONTRACT_CONFIG.CONTRACT_ABI,
+                        signer
+                    );
+                    console.log('Contract initialized successfully');
+                    
+                    // Test contract connection by calling a view function
+                    await contract.campaignCounter();
+                    console.log('Contract connection verified');
+                    
+                } catch (contractError) {
+                    console.error('Contract initialization failed:', contractError);
+                    throw new Error('Không thể kết nối với smart contract');
+                }
+
+                console.log('Web3 initialization completed successfully');
+                return true;
+                
+            } catch (error) {
+                console.error('Web3 initialization error:', error);
+                
+                // Handle specific errors
+                if (error.code === 4001) {
+                    showError('Bạn đã từ chối kết nối ví. Vui lòng thử lại và chấp nhận kết nối.');
+                } else if (error.code === -32002) {
+                    showError('Đã có yêu cầu kết nối MetaMask đang chờ. Vui lòng kiểm tra MetaMask.');
+                } else if (error.message === 'Connection timeout') {
+                    showError('Kết nối ví bị timeout. Vui lòng thử lại.');
+                } else if (error.message === 'No accounts found') {
+                    showError('Không tìm thấy tài khoản nào. Vui lòng unlock MetaMask.');
+                } else if (error.message.includes('smart contract')) {
+                    showError(error.message);
+                } else {
+                    showError('Không thể kết nối với ví. Vui lòng kiểm tra MetaMask và thử lại!');
+                }
+                
+                return false;
             }
-            // Placeholder for investment functionality
-            alert(`Đầu tư ${amount} BNB vào dự án. Tính năng này sẽ được phát triển trong tương lai!`);
+        }
+
+        // Switch to BSC Testnet with robust error handling
+        async function switchToBSCTestnet() {
+            try {
+                console.log('Attempting to switch to BSC Testnet...');
+                
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: CONTRACT_CONFIG.EXPECTED_CHAIN_ID_HEX }],
+                });
+                
+                console.log('Successfully switched to BSC Testnet');
+                return true;
+                
+            } catch (switchError) {
+                console.log('Switch error:', switchError);
+                
+                // Chain not added to MetaMask
+                if (switchError.code === 4902) {
+                    try {
+                        console.log('Adding BSC Testnet to MetaMask...');
+                        
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: CONTRACT_CONFIG.EXPECTED_CHAIN_ID_HEX,
+                                chainName: 'BSC Testnet',
+                                nativeCurrency: {
+                                    name: 'BNB',
+                                    symbol: 'BNB',
+                                    decimals: 18
+                                },
+                                rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/'],
+                                blockExplorerUrls: ['https://testnet.bscscan.com/']
+                            }]
+                        });
+                        
+                        console.log('BSC Testnet added successfully, attempting to switch again...');
+                        
+                        // Try to switch again after adding
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: CONTRACT_CONFIG.EXPECTED_CHAIN_ID_HEX }],
+                        });
+                        
+                        console.log('Successfully switched to BSC Testnet after adding');
+                        return true;
+                        
+                    } catch (addError) {
+                        console.error('Error adding BSC Testnet:', addError);
+                        
+                        if (addError.code === 4001) {
+                            showError('Bạn đã từ chối thêm BSC Testnet. Vui lòng thêm thủ công trong MetaMask.');
+                        } else {
+                            showError('Không thể thêm BSC Testnet. Vui lòng thêm thủ công!');
+                        }
+                        return false;
+                    }
+                } else if (switchError.code === 4001) {
+                    // User rejected the switch
+                    showError('Bạn đã từ chối chuyển sang BSC Testnet. Vui lòng chuyển thủ công trong MetaMask.');
+                    return false;
+                } else {
+                    console.error('Error switching to BSC Testnet:', switchError);
+                    showError('Không thể chuyển sang BSC Testnet! Vui lòng chuyển thủ công trong MetaMask.');
+                    return false;
+                }
+            }
+        }
+
+        // Main investment function
+        async function investInCampaign(campaignId) {
+            let originalText = ''; // Declare at function scope
+            
+            try {
+                const amountInput = document.getElementById('investment-amount');
+                const amount = parseFloat(amountInput.value);
+                
+                // Validation
+                if (!amount || amount <= 0) {
+                    showError('Vui lòng nhập số tiền đầu tư hợp lệ!');
+                    return;
+                }
+
+                if (amount < 0.01) {
+                    showError('Số tiền đầu tư tối thiểu là 0.01 BNB!');
+                    return;
+                }
+
+                const maxAmount = @((Model.GoalAmount - Model.CurrentRaisedAmount).ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+                if (amount > maxAmount) {
+                    showError(`Số tiền đầu tư không được vượt quá ${maxAmount} BNB!`);
+                    return;
+                }
+
+                // Check Web3 connection and reinitialize if needed
+                if (!web3 || !contract || !userAccount) {
+                    console.log('Web3 not connected, attempting to initialize...');
+                    const initialized = await initializeWeb3();
+                    if (!initialized || !web3 || !contract || !userAccount) {
+                        showError('Không thể kết nối với ví. Vui lòng kiểm tra MetaMask và thử lại!');
+                        return;
+                    }
+                }
+
+                // Double-check network
+                const network = await web3.getNetwork();
+                if (network.chainId !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC) {
+                    showError('Vui lòng chuyển sang BSC Testnet để thực hiện giao dịch!');
+                    return;
+                }
+
+                // Show loading state
+                const investBtn = document.getElementById('invest-btn');
+                if (investBtn) {
+                    originalText = investBtn.innerHTML;
+                    investBtn.disabled = true;
+                    investBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+                }
+
+                // Convert amount to Wei
+                const amountWei = ethers.utils.parseEther(amount.toString());
+
+                // Call smart contract
+                console.log('Calling invest function with:', {
+                    campaignId: campaignId,
+                    amount: amount,
+                    amountWei: amountWei.toString(),
+                    userAccount: userAccount,
+                    contractAddress: CONTRACT_CONFIG.CONTRACT_ADDRESS
+                });
+
+                // Verify campaign exists first
+                try {
+                    const campaign = await contract.campaigns(campaignId);
+                    console.log('Campaign info:', campaign);
+                    console.log('Campaign status (raw):', campaign.status);
+                    console.log('Campaign status (number):', campaign.status.toNumber ? campaign.status.toNumber() : campaign.status);
+                    
+                    if (campaign.id.toString() === '0') {
+                        throw new Error('Campaign not found on blockchain');
+                    }
+                    
+                    const statusValue = campaign.status.toNumber ? campaign.status.toNumber() : campaign.status;
+                    console.log('Status value for comparison:', statusValue);
+                    
+                    // Bỏ qua kiểm tra status cứng nhắc - cho phép đầu tư ở mọi trạng thái
+                    const statusNames = ['Draft', 'PendingPost', 'PendingApproval', 'Active', 'Voting', 'Completed', 'Failed'];
+                    const statusName = statusNames[statusValue] || 'Unknown';
+                    console.log(`📊 Campaign status: ${statusName} (${statusValue})`);
+                    
+                    console.log('✅ Allowing investment regardless of status');
+                    
+                    // Check if campaign has ended
+                    const currentTime = Math.floor(Date.now() / 1000);
+                    if (campaign.endTime.toNumber() < currentTime) {
+                        throw new Error('Campaign has ended');
+                    }
+                    
+                } catch (campaignCheckError) {
+                    console.error('Campaign verification failed:', campaignCheckError);
+                    throw campaignCheckError; // Re-throw the original error
+                }
+
+                const tx = await contract.invest(campaignId, {
+                    value: amountWei,
+                    gasLimit: 300000 // Increased gas limit
+                });
+
+                showSuccess('Giao dịch đã được gửi! Đang chờ xác nhận...');
+                console.log('Transaction sent:', tx.hash);
+
+                // Wait for transaction confirmation
+                const receipt = await tx.wait();
+                console.log('Transaction confirmed:', receipt);
+
+                if (receipt.status === 1) {
+                    showSuccess('Đầu tư thành công! Giao dịch đã được xác nhận trên blockchain.');
+                    
+                    // Reset form
+                    amountInput.value = '';
+                    document.getElementById('ownership-percentage').textContent = '0';
+                    
+                    // Reload page after delay to show updated data
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 3000);
+                } else {
+                    showError('Giao dịch thất bại! Vui lòng thử lại.');
+                }
+
+            } catch (error) {
+                console.error('Investment error:', error);
+                
+                // Handle specific errors
+                if (error.code === 4001) {
+                    showError('Giao dịch bị hủy bởi người dùng.');
+                } else if (error.code === -32603) {
+                    showError('Giao dịch bị từ chối. Vui lòng kiểm tra số dư và thử lại.');
+                } else if (error.message && error.message.includes('insufficient funds')) {
+                    showError('Số dư BNB không đủ để thực hiện giao dịch.');
+                } else if (error.message && error.message.includes('Campaign not found')) {
+                    showError('Không tìm thấy chiến dịch trên blockchain.');
+                } else if (error.message && error.message.includes('Campaign đang ở trạng thái')) {
+                    showError(error.message);
+                } else if (error.message && error.message.includes('Campaign has ended')) {
+                    showError('Chiến dịch đã kết thúc, không thể đầu tư.');
+                } else if (error.message && error.message.includes('Investment too small')) {
+                    showError('Số tiền đầu tư quá nhỏ. Tối thiểu 0.01 BNB.');
+                } else if (error.code === 'CALL_EXCEPTION') {
+                    showError('Smart contract từ chối giao dịch. Campaign có thể chưa ở trạng thái Active.');
+                } else if (error.reason) {
+                    showError(`Lỗi smart contract: ${error.reason}`);
+                } else {
+                    showError('Có lỗi xảy ra khi đầu tư. Vui lòng thử lại!');
+                }
+            } finally {
+                // Reset button state
+                const investBtn = document.getElementById('invest-btn');
+                if (investBtn) {
+                    investBtn.disabled = false;
+                    investBtn.innerHTML = originalText || 'Đầu tư ngay';
+                }
+            }
+        }
+
+        // Utility functions
+        function showSuccess(message) {
+            // Create and show success notification
+            const notification = createNotification(message, 'success');
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 5000);
+        }
+
+        function showError(message) {
+            // Create and show error notification
+            const notification = createNotification(message, 'error');
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 5000);
+        }
+
+        function createNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                z-index: 10000;
+                max-width: 400px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                background: ${type === 'success' ? 'linear-gradient(135deg, #28a745, #20c997)' : 'linear-gradient(135deg, #dc3545, #e74c3c)'};
+            `;
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            return notification;
         }
 
         function voteOnCampaign(campaignId) {
@@ -1249,8 +1836,86 @@
 
         function claimRefund(campaignId) {
             if (confirm('Bạn có chắc chắn muốn claim lại tiền đầu tư không? Hành động này không thể hoàn tác.')) {
-                // Gọi smart contract để claim refund
                 claimRefundFromContract(campaignId);
+            }
+        }
+
+        async function claimRefundFromContract(campaignId) {
+            try {
+                // Check Web3 connection and reinitialize if needed
+                if (!web3 || !contract || !userAccount) {
+                    console.log('Web3 not connected, attempting to initialize...');
+                    const initialized = await initializeWeb3();
+                    if (!initialized || !web3 || !contract || !userAccount) {
+                        showError('Không thể kết nối với ví. Vui lòng kiểm tra MetaMask và thử lại!');
+                        return;
+                    }
+                }
+
+                // Double-check network
+                const network = await web3.getNetwork();
+                if (network.chainId !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC) {
+                    showError('Vui lòng chuyển sang BSC Testnet để thực hiện giao dịch!');
+                    return;
+                }
+
+                // Show loading state
+                const refundBtn = document.getElementById('refund-btn');
+                const originalText = refundBtn.innerHTML;
+                refundBtn.disabled = true;
+                refundBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+
+                console.log('Calling refund function for campaign:', campaignId);
+
+                // Call smart contract refund function
+                const tx = await contract.refund(campaignId, {
+                    gasLimit: 150000 // Set appropriate gas limit
+                });
+
+                showSuccess('Giao dịch claim refund đã được gửi! Đang chờ xác nhận...');
+                console.log('Refund transaction sent:', tx.hash);
+
+                // Wait for transaction confirmation
+                const receipt = await tx.wait();
+                console.log('Refund transaction confirmed:', receipt);
+
+                if (receipt.status === 1) {
+                    showSuccess('Claim refund thành công! Số BNB đã được hoàn về ví của bạn.');
+                    
+                    // Reload page after delay to show updated data
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 3000);
+                } else {
+                    showError('Giao dịch claim refund thất bại! Vui lòng thử lại.');
+                }
+
+            } catch (error) {
+                console.error('Refund error:', error);
+                
+                // Handle specific errors
+                if (error.code === 4001) {
+                    showError('Giao dịch bị hủy bởi người dùng.');
+                } else if (error.code === -32603) {
+                    showError('Giao dịch bị từ chối. Vui lòng kiểm tra và thử lại.');
+                } else if (error.message && error.message.includes('insufficient funds')) {
+                    showError('Số dư BNB không đủ để thanh toán phí gas.');
+                } else if (error.message && error.message.includes('Campaign not found')) {
+                    showError('Không tìm thấy chiến dịch trên blockchain.');
+                } else if (error.message && error.message.includes('No investment found')) {
+                    showError('Bạn chưa đầu tư vào chiến dịch này.');
+                } else if (error.message && error.message.includes('Campaign is not failed')) {
+                    showError('Chiến dịch chưa ở trạng thái thất bại, không thể claim refund.');
+                } else {
+                    showError('Có lỗi xảy ra khi claim refund. Vui lòng thử lại!');
+                }
+            } finally {
+                // Reset button state
+                const refundBtn = document.getElementById('refund-btn');
+                if (refundBtn) {
+                    refundBtn.disabled = false;
+                    refundBtn.innerHTML = originalText;
+                }
             }
         }
 
@@ -1263,41 +1928,436 @@
 
         async function voteOnWithdrawalRequest(requestId, agree) {
             try {
-                // Kiểm tra xem có MetaMask không
-                if (typeof window.ethereum === 'undefined') {
-                    alert('Vui lòng cài đặt MetaMask để thực hiện giao dịch!');
+                // Check Web3 connection and reinitialize if needed
+                if (!web3 || !contract || !userAccount) {
+                    console.log('Web3 not connected, attempting to initialize...');
+                    const initialized = await initializeWeb3();
+                    if (!initialized || !web3 || !contract || !userAccount) {
+                        showError('Không thể kết nối với ví. Vui lòng kiểm tra MetaMask và thử lại!');
+                        return;
+                    }
+                }
+
+                // Double-check network
+                const network = await web3.getNetwork();
+                if (network.chainId !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC) {
+                    showError('Vui lòng chuyển sang BSC Testnet để thực hiện giao dịch!');
                     return;
                 }
 
                 // Hiển thị loading state
                 const voteButtons = document.querySelectorAll(`[onclick*="voteOnWithdrawal(${requestId}"]`);
-                voteButtons.forEach(btn => {
+                const originalTexts = [];
+                voteButtons.forEach((btn, index) => {
+                    originalTexts[index] = btn.innerHTML;
                     btn.disabled = true;
                     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
                 });
 
-                // Placeholder cho việc gọi smart contract
-                // Ở đây sẽ tích hợp với Web3.js hoặc Ethers.js để call contract function
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate transaction
-                
+                console.log('Calling voteForWithdrawal function:', {
+                    campaignId: @Model.Id,
+                    requestId: requestId,
+                    agree: agree
+                });
+
+                // Call smart contract vote function
+                const tx = await contract.voteForWithdrawal(@Model.Id, requestId, agree, {
+                    gasLimit: 150000 // Set appropriate gas limit
+                });
+
                 const actionText = agree ? 'ủng hộ' : 'phản đối';
-                alert(`Bỏ phiếu ${actionText} thành công! Giao dịch đã được ghi nhận trên blockchain.`);
-                
-                // Reload trang để cập nhật trạng thái
-                window.location.reload();
+                showSuccess(`Giao dịch bỏ phiếu ${actionText} đã được gửi! Đang chờ xác nhận...`);
+                console.log('Vote transaction sent:', tx.hash);
+
+                // Wait for transaction confirmation
+                const receipt = await tx.wait();
+                console.log('Vote transaction confirmed:', receipt);
+
+                if (receipt.status === 1) {
+                    showSuccess(`Bỏ phiếu ${actionText} thành công! Giao dịch đã được ghi nhận trên blockchain.`);
+                    
+                    // Reload trang để cập nhật trạng thái
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 3000);
+                } else {
+                    showError('Giao dịch bỏ phiếu thất bại! Vui lòng thử lại.');
+                }
                 
             } catch (error) {
                 console.error('Lỗi khi bỏ phiếu:', error);
-                alert('Có lỗi xảy ra khi bỏ phiếu. Vui lòng thử lại!');
+                
+                // Handle specific errors
+                if (error.code === 4001) {
+                    showError('Giao dịch bị hủy bởi người dùng.');
+                } else if (error.code === -32603) {
+                    showError('Giao dịch bị từ chối. Vui lòng kiểm tra và thử lại.');
+                } else if (error.message && error.message.includes('insufficient funds')) {
+                    showError('Số dư BNB không đủ để thanh toán phí gas.');
+                } else if (error.message && error.message.includes('Not an investor')) {
+                    showError('Chỉ nhà đầu tư mới có quyền bỏ phiếu.');
+                } else if (error.message && error.message.includes('Already voted')) {
+                    showError('Bạn đã bỏ phiếu cho yêu cầu này rồi.');
+                } else if (error.message && error.message.includes('Vote ended')) {
+                    showError('Thời gian bỏ phiếu đã kết thúc.');
+                } else if (error.message && error.message.includes('Request not found')) {
+                    showError('Không tìm thấy yêu cầu rút vốn.');
+                } else {
+                    showError('Có lỗi xảy ra khi bỏ phiếu. Vui lòng thử lại!');
+                }
                 
                 // Reset buttons
                 const voteButtons = document.querySelectorAll(`[onclick*="voteOnWithdrawal(${requestId}"]`);
-                voteButtons.forEach(btn => {
+                voteButtons.forEach((btn, index) => {
                     btn.disabled = false;
+                    btn.innerHTML = originalTexts[index] || btn.innerHTML;
                 });
-                // Restore original text - will need to be more specific in real implementation
-                window.location.reload();
             }
         }
+
+        // ===== VOTING FUNCTIONS =====
+        
+        // Load withdrawal requests for voting
+        async function loadWithdrawalRequests(campaignId) {
+            try {
+                await ensureWalletConnected();
+                const contract = await getContract();
+                
+                // Get withdrawal requests count
+                // Note: You might need to implement getWithdrawalRequestsCount in your smart contract
+                const requestsElement = document.getElementById('withdrawal-requests');
+                requestsElement.innerHTML = '<p>Đang tải danh sách yêu cầu rút tiền...</p>';
+                
+                // For now, we'll create a sample interface
+                // You should implement this based on your smart contract structure
+                requestsElement.innerHTML = `
+                    <div class="withdrawal-request">
+                        <div class="request-header">
+                            <span class="request-amount">Yêu cầu rút: 10 BNB</span>
+                            <span class="request-status status-pending">Đang bỏ phiếu</span>
+                        </div>
+                        <p>Lý do: Mua thiết bị và nguyên liệu cho dự án</p>
+                        <div class="vote-stats">
+                            <div class="vote-stat">
+                                <div>Phiếu ủng hộ</div>
+                                <div style="color: var(--success);">45 BNB (65%)</div>
+                            </div>
+                            <div class="vote-stat">
+                                <div>Phiếu phản đối</div>
+                                <div style="color: var(--danger);">24 BNB (35%)</div>
+                            </div>
+                        </div>
+                        <div class="vote-buttons">
+                            <button class="btn btn-success" onclick="voteForWithdrawal(${campaignId}, 0, true)">
+                                <i class="fas fa-thumbs-up"></i> Ủng hộ
+                            </button>
+                            <button class="btn btn-danger" onclick="voteForWithdrawal(${campaignId}, 0, false)">
+                                <i class="fas fa-thumbs-down"></i> Phản đối
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error loading withdrawal requests:', error);
+                document.getElementById('withdrawal-requests').innerHTML = '<p style="color: var(--danger);">Không thể tải danh sách yêu cầu rút tiền.</p>';
+            }
+        }
+
+        // Vote for withdrawal request
+        async function voteForWithdrawal(campaignId, requestId, agree) {
+            try {
+                await ensureWalletConnected();
+                const contract = await getContract();
+                
+                const actionText = agree ? 'ủng hộ' : 'phản đối';
+                console.log(`Voting ${actionText} for campaign ${campaignId}, request ${requestId}`);
+                
+                // Set button loading state
+                const voteButtons = document.querySelectorAll(`[onclick*="voteForWithdrawal(${campaignId}, ${requestId}"]`);
+                const originalTexts = [];
+                voteButtons.forEach((btn, index) => {
+                    originalTexts[index] = btn.innerHTML;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+                });
+
+                // Call smart contract
+                const tx = await contract.voteForWithdrawal(campaignId, requestId, agree, {
+                    gasLimit: 150000
+                });
+
+                showSuccess(`Giao dịch bỏ phiếu ${actionText} đã được gửi! Đang chờ xác nhận...`);
+                console.log('Vote transaction sent:', tx.hash);
+
+                const receipt = await tx.wait();
+                console.log('Vote transaction confirmed:', receipt);
+
+                if (receipt.status === 1) {
+                    showSuccess(`Bỏ phiếu ${actionText} thành công!`);
+                    // Reload voting interface
+                    setTimeout(() => loadWithdrawalRequests(campaignId), 2000);
+                } else {
+                    showError('Giao dịch bỏ phiếu thất bại!');
+                }
+                
+                // Reset buttons
+                voteButtons.forEach((btn, index) => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalTexts[index];
+                });
+                
+            } catch (error) {
+                console.error('Voting error:', error);
+                
+                if (error.code === 4001) {
+                    showError('Giao dịch bị hủy bởi người dùng.');
+                } else if (error.message && error.message.includes('Only investors can vote')) {
+                    showError('Chỉ nhà đầu tư mới có quyền bỏ phiếu.');
+                } else if (error.message && error.message.includes('You have already voted')) {
+                    showError('Bạn đã bỏ phiếu cho yêu cầu này rồi.');
+                } else if (error.message && error.message.includes('Voting period has ended')) {
+                    showError('Thời gian bỏ phiếu đã kết thúc.');
+                } else {
+                    showError('Có lỗi xảy ra khi bỏ phiếu. Vui lòng thử lại!');
+                }
+                
+                // Reset buttons
+                const voteButtons = document.querySelectorAll(`[onclick*="voteForWithdrawal(${campaignId}, ${requestId}"]`);
+                voteButtons.forEach((btn) => {
+                    btn.disabled = false;
+                    btn.innerHTML = btn.innerHTML.replace('<i class="fas fa-spinner fa-spin"></i> Đang xử lý...', btn.textContent);
+                });
+            }
+        }
+
+        // ===== PROFIT FUNCTIONS =====
+        
+        // Add profit (for campaign owner)
+        async function addProfit(campaignId) {
+            try {
+                await ensureWalletConnected();
+                const contract = await getContract();
+                
+                const profitAmountInput = document.getElementById('profit-amount');
+                const amount = parseFloat(profitAmountInput.value);
+                
+                if (isNaN(amount) || amount <= 0) {
+                    showError('Vui lòng nhập số tiền lợi nhuận hợp lệ!');
+                    return;
+                }
+                
+                if (amount < 0.01) {
+                    showError('Số tiền lợi nhuận tối thiểu là 0.01 BNB!');
+                    return;
+                }
+                
+                const amountWei = ethers.utils.parseEther(amount.toString());
+                
+                console.log('Adding profit:', {
+                    campaignId: campaignId,
+                    amount: amount,
+                    amountWei: amountWei.toString()
+                });
+                
+                // Set button loading state
+                const addProfitBtn = document.getElementById('add-profit-btn');
+                const originalText = addProfitBtn.innerHTML;
+                addProfitBtn.disabled = true;
+                addProfitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+                
+                // Call smart contract
+                const tx = await contract.addProfit(campaignId, {
+                    value: amountWei,
+                    gasLimit: 200000
+                });
+                
+                showSuccess('Giao dịch thêm lợi nhuận đã được gửi! Đang chờ xác nhận...');
+                console.log('Add profit transaction sent:', tx.hash);
+                
+                const receipt = await tx.wait();
+                console.log('Add profit transaction confirmed:', receipt);
+                
+                if (receipt.status === 1) {
+                    showSuccess(`Thêm lợi nhuận ${amount} BNB thành công!`);
+                    profitAmountInput.value = '';
+                    // Reload profit interface
+                    setTimeout(() => loadProfitList(campaignId), 2000);
+                } else {
+                    showError('Giao dịch thêm lợi nhuận thất bại!');
+                }
+                
+                // Reset button
+                addProfitBtn.disabled = false;
+                addProfitBtn.innerHTML = originalText;
+                
+            } catch (error) {
+                console.error('Add profit error:', error);
+                
+                if (error.code === 4001) {
+                    showError('Giao dịch bị hủy bởi người dùng.');
+                } else if (error.message && error.message.includes('insufficient funds')) {
+                    showError('Số dư BNB không đủ để thêm lợi nhuận.');
+                } else if (error.message && error.message.includes('Campaign not completed')) {
+                    showError('Chỉ có thể thêm lợi nhuận cho campaign đã hoàn thành.');
+                } else if (error.message && error.message.includes('Profit must be greater than zero')) {
+                    showError('Số tiền lợi nhuận phải lớn hơn 0.');
+                } else {
+                    showError('Có lỗi xảy ra khi thêm lợi nhuận. Vui lòng thử lại!');
+                }
+                
+                // Reset button
+                const addProfitBtn = document.getElementById('add-profit-btn');
+                if (addProfitBtn) {
+                    addProfitBtn.disabled = false;
+                    addProfitBtn.innerHTML = '<i class="fas fa-plus"></i> Thêm lợi nhuận';
+                }
+            }
+        }
+        
+        // Load profit list for investors
+        async function loadProfitList(campaignId) {
+            try {
+                await ensureWalletConnected();
+                const contract = await getContract();
+                
+                const profitListElement = document.getElementById('profit-list');
+                profitListElement.innerHTML = '<p>Đang tải danh sách lợi nhuận...</p>';
+                
+                // For now, create sample interface
+                // You should implement this based on your smart contract structure
+                profitListElement.innerHTML = `
+                    <div class="profit-item">
+                        <div class="profit-header">
+                            <span class="profit-amount">Lợi nhuận: 5 BNB</span>
+                            <span class="profit-status status-claimable">Có thể nhận</span>
+                        </div>
+                        <p>Phần của bạn: 0.5 BNB (10% ownership)</p>
+                        <button class="btn btn-success" onclick="claimProfit(${campaignId}, 0)">
+                            <i class="fas fa-money-bill-wave"></i> Nhận lợi nhuận
+                        </button>
+                    </div>
+                    <div class="profit-item">
+                        <div class="profit-header">
+                            <span class="profit-amount">Lợi nhuận: 3 BNB</span>
+                            <span class="profit-status status-claimed">Đã nhận</span>
+                        </div>
+                        <p>Đã nhận: 0.3 BNB (10% ownership)</p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error loading profit list:', error);
+                document.getElementById('profit-list').innerHTML = '<p style="color: var(--danger);">Không thể tải danh sách lợi nhuận.</p>';
+            }
+        }
+        
+        // Claim profit (for investors)
+        async function claimProfit(campaignId, profitIndex) {
+            try {
+                await ensureWalletConnected();
+                const contract = await getContract();
+                
+                console.log('Claiming profit:', {
+                    campaignId: campaignId,
+                    profitIndex: profitIndex
+                });
+                
+                // Set button loading state
+                const claimButton = document.querySelector(`[onclick*="claimProfit(${campaignId}, ${profitIndex}"]`);
+                const originalText = claimButton.innerHTML;
+                claimButton.disabled = true;
+                claimButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+                
+                // Call smart contract
+                const tx = await contract.claimProfit(campaignId, profitIndex, {
+                    gasLimit: 200000
+                });
+                
+                showSuccess('Giao dịch nhận lợi nhuận đã được gửi! Đang chờ xác nhận...');
+                console.log('Claim profit transaction sent:', tx.hash);
+                
+                const receipt = await tx.wait();
+                console.log('Claim profit transaction confirmed:', receipt);
+                
+                if (receipt.status === 1) {
+                    showSuccess('Nhận lợi nhuận thành công!');
+                    // Reload profit interface
+                    setTimeout(() => loadProfitList(campaignId), 2000);
+                } else {
+                    showError('Giao dịch nhận lợi nhuận thất bại!');
+                }
+                
+                // Reset button
+                claimButton.disabled = false;
+                claimButton.innerHTML = originalText;
+                
+            } catch (error) {
+                console.error('Claim profit error:', error);
+                
+                if (error.code === 4001) {
+                    showError('Giao dịch bị hủy bởi người dùng.');
+                } else if (error.message && error.message.includes('No investments found')) {
+                    showError('Bạn chưa đầu tư vào campaign này.');
+                } else if (error.message && error.message.includes('Profit already claimed')) {
+                    showError('Bạn đã nhận lợi nhuận này rồi.');
+                } else if (error.message && error.message.includes('Campaign not completed')) {
+                    showError('Campaign chưa hoàn thành.');
+                } else if (error.message && error.message.includes('No profit to claim')) {
+                    showError('Không có lợi nhuận để nhận.');
+                } else {
+                    showError('Có lỗi xảy ra khi nhận lợi nhuận. Vui lòng thử lại!');
+                }
+                
+                // Reset button
+                const claimButton = document.querySelector(`[onclick*="claimProfit(${campaignId}, ${profitIndex}"]`);
+                if (claimButton) {
+                    claimButton.disabled = false;
+                    claimButton.innerHTML = '<i class="fas fa-money-bill-wave"></i> Nhận lợi nhuận';
+                }
+            }
+        }
+
+        // ===== INITIALIZATION FOR STATUS-SPECIFIC INTERFACES =====
+        
+        // Check campaign status and initialize appropriate interface
+        async function initializeStatusInterface() {
+            const campaignId = @Model.Id;
+            const status = @((int)Model.Status);
+            
+            console.log('Initializing interface for status:', status);
+            
+            if (status === 4) { // Voting
+                await loadWithdrawalRequests(campaignId);
+            } else if (status === 5) { // Completed
+                // Check if user is owner or investor
+                try {
+                    await ensureWalletConnected();
+                    const currentUser = userAccount;
+                    const ownerAddress = '@Model.OwnerAddress';
+                    
+                    if (currentUser && currentUser.toLowerCase() === ownerAddress.toLowerCase()) {
+                        // Show owner interface
+                        document.getElementById('owner-section').style.display = 'block';
+                        document.getElementById('investor-section').style.display = 'none';
+                    } else {
+                        // Show investor interface and load profit list
+                        document.getElementById('owner-section').style.display = 'none';
+                        document.getElementById('investor-section').style.display = 'block';
+                        await loadProfitList(campaignId);
+                    }
+                } catch (error) {
+                    console.error('Error checking user role:', error);
+                    // Default to investor interface
+                    document.getElementById('owner-section').style.display = 'none';
+                    document.getElementById('investor-section').style.display = 'block';
+                }
+            }
+        }
+
+        // Call initialization after DOM is loaded and wallet is connected
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initializeStatusInterface, 1000); // Wait for wallet connection
+        });
     </script>
 }
