@@ -3,7 +3,6 @@ using InvestDapp.Shared.Common.Request;
 using InvestDapp.Shared.Models;
 using InvestDapp.Shared.Enums;
 using InvestDapp.Models;
-using InvestDapp.Application.MessageService;
 
 namespace InvestDapp.Application.CampaignService
 {
@@ -12,18 +11,12 @@ namespace InvestDapp.Application.CampaignService
         private readonly ICampaignPostRepository _repository;
         private readonly ICampaign _campaignRepository;
         private readonly IUser _userRepository;
-        private readonly IConversationService _conversationService;
 
-        public CampaignPostService(
-            ICampaignPostRepository repository, 
-            ICampaign campaignRepository, 
-            IUser userRepository,
-            IConversationService conversationService)
+        public CampaignPostService(ICampaignPostRepository repository, ICampaign campaignRepository, IUser userRepository)
         {
             _repository = repository;
             _campaignRepository = campaignRepository;
             _userRepository = userRepository;
-            _conversationService = conversationService;
         }
 
         #region Campaign Post Services

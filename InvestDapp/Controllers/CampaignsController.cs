@@ -4,27 +4,30 @@ using InvestDapp.Application.UserService;
 using InvestDapp.Shared.Common.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace InvestDapp.Controllers
 {
     [Authorize]
     public class CampaignsController : Controller
     {
-        private readonly ICampaignPostService _campaignPostService;
-        private readonly IUserService _userService;
-        private readonly IConversationService _conversationService;
+    private readonly ICampaignPostService _campaignPostService;
+    private readonly IUserService _userService;
+    private readonly IConversationService _conversationService;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
         public CampaignsController(
             ICampaignPostService campaignPostService,
             IUserService userService,
-            IConversationService conversationService)
+            IConversationService conversationService,
+            IServiceScopeFactory serviceScopeFactory)
         {
             _campaignPostService = campaignPostService;
             _userService = userService;
             _conversationService = conversationService;
+            _serviceScopeFactory = serviceScopeFactory;
         }
 
-        [Authorize(Roles = "KycVerified,Admin")]
         public async Task<IActionResult> Index()
         {
             try
@@ -288,28 +291,28 @@ namespace InvestDapp.Controllers
                 {
                     var postUrl = Url.Action("PostDetails", "Campaigns", new { id = post.Id }, Request.Scheme);
                     
-                    Console.WriteLine($"DEBUG: Đang gửi thông báo post - CampaignId: {request.CampaignId}, UserId: {user.Data.ID}, PostTitle: {post.Title}");
-                    
-                    try
+                    _ = Task.Run(async () =>
                     {
-                        await _conversationService.SendPostNotificationToCampaignGroupAsync(
-                            request.CampaignId, 
-                            user.Data.ID, 
-                            post.Title, 
-                            postUrl);
-                        
-                        Console.WriteLine($"DEBUG: Đã hoàn thành gửi thông báo post cho campaign {request.CampaignId}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error sending post notification: {ex.Message}");
-                        Console.WriteLine($"Stack trace: {ex.StackTrace}");
-                    }
+                        try
+                        {
+                            using var scope = _serviceScopeFactory.CreateScope();
+                            var convoService = scope.ServiceProvider.GetRequiredService<IConversationService>();
+                            await convoService.SendPostNotificationToCampaignGroupAsync(
+                                request.CampaignId,
+                                user.Data.ID,
+                                post.Title,
+                                postUrl);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error sending post notification: {ex.Message}");
+                        }
+                    });
                 }
 
                 var campaign = await _campaignPostService.GetCampaignByIdAsync(request.CampaignId);
                 var allPosts = await _campaignPostService.GetPostsByCampaignIdAsync(request.CampaignId);
-                bool isFirstPost = allPosts.Count() == 1; 
+                bool isFirstPost = allPosts.Count() == 1;
 
                 if (isFirstPost)
                 {
