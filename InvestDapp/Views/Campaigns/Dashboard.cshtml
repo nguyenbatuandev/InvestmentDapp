@@ -8,14 +8,14 @@
     <style>
         /* --- BIẾN MÀU SẮC VÀ THIẾT LẬP CƠ BẢN --- */
         :root {
-            --bg-dark: #0a0e1a;
-            --bg-light: #12182b;
-            --primary: #00aaff;
-            --primary-light: #00c6ff;
-            --secondary: #272c44;
-            --text-color: #e0e0e0;
-            --text-muted: #8a93b3;
-            --success: #00e676;
+            --bg-dark: #070913;
+            --bg-light: #0b1220; /* darker panel background */
+            --primary: #1ea7ff; /* slightly muted primary */
+            --primary-light: #38c7ff;
+            --secondary: #1f2636;
+            --text-color: #dbe7ff;
+            --text-muted: #98a4bf;
+            --success: #26c281;
             --warning: #ffb800;
             --danger: #ff6b6b;
             --gradient: linear-gradient(90deg, var(--primary), var(--primary-light));
@@ -70,7 +70,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
+            color: var(--text-color);
             font-weight: bold;
         }
 
@@ -107,6 +107,41 @@
             color: var(--text-muted);
             font-size: 0.9rem;
         }
+
+        /* --- INVESTMENT CARD STYLES (THEMED) --- */
+        .investment-card {
+            background: linear-gradient(180deg, rgba(6,8,16,0.6), rgba(10,14,26,0.45));
+            border-radius: 12px;
+            padding: 1rem;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .investment-card .btn {
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--bg-dark);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-color);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+
+    .btn-success { background: var(--success); color: #072; border-radius:8px }
+
+        /* small helpers inside card */
+    .investment-card label { color: var(--text-muted); font-size:0.85rem }
+    .input-field { background: rgba(11,18,32,0.6); color: var(--text-color); padding:0.5rem;border:1px solid var(--secondary);border-radius:6px;width:100%; }
 
         .voting-stats, .refund-stats, .profit-stats {
             display: flex;
@@ -595,6 +630,25 @@
             animation: pulse 2s infinite;
         }
 
+        .roadmap-item.failed::before {
+            border-color: var(--danger);
+            background-color: var(--danger);
+        }
+
+        .roadmap-item.failed .roadmap-content h4 {
+            color: var(--danger);
+        }
+
+        .roadmap-item.voting::before {
+            border-color: var(--primary);
+            background-color: var(--primary);
+            animation: pulse 2s infinite;
+        }
+
+        .roadmap-item.voting .roadmap-content h4 {
+            color: var(--primary);
+        }
+
         @@keyframes pulse {
             0% {
                 box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.5);
@@ -863,10 +917,10 @@
         </div>
 
         <div class="investment-module">
-            @if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Active && 
-                 Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
-            {
-                <!-- Investment Interface for Active Campaigns -->
+            <div class="investment-card" style="padding:1rem; border-radius:10px; background: linear-gradient(180deg, rgba(6,8,16,0.6), rgba(10,14,26,0.45)); box-shadow:0 6px 18px rgba(0,170,255,0.06); border:1px solid rgba(255,255,255,0.03);">
+                @if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Active && Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
+                {
+                    <!-- Investment Interface for Active Campaigns -->
                 <h3><i class="fa-solid fa-rocket"></i> Bảng điều khiển đầu tư</h3>
                 <div class="form-group">
                     <label for="investment-amount">Số tiền đầu tư (BNB)</label>
@@ -892,64 +946,43 @@
                 <button class="btn btn-primary" onclick="investInCampaign(@Model.Id)" id="invest-btn">
                     <i class="fas fa-rocket"></i> Đầu tư ngay
                 </button>
-            }
-            else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Voting)
-            {
-                <!-- Voting Interface for Voting Status -->
-                <h3><i class="fa-solid fa-vote-yea"></i> Bỏ phiếu rút tiền</h3>
-                <div class="voting-section">
-                    <div class="withdrawal-requests" id="withdrawal-requests">
-                        <p>Đang tải danh sách yêu cầu rút tiền...</p>
+                }
+                else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Voting)
+                {
+                    <div style="text-align:center;padding:1rem 0;">
+                        <i class="fa-solid fa-vote-yea" style="font-size:1.4rem;color:var(--warning);"></i>
+                        <h4 style="margin:0.5rem 0 0;">Đang bỏ phiếu rút vốn</h4>
+                        <p style="color:var(--text-secondary);margin:0.5rem 0 1rem;">Các yêu cầu rút vốn đang chờ bầu chọn bởi nhà đầu tư.</p>
+                        <div id="withdrawal-requests" style="text-align:left;">Đang tải danh sách yêu cầu rút tiền...</div>
                     </div>
-                </div>
-            }
-            else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Completed)
-            {
-                <!-- Completed Campaign Interface -->
-                <div id="completed-interface">
-                    <!-- Owner Interface: Add Profit -->
-                    <div id="owner-section" style="display: none;">
-                        <h3><i class="fa-solid fa-plus-circle"></i> Thêm lợi nhuận</h3>
-                        <div class="form-group">
-                            <label for="profit-amount">Số tiền lợi nhuận (BNB)</label>
-                            <div class="input-wrapper">
-                                <span>₿</span>
-                                <input type="number" id="profit-amount" placeholder="0.1" min="0.01" step="0.01">
-                            </div>
-                        </div>
-                        <button class="btn btn-success" onclick="addProfit(@Model.Id)" id="add-profit-btn">
-                            <i class="fas fa-plus"></i> Thêm lợi nhuận
-                        </button>
+                }
+                else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Completed)
+                {
+                    <div style="text-align:center;padding:1rem 0;">
+                        <i class="fa-solid fa-check-circle" style="font-size:1.4rem;color:var(--success);"></i>
+                        <h4 style="margin:0.5rem 0 0;">Chiến dịch hoàn thành</h4>
+                        <p style="color:var(--text-secondary);margin:0.5rem 0 1rem;">Chủ dự án có thể thêm lợi nhuận, nhà đầu tư có thể nhận.</p>
+                        <div id="owner-section" style="display:none;margin-bottom:0.5rem;"></div>
+                        <div id="investor-section"></div>
                     </div>
-
-                    <!-- Investor Interface: Claim Profit -->
-                    <div id="investor-section">
-                        <h3><i class="fa-solid fa-money-bill-wave"></i> Nhận lợi nhuận</h3>
-                        <div class="profit-list" id="profit-list">
-                            <p>Đang tải danh sách lợi nhuận...</p>
-                        </div>
+                }
+                else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Failed)
+                {
+                    <div style="text-align:center;padding:1rem 0;">
+                        <i class="fa-solid fa-exclamation-triangle" style="font-size:1.4rem;color:var(--danger);"></i>
+                        <h4 style="margin:0.5rem 0 0;">Chiến dịch đã thất bại</h4>
+                        <p style="color:var(--text-secondary);margin:0.5rem 0 1rem;">Nhà đầu tư có thể claim lại số tiền đã đầu tư.</p>
+                        <button class="btn btn-primary" onclick="claimRefund(@Model.Id)" id="refund-btn" style="padding:0.6rem 1rem;border-radius:8px;font-weight:600;">Claim hoàn tiền</button>
                     </div>
-                </div>
-            }
-            else
-            {
-                <div class="status-message">
-                    <h3><i class="fa-solid fa-info-circle"></i> Trạng thái chiến dịch</h3>
-                    <p>Chiến dịch đang ở trạng thái: <strong>@Model.Status</strong></p>
-                    @if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Draft)
-                    {
-                        <p>Chiến dịch đang được soạn thảo.</p>
-                    }
-                    else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.PendingApproval)
-                    {
-                        <p>Chiến dịch đang chờ phê duyệt.</p>
-                    }
-                    else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Failed)
-                    {
-                        <p>Chiến dịch đã thất bại.</p>
-                    }
-                </div>
-            }
+                }
+                else
+                {
+                    <div style="text-align:center;padding:0.75rem 0;color:var(--text-muted);">
+                        <i class="fa-solid fa-info-circle" style="margin-bottom:0.25rem;color:var(--text-muted);"></i>
+                        <div>Trạng thái hiện tại: <strong>@Model.Status</strong></div>
+                    </div>
+                }
+            </div>
         </div>
 
         <div class="panel-footer">
@@ -1067,7 +1100,7 @@
         <section class="info-section" id="roadmap">
             <h2><i class="fa-solid fa-map-signs"></i> Tiến độ dự án</h2>
             <div class="roadmap-timeline">
-                <div class="roadmap-item done">
+                <div class="roadmap-item done" data-step="create">
                     <div class="roadmap-content">
                         <h4>Tạo dự án</h4>
                         <p>@Model.CreatedAt.ToString("dd/MM/yyyy") - Đã hoàn thành</p>
@@ -1080,21 +1113,21 @@
                     var currentStatus = Model.Status;
                 }
 
-                <div class="roadmap-item @(hasFirstPost ? "done" : (currentStatus == InvestDapp.Shared.Enums.CampaignStatus.PendingPost || currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Draft ? "current" : ""))">
+                <div class="roadmap-item @(hasFirstPost ? "done" : (currentStatus == InvestDapp.Shared.Enums.CampaignStatus.PendingPost || currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Draft ? "current" : ""))" data-step="firstPost">
                     <div class="roadmap-content">
                         <h4>Tạo bài viết đầu tiên</h4>
                         <p>@(hasFirstPost ? "Đã hoàn thành" : "Đang thực hiện")</p>
                     </div>
                 </div>
 
-                <div class="roadmap-item @(isApproved ? "done" : (hasFirstPost && currentStatus == InvestDapp.Shared.Enums.CampaignStatus.PendingApproval ? "current" : ""))">
+                <div class="roadmap-item @(isApproved ? "done" : (hasFirstPost && currentStatus == InvestDapp.Shared.Enums.CampaignStatus.PendingApproval ? "current" : ""))" data-step="approval">
                     <div class="roadmap-content">
                         <h4>Phê duyệt từ Admin</h4>
                         <p>@(isApproved ? "Đã hoàn thành" : (hasFirstPost ? "Đang chờ duyệt" : "Chưa bắt đầu"))</p>
                     </div>
                 </div>
 
-                <div class="roadmap-item @(currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Active ? "current" : (currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Completed ? "done" : ""))">
+                <div class="roadmap-item @(currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Active ? "current" : (currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Completed || currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Voting ? "done" : (currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Failed ? "failed" : "")))" data-step="fund">
                     <div class="roadmap-content">
                         <h4>Gây quỹ</h4>
                         <p>
@@ -1105,6 +1138,12 @@
                                     break;
                                 case InvestDapp.Shared.Enums.CampaignStatus.Completed:
                                     <text>Đã hoàn thành</text>
+                                    break;
+                                case InvestDapp.Shared.Enums.CampaignStatus.Voting:
+                                    <text>Gây quỹ hoàn thành</text>
+                                    break;
+                                case InvestDapp.Shared.Enums.CampaignStatus.Failed:
+                                    <text>Gây quỹ thất bại</text>
                                     break;
                                 case InvestDapp.Shared.Enums.CampaignStatus.Draft:
                                 case InvestDapp.Shared.Enums.CampaignStatus.PendingPost:
@@ -1126,7 +1165,30 @@
                     </div>
                 </div>
 
-                <div class="roadmap-item @(currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Completed ? "done" : "")">
+                <div class="roadmap-item @(currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Voting ? "voting" : (currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Completed ? "done" : (currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Failed ? "failed" : "")))" data-step="voting">
+                    <div class="roadmap-content">
+                        <h4>Bỏ phiếu rút vốn</h4>
+                        <p>
+                            @switch (currentStatus)
+                            {
+                                case InvestDapp.Shared.Enums.CampaignStatus.Voting:
+                                    <text>Đang bỏ phiếu</text>
+                                    break;
+                                case InvestDapp.Shared.Enums.CampaignStatus.Completed:
+                                    <text>Đã hoàn thành</text>
+                                    break;
+                                case InvestDapp.Shared.Enums.CampaignStatus.Failed:
+                                    <text>Thất bại trong quá trình bỏ phiếu</text>
+                                    break;
+                                default:
+                                    <text>Chưa đến giai đoạn này</text>
+                                    break;
+                            }
+                        </p>
+                    </div>
+                </div>
+
+                <div class="roadmap-item @(currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Completed ? "done" : (currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Failed ? "failed" : ""))" data-step="complete">
                     <div class="roadmap-content">
                         <h4>Hoàn thành dự án</h4>
                         <p>
@@ -1902,6 +1964,14 @@
                     showError('Số dư BNB không đủ để thanh toán phí gas.');
                 } else if (error.message && error.message.includes('Campaign not found')) {
                     showError('Không tìm thấy chiến dịch trên blockchain.');
+                } else if (error.message && error.message.includes('Campaign did not fail')) {
+                    showError('Chỉ có thể claim refund khi chiến dịch thất bại.');
+                } else if (error.message && error.message.includes('No investment to refund')) {
+                    showError('Bạn chưa đầu tư vào chiến dịch này hoặc đã claim refund rồi.');
+                } else if (error.message && error.message.includes('Refund failed')) {
+                    showError('Giao dịch refund thất bại. Vui lòng thử lại.');
+                } else if (error.reason) {
+                    showError(`Lỗi smart contract: ${error.reason}`);
                 } else if (error.message && error.message.includes('No investment found')) {
                     showError('Bạn chưa đầu tư vào chiến dịch này.');
                 } else if (error.message && error.message.includes('Campaign is not failed')) {
@@ -2359,5 +2429,111 @@
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(initializeStatusInterface, 1000); // Wait for wallet connection
         });
+
+        // --- ROADMAP LIVE UPDATE: poll on-chain status and update roadmap classes ---
+        let lastKnownStatus = -1; // Track last status to avoid unnecessary updates
+        
+        async function updateRoadmapFromChain() {
+            try {
+                // Ensure ethers and contract are ready
+                if (typeof ethers === 'undefined') return;
+                if (!contract) {
+                    try { await initializeWeb3(); } catch { return; }
+                }
+
+                const campaignId = @Model.Id;
+                const chainCampaign = await contract.campaigns(campaignId);
+                const statusValue = chainCampaign.status.toNumber ? chainCampaign.status.toNumber() : chainCampaign.status;
+
+                // Only update if status actually changed
+                if (statusValue === lastKnownStatus) return;
+                lastKnownStatus = statusValue;
+
+                console.log('Status changed to:', statusValue, 'updating roadmap...');
+
+                // Map numeric status to roadmap steps
+                // 0: Draft,1:PendingPost,2:PendingApproval,3:Active,4:Voting,5:Completed,6:Failed
+                const stepElems = {
+                    create: document.querySelector('.roadmap-item[data-step="create"]'),
+                    firstPost: document.querySelector('.roadmap-item[data-step="firstPost"]'),
+                    approval: document.querySelector('.roadmap-item[data-step="approval"]'),
+                    fund: document.querySelector('.roadmap-item[data-step="fund"]'),
+                    voting: document.querySelector('.roadmap-item[data-step="voting"]'),
+                    complete: document.querySelector('.roadmap-item[data-step="complete"]')
+                };
+
+                // Reset classes
+                Object.values(stepElems).forEach(el => { if (el) { el.classList.remove('done','current','failed','voting'); } });
+
+                // create is always done
+                if (stepElems.create) stepElems.create.classList.add('done');
+
+                // For failed campaigns (status 6), show progression up to failure
+                if (statusValue === 6) {
+                    // firstPost: assume done if failed (campaign went through posting)
+                    if (stepElems.firstPost) stepElems.firstPost.classList.add('done');
+                    // approval: assume done if failed (campaign was approved then failed)
+                    if (stepElems.approval) stepElems.approval.classList.add('done');
+                    // fund: show as done (funding completed)
+                    if (stepElems.fund) stepElems.fund.classList.add('done');
+                    // voting: show as failed (voting failed)
+                    if (stepElems.voting) stepElems.voting.classList.add('failed');
+                    // complete: show as failed
+                    if (stepElems.complete) stepElems.complete.classList.add('failed');
+                    return;
+                }
+
+                // Normal progression for non-failed campaigns
+                // firstPost done if status >= PendingPost (1)
+                if (statusValue >= 1 && stepElems.firstPost) stepElems.firstPost.classList.add('done');
+
+                // approval done if status >= PendingApproval (2)  
+                if (statusValue >= 2 && stepElems.approval) stepElems.approval.classList.add('done');
+
+                // fund: current if Active (3), done if status >= Voting (4)
+                if (statusValue === 3 && stepElems.fund) stepElems.fund.classList.add('current');
+                if (statusValue >= 4 && stepElems.fund) stepElems.fund.classList.add('done');
+
+                // voting: current if Voting (4), done if Completed (5)
+                if (statusValue === 4 && stepElems.voting) stepElems.voting.classList.add('voting');
+                if (statusValue >= 5 && stepElems.voting) stepElems.voting.classList.add('done');
+
+                // complete: done if Completed (5)
+                if (statusValue === 5 && stepElems.complete) stepElems.complete.classList.add('done');
+
+                console.log('Roadmap updated for status:', statusValue, {
+                    create: stepElems.create?.className,
+                    firstPost: stepElems.firstPost?.className,
+                    approval: stepElems.approval?.className,
+                    fund: stepElems.fund?.className,
+                    voting: stepElems.voting?.className,
+                    complete: stepElems.complete?.className
+                });
+
+            } catch (err) {
+                console.error('Error updating roadmap from chain:', err);
+            }
+        }
+
+        // Start polling every 12s and also update after web3 init
+        // DISABLED: Contract status not synced with database
+        /*
+        (function startRoadmapPoll() {
+            // Wait for contract to be ready, then do initial update
+            const waitForContract = () => {
+                if (contract && userAccount) {
+                    console.log('Contract ready, updating roadmap...');
+                    updateRoadmapFromChain();
+                } else {
+                    setTimeout(waitForContract, 1000);
+                }
+            };
+            setTimeout(waitForContract, 2000);
+            
+            // Set up polling
+            setInterval(updateRoadmapFromChain, 12000);
+        })();
+        */
+        console.log('Roadmap auto-update disabled - using server-side database status only');
     </script>
 }
