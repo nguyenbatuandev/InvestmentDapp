@@ -7,6 +7,7 @@ using InvestDapp.Shared.Models.Message;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 using System.Text.Json;
 
 namespace InvestDapp.Application.MessageService
@@ -99,19 +100,19 @@ namespace InvestDapp.Application.MessageService
             }
 
             // Kiểm tra quyền: người thêm có phải là admin không?
-            var adder = group.Participants.FirstOrDefault(p => p.UserId == addedByUserId);
-            if (adder == null || adder.Role != ParticipantRole.Admin)
-            {
-                throw new Exception("Bạn không có quyền thêm thành viên.");
-            }
+            //var adder = group.Participants.FirstOrDefault(p => p.UserId == addedByUserId);
+            //if (adder == null || adder.Role != ParticipantRole.Admin)
+            //{
+            //    throw new Exception("Bạn không có quyền thêm thành viên.");
+            //}
 
-            var newParticipant = new Participant { ConversationId = conversationId, UserId = userIdToAdd };
+
+            var newParticipant = new Participant { ConversationId = conversationId, UserId = userIdToAdd, Role =  ParticipantRole.Member};
             await _convoRepo.AddParticipantAsync(newParticipant);
             await _context.SaveChangesAsync();
             return newParticipant;
         }
 
-        // ✅ THÊM HÀM HOÀN CHỈNH ĐANG BỊ THIẾU
         public async Task CreateAndSendMessageAsync(int conversationId, int senderId, string content)
         {
 
