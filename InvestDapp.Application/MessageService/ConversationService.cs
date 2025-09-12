@@ -7,6 +7,7 @@ using InvestDapp.Shared.Models.Message;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 using System.Text.Json;
 
 namespace InvestDapp.Application.MessageService
@@ -99,19 +100,19 @@ namespace InvestDapp.Application.MessageService
             }
 
             // Kiểm tra quyền: người thêm có phải là admin không?
-            var adder = group.Participants.FirstOrDefault(p => p.UserId == addedByUserId);
-            if (adder == null || adder.Role != ParticipantRole.Admin)
-            {
-                throw new Exception("Bạn không có quyền thêm thành viên.");
-            }
+            //var adder = group.Participants.FirstOrDefault(p => p.UserId == addedByUserId);
+            //if (adder == null || adder.Role != ParticipantRole.Admin)
+            //{
+            //    throw new Exception("Bạn không có quyền thêm thành viên.");
+            //}
 
-            var newParticipant = new Participant { ConversationId = conversationId, UserId = userIdToAdd };
+
+            var newParticipant = new Participant { ConversationId = conversationId, UserId = userIdToAdd, Role =  ParticipantRole.Member};
             await _convoRepo.AddParticipantAsync(newParticipant);
             await _context.SaveChangesAsync();
             return newParticipant;
         }
 
-        // ✅ THÊM HÀM HOÀN CHỈNH ĐANG BỊ THIẾU
         public async Task CreateAndSendMessageAsync(int conversationId, int senderId, string content)
         {
 
@@ -247,6 +248,7 @@ namespace InvestDapp.Application.MessageService
                 Participants = c.Participants.Select(p => new ParticipantDto
                 {
                     UserId = p.UserId,
+                    Role = p.Role,
                     User = new UserDto
                     {
                         UserId = p.User.ID,
@@ -280,6 +282,99 @@ namespace InvestDapp.Application.MessageService
                        .SumAsync(p => p.UnreadCount);
 
             return totalUnreadCount;
+        }
+
+        public async Task SendPostNotificationToCampaignGroupAsync(int campaignId, int authorUserId, string postTitle, string postUrl)
+        {
+            try
+            {
+                _logger.LogInformation("Bắt đầu gửi thông báo post cho campaign {CampaignId}, author {AuthorUserId}", campaignId, authorUserId);
+
+                var conversation = await _context.Conversations
+                    .FirstOrDefaultAsync(c => c.CampaignId == campaignId && c.Type == ConversationType.Group);
+
+                if (conversation == null)
+                {
+                    _logger.LogWarning("Không tìm thấy group chat cho campaign ID {CampaignId}", campaignId);
+                    
+                    var allConversations = await _context.Conversations
+                        .Where(c => c.CampaignId == campaignId)
+                        .ToListAsync();
+                    
+                    _logger.LogInformation("Tìm thấy {Count} conversations cho campaign {CampaignId}: {ConversationIds}", 
+                        allConversations.Count, campaignId, string.Join(", ", allConversations.Select(c => $"ID:{c.ConversationId},Type:{c.Type}")));
+                    return;
+                }
+
+                _logger.LogInformation("Tìm thấy group chat ID {ConversationId} cho campaign {CampaignId}", conversation.ConversationId, campaignId);
+
+                var participant = await _context.Participants
+                    .FirstOrDefaultAsync(p => p.ConversationId == conversation.ConversationId && p.UserId == authorUserId);
+
+                if (participant == null)
+                {
+                    _logger.LogWarning("User {UserId} không có trong group chat {ConversationId}", authorUserId, conversation.ConversationId);
+                    return;
+                }
+
+                var message = $"📝 Bài viết mới:\n\"{postTitle}\"\n🔗 Xem chi tiết: {postUrl}";
+
+                _logger.LogInformation("Đang gửi link bài post vào group {ConversationId}: {Message}", conversation.ConversationId, message);
+
+                await CreateAndSendMessageAsync(conversation.ConversationId, authorUserId, message);
+
+                _logger.LogInformation("Đã gửi thông báo bài post mới vào group chat campaign {CampaignId}", campaignId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gửi thông báo bài post vào group chat campaign {CampaignId}", campaignId);
+            }
+        }
+
+        public async Task CreateCampaignGroupAsync(int campaignId, string groupName, int ownerId)
+        {
+            try
+            {
+                // Kiểm tra xem group đã tồn tại chưa
+                var existingGroup = await _context.Conversations
+                    .FirstOrDefaultAsync(c => c.CampaignId == campaignId && c.Type == ConversationType.Group);
+
+                if (existingGroup != null)
+                {
+                    _logger.LogInformation("Group chat cho campaign {CampaignId} đã tồn tại", campaignId);
+                    return;
+                }
+
+                // Tạo group chat mới
+                var newGroup = new Conversation 
+                { 
+                    Type = ConversationType.Group, 
+                    Name = groupName,
+                    CampaignId = campaignId,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _convoRepo.CreateConversationAsync(newGroup);
+                await _context.SaveChangesAsync();
+
+                // Thêm owner vào group với vai trò admin
+                await _convoRepo.AddParticipantAsync(new Participant 
+                { 
+                    ConversationId = newGroup.ConversationId, 
+                    UserId = ownerId,
+                    Role = ParticipantRole.Admin
+                });
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Đã tạo group chat thành công cho campaign {CampaignId} với ConversationId {ConversationId}", 
+                    campaignId, newGroup.ConversationId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi tạo group chat cho campaign {CampaignId}", campaignId);
+                // Không throw exception để không ảnh hưởng đến việc tạo campaign
+            }
         }
     }
 }

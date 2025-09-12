@@ -627,8 +627,9 @@
                                 </div>
                                 
                                 <div class="progress-bar">
-                                    <div class="progress-fill progress-agree" style="width: @agreePercentage%; float: left;"></div>
-                                    <div class="progress-fill progress-disagree" style="width: @disagreePercentage%; float: left;"></div>
+                                    @{ var _agree = agreePercentage; var _disagree = disagreePercentage; var _agreeStr = _agree.ToString("F2", System.Globalization.CultureInfo.InvariantCulture); var _disagreeStr = _disagree.ToString("F2", System.Globalization.CultureInfo.InvariantCulture); }
+                                    <div class="progress-fill progress-agree" style="width: @_agreeStr%; float: left;"></div>
+                                    <div class="progress-fill progress-disagree" style="width: @_disagreeStr%; float: left;"></div>
                                 </div>
                             </div>
 

@@ -6,375 +6,197 @@
 
 @section Styles {
     <style>
-        /* --- BỐ CỤC TRANG CHÍNH --- */
-        :root {
-            --bg-dark: #0a0e1a;
-            --bg-light: #12182b;
-            --primary: #00aaff;
-            --primary-light: #00c6ff;
-            --secondary: #272c44;
-            --text-color: #e0e0e0;
-            --text-muted: #8a93b3;
-            --success: #00e676;
-            --warning: #ffb800;
-            --danger: #ff6b6b;
-            --gradient: linear-gradient(90deg, var(--primary), var(--primary-light));
-        }
-
-        .page-container {
+        /* ====== Layout alignment (không dùng :root, dùng token của layout) ====== */
+        .page-container{
             max-width: 1400px;
-            margin: 0 auto;
-			margin-top: 30px;
-            padding: 3rem 1.5rem;
+            margin: calc(var(--header-h,72px) + 16px) auto 80px;
+            padding: 24px clamp(12px, 3vw, 24px);
         }
 
-        .page-title {
-            text-align: center;
-            margin-bottom: 3rem;
+        .page-title{ text-align:center; margin-bottom: 20px }
+        .page-title h1{ margin:0 0 6px; font-size: clamp(1.6rem, 2.5vw, 2.2rem); font-weight:800; color: var(--fg, #e6e9ef) }
+        .page-title p{ margin:0; color: var(--muted, #8a93b3) }
+
+        /* ====== Filter bar (sticky + glass) ====== */
+        .filter-bar{
+            position: sticky;
+            top: calc(var(--header-h,72px) + 12px);
+            z-index: 50;
+            display:flex;
+            align-items:center;
+            gap: 12px 18px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+            border: 1px solid rgba(255,255,255,0.04);
+            box-shadow: 0 8px 28px rgba(6,10,20,0.6);
+            backdrop-filter: blur(8px) saturate(1.05);
+            margin: 18px 0 26px;
+            padding-inline: clamp(12px, 2.5vw, 22px);
         }
 
-            .page-title h1 {
-                font-size: 2.5rem;
-                font-weight: 700;
-                color: #fff;
-            }
+        .filter-group{ display:flex; align-items:center; gap:10px; flex-wrap: nowrap }
 
-            .page-title p {
-                font-size: 1.1rem;
-                color: var(--text-muted);
-            }
+        /* visually separate groups (desktop) */
+        .filter-group + .filter-group{ padding-left:14px; margin-left:6px; border-left:1px solid rgba(255,255,255,0.03) }
 
-        /* --- FILTER BAR --- */
-        .filter-bar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            align-items: center;
-            background-color: var(--bg-light);
-            padding: 1rem;
-            border-radius: 12px;
-            border: 1px solid var(--secondary);
-            margin-bottom: 3rem;
-        }
-
-        .filter-group {
-            display: flex;
-            align-items: center;
-        }
-
-        .filter-status {
-            gap: 0.5rem;
-        }
-
-        .filter-btn {
-            background-color: transparent;
-            border: 1px solid var(--secondary);
-            color: var(--text-muted);
-            padding: 0.6rem 1.2rem;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-
-            .filter-btn:hover {
-                color: var(--text-color);
-                border-color: var(--primary);
-            }
-
-            .filter-btn.active {
-                background-color: var(--primary);
-                color: var(--bg-dark);
-                font-weight: 700;
-                border-color: var(--primary);
-                box-shadow: 0 2px 8px rgba(0, 170, 255, 0.3);
-            }
-
-        .input-wrapper {
-            display: flex;
-            align-items: center;
-            background-color: var(--bg-dark);
-            border: 1px solid var(--secondary);
-            border-radius: 25px;
-            padding: 0 1rem;
-        }
-
-            .input-wrapper:focus-within {
-                box-shadow: 0 0 0 2px var(--primary);
-            }
-
-            .input-wrapper i {
-                color: var(--text-muted);
-                margin-right: 0.5rem;
-            }
-
-            .input-wrapper input {
-                background: transparent;
-                border: none;
-                outline: none;
-                color: var(--text-color);
-                padding: 0.7rem 0.6rem;
-                width: 220px;
-                font-size: 1rem;
-            }
-
-        .styled-select {
-            background-color: var(--bg-dark);
-            color: var(--text-color);
-            border: 1px solid var(--secondary);
-            border-radius: 25px;
-            padding: 0.7rem 1.5rem 0.7rem 1rem;
-            -webkit-appearance: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a93b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            background-size: 1em;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-
-        /* --- PROJECT GRID --- */
-        .project-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .project-card {
-            background-color: var(--bg-light);
-            border: 1px solid var(--secondary);
-            border-radius: 12px;
-            overflow: hidden;
-            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-            display: flex;
-            flex-direction: column;
-        }
-
-            .project-card:hover {
-                transform: translateY(-8px);
-                box-shadow: 0 12px 30px rgba(0, 170, 255, 0.15);
-            }
-
-        .card-banner {
-            position: relative;
-            overflow: hidden;
-            border-radius: 12px 12px 0 0;
-            height: 220px;
-        }
-
-        .card-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease-in-out;
-        }
-
-        .project-card:hover .card-image {
-            transform: scale(1.05);
-        }
-
-        .status-badge {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            padding: 0.4rem 1rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        .status-active {
-            background-color: rgba(0, 230, 118, 0.15);
-            color: var(--success);
-            border: 1px solid var(--success);
-        }
-
-        .status-pending {
-            background-color: rgba(255, 184, 0, 0.15);
-            color: var(--warning);
-            border: 1px solid var(--warning);
-        }
-
-        .status-voting {
-            background-color: rgba(0, 170, 255, 0.15);
-            color: var(--primary);
-            border: 1px solid var(--primary);
-        }
-
-        .status-completed {
-            background-color: rgba(0, 170, 255, 0.15);
-            color: var(--primary);
-            border: 1px solid var(--primary);
-        }
-
-        .status-failed {
-            background-color: rgba(255, 107, 107, 0.15);
-            color: var(--danger);
-            border: 1px solid var(--danger);
-        }
-
-        .card-content {
-            padding: 1.75rem;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem; 
-            margin-bottom: 1.2rem;
-        }
-
-        .project-logo {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: var(--gradient);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-        }
-
-        .project-info {
-            flex-grow: 1;
-        }
-
-        .project-name {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #fff;
-            line-height: 1.4;
-            margin: 0;
-        }
-
-        .project-desc {
-            color: var(--text-muted);
-            font-size: 1rem;
-            line-height: 1.5;
-            margin-bottom: 1.5rem;
-            height: 4.5rem;
-            overflow: hidden;
-            display: -webkit-box;
-            -webkit-box-orient: vertical;
-            -webkit-line-clamp: 3;
-        }
-
-        .stats-container {
-            margin-top: auto;
-        }
-
-        .progress-stats {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.95rem;
-            margin-bottom: 0.6rem;
-            color: var(--text-muted);
-        }
-
-            .progress-stats strong {
-                color: var(--text-color);
-                font-weight: 600;
-            }
-
-        .progress-bar-container {
-            width: 100%;
-            background-color: var(--secondary);
-            border-radius: 10px;
-            height: 10px;
-            overflow: hidden;
-        }
-
-        .progress-bar-fill {
-            background: var(--gradient);
-            height: 100%;
-            border-radius: 10px;
-            transition: width 0.8s ease;
-        }
-
-        .card-footer {
-            margin-top: 1.75rem;
-        }
-
-        .btn-details {
-            width: 100%;
+        /* Chip buttons */
+        .filter-btn{
+            appearance:none; border:1px solid transparent;
             background: transparent;
-            border: 1px solid var(--primary);
-            color: var(--primary);
-            padding: 0.8rem;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
+            color: var(--muted, #97a0b8);
+            padding: 8px 12px; border-radius: 999px; cursor:pointer;
+            font-weight:700; font-size:.92rem; transition: all .18s ease;
+            line-height:1; white-space:nowrap; min-height:36px; display:inline-flex; align-items:center; gap:8px
+        }
+        .filter-btn:hover{ transform: translateY(-2px); color: var(--fg, #e6e9ef) }
+        .filter-btn.active{
+            background: linear-gradient(90deg, var(--primary-2, #00aaff), rgba(155,107,255,0.88));
+            color: #04121b; border-color: transparent;
+            box-shadow: 0 8px 20px rgba(0,170,255,0.18)
         }
 
-            .btn-details:hover {
-                background-color: var(--primary);
-                color: var(--bg-dark);
-                box-shadow: 0 4px 10px rgba(0, 170, 255, 0.3);
-            }
+        /* status group: allow horizontal scroll if too many chips */
+        .filter-status{ overflow:auto; -webkit-overflow-scrolling:touch; gap:8px }
+        .filter-status::-webkit-scrollbar{ height:6px }
+        .filter-status::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.06); border-radius:6px }
 
-        .no-results {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-            text-align: center;
-            padding: 2rem;
-            grid-column: 1 / -1;
+        /* Search */
+        .input-wrapper{
+            display:flex; align-items:center; gap:10px;
+            background: rgba(0,0,0,0.18);
+            border:1px solid rgba(255,255,255,0.03); border-radius: 999px;
+            padding: 8px 12px; transition: box-shadow .18s, transform .12s;
+            flex: 1 1 340px; min-width: 140px; max-width: 640px;
+        }
+        .input-wrapper:focus-within{ box-shadow: 0 6px 18px rgba(0,170,255,0.08); transform: translateY(-1px) }
+        .input-wrapper i{ color: var(--muted, #97a0b8); font-size: 0.95rem }
+        .input-wrapper input{
+            background:transparent; border:none; outline:none; color: var(--fg, #e6e9ef);
+            padding: 6px 6px; width:100%; font-size: 0.98rem
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 80px 20px;
-            color: var(--text-muted);
-            grid-column: 1 / -1;
+        /* Sort select */
+        .styled-select{
+            background: transparent; color: var(--fg, #e6e9ef);
+            border:1px solid rgba(255,255,255,0.03); border-radius: 999px;
+            padding: 8px 36px 8px 12px; font-size:0.95rem; cursor:pointer;
+            min-width: 170px; height:38px;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2397a0b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat:no-repeat; background-position: right 12px center; background-size: 16px;
         }
 
-        .empty-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            opacity: 0.5;
+        @@media (max-width: 768px){
+            .filter-bar{ flex-direction: column; align-items: stretch; gap: 10px }
+            .filter-group{ flex-wrap: wrap }
+            .filter-group + .filter-group{ margin-left:0; padding-left:0; border-left: none }
+            .input-wrapper{ width:100%; max-width:100% }
+            .styled-select{ width:100%; min-width:0 }
         }
 
-        .empty-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: var(--text-color);
+        /* ====== Grid & Card ====== */
+        .project-grid{
+            display: grid; gap: clamp(14px, 2vw, 20px);
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
         }
 
-        .empty-description {
-            font-size: 1rem;
-            line-height: 1.6;
-            margin-bottom: 30px;
+        .project-card{
+            display:flex; flex-direction:column; overflow:hidden;
+            background: var(--card, #111827);
+            border:1px solid var(--border, #2b3752);
+            border-radius: var(--radius, 14px);
+            box-shadow: var(--shadow, 0 10px 30px rgba(0,0,0,.18));
+            transform: translateZ(0); transition: .22s transform, .22s box-shadow, .22s border-color;
+            animation: cardIn .45s ease both;
+        }
+        .project-card:hover{ transform: translateY(-6px); border-color: rgba(0,170,255,.35) }
+
+        .card-banner{
+            position:relative; overflow:hidden; aspect-ratio: 16/9;
+            background: linear-gradient(120deg, rgba(0,170,255,.15), rgba(0,170,255,.05));
+        }
+        .card-image{ width:100%; height:100%; object-fit:cover; display:block; transition: transform .35s ease }
+        .project-card:hover .card-image{ transform: scale(1.045) }
+
+        /* Status badge */
+        .status-badge{
+            position:absolute; top:12px; right:12px; z-index:2;
+            padding:6px 12px; border-radius:999px; font-size:.82rem; font-weight:800;
+            border:1px solid currentColor; background: transparent; backdrop-filter: blur(6px)
+        }
+        .status-active{ color: var(--success, #00e676) }
+        .status-pending{ color: var(--warning, #ffb800) }
+        .status-voting{ color: var(--primary-2, #00aaff) }
+        .status-completed{ color: var(--primary-2, #00aaff) }
+        .status-failed{ color: var(--danger, #ff6b6b) }
+
+        .card-content{ padding: clamp(14px, 2vw, 18px); display:flex; flex-direction:column; gap: 10px }
+
+        .card-header{ display:flex; gap:12px; align-items:center }
+        .project-logo{
+            flex-shrink:0; width:48px; height:48px; border-radius:50%;
+            background: radial-gradient(120px 60px at 20% 10%, rgba(0,170,255,.25), rgba(0,170,255,.05));
+            display:flex; align-items:center; justify-content:center; color: var(--fg, #e6e9ef);
+            font-weight:900; letter-spacing:.5px
+        }
+        .project-info{ display:flex; flex-direction:column; gap: 2px; min-width:0 }
+        .project-name{ margin:0; font-size:1.05rem; font-weight:900; color: var(--fg, #e6e9ef); line-height:1.35; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+        .project-chain{ margin:0; color: var(--muted, #8a93b3); font-size:.9rem }
+
+        .project-desc{
+            margin:2px 0 4px; color: var(--muted, #97a0b8); line-height:1.55;
+            display:-webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow:hidden; min-height: 3.6em;
         }
 
-        /* --- RESPONSIVE --- */
-        @@media (max-width: 768px) {
-            .filter-bar {
-                flex-direction: column;
-                align-items: stretch;
-            }
+        .stats-container{ margin-top:auto; display:flex; flex-direction:column; gap:8px }
+        .progress-stats{ display:flex; justify-content:space-between; font-size:.95rem; color: var(--muted, #8a93b3) }
+        .progress-stats strong{ color: var(--fg, #e6e9ef) }
 
-            .input-wrapper input {
-                width: 100%;
-            }
+        .progress-bar-container{
+            width:100%; height:10px; border-radius: 8px; overflow:hidden;
+            background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+            border:1px solid var(--border, #2b3752);
+        }
+        .progress-bar-fill{
+            height:100%; width:0;
+            background: linear-gradient(90deg, var(--primary-2, #00aaff), rgba(0,170,255,.55));
+            box-shadow: inset 0 0 12px rgba(0,170,255,.35);
+            transition: width .9s cubic-bezier(.22,.61,.36,1);
+        }
 
-            .project-grid {
-                grid-template-columns: 1fr;
-            }
+        .card-footer{ margin-top: 6px }
+        .btn-details{
+            display:inline-flex; justify-content:center; align-items:center; gap:8px; width:100%;
+            padding: 10px 14px; border-radius: 10px; text-decoration:none; font-weight:800;
+            border:1px solid var(--primary-2, #00aaff); color: var(--primary-2, #00aaff); background: transparent;
+            transition: .18s all;
+        }
+        .btn-details:hover{
+            background: var(--primary-2, #00aaff); color:#04121b;
+            box-shadow: 0 10px 24px rgba(0,170,255,.22)
+        }
+
+        /* Empty & no-results */
+        .no-results{
+            grid-column: 1 / -1; text-align:center; padding: 16px; border-radius: 12px;
+            color: var(--muted, #8a93b3); background: var(--card, #111827); border:1px solid var(--border, #2b3752)
+        }
+        .empty-state{ text-align:center; padding: 64px 16px; color: var(--muted, #8a93b3); grid-column: 1 / -1 }
+        .empty-icon{ font-size: 3rem; opacity:.6; margin-bottom:12px }
+        .empty-title{ font-size: 1.2rem; font-weight:900; color: var(--fg, #e6e9ef); margin: 2px 0 8px }
+        .empty-description{ margin:0; color: var(--muted, #8a93b3) }
+
+        /* Animations */
+        @@keyframes cardIn{
+            from{ opacity:0; transform: translateY(8px) scale(.995) }
+            to{ opacity:1; transform: none }
+        }
+
+        /* Responsive tweaks */
+        @@media (max-width: 768px){
+            .filter-bar{ flex-direction: column; align-items: stretch }
+            .input-wrapper input{ width:100% }
+            .project-grid{ grid-template-columns: 1fr }
         }
     </style>
 }
@@ -385,23 +207,23 @@
         <p>Tìm kiếm, lọc và đầu tư vào các dự án tiềm năng trên nền tảng của chúng tôi.</p>
     </div>
 
-    <div class="filter-bar">
-        <div class="filter-group filter-status">
-            <button class="filter-btn active" data-status="all">Tất cả</button>
-            <button class="filter-btn" data-status="active">🟢 Đang gọi vốn</button>
-            <button class="filter-btn" data-status="completed">🔵 Hoàn thành</button>
-            <button class="filter-btn" data-status="failed">🔴 Thất bại</button>
+    <div class="filter-bar" role="region" aria-label="Bộ lọc dự án">
+        <div class="filter-group filter-status" role="tablist" aria-label="Trạng thái">
+            <button class="filter-btn active" data-status="all" role="tab" aria-selected="true">Tất cả</button>
+            <button class="filter-btn" data-status="active" role="tab">🟢 Đang gọi vốn</button>
+            <button class="filter-btn" data-status="completed" role="tab">🔵 Hoàn thành</button>
+            <button class="filter-btn" data-status="failed" role="tab">🔴 Thất bại</button>
         </div>
 
-        <div class="filter-group">
+        <div class="filter-group" aria-label="Tìm kiếm">
             <div class="input-wrapper">
-                <i class="fa-solid fa-search"></i>
-                <input type="search" id="search-input" placeholder="Tìm theo tên dự án...">
+                <i class="fa-solid fa-search" aria-hidden="true"></i>
+                <input type="search" id="search-input" placeholder="Tìm theo tên dự án..." aria-label="Tìm theo tên dự án">
             </div>
         </div>
 
-        <div class="filter-group">
-            <select id="sort-select" class="styled-select">
+        <div class="filter-group" aria-label="Sắp xếp">
+            <select id="sort-select" class="styled-select" aria-label="Sắp xếp">
                 <option value="newest">Sắp xếp: Mới nhất</option>
                 <option value="progress">Sắp xếp: Tiến độ cao</option>
                 <option value="amount">Sắp xếp: Huy động nhiều</option>
@@ -417,79 +239,69 @@
                 var progress = campaign.GoalAmount > 0 ? (campaign.CurrentRaisedAmount / campaign.GoalAmount) * 100 : 0;
                 var statusClass = "";
                 var statusText = "";
-                
+
                 switch (campaign.Status)
                 {
                     case InvestDapp.Shared.Enums.CampaignStatus.Draft:
-                        statusClass = "status-pending";
-                        statusText = "Đang soạn thảo";
-                        break;
+                        statusClass = "status-pending"; statusText = "Đang soạn thảo"; break;
                     case InvestDapp.Shared.Enums.CampaignStatus.PendingPost:
-                        statusClass = "status-pending";
-                        statusText = "Chờ bài viết";
-                        break;
+                        statusClass = "status-pending"; statusText = "Chờ bài viết"; break;
                     case InvestDapp.Shared.Enums.CampaignStatus.PendingApproval:
-                        statusClass = "status-pending";
-                        statusText = "Chờ phê duyệt";
-                        break;
+                        statusClass = "status-pending"; statusText = "Chờ phê duyệt"; break;
                     case InvestDapp.Shared.Enums.CampaignStatus.Active:
-                        statusClass = "status-active";
-                        statusText = "Đang gọi vốn";
-                        break;
+                        statusClass = "status-active"; statusText = "Đang gọi vốn"; break;
                     case InvestDapp.Shared.Enums.CampaignStatus.Voting:
-                        statusClass = "status-voting";
-                        statusText = "Đang bỏ phiếu";
-                        break;
+                        statusClass = "status-voting"; statusText = "Đang bỏ phiếu"; break;
                     case InvestDapp.Shared.Enums.CampaignStatus.Completed:
-                        statusClass = "status-completed";
-                        statusText = "Hoàn thành";
-                        break;
+                        statusClass = "status-completed"; statusText = "Hoàn thành"; break;
                     case InvestDapp.Shared.Enums.CampaignStatus.Failed:
-                        statusClass = "status-failed";
-                        statusText = "Thất bại";
-                        break;
+                        statusClass = "status-failed"; statusText = "Thất bại"; break;
                     default:
-                        statusClass = "status-pending";
-                        statusText = "Đang chuẩn bị";
-                        break;
+                        statusClass = "status-pending"; statusText = "Đang chuẩn bị"; break;
                 }
 
-                <div class="project-card" data-status="@campaign.Status.ToString().ToLower()" data-name="@campaign.Name.ToLower()" data-progress="@progress" data-amount="@campaign.CurrentRaisedAmount" data-created="@campaign.CreatedAt.Ticks">
+                var progressStr = progress.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                <div class="project-card"
+                     data-status="@campaign.Status.ToString().ToLower()"
+                     data-name="@campaign.Name.ToLower()"
+                     data-progress="@progressStr"
+                     data-amount="@campaign.CurrentRaisedAmount"
+                     data-created="@campaign.CreatedAt.Ticks">
                     <div class="card-banner">
                         @if (!string.IsNullOrEmpty(campaign.ImageUrl))
                         {
-                            <img src="@campaign.ImageUrl" alt="@campaign.Name" class="card-image">
+                            <img src="@campaign.ImageUrl" alt="@campaign.Name" class="card-image" loading="lazy">
                         }
                         else
                         {
-                            <div class="card-image" style="background: var(--gradient); display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
+                            <div class="card-image" style="display:flex;align-items:center;justify-content:center;color:var(--fg,#e6e9ef);font-size:2rem;">
                                 <i class="fas fa-rocket"></i>
                             </div>
                         }
-                        <span class="status-badge @statusClass">
-                            @statusText
-                        </span>
+                        <span class="status-badge @statusClass">@statusText</span>
                     </div>
+
                     <div class="card-content">
                         <div class="card-header">
-                            <div class="project-logo">
-                                @campaign.Name.Substring(0, 1).ToUpper()
-                            </div>
+                            <div class="project-logo">@campaign.Name.Substring(0, 1).ToUpper()</div>
                             <div class="project-info">
-                                <h3 class="project-name">@campaign.Name</h3>
+                                <h3 class="project-name" title="@campaign.Name">@campaign.Name</h3>
                                 <p class="project-chain">@(campaign.category?.Name ?? "Blockchain")</p>
                             </div>
                         </div>
+
                         <p class="project-desc">@(campaign.ShortDescription ?? campaign.Description ?? "Mô tả dự án sẽ được cập nhật...")</p>
+
                         <div class="stats-container">
                             <div class="progress-stats">
                                 <span>Tiến độ: <strong>@progress.ToString("F0")%</strong></span>
                                 <span>Đã huy động: <strong>@campaign.CurrentRaisedAmount.ToString("F2") BNB</strong></span>
                             </div>
                             <div class="progress-bar-container">
-                                <div class="progress-bar-fill" style="width: @progress%"></div>
+                                <div class="progress-bar-fill" style="width:@progressStr%"></div>
                             </div>
                         </div>
+
                         <div class="card-footer">
                             <a href="@Url.Action("Dashboard", new { id = campaign.Id })" class="btn-details">
                                 <i class="fas fa-eye"></i> Xem Dashboard
@@ -502,10 +314,8 @@
         else
         {
             <div class="empty-state">
-                <div class="empty-icon">
-                    <i class="fas fa-rocket"></i>
-                </div>
-                <h2 class="empty-title">Chưa Có Dự Án Nào</h2>
+                <div class="empty-icon"><i class="fas fa-rocket"></i></div>
+                <div class="empty-title">Chưa Có Dự Án Nào</div>
                 <p class="empty-description">
                     Hiện tại chưa có dự án nào được phê duyệt trên nền tảng. Hãy quay lại sau hoặc tạo dự án đầu tiên của bạn!
                 </p>
@@ -517,102 +327,84 @@
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- DOM ELEMENTS ---
             const projectGrid = document.getElementById('project-grid');
-            const statusFilters = document.querySelectorAll('.filter-btn');
+            const statusBtns = document.querySelectorAll('.filter-btn');
             const searchInput = document.getElementById('search-input');
             const sortSelect = document.getElementById('sort-select');
-            const allCards = document.querySelectorAll('.project-card');
+            const allCards = Array.from(document.querySelectorAll('.project-card'));
 
-            // --- FILTER AND SORT FUNCTIONS ---
-            const applyFilters = () => {
-                const activeFilter = document.querySelector('.filter-btn.active');
-                const status = activeFilter ? activeFilter.dataset.status : 'all';
-                const searchTerm = searchInput.value.toLowerCase().trim();
+            function applyFilters() {
+                const activeBtn = document.querySelector('.filter-btn.active');
+                const status = activeBtn ? activeBtn.dataset.status : 'all';
+                const q = (searchInput.value || '').trim().toLowerCase();
                 const sortBy = sortSelect.value;
 
-                let visibleCards = Array.from(allCards);
-
-                // Status filter
-                if (status !== 'all') {
-                    visibleCards = visibleCards.filter(card => {
-                        const cardStatus = card.dataset.status;
-                        return cardStatus === status;
-                    });
-                }
-
-                // Search filter
-                if (searchTerm) {
-                    visibleCards = visibleCards.filter(card => {
-                        const cardName = card.dataset.name;
-                        return cardName.includes(searchTerm);
-                    });
-                }
-
-                // Hide all cards first
-                allCards.forEach(card => {
-                    card.style.display = 'none';
+                let visible = allCards.filter(card => {
+                    const okStatus = status === 'all' ? true : (card.dataset.status === status);
+                    const okName = !q ? true : (card.dataset.name || '').includes(q);
+                    return okStatus && okName;
                 });
 
-                // Sort visible cards
-                visibleCards.sort((a, b) => {
-                    switch (sortBy) {
-                        case 'progress':
-                            return parseFloat(b.dataset.progress) - parseFloat(a.dataset.progress);
-                        case 'amount':
-                            return parseFloat(b.dataset.amount) - parseFloat(a.dataset.amount);
-                        case 'newest':
-                        default:
-                            return parseInt(b.dataset.created) - parseInt(a.dataset.created);
-                    }
+                // hide all
+                allCards.forEach(c => c.style.display = 'none');
+
+                // sort
+                visible.sort((a, b) => {
+                    if (sortBy === 'progress') return parseFloat(b.dataset.progress) - parseFloat(a.dataset.progress);
+                    if (sortBy === 'amount') return parseFloat(b.dataset.amount) - parseFloat(a.dataset.amount);
+                    // newest
+                    return parseInt(b.dataset.created) - parseInt(a.dataset.created);
                 });
 
-                // Show filtered and sorted cards
-                visibleCards.forEach(card => {
-                    card.style.display = 'flex';
-                });
+                // show visible
+                visible.forEach(c => c.style.display = 'flex');
 
-                // Show no results message if needed
-                const noResultsMsg = document.querySelector('.no-results');
-                if (noResultsMsg) noResultsMsg.remove();
-
-                if (visibleCards.length === 0 && allCards.length > 0) {
-                    const noResults = document.createElement('div');
-                    noResults.className = 'no-results';
-                    noResults.textContent = 'Không tìm thấy dự án nào phù hợp với bộ lọc của bạn.';
-                    projectGrid.appendChild(noResults);
+                // no-results
+                const oldNo = document.querySelector('.no-results');
+                if (oldNo) oldNo.remove();
+                if (visible.length === 0 && allCards.length > 0) {
+                    const n = document.createElement('div');
+                    n.className = 'no-results';
+                    n.textContent = 'Không tìm thấy dự án nào phù hợp với bộ lọc của bạn.';
+                    projectGrid.appendChild(n);
                 }
-            };
+            }
 
-            // --- EVENT LISTENERS ---
-            statusFilters.forEach(btn => {
+            // status buttons
+            statusBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
-                    statusFilters.forEach(b => b.classList.remove('active'));
+                    statusBtns.forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     applyFilters();
                 });
             });
 
-            searchInput.addEventListener('input', applyFilters);
+            // search (debounce nhẹ)
+            let t;
+            searchInput.addEventListener('input', () => {
+                clearTimeout(t);
+                t = setTimeout(applyFilters, 150);
+            });
+
+            // sort
             sortSelect.addEventListener('change', applyFilters);
 
-            // --- ANIMATE PROGRESS BARS ---
-            const progressBars = document.querySelectorAll('.progress-bar-fill');
-            const observer = new IntersectionObserver((entries) => {
+            // Animate progress bars on view
+            const bars = document.querySelectorAll('.progress-bar-fill');
+            const io = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         const bar = entry.target;
-                        const width = bar.style.width;
+                        const target = bar.style.width || '0%';
                         bar.style.width = '0%';
-                        setTimeout(() => {
-                            bar.style.width = width;
-                        }, 100);
-                        observer.unobserve(bar);
+                        requestAnimationFrame(() => {
+                            setTimeout(() => { bar.style.width = target; }, 80);
+                        });
+                        io.unobserve(bar);
                     }
                 });
-            });
-
-            progressBars.forEach(bar => observer.observe(bar));
+            }, { threshold: .25 });
+            bars.forEach(b => io.observe(b));
         });
     </script>
 }

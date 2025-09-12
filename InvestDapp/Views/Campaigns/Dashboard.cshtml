@@ -5,1299 +5,1101 @@
 }
 
 @section Styles {
-    <style>
-        /* --- BIẾN MÀU SẮC VÀ THIẾT LẬP CƠ BẢN --- */
-        :root {
-            --bg-dark: #0a0e1a;
-            --bg-light: #12182b;
-            --primary: #00aaff;
-            --primary-light: #00c6ff;
-            --secondary: #272c44;
-            --text-color: #e0e0e0;
-            --text-muted: #8a93b3;
-            --success: #00e676;
-            --warning: #ffb800;
-            --danger: #ff6b6b;
-            --gradient: linear-gradient(90deg, var(--primary), var(--primary-light));
-            --font-body: 'Poppins', sans-serif;
-            --font-data: 'Fira Code', monospace;
-        }
-
-        /* --- THIẾT LẬP CHUNG --- */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: var(--font-body);
-            background-color: var(--bg-dark);
-            color: var(--text-color);
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-
-        /* --- BỐ CỤC DASHBOARD CHÍNH --- */
-        .dashboard-container {
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            min-height: 100vh;
-            margin-top: 80px;
-        }
-
-        /* --- ACTION PANEL (BÊN TRÁI) --- */
-        .action-panel {
-            background-color: var(--bg-dark);
-            border-right: 1px solid var(--secondary);
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .panel-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 2.5rem;
-        }
-
-        .panel-header .logo {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--gradient);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-        }
-
-        .panel-header h2 {
-            font-size: 1.5rem;
-            font-weight: 600;
-        }
-
-        .investment-module {
-            background-color: var(--bg-light);
-            border-radius: 16px;
-            border: 1px solid var(--secondary);
-            padding: 2rem;
-        }
-
-        .investment-module h3 {
-            font-size: 1.1rem;
-            font-weight: 500;
-            margin-bottom: 1.5rem;
-            color: var(--primary);
-        }
-
-        /* Vote info styling */
-        .vote-info, .refund-info, .completed-info, .project-status-info {
-            background: rgba(0,0,0,0.2);
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-
-        .vote-info p, .refund-info p, .completed-info p, .project-status-info p {
-            margin-bottom: 0.5rem;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .voting-stats, .refund-stats, .profit-stats {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .vote-stat, .refund-stat, .profit-stat {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.8rem;
-            background: rgba(0,0,0,0.1);
-            border-radius: 6px;
-        }
-
-        .vote-label, .refund-label, .profit-label {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-
-        .vote-value, .refund-value, .profit-value {
-            font-family: var(--font-data);
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--primary);
-        }
-
-        .refund-value {
-            color: var(--success);
-        }
-
-        .profit-value {
-            color: #ffd700;
-        }
-
-        /* Warning styling */
-        .vote-info p[style*="warning"], .refund-info p[style*="warning"] {
-            background: rgba(255, 184, 0, 0.1);
-            padding: 0.8rem;
-            border-radius: 6px;
-            border-left: 4px solid var(--warning);
-            margin: 1rem 0;
-        }
-
-        .form-group { 
-            margin-bottom: 1.5rem; 
-        }
-
-        .form-group label {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-bottom: 0.5rem;
-            display: block;
-        }
-
-        .input-wrapper {
-            display: flex;
-            align-items: center;
-            background-color: var(--bg-dark);
-            border: 1px solid var(--secondary);
-            border-radius: 8px;
-            padding: 0 0.8rem;
-        }
-
-        .input-wrapper:focus-within {
-            box-shadow: 0 0 0 2px var(--primary);
-        }
-
-        .input-wrapper span {
-            color: var(--text-muted);
-            font-size: 1.2rem;
-        }
-
-        .input-wrapper input {
-            background: transparent;
-            border: none;
-            outline: none;
-            color: var(--text-color);
-            font-family: var(--font-data);
-            font-size: 1.5rem;
-            padding: 0.8rem 0.5rem;
-            width: 100%;
-        }
-
-        .output-group {
-            background: rgba(0,0,0,0.2);
-            border-radius: 8px;
-            padding: 1rem;
-            text-align: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .output-group p {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-
-        .token-display {
-            font-family: var(--font-data);
-            font-size: 2.5rem;
-            font-weight: 600;
-            color: var(--primary);
-        }
-
-        .token-symbol {
-            font-size: 1rem;
-            font-weight: 400;
-            color: var(--primary-light);
-        }
-
-        .min-max-info {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-bottom: 2rem;
-        }
-
-        .btn.btn-primary {
-            width: 100%;
-            padding: 1rem;
-            font-size: 1rem;
-            font-weight: 600;
-            background: var(--gradient);
-            border: none;
-            border-radius: 8px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 170, 255, 0.2);
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-        }
-
-        .btn.btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 170, 255, 0.4);
-        }
-
-        .panel-footer {
-            margin-top: auto;
-            display: flex;
-            justify-content: space-around;
-        }
-
-        .panel-footer a {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.3s;
-        }
-
-        .panel-footer a:hover { 
-            color: var(--primary); 
-        }
-
-        /* --- INFO PANEL (BÊN PHẢI) --- */
-        .info-panel {
-            padding: 2rem 3rem;
-            overflow-y: auto;
-            height: 100vh;
-        }
-
-        /* DASHBOARD HEADER */
-        .dashboard-header {
-            background: linear-gradient(145deg, var(--bg-light) 0%, rgba(10, 14, 26, 0.5) 100%);
-            border: 1px solid var(--secondary);
-            border-radius: 16px;
-            padding: 2rem;
-            margin-bottom: 3rem;
-            position: relative;
-            box-shadow: 0 0 25px rgba(0, 170, 255, 0.05);
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.5rem;
-        }
-
-        .dashboard-header .header-main-content h1 {
-            font-size: 1.8rem;
-            font-weight: 600;
-            color: #fff;
-        }
-
-        .dashboard-header .project-tagline {
-            font-size: 1rem;
-            color: var(--text-muted);
-        }
-
-        .dashboard-header .social-links {
-            position: absolute;
-            top: 2rem;
-            right: 2rem;
-        }
-
-        .dashboard-header .social-links a {
-            color: var(--text-muted);
-            font-size: 1.2rem;
-            margin-left: 1.5rem;
-            transition: color 0.3s;
-            text-decoration: none;
-        }
-
-        .dashboard-header .social-links a:hover {
-            color: var(--primary);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .stat-item {
-            background: transparent;
-            padding: 1rem;
-            border-radius: 12px;
-            border: 1px solid var(--secondary);
-            transition: background-color 0.3s, border-color 0.3s;
-        }
-
-        .stat-item:hover {
-            background-color: rgba(39, 44, 68, 0.3);
-            border-color: var(--primary);
-        }
-
-        .stat-item .stat-label {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-item .stat-value {
-            font-family: var(--font-data);
-            font-size: 1.75rem;
-            font-weight: 500;
-            color: var(--text-color);
-        }
-
-        .stat-item .progress-bar-container {
-            width: 100%;
-            background-color: var(--secondary);
-            border-radius: 30px;
-            height: 8px;
-            margin-top: 1rem;
-        }
-
-        .stat-item .progress-bar-fill {
-            background: var(--gradient);
-            height: 100%;
-            border-radius: 30px;
-            transition: width 0.8s ease;
-        }
-
-        .info-section { 
-            margin-bottom: 4rem; 
-        }
-
-        .info-section h2 {
-            font-size: 1.5rem;
-            font-weight: 500;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--secondary);
-        }
-
-        .info-section h2 i {
-            margin-right: 1rem;
-            color: var(--primary);
-        }
-
-        /* --- ROADMAP --- */
-        .roadmap-timeline {
-            position: relative;
-        }
-
-        .roadmap-timeline::before {
-            content: '';
-            position: absolute;
-            top: 10px;
-            bottom: 10px;
-            left: 11px;
-            width: 2px;
-            background-color: var(--secondary);
-            border-radius: 2px;
-        }
-
-        .roadmap-item {
-            position: relative;
-            padding-left: 45px;
-            margin-bottom: 2rem;
-        }
-
-        .roadmap-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .roadmap-item::before {
-            content: '';
-            position: absolute;
-            top: 4px;
-            left: 11px;
-            transform: translateX(-50%);
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            background-color: var(--bg-dark);
-            border: 2px solid var(--secondary);
-            transition: border-color 0.3s ease;
-        }
-
-        .roadmap-item.done::before {
-            border-color: var(--primary);
-            background-color: var(--primary);
-        }
-
-        .roadmap-item.current::before {
-            border-color: var(--success);
-            animation: pulse 2s infinite;
-        }
-
-        @@keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.5);
-            }
-            70% {
-                box-shadow: 0 0 0 10px rgba(0, 230, 118, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(0, 230, 118, 0);
-            }
-        }
-
-        .roadmap-content h4 {
-            font-size: 1.1rem;
-            color: var(--text-color);
-        }
-
-        .roadmap-content p {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-
-        /* --- TEAM --- */
-        .team-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 2rem;
-            text-align: center;
-        }
-
-        .hexagon {
-            position: relative;
-            width: 120px;
-            height: 138.56px;
-            background-color: var(--secondary);
-            margin: 0 auto 1rem;
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-        }
-
-        .hexagon img {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 95%;
-            height: 95%;
-            object-fit: cover;
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-        }
-
-        .team-member h4 { 
-            font-size: 1.1rem; 
-        }
-
-        .team-member p { 
-            font-size: 0.9rem; 
-            color: var(--text-muted); 
-        }
-
-        /* --- TRANSACTION FEED --- */
-        .transaction-feed {
-            background-color: var(--bg-light);
-            border: 1px solid var(--secondary);
-            border-radius: 12px;
-            padding: 1rem;
-            height: 300px;
-            overflow-y: auto;
-        }
-
-        .transaction-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.8rem 1rem;
-            border-radius: 8px;
-            animation: fadeIn 0.5s ease;
-        }
-
-        @@keyframes fadeIn { 
-            from { 
-                opacity: 0; 
-                transform: translateY(-10px); 
-            } 
-            to { 
-                opacity: 1; 
-                transform: translateY(0); 
-            } 
-        }
-
-        .transaction-item:nth-child(odd) { 
-            background-color: rgba(0,0,0,0.1); 
-        }
-
-        .tx-from { 
-            font-family: var(--font-data); 
-            font-size: 0.9rem; 
-            color: var(--text-muted); 
-        }
-
-        .tx-amount { 
-            font-family: var(--font-data); 
-            font-size: 1rem; 
-            font-weight: 500; 
-            color: var(--success); 
-        }
-
-        .tx-time { 
-            font-family: var(--font-data); 
-            font-size: 0.8rem; 
-            color: var(--text-muted); 
-        }
-
-        /* Status badges */
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 25px;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .status-pending {
-            background: rgba(255, 184, 0, 0.2);
-            color: #ffb800;
-            border: 1px solid rgba(255, 184, 0, 0.3);
-        }
-
-        .status-active {
-            background: rgba(0, 212, 170, 0.2);
-            color: #00d4aa;
-            border: 1px solid rgba(0, 212, 170, 0.3);
-        }
-
-        .status-voting {
-            background: rgba(0, 170, 255, 0.2);
-            color: #00aaff;
-            border: 1px solid rgba(0, 170, 255, 0.3);
-        }
-
-        .status-completed {
-            background: rgba(0, 230, 118, 0.2);
-            color: #00e676;
-            border: 1px solid rgba(0, 230, 118, 0.3);
-        }
-
-        .status-failed {
-            background: rgba(255, 107, 107, 0.2);
-            color: #ff6b6b;
-            border: 1px solid rgba(255, 107, 107, 0.3);
-        }
-
-        /* --- WITHDRAWAL REQUEST STYLES --- */
-        .withdrawal-request-card {
-            transition: all 0.3s ease;
-        }
-
-        .withdrawal-request-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 170, 255, 0.1);
-        }
-
-        .vote-progress-bar {
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn.btn-success {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            border: none;
-            color: white;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn.btn-success:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-        }
-
-        .btn.btn-danger {
-            background: linear-gradient(135deg, #dc3545, #e74c3c);
-            border: none;
-            color: white;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn.btn-danger:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
-        }
-
-        /* --- RESPONSIVE DESIGN --- */
-        @@media (max-width: 1200px) {
-            .dashboard-container { 
-                grid-template-columns: 300px 1fr; 
-            }
-        }
-
-        @@media (max-width: 992px) {
-            .dashboard-container { 
-                grid-template-columns: 1fr; 
-            }
-            .action-panel {
-                border-right: none;
-                border-bottom: 1px solid var(--secondary);
-                height: auto;
-            }
-            .info-panel { 
-                height: auto; 
-            }
-        }
-
-        @@media (max-width: 576px) {
-            .info-panel { 
-                padding: 1.5rem; 
-            }
-            .dashboard-header { 
-                padding: 1.5rem;
-            }
-        }
-    </style>
+<style>
+
+
+/* ========== Page Frame ========== */
+.page-wrap{
+  padding: calc(var(--header-h) + var(--sp-4)) var(--sp-4) var(--sp-6);
+}
+.dash{
+  max-width: 1280px; margin: 0 auto;
+  display: grid; gap: var(--sp-4);
+  grid-template-columns: 320px 1fr;
+  align-items: start;
+}
+@@media (max-width: 1080px){ .dash{ grid-template-columns: 1fr; } }
+
+.glass{
+  background: var(--glass); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  margin-top:  20px;
+  margin-right: 10px;
 }
 
-<div class="dashboard-container">
-    <aside class="action-panel">
-        <div class="panel-header">
-            <div class="logo">@Model.Name.Substring(0, 1).ToUpper()</div>
-            <h2>@Model.Name</h2>
+/* ========== Typography & utilities ========== */
+.h1{ font-size: var(--fs-6); font-weight: 800; letter-spacing:.2px; }
+.h2{ font-size: var(--fs-4); font-weight: 700; }
+.muted{ color: var(--muted); }
+.row{ display:grid; gap: var(--sp-4); }
+.grid-2{ display:grid; gap: var(--sp-4); grid-template-columns: 1fr 1fr; }
+@@media (max-width: 1080px){ .grid-2{ grid-template-columns: 1fr; } }
+.card{ padding: var(--sp-4); border-radius: var(--radius); padding-top :5px; padding-bottom:5px; }
+.divider{ height:1px; background: var(--border); margin: var(--sp-3) 0 var(--sp-2); }
+
+/* ========== Aside (sticky action) ========== */
+.aside{ position: sticky; top: calc(var(--header-h) + var(--sp-4)); padding: var(--sp-4); display:grid; gap: var(--sp-4); }
+.brandline{ display:flex; align-items:center; gap: var(--sp-3); }
+.logo{
+  width: 44px; height:44px; border-radius: 12px; display:grid; place-items:center;
+  background: conic-gradient(from 160deg,#6cf0ff,#9b6bff,#6cf0ff); color:#04121c; font-weight:900;
+  border:1px solid var(--border);
+}
+.kit{ display:grid; gap: var(--sp-5); }
+.label{ font-size: var(--fs-1); color: var(--muted); margin-bottom: 6px; }
+.input{
+  width:100%; background: rgba(255,255,255,.03); border:1px solid var(--border);
+  border-radius: 12px; padding: 10px 12px; color: var(--fg); outline: none;
+}
+.input:focus{ border-color: rgba(108,240,255,.45); box-shadow: 0 0 0 3px rgba(108,240,255,.15); }
+
+.calc{
+  text-align: center; border:1px solid var(--border); border-radius: 12px;
+  padding: var(--sp-3); background: rgba(255,255,255,.04);
+  margin-top: 20px; margin-bottom: 20px;
+}
+.calc .big{ font: 800 2.1rem/1 'Fira Code', ui-monospace; color: var(--primary); }
+.help{ display:flex; justify-content:space-between; color: var(--muted); font-size: var(--fs-1); }
+
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap: 10px;
+  padding: 12px 14px; border-radius: 12px; border:1px solid var(--border);
+  background: linear-gradient(135deg, rgba(108,240,255,.2), rgba(155,107,255,.18));
+  color: var(--fg); font-weight: 800; cursor: pointer; text-decoration: none;
+  transition: transform .15s, box-shadow .15s, opacity .15s;
+}
+.btn:hover{ transform: translateY(-2px); box-shadow: 0 14px 30px rgba(108,240,255,.18); }
+.btn:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
+.btn-ok{ background: linear-gradient(135deg,#28a745,#20c997); border:0; color:#fff; }
+.btn-bad{ background: linear-gradient(135deg,#dc3545,#e74c3c); border:0; color:#fff; }
+
+.aside-links{ display:flex; flex-wrap:wrap; gap:10px; border-top:1px solid var(--border); padding-top: var(--sp-3); }
+.aside-links a{ color: var(--muted); text-decoration:none; font-weight:700; }
+.aside-links a:hover{ color: var(--primary); }
+
+/* ========== Header (main) ========== */
+.header{ padding: var(--sp-4); position: relative; }
+.header .h1{ margin:0 0 6px; }
+.header .muted{ margin:0; }
+.social{ position:absolute; right: var(--sp-4); top: var(--sp-4); display:flex; gap: 14px; }
+.social a{ color: var(--muted); text-decoration:none; }
+.social a:hover{ color: var(--primary); }
+
+/* stats */
+.stats{
+  display:grid; gap: var(--sp-3);
+  grid-template-columns: repeat(4, 1fr);
+  margin-top: var(--sp-3);
+}
+@@media (max-width: 1080px){ .stats{ grid-template-columns: repeat(2, 1fr); } }
+@@media (max-width: 520px){ .stats{ grid-template-columns: 1fr; } }
+.stat{ border:1px solid var(--border); border-radius: 12px; padding: var(--sp-3); background: rgba(255,255,255,.04); }
+.stat small{ color:var(--muted); display:block; margin-bottom:6px; font-size: var(--fs-1); }
+.stat .val{ font: 700 1.35rem/1 'Fira Code', ui-monospace; }
+.fill{ height:100%; background: linear-gradient(90deg, rgba(108,240,255,.55), rgba(155,107,255,.5)); }
+
+/* ========== Roadmap ========== */
+.road{ position:relative; }
+.road::before{ content:""; position:absolute; left:11px; top:6px; bottom:6px; width:2px; background:var(--border); border-radius: 2px; }
+.step{ position:relative; padding-left: 44px; margin-bottom: var(--sp-3); }
+.step::before{
+  content:""; position:absolute; left:11px; top:2px; transform:translateX(-50%);
+  width:22px; height:22px; border-radius:50%; border:2px solid var(--border); background: var(--bg);
+}
+.step h4{ margin:0 0 4px; font-weight:700; font-size: var(--fs-3); }
+.step p{ margin:0; color: var(--muted); font-size: var(--fs-1); }
+.step.done::before{ background:#0dd; border-color:#0dd; }
+.step.current::before{ background:#22c55e; border-color:#22c55e; animation:pulse 2s infinite; }
+.step.failed::before{ background:var(--bad); border-color:var(--bad); }
+.step.voting::before{ background:var(--primary); border-color:var(--primary); animation:pulse 2s infinite; }
+@@keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(34,197,94,.45)} 70%{box-shadow:0 0 0 12px rgba(34,197,94,0)} 100%{box-shadow:0 0 0 0 rgba(34,197,94,0)} }
+
+/* ========== Posts ========== */
+.post{ border:1px solid var(--border); border-radius: 12px; padding: var(--sp-3); background: rgba(255,255,255,.04); }
+.post h4{ margin:0 0 6px; color: var(--primary); font-size: var(--fs-3); }
+.post h4 a{ color: inherit; text-decoration: none; }
+.post small{ color: var(--muted); display:block; margin-bottom:6px; }
+
+/* ========== Voting list ========== */
+.badge{
+  display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:999px;
+  font-weight:800; font-size: var(--fs-1); border:1px solid transparent;
+}
+.b-voting{ background: rgba(0,170,255,.14); color:#00aaff; border-color: rgba(0,170,255,.28); }
+.vote-bar{ height: 8px; border:1px solid var(--border); border-radius: 4px; overflow: hidden; background: rgba(255,255,255,.06); }
+
+/* ========== Notification (no alert) ========== */
+.toast{
+  position: fixed; top: 20px; right: 20px; z-index: 10000;
+  padding: 12px 14px; border-radius: 12px; color: #fff; font-weight: 800;
+  box-shadow: 0 10px 26px rgba(0,0,0,.3);
+}
+.toast.ok{ background: linear-gradient(135deg,#28a745,#20c997); }
+.toast.bad{ background: linear-gradient(135deg,#dc3545,#e74c3c); }
+
+/* Real-time transaction animation */
+@@keyframes newTransactionGlow {
+    0% { 
+        box-shadow: 0 0 20px rgba(108,240,255,0.8); 
+        transform: translateX(-10px); 
+        opacity: 0; 
+    }
+    50% { 
+        box-shadow: 0 0 30px rgba(108,240,255,0.6); 
+    }
+    100% { 
+        box-shadow: 0 0 10px rgba(108,240,255,0.2); 
+        transform: translateX(0); 
+        opacity: 1; 
+    }
+}
+</style>
+}
+
+<div class="page-wrap">
+  <div class="dash">
+
+    <!-- ========== ASIDE (trái) ========== -->
+    <aside class="glass aside">
+      <div class="brandline">
+        <div class="logo">@Model.Name.Substring(0,1).ToUpper()</div>
+        <div>
+          <div class="h2" style="margin:0">@Model.Name</div>
+          <div class="muted" style="font-size:var(--fs-1)">Bảng điều khiển</div>
         </div>
+      </div>
 
-        <div class="investment-module">
-            @if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Active && 
-                 Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
-            {
-                <h3><i class="fa-solid fa-rocket"></i> Bảng điều khiển đầu tư</h3>
-                <div class="form-group">
-                    <label for="investment-amount">Số tiền đầu tư (BNB)</label>
-                    <div class="input-wrapper">
-                        <span>₿</span>
-                        <input type="number" id="investment-amount" placeholder="1" min="0.1" step="0.1">
-                    </div>
-                </div>
+      <div class="kit">
+        @* Investment / trạng thái *@
+        @if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Active && Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
+        {
+          <div class="card glass" style="padding:var(--sp-4)">
+            <div class="h2" style="font-size:var(--fs-3); margin-bottom: var(--sp-2)"><i class="fa-solid fa-rocket"></i> Đầu tư</div>
+            <label class="label" for="investment-amount">Số tiền (BNB)</label>
+            <input id="investment-amount" type="number" min="0.01" step="0.01" placeholder="1" class="input" />
 
-                <div class="output-group">
-                    <p>Phần sở hữu dự kiến</p>
-                    <div class="token-display">
-                        <span id="ownership-percentage">0</span>
-                        <span class="token-symbol">%</span>
-                    </div>
-                </div>
+            <div class="calc">
+              <div class="muted" style="font-size:var(--fs-1)">Phần sở hữu dự kiến</div>
+              <div class="big"><span id="ownership-percentage">0</span>%</div>
+            </div>
 
-                <div class="min-max-info">
-                    <span>Tối thiểu: 0.1 BNB</span>
-                    <span>Tối đa: @(Model.GoalAmount - Model.CurrentRaisedAmount) BNB</span>
-                </div>
-            }
-            else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Voting)
-            {
-                var currentUserWallet = User.FindFirst("WalletAddress")?.Value;
-                var userInvestment = Model.Investments?.FirstOrDefault(i => i.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase));
-                var isInvestor = userInvestment != null;
+            <div class="help"><span>Tối thiểu: 0.01</span><span>Tối đa: @(Model.GoalAmount - Model.CurrentRaisedAmount) BNB</span></div>
+            <button class="btn" id="invest-btn" onclick="investInCampaign(@Model.Id)"><i class="fas fa-rocket"></i> Đầu tư ngay</button>
+          </div>
+        }
+        else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Voting)
+        {
+          <div class="card glass" style="padding:var(--sp-4); text-align:center">
+            <i class="fa-solid fa-vote-yea" style="color:var(--warn)"></i>
+            <div class="h2" style="font-size:var(--fs-3); margin:6px 0 4px">Đang bỏ phiếu rút vốn</div>
+            <div class="muted" style="font-size:var(--fs-1); margin-bottom: var(--sp-2)">Yêu cầu rút vốn chờ bầu chọn.</div>
+            <div id="withdrawal-requests" style="text-align:left">Đang tải danh sách yêu cầu rút tiền...</div>
+          </div>
+        }
+        else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Completed)
+        {
+          <div class="card glass" style="padding:var(--sp-4); text-align:center">
+            <i class="fa-solid fa-check-circle" style="color:var(--ok)"></i>
+            <div class="h2" style="font-size:var(--fs-3); margin:6px 0 4px">Chiến dịch hoàn thành</div>
+            <div class="muted" style="font-size:var(--fs-1); margin-bottom: var(--sp-2)">Chủ dự án thêm lợi nhuận, nhà đầu tư nhận.</div>
+            <div id="owner-section" style="display:none; margin-bottom:8px"></div>
+            <div id="investor-section"></div>
+          </div>
+        }
+        else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Failed)
+        {
+          <div class="card glass" style="padding:var(--sp-4); text-align:center">
+            <i class="fa-solid fa-exclamation-triangle" style="color:var(--bad)"></i>
+            <div class="h2" style="font-size:var(--fs-3); margin:6px 0 4px">Chiến dịch thất bại</div>
+            <div class="muted" style="font-size:var(--fs-1); margin-bottom: var(--sp-2)">Nhà đầu tư có thể claim hoàn tiền.</div>
+            <button class="btn" id="refund-btn" onclick="claimRefund(@Model.Id)">Claim hoàn tiền</button>
+          </div>
+        }
+        else
+        {
+          <div class="card glass" style="padding:var(--sp-4); text-align:center">
+            <i class="fa-solid fa-info-circle" style="color:var(--muted)"></i>
+            <div class="muted" style="margin-top: 6px">Trạng thái hiện tại: <b>@Model.Status</b></div>
+          </div>
+        }
+      </div>
 
-                <h3><i class="fa-solid fa-vote-yea"></i> Bảng điều khiển bỏ phiếu</h3>
-                
-                if (isInvestor)
-                {
-                    <div class="vote-info">
-                        <p>Dự án đang trong giai đoạn bỏ phiếu.</p>
-                        <p>Bạn đã đầu tư <strong>@userInvestment.Amount.ToString("F2") BNB</strong> vào dự án này.</p>
-                        <p>Hãy tham gia quyết định tương lai của dự án!</p>
-                    </div>
-                    
-                    <div class="voting-stats">
-                        <div class="vote-stat">
-                            <span class="vote-label">Quyền vote của bạn:</span>
-                            <span class="vote-value">@userInvestment.Amount.ToString("F2") BNB</span>
-                        </div>
-                        <div class="vote-stat">
-                            <span class="vote-label">Phần trăm quyền vote:</span>
-                            <span class="vote-value">@((userInvestment.Amount / Model.CurrentRaisedAmount * 100).ToString("F2"))%</span>
-                        </div>
-                    </div>
-                    
-                    <div class="voting-stats">
-                        <div class="vote-stat">
-                            <span class="vote-label">Phiếu ủng hộ:</span>
-                            <span class="vote-value">--%</span>
-                        </div>
-                        <div class="vote-stat">
-                            <span class="vote-label">Phiếu phản đối:</span>
-                            <span class="vote-value">--%</span>
-                        </div>
-                    </div>
-                }
-                else
-                {
-                    <div class="vote-info">
-                        <p>Dự án đang trong giai đoạn bỏ phiếu.</p>
-                        <p style="color: var(--warning);">⚠️ Chỉ nhà đầu tư mới có quyền bỏ phiếu.</p>
-                        <p>Bạn cần đầu tư vào dự án để tham gia quyết định.</p>
-                    </div>
-                    
-                    <div class="voting-stats">
-                        <div class="vote-stat">
-                            <span class="vote-label">Tổng vốn đầu tư:</span>
-                            <span class="vote-value">@Model.CurrentRaisedAmount.ToString("F2") BNB</span>
-                        </div>
-                        <div class="vote-stat">
-                            <span class="vote-label">Số nhà đầu tư:</span>
-                            <span class="vote-value">@Model.InvestorCount người</span>
-                        </div>
-                    </div>
-                }
-            }
-            else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Failed)
-            {
-                var currentUserWallet = User.FindFirst("WalletAddress")?.Value;
-                var userInvestment = Model.Investments?.FirstOrDefault(i => i.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase));
-                var isInvestor = userInvestment != null;
-
-                <h3><i class="fa-solid fa-money-bill-wave"></i> Hoàn tiền đầu tư</h3>
-                
-                if (isInvestor)
-                {
-                    <div class="refund-info">
-                        <p>Dự án đã thất bại hoặc bị hủy bỏ.</p>
-                        <p>Bạn đã đầu tư <strong>@userInvestment.Amount.ToString("F2") BNB</strong> vào dự án này.</p>
-                        <p>Bạn có thể claim lại toàn bộ số tiền đã đầu tư.</p>
-                    </div>
-                    
-                    <div class="refund-stats">
-                        <div class="refund-stat">
-                            <span class="refund-label">Số tiền có thể claim:</span>
-                            <span class="refund-value">@userInvestment.Amount.ToString("F2") BNB</span>
-                        </div>
-                        <div class="refund-stat">
-                            <span class="refund-label">Ngày đầu tư:</span>
-                            <span class="refund-value">@userInvestment.Timestamp.ToString("dd/MM/yyyy")</span>
-                        </div>
-                    </div>
-                }
-                else
-                {
-                    <div class="refund-info">
-                        <p>Dự án đã thất bại hoặc bị hủy bỏ.</p>
-                        <p style="color: var(--warning);">⚠️ Chỉ nhà đầu tư mới có thể claim refund.</p>
-                        <p>Bạn không có khoản đầu tư nào trong dự án này.</p>
-                    </div>
-                    
-                    <div class="refund-stats">
-                        <div class="refund-stat">
-                            <span class="refund-label">Tổng vốn cần hoàn:</span>
-                            <span class="refund-value">@Model.CurrentRaisedAmount.ToString("F2") BNB</span>
-                        </div>
-                        <div class="refund-stat">
-                            <span class="refund-label">Số nhà đầu tư:</span>
-                            <span class="refund-value">@Model.InvestorCount người</span>
-                        </div>
-                    </div>
-                }
-            }
-            else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Completed)
-            {
-                <h3><i class="fa-solid fa-trophy"></i> Dự án hoàn thành</h3>
-                <div class="completed-info">
-                    <p>Chúc mừng! Dự án đã hoàn thành thành công.</p>
-                    <p>Lợi nhuận sẽ được phân phối tự động.</p>
-                </div>
-                <div class="profit-stats">
-                    <div class="profit-stat">
-                        <span class="profit-label">Lợi nhuận nhận được:</span>
-                        <span class="profit-value">-- BNB</span>
-                    </div>
-                </div>
-            }
-            else
-            {
-                <h3><i class="fa-solid fa-info-circle"></i> Thông tin dự án</h3>
-                <div class="project-status-info">
-                    <p>Dự án đang ở giai đoạn chuẩn bị.</p>
-                    <p>Vui lòng chờ đợi thêm thông tin.</p>
-                </div>
-            }
-        </div>
-
-        <div class="panel-footer">
-            <a href="@Url.Action("Details", new { id = Model.Id })">Chi tiết</a>
-            <a href="@Url.Action("Posts", new { campaignId = Model.Id })">Bài viết</a>
-            @if (Model.WithdrawalRequests?.Any() == true)
-            {
-                <a href="@Url.Action("WithdrawalRequests", new { id = Model.Id })">Rút vốn</a>
-            }
-            <a href="@Url.Action("Index")">Tất cả dự án</a>
-        </div>
+      <div class="aside-links">
+        <a href="@Url.Action("Details", new { id = Model.Id })">Chi tiết</a>
+        <a href="@Url.Action("Posts", new { campaignId = Model.Id })">Bài viết</a>
+        @if (Model.WithdrawalRequests?.Any() == true){ <a href="@Url.Action("WithdrawalRequests", new { id = Model.Id })">Rút vốn</a> }
+        <a href="@Url.Action("Index")">Tất cả dự án</a>
+      </div>
     </aside>
 
-    <main class="info-panel">
-        <header class="dashboard-header">
-            <div class="header-main-content">
-                <h1>Dashboard Chiến Dịch</h1>
-                <p class="project-tagline">@Model.ShortDescription</p>
-            </div>
-            <div class="social-links">
-                <a href="#"><i class="fab fa-telegram"></i></a>
-                <a href="#"><i class="fab fa-twitter"></i></a>
-                <a href="#"><i class="fas fa-globe"></i></a>
-            </div>
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <p class="stat-label">Tổng huy động</p>
-                    <p class="stat-value">@Model.CurrentRaisedAmount.ToString("F2") BNB</p>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" style="width: @(Model.GoalAmount > 0 ? (Model.CurrentRaisedAmount / Model.GoalAmount * 100) : 0)%;"></div>
-                    </div>
-                </div>
-                <div class="stat-item">
-                    <p class="stat-label">Nhà đầu tư</p>
-                    <p class="stat-value">@Model.InvestorCount</p>
-                </div>
-                <div class="stat-item">
-                    <p class="stat-label">Thời gian còn lại</p>
-                    <p id="countdown" class="stat-value">--:--:--:--</p>
-                </div>
-                <div class="stat-item">
-                    <p class="stat-label">Trạng thái</p>
-                    <div class="stat-value">
-                        @{
-                            string statusClass = "";
-                            string statusText = "";
-                            string statusIcon = "";
-                            
-                            if (Model.ApprovalStatus != InvestDapp.Shared.Enums.ApprovalStatus.Approved)
-                            {
-                                switch (Model.ApprovalStatus)
-                                {
-                                    case InvestDapp.Shared.Enums.ApprovalStatus.Pending:
-                                        statusClass = "status-pending";
-                                        statusText = "Chờ duyệt";
-                                        statusIcon = "fa-clock";
-                                        break;
-                                    case InvestDapp.Shared.Enums.ApprovalStatus.Rejected:
-                                        statusClass = "status-failed";
-                                        statusText = "Bị từ chối";
-                                        statusIcon = "fa-times-circle";
-                                        break;
-                                }
-                            }
-                            else
-                            {
-                                switch (Model.Status)
-                                {
-                                    case InvestDapp.Shared.Enums.CampaignStatus.Draft:
-                                        statusClass = "status-pending";
-                                        statusText = "Đang soạn thảo";
-                                        statusIcon = "fa-edit";
-                                        break;
-                                    case InvestDapp.Shared.Enums.CampaignStatus.PendingPost:
-                                        statusClass = "status-pending";
-                                        statusText = "Chờ bài viết";
-                                        statusIcon = "fa-pen";
-                                        break;
-                                    case InvestDapp.Shared.Enums.CampaignStatus.PendingApproval:
-                                        statusClass = "status-pending";
-                                        statusText = "Chờ phê duyệt";
-                                        statusIcon = "fa-clock";
-                                        break;
-                                    case InvestDapp.Shared.Enums.CampaignStatus.Active:
-                                        statusClass = "status-active";
-                                        statusText = "Đang gây quỹ";
-                                        statusIcon = "fa-play-circle";
-                                        break;
-                                    case InvestDapp.Shared.Enums.CampaignStatus.Voting:
-                                        statusClass = "status-voting";
-                                        statusText = "Đang bỏ phiếu";
-                                        statusIcon = "fa-vote-yea";
-                                        break;
-                                    case InvestDapp.Shared.Enums.CampaignStatus.Completed:
-                                        statusClass = "status-completed";
-                                        statusText = "Hoàn thành";
-                                        statusIcon = "fa-check-circle";
-                                        break;
-                                    case InvestDapp.Shared.Enums.CampaignStatus.Failed:
-                                        statusClass = "status-failed";
-                                        statusText = "Thất bại";
-                                        statusIcon = "fa-times-circle";
-                                        break;
-                                }
-                            }
-                        }
-                        <span class="status-badge @statusClass">
-                            <i class="fas @statusIcon"></i> @statusText
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </header>
+    <!-- ========== MAIN (phải) ========== -->
+    <main class="row">
+      <!-- Header -->
+      <section class="glass header">
+        <div class="h1">Dashboard Chiến Dịch</div>
+        <p class="muted">@Model.ShortDescription</p>
+        <div class="social">
+          <a href="#"><i class="fab fa-telegram"></i></a>
+          <a href="#"><i class="fab fa-twitter"></i></a>
+          <a href="#"><i class="fas fa-globe"></i></a>
+        </div>
 
-        <section class="info-section" id="roadmap">
-            <h2><i class="fa-solid fa-map-signs"></i> Tiến độ dự án</h2>
-            <div class="roadmap-timeline">
-                <div class="roadmap-item done">
-                    <div class="roadmap-content">
-                        <h4>Tạo dự án</h4>
-                        <p>@Model.CreatedAt.ToString("dd/MM/yyyy") - Đã hoàn thành</p>
-                    </div>
-                </div>
-                
-                @{
-                    bool hasFirstPost = Model.Posts?.Any() == true;
-                    bool isApproved = Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved;
-                    var currentStatus = Model.Status;
+        <div class="stats">
+          <div class="stat">
+            <small>Tổng huy động</small>
+            <div id="total-raised" class="val">@Model.CurrentRaisedAmount.ToString("F2") BNB</div>
+            <div class="bar">
+              @{ var _pct = Model.GoalAmount > 0 ? (Model.CurrentRaisedAmount / Model.GoalAmount * 100) : 0; }
+              <div id="filled-bar" class="fill" style="width:@_pct.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)%"></div>
+            </div>
+          </div>
+          <div class="stat">
+            <small>Nhà đầu tư</small>
+            <div id="investor-count" class="val">@Model.InvestorCount</div>
+          </div>
+          <div class="stat">
+            <small>Thời gian còn lại</small>
+            <div id="countdown" class="val">--:--:--:--</div>
+          </div>
+          <div class="stat">
+            <small>Trạng thái</small>
+            <div class="val" style="display:flex;align-items:center;gap:8px;">
+              @{
+                string cls = "", txt = "", icon="";
+                if (Model.ApprovalStatus != InvestDapp.Shared.Enums.ApprovalStatus.Approved){
+                  switch (Model.ApprovalStatus){
+                    case InvestDapp.Shared.Enums.ApprovalStatus.Pending:   cls="b-voting"; txt="Chờ duyệt"; icon="fa-clock"; break;
+                    case InvestDapp.Shared.Enums.ApprovalStatus.Rejected:  cls=""; txt="Bị từ chối"; icon="fa-times-circle"; break;
+                  }
+                } else {
+                  switch (Model.Status){
+                    case InvestDapp.Shared.Enums.CampaignStatus.Draft:            cls="b-voting"; txt="Đang soạn thảo"; icon="fa-edit"; break;
+                    case InvestDapp.Shared.Enums.CampaignStatus.PendingPost:      cls="b-voting"; txt="Chờ bài viết"; icon="fa-pen"; break;
+                    case InvestDapp.Shared.Enums.CampaignStatus.PendingApproval:  cls="b-voting"; txt="Chờ phê duyệt"; icon="fa-clock"; break;
+                    case InvestDapp.Shared.Enums.CampaignStatus.Active:           cls=""; txt="Đang gây quỹ"; icon="fa-play-circle"; break;
+                    case InvestDapp.Shared.Enums.CampaignStatus.Voting:           cls="b-voting"; txt="Đang bỏ phiếu"; icon="fa-vote-yea"; break;
+                    case InvestDapp.Shared.Enums.CampaignStatus.Completed:        cls=""; txt="Hoàn thành"; icon="fa-check-circle"; break;
+                    case InvestDapp.Shared.Enums.CampaignStatus.Failed:           cls=""; txt="Thất bại"; icon="fa-times-circle"; break;
+                  }
                 }
-
-                <div class="roadmap-item @(hasFirstPost ? "done" : (currentStatus == InvestDapp.Shared.Enums.CampaignStatus.PendingPost || currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Draft ? "current" : ""))">
-                    <div class="roadmap-content">
-                        <h4>Tạo bài viết đầu tiên</h4>
-                        <p>@(hasFirstPost ? "Đã hoàn thành" : "Đang thực hiện")</p>
-                    </div>
-                </div>
-
-                <div class="roadmap-item @(isApproved ? "done" : (hasFirstPost && currentStatus == InvestDapp.Shared.Enums.CampaignStatus.PendingApproval ? "current" : ""))">
-                    <div class="roadmap-content">
-                        <h4>Phê duyệt từ Admin</h4>
-                        <p>@(isApproved ? "Đã hoàn thành" : (hasFirstPost ? "Đang chờ duyệt" : "Chưa bắt đầu"))</p>
-                    </div>
-                </div>
-
-                <div class="roadmap-item @(currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Active ? "current" : (currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Completed ? "done" : ""))">
-                    <div class="roadmap-content">
-                        <h4>Gây quỹ</h4>
-                        <p>
-                            @switch (currentStatus)
-                            {
-                                case InvestDapp.Shared.Enums.CampaignStatus.Active:
-                                    <text>Đang diễn ra</text>
-                                    break;
-                                case InvestDapp.Shared.Enums.CampaignStatus.Completed:
-                                    <text>Đã hoàn thành</text>
-                                    break;
-                                case InvestDapp.Shared.Enums.CampaignStatus.Draft:
-                                case InvestDapp.Shared.Enums.CampaignStatus.PendingPost:
-                                case InvestDapp.Shared.Enums.CampaignStatus.PendingApproval:
-                                    <text>Chưa bắt đầu</text>
-                                    break;
-                                default:
-                                    if (isApproved)
-                                    {
-                                        <text>Sắp bắt đầu</text>
-                                    }
-                                    else
-                                    {
-                                        <text>Chưa bắt đầu</text>
-                                    }
-                                    break;
-                            }
-                        </p>
-                    </div>
-                </div>
-
-                <div class="roadmap-item @(currentStatus == InvestDapp.Shared.Enums.CampaignStatus.Completed ? "done" : "")">
-                    <div class="roadmap-content">
-                        <h4>Hoàn thành dự án</h4>
-                        <p>
-                            @switch (currentStatus)
-                            {
-                                case InvestDapp.Shared.Enums.CampaignStatus.Completed:
-                                    <text>Đã hoàn thành</text>
-                                    break;
-                                case InvestDapp.Shared.Enums.CampaignStatus.Failed:
-                                    <text>Thất bại</text>
-                                    break;
-                                default:
-                                    <text>Mục tiêu cuối cùng</text>
-                                    break;
-                            }
-                        </p>
-                    </div>
-                </div>
+              }
+              <span class="badge @cls"><i class="fas @icon"></i> @txt</span>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Grid 2: Roadmap | Posts -->
+      <div class="grid-2">
+
+        <!-- Roadmap -->
+        <section class="glass card" id="roadmap">
+          <div class="h2"><i class="fa-solid fa-map-signs"></i> Tiến độ dự án</div>
+          <div class="road">
+            <div class="step done" data-step="create">
+              <h4>Tạo dự án</h4>
+              <p>@Model.CreatedAt.ToString("dd/MM/yyyy") - Đã hoàn thành</p>
+            </div>
+
+            @{
+              bool hasFirstPost = Model.Posts?.Any() == true;
+              bool isApproved = Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved;
+              var currentStatus = Model.Status;
+            }
+
+            <div class="step @(hasFirstPost ? "done" : (currentStatus==InvestDapp.Shared.Enums.CampaignStatus.PendingPost || currentStatus==InvestDapp.Shared.Enums.CampaignStatus.Draft ? "current" : ""))" data-step="firstPost">
+              <h4>Tạo bài viết đầu tiên</h4>
+              <p>@(hasFirstPost ? "Đã hoàn thành" : "Đang thực hiện")</p>
+            </div>
+
+            <div class="step @(isApproved ? "done" : (hasFirstPost && currentStatus==InvestDapp.Shared.Enums.CampaignStatus.PendingApproval ? "current" : ""))" data-step="approval">
+              <h4>Phê duyệt từ Admin</h4>
+              <p>@(isApproved ? "Đã hoàn thành" : (hasFirstPost ? "Đang chờ duyệt" : "Chưa bắt đầu"))</p>
+            </div>
+
+            <div class="step @(currentStatus==InvestDapp.Shared.Enums.CampaignStatus.Active ? "current" : (currentStatus==InvestDapp.Shared.Enums.CampaignStatus.Completed || currentStatus==InvestDapp.Shared.Enums.CampaignStatus.Voting ? "done" : (currentStatus==InvestDapp.Shared.Enums.CampaignStatus.Failed ? "failed" : "")))" data-step="fund">
+              <h4>Gây quỹ</h4>
+              <p>
+                @switch (currentStatus){
+                  case InvestDapp.Shared.Enums.CampaignStatus.Active:     <text>Đang diễn ra</text>; break;
+                  case InvestDapp.Shared.Enums.CampaignStatus.Completed:  <text>Đã hoàn thành</text>; break;
+                  case InvestDapp.Shared.Enums.CampaignStatus.Voting:     <text>Gây quỹ hoàn thành</text>; break;
+                  case InvestDapp.Shared.Enums.CampaignStatus.Failed:     <text>Gây quỹ thất bại</text>; break;
+                  case InvestDapp.Shared.Enums.CampaignStatus.Draft:
+                  case InvestDapp.Shared.Enums.CampaignStatus.PendingPost:
+                  case InvestDapp.Shared.Enums.CampaignStatus.PendingApproval:
+                    <text>Chưa bắt đầu</text>; break;
+                  default:
+                    if (isApproved) { <text>Sắp bắt đầu</text>; } else { <text>Chưa bắt đầu</text>; }
+                    break;
+                }
+              </p>
+            </div>
+
+            <div class="step @(currentStatus==InvestDapp.Shared.Enums.CampaignStatus.Voting ? "voting" : (currentStatus==InvestDapp.Shared.Enums.CampaignStatus.Completed ? "done" : (currentStatus==InvestDapp.Shared.Enums.CampaignStatus.Failed ? "failed" : "")))" data-step="voting">
+              <h4>Bỏ phiếu rút vốn</h4>
+              <p>
+                @switch (currentStatus){
+                  case InvestDapp.Shared.Enums.CampaignStatus.Voting:     <text>Đang bỏ phiếu</text>; break;
+                  case InvestDapp.Shared.Enums.CampaignStatus.Completed:  <text>Đã hoàn thành</text>; break;
+                  case InvestDapp.Shared.Enums.CampaignStatus.Failed:     <text>Thất bại trong quá trình bỏ phiếu</text>; break;
+                  default:                                                <text>Chưa đến giai đoạn này</text>; break;
+                }
+              </p>
+            </div>
+
+            <div class="step @(currentStatus==InvestDapp.Shared.Enums.CampaignStatus.Completed ? "done" : (currentStatus==InvestDapp.Shared.Enums.CampaignStatus.Failed ? "failed" : ""))" data-step="complete">
+              <h4>Hoàn thành dự án</h4>
+              <p>
+                @switch (currentStatus){
+                  case InvestDapp.Shared.Enums.CampaignStatus.Completed:  <text>Đã hoàn thành</text>; break;
+                  case InvestDapp.Shared.Enums.CampaignStatus.Failed:     <text>Thất bại</text>; break;
+                  default:                                                <text>Mục tiêu cuối cùng</text>; break;
+                }
+              </p>
+            </div>
+          </div>
         </section>
 
-        @if (Model.Posts?.Any() == true)
-        {
-            <section class="info-section" id="recent-posts">
-                <h2><i class="fa-solid fa-newspaper"></i> Bài viết gần đây</h2>
-                <div style="display: grid; gap: 1rem;">
-                    @foreach (var post in Model.Posts.OrderByDescending(p => p.CreatedAt).Take(3))
-                    {
-                        <div style="background: var(--bg-light); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--secondary);">
-                            <h4 style="color: var(--primary); margin-bottom: 0.5rem;">
-                                <a href="@Url.Action("PostDetails", new { id = post.Id })" style="text-decoration: none; color: inherit;">
-                                    @post.Title
-                                </a>
-                            </h4>
-                            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.8rem;">
-                                @post.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-                            </p>
-                            <p style="color: var(--text-color); line-height: 1.6;">
-                                @if (post.Content.Length > 150)
-                                {
-                                    @(post.Content.Substring(0, 150) + "...")
-                                }
-                                else
-                                {
-                                    @post.Content
-                                }
-                            </p>
-                        </div>
-                    }
-                </div>
-                <div style="text-align: center; margin-top: 2rem;">
-                    <a href="@Url.Action("Posts", new { campaignId = Model.Id })" class="btn btn-primary" style="width: auto; padding: 1rem 2rem;">
-                        Xem tất cả bài viết
-                    </a>
-                </div>
-            </section>
-        }
-
-        @if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Voting && Model.WithdrawalRequests?.Any() == true)
-        {
-            <section class="info-section" id="withdrawal-requests">
-                <h2><i class="fa-solid fa-vote-yea"></i> Yêu cầu rút vốn đang bỏ phiếu</h2>
-                <div style="display: grid; gap: 1rem;">
-                    @foreach (var request in Model.WithdrawalRequests.Where(r => r.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending).OrderByDescending(r => r.CreatedAt).Take(3))
-                    {
-                        <div class="withdrawal-request-card" style="background: var(--bg-light); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--secondary);">
-                            <div class="request-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                                <h4 style="color: var(--primary); margin: 0;">
-                                    <i class="fas fa-money-bill-wave"></i> Yêu cầu rút vốn #@request.Id
-                                </h4>
-                                <span class="status-badge status-voting">
-                                    <i class="fas fa-vote-yea"></i> Đang bỏ phiếu
-                                </span>
-                            </div>
-                            
-                            <div class="request-details" style="margin-bottom: 1rem;">
-                                <p style="color: var(--text-color); margin-bottom: 0.5rem;">
-                                    <strong>Số tiền:</strong> @request.Amount.ToString("F2") BNB
-                                </p>
-                                <p style="color: var(--text-color); margin-bottom: 0.5rem;">
-                                    <strong>Lý do:</strong> @request.Reason.Substring(0, Math.Min(request.Reason.Length, 100))@(request.Reason.Length > 100 ? "..." : "")
-                                </p>
-                                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
-                                    <strong>Người yêu cầu:</strong> @request.RequesterAddress.Substring(0, 6)...@request.RequesterAddress.Substring(request.RequesterAddress.Length - 4)
-                                </p>
-                            </div>
-
-                            <div class="voting-progress" style="margin-bottom: 1rem;">
-                                @{
-                                    var totalVotes = (double)(request.AgreeVotes + request.DisagreeVotes);
-                                    var agreePercentage = totalVotes > 0 ? (double)request.AgreeVotes / totalVotes * 100 : 0;
-                                    var disagreePercentage = totalVotes > 0 ? (double)request.DisagreeVotes / totalVotes * 100 : 0;
-                                }
-                                
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                    <span style="color: var(--success);">
-                                        <i class="fas fa-thumbs-up"></i> Ủng hộ: @agreePercentage.ToString("F1")%
-                                    </span>
-                                    <span style="color: var(--danger);">
-                                        <i class="fas fa-thumbs-down"></i> Phản đối: @disagreePercentage.ToString("F1")%
-                                    </span>
-                                </div>
-                                
-                                <div class="vote-progress-bar" style="height: 8px; background: var(--secondary); border-radius: 4px; overflow: hidden;">
-                                    <div style="height: 100%; width: @agreePercentage%; background: var(--success); float: left;"></div>
-                                    <div style="height: 100%; width: @disagreePercentage%; background: var(--danger); float: left;"></div>
-                                </div>
-                            </div>
-
-                            <div class="vote-deadline" style="margin-bottom: 1rem;">
-                                <p style="color: var(--warning); font-size: 0.9rem;">
-                                    <i class="fas fa-clock"></i> 
-                                    Hết hạn bỏ phiếu: @request.VoteEndTime.ToString("dd/MM/yyyy HH:mm")
-                                </p>
-                            </div>
-
-                            @{
-                                var currentUserWallet = User.FindFirst("WalletAddress")?.Value;
-                                var isInvestor = Model.Investments?.Any(i => i.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase)) ?? false;
-                                var hasVoted = request.Votes?.Any(v => v.VoterAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase)) ?? false;
-                                var votersCount = request.Votes?.Count ?? 0;
-                            }
-
-                            <div class="vote-actions" style="display: flex; gap: 1rem;">
-                                @if (isInvestor && !hasVoted && DateTime.UtcNow < request.VoteEndTime)
-                                {
-                                    <button class="btn btn-success" onclick="voteOnWithdrawal(@request.Id, true)" style="flex: 1; padding: 0.8rem;">
-                                        <i class="fas fa-thumbs-up"></i> Ủng hộ
-                                    </button>
-                                    <button class="btn btn-danger" onclick="voteOnWithdrawal(@request.Id, false)" style="flex: 1; padding: 0.8rem;">
-                                        <i class="fas fa-thumbs-down"></i> Phản đối
-                                    </button>
-                                }
-                                else if (hasVoted)
-                                {
-                                    <div style="text-align: center; width: 100%; padding: 0.8rem; background: rgba(0, 170, 255, 0.1); border-radius: 8px; color: var(--primary);">
-                                        <i class="fas fa-check-circle"></i> Bạn đã bỏ phiếu
-                                    </div>
-                                }
-                                else if (DateTime.UtcNow >= request.VoteEndTime)
-                                {
-                                    <div style="text-align: center; width: 100%; padding: 0.8rem; background: rgba(255, 107, 107, 0.1); border-radius: 8px; color: var(--danger);">
-                                        <i class="fas fa-times-circle"></i> Đã hết hạn bỏ phiếu
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div style="text-align: center; width: 100%; padding: 0.8rem; background: rgba(255, 184, 0, 0.1); border-radius: 8px; color: var(--warning);">
-                                        <i class="fas fa-lock"></i> Chỉ nhà đầu tư mới có thể bỏ phiếu
-                                    </div>
-                                }
-                            </div>
-
-                            @if (votersCount > 0)
-                            {
-                                <div style="margin-top: 1rem; text-align: center;">
-                                    <small style="color: var(--text-muted);">
-                                        <i class="fas fa-users"></i> @votersCount người đã bỏ phiếu
-                                    </small>
-                                </div>
-                            }
-                        </div>
-                    }
-                </div>
-                
-                @if (Model.WithdrawalRequests.Count() > 3)
-                {
-                    <div style="text-align: center; margin-top: 2rem;">
-                        <a href="@Url.Action("WithdrawalRequests", new { id = Model.Id })" class="btn btn-primary" style="width: auto; padding: 1rem 2rem;">
-                            <i class="fas fa-list"></i> Xem tất cả yêu cầu rút vốn (@Model.WithdrawalRequests.Count())
-                        </a>
+        <!-- Transactions -->
+        <section class="glass card" id="recent-transactions">
+          <div class="h2"><i class="fa-solid fa-coins"></i> Giao dịch đầu tư</div>
+          @if (Model.Investments?.Any() == true)
+          {
+            <div class="row">
+              @foreach (var investment in Model.Investments.OrderByDescending(i => i.Timestamp).Take(4))
+              {
+                <div class="transaction-item" style="display:flex; align-items:center; gap: var(--sp-3); padding: var(--sp-2); border:1px solid var(--border); border-radius: 10px; margin-bottom: var(--sp-2); background: rgba(255,255,255,.02);">
+                  <div class="avatar" style="width:40px; height:40px; border-radius:50%; background: conic-gradient(from 180deg,#6cf0ff,#9b6bff,#6cf0ff); display:grid; place-items:center; color:#04121c; font-weight:900; font-size: var(--fs-1);">
+                    @investment.InvestorAddress.Substring(2, 2).ToUpper()
+                  </div>
+                  <div style="flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; gap: var(--sp-2); margin-bottom:4px;">
+                      <span style="font-weight:700; font-size: var(--fs-2);">@investment.InvestorAddress.Substring(0, 6)...@investment.InvestorAddress[^4..]</span>
+                      <span style="color:var(--ok); font-weight:800; font-family: 'Fira Code', monospace;">+@investment.Amount.ToString("F3") BNB</span>
                     </div>
-                }
-                else if (Model.WithdrawalRequests?.Any() == true)
-                {
-                    <div style="text-align: center; margin-top: 2rem;">
-                        <a href="@Url.Action("WithdrawalRequests", new { id = Model.Id })" class="btn btn-primary" style="width: auto; padding: 1rem 2rem;">
-                            <i class="fas fa-eye"></i> Xem chi tiết đầy đủ
+                    <div style="color: var(--muted); font-size: var(--fs-1); display:flex; align-items:center; gap: var(--sp-2);">
+                      <span><i class="fas fa-clock"></i> @investment.Timestamp.ToString("dd/MM/yyyy HH:mm")</span>
+                      @if (!string.IsNullOrEmpty(investment.TransactionHash))
+                      {
+                        <a href="https://testnet.bscscan.com/tx/@investment.TransactionHash" target="_blank" 
+                           style="color: var(--primary); text-decoration:none; font-weight:600; transition: opacity .2s;"
+                           onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                          <i class="fas fa-external-link-alt"></i> BSCScan
                         </a>
+                      }
                     </div>
+                  </div>
+                </div>
+              }
+            </div>
+            @if (Model.Investments.Count() > 4)
+            {
+              <div style="text-align:center; margin-top: var(--sp-3)">
+                <button class="btn" style="width:auto; padding: 10px 16px; font-size: var(--fs-1);" onclick="toggleAllTransactions()">
+                  <span id="toggle-text">Xem tất cả (@Model.Investments.Count())</span>
+                </button>
+              </div>
+            }
+          }
+          else
+          {
+            <div style="text-align:center; padding: var(--sp-4);">
+              <i class="fas fa-wallet" style="font-size: 2.5rem; color: var(--muted); margin-bottom: var(--sp-2);"></i>
+              <p class="muted">Chưa có giao dịch đầu tư nào.</p>
+            </div>
+          }
+        </section>
+      </div>
+
+      <!-- Voting list (nếu có) full width -->
+      @if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Voting && Model.WithdrawalRequests?.Any() == true)
+      {
+        <section class="glass card" id="withdrawal-requests-list">
+          <div class="h2"><i class="fa-solid fa-vote-yea"></i> Yêu cầu rút vốn đang bỏ phiếu</div>
+          <div class="row">
+            @foreach (var request in Model.WithdrawalRequests.Where(r => r.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending).OrderByDescending(r => r.CreatedAt).Take(3))
+            {
+              <div class="glass card" style="padding:var(--sp-3)">
+                <div style="display:flex;justify-content:space-between;align-items:center; gap: var(--sp-3);">
+                  <div class="h2" style="font-size:var(--fs-3); margin:0"><i class="fas fa-money-bill-wave"></i> Yêu cầu #@request.Id</div>
+                  <span class="badge b-voting"><i class="fas fa-vote-yea"></i> Đang bỏ phiếu</span>
+                </div>
+                <div class="divider"></div>
+                <p style="margin:0 0 6px;"><b>Số tiền:</b> @request.Amount.ToString("F2") BNB</p>
+                <p style="margin:0 0 6px;"><b>Lý do:</b> @request.Reason.Substring(0, Math.Min(request.Reason.Length, 120))@(request.Reason.Length > 120 ? "..." : "")</p>
+                <p class="muted" style="margin:0 0 10px;"><b>Người yêu cầu:</b> @request.RequesterAddress.Substring(0, 6)...@request.RequesterAddress[^4..]</p>
+
+                @{
+                  var totalVotes = (double)(request.AgreeVotes + request.DisagreeVotes);
+                  var agreePercentage = totalVotes > 0 ? (double)request.AgreeVotes / totalVotes * 100 : 0;
+                  var disagreePercentage = totalVotes > 0 ? (double)request.DisagreeVotes / totalVotes * 100 : 0;
                 }
-            </section>
-        }
+                <div style="display:flex;justify-content:space-between; margin-bottom:6px;">
+                  <span style="color:var(--ok)"><i class="fas fa-thumbs-up"></i> Ủng hộ: @agreePercentage.ToString("F1")%</span>
+                  <span style="color:#ef4444"><i class="fas fa-thumbs-down"></i> Phản đối: @disagreePercentage.ToString("F1")%</span>
+                </div>
+                <div class="vote-bar">
+                  <div style="height:100%; width:@agreePercentage%; background:var(--ok); float:left"></div>
+                  <div style="height:100%; width:@disagreePercentage%; background:#ef4444; float:left"></div>
+                </div>
+
+                @{
+                  var currentUserWallet = User.FindFirst("WalletAddress")?.Value;
+                  var isInvestor = Model.Investments?.Any(i => i.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase)) ?? false;
+                  var hasVoted = request.Votes?.Any(v => v.VoterAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase)) ?? false;
+                }
+                <div style="display:flex; gap: var(--sp-3); margin-top: var(--sp-3)">
+                  @if (isInvestor && !hasVoted && DateTime.UtcNow < request.VoteEndTime)
+                  {
+                    <button class="btn btn-ok" onclick="voteOnWithdrawal(@request.Id, true)" style="flex:1"><i class="fas fa-thumbs-up"></i> Ủng hộ</button>
+                    <button class="btn btn-bad" onclick="voteOnWithdrawal(@request.Id, false)" style="flex:1"><i class="fas fa-thumbs-down"></i> Phản đối</button>
+                  }
+                  else if (hasVoted)
+                  {
+                    <div style="text-align:center; width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background: rgba(0,170,255,.10); color: var(--primary);">
+                      <i class="fas fa-check-circle"></i> Bạn đã bỏ phiếu
+                    </div>
+                  }
+                  else if (DateTime.UtcNow >= request.VoteEndTime)
+                  {
+                    <div style="text-align:center; width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background: rgba(255,107,107,.10); color:#ef4444;">
+                      <i class="fas fa-times-circle"></i> Đã hết hạn bỏ phiếu
+                    </div>
+                  }
+                  else
+                  {
+                    <div style="text-align:center; width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background: rgba(255,184,0,.10); color:var(--warn);">
+                      <i class="fas fa-lock"></i> Chỉ nhà đầu tư mới có thể bỏ phiếu
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          @if (Model.WithdrawalRequests.Count() > 3)
+          {
+            <div style="text-align:center; margin-top: var(--sp-3);">
+              <a href="@Url.Action("WithdrawalRequests", new { id = Model.Id })" class="btn" style="width:auto; padding: 12px 18px">
+                <i class="fas fa-list"></i> Xem tất cả yêu cầu rút vốn (@Model.WithdrawalRequests.Count())
+              </a>
+            </div>
+          }
+          else if (Model.WithdrawalRequests?.Any() == true)
+          {
+            <div style="text-align:center; margin-top: var(--sp-3);">
+              <a href="@Url.Action("WithdrawalRequests", new { id = Model.Id })" class="btn" style="width:auto; padding: 12px 18px">
+                <i class="fas fa-eye"></i> Xem chi tiết đầy đủ
+              </a>
+            </div>
+          }
+        </section>
+      }
     </main>
+  </div>
 </div>
 
+
 @section Scripts {
+    <!-- Ethers v5 -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            
-            // --- COUNTDOWN TIMER ---
-            const countdownElement = document.getElementById('countdown');
-            const campaignEndDate = new Date('@Model.EndTime.ToString("yyyy-MM-ddTHH:mm:ss")Z').getTime();
+        function ensureEthersLoaded() {
+            return new Promise((resolve, reject) => {
+                if (typeof ethers !== 'undefined') { resolve(); return; }
+                const fallbackScript = document.createElement('script');
+                fallbackScript.src = 'https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js';
+                fallbackScript.onload = () => resolve();
+                fallbackScript.onerror = () => reject(new Error('Failed to load Ethers.js'));
+                document.head.appendChild(fallbackScript);
+            });
+        }
+    </script>
+    <script src="~/js/contract-config.js"></script>
+    <script>
+        /* ==== Giữ nguyên toàn bộ logic/ID như bản cũ ==== */
 
-            const updateCountdown = () => {
-                const now = new Date().getTime();
-                const distance = campaignEndDate - now;
+        let web3;
+        let contract;
+        let userAccount;
 
-                if (distance < 0) {
-                    clearInterval(countdownInterval);
-                    countdownElement.textContent = "ĐÃ KẾT THÚC";
-                    return;
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await ensureEthersLoaded();
+                await initializeWeb3();
+
+                if (typeof window.ethereum !== 'undefined') {
+                    window.ethereum.on('accountsChanged', async (accounts) => {
+                        if (accounts.length === 0) {
+                            showError('MetaMask đã ngắt kết nối. Vui lòng kết nối lại!');
+                            userAccount = null; web3 = null; contract = null;
+                        } else { await initializeWeb3(); }
+                    });
+                    window.ethereum.on('chainChanged', async (chainId) => {
+                        const chainIdDec = parseInt(chainId, 16);
+                        if (chainIdDec !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC) {
+                            showError('Vui lòng chuyển về BSC Testnet để sử dụng ứng dụng!');
+                        } else {
+                            await initializeWeb3();
+                        }
+                    });
+                    window.ethereum.on('disconnect', () => {
+                        showError('Kết nối MetaMask bị ngắt. Vui lòng kết nối lại!');
+                        userAccount = null; web3 = null; contract = null;
+                    });
                 }
+            } catch (error) {
+                console.error('Error loading Ethers.js:', error);
+                showError('Không thể tải thư viện blockchain. Vui lòng kiểm tra kết nối internet!');
+            }
 
-                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                
-                const format = (num) => num.toString().padStart(2, '0');
-                countdownElement.textContent = `${format(days)}d ${format(hours)}h ${format(minutes)}m ${format(seconds)}s`;
+            // Countdown
+            const countdownElement = document.getElementById('countdown');
+            const campaignEndDate = @(((DateTimeOffset)Model.EndTime).ToUnixTimeMilliseconds());
+            const updateCountdown = () => {
+                const now = Date.now();
+                const distance = campaignEndDate - now;
+                if (distance < 0) { clearInterval(countdownInterval); countdownElement.textContent = "ĐÃ KẾT THÚC"; return; }
+                const d = Math.floor(distance / 86400000);
+                const h = Math.floor((distance % 86400000) / 3600000);
+                const m = Math.floor((distance % 3600000) / 60000);
+                const s = Math.floor((distance % 60000) / 1000);
+                const pad = n => n.toString().padStart(2,'0');
+                countdownElement.textContent = `${pad(d)}d ${pad(h)}h ${pad(m)}m ${pad(s)}s`;
             };
             updateCountdown();
             const countdownInterval = setInterval(updateCountdown, 1000);
 
-            // --- INVESTMENT CALCULATOR ---
+            // Investment calc
             const investmentAmountInput = document.getElementById('investment-amount');
             const ownershipPercentageElement = document.getElementById('ownership-percentage');
-            const goalAmount = @Model.GoalAmount;
-
+            const goalAmount = @(Model.GoalAmount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
             const updateOwnershipValue = () => {
-                const amount = parseFloat(investmentAmountInput.value);
-                if (isNaN(amount) || amount <= 0 || goalAmount <= 0) {
-                    ownershipPercentageElement.textContent = '0';
-                    return;
-                }
+                const amount = parseFloat(investmentAmountInput?.value);
+                if (isNaN(amount) || amount <= 0 || goalAmount <= 0) { ownershipPercentageElement.textContent = '0'; return; }
                 const ownership = (amount / goalAmount) * 100;
                 ownershipPercentageElement.textContent = ownership.toFixed(2);
             };
-            
-            investmentAmountInput.addEventListener('input', updateOwnershipValue);
-            updateOwnershipValue(); // Initial calculation
+            if (investmentAmountInput) {
+                investmentAmountInput.addEventListener('input', updateOwnershipValue);
+                updateOwnershipValue();
+            }
+
+            setTimeout(initializeStatusInterface, 1000);
         });
 
-        function investInCampaign(campaignId) {
-            const amount = document.getElementById('investment-amount').value;
-            if (!amount || parseFloat(amount) <= 0) {
-                alert('Vui lòng nhập số tiền đầu tư hợp lệ!');
-                return;
-            }
-            // Placeholder for investment functionality
-            alert(`Đầu tư ${amount} BNB vào dự án. Tính năng này sẽ được phát triển trong tương lai!`);
-        }
-
-        function voteOnCampaign(campaignId) {
-            // Hiển thị modal hoặc chuyển hướng đến trang bỏ phiếu
-            if (confirm('Bạn có muốn tham gia bỏ phiếu cho dự án này không?')) {
-                // Chuyển hướng đến trang voting hoặc mở modal
-                window.location.href = `/Campaigns/Vote/${campaignId}`;
-                // Hoặc có thể mở modal voting ngay tại đây
-                // showVotingModal(campaignId);
-            }
-        }
-
-        function claimRefund(campaignId) {
-            if (confirm('Bạn có chắc chắn muốn claim lại tiền đầu tư không? Hành động này không thể hoàn tác.')) {
-                // Gọi smart contract để claim refund
-                claimRefundFromContract(campaignId);
-            }
-        }
-
-        function voteOnWithdrawal(requestId, agree) {
-            const actionText = agree ? 'ủng hộ' : 'phản đối';
-            if (confirm(`Bạn có chắc chắn muốn ${actionText} yêu cầu rút vốn này không? Hành động này không thể hoàn tác.`)) {
-                voteOnWithdrawalRequest(requestId, agree);
-            }
-        }
-
-        async function voteOnWithdrawalRequest(requestId, agree) {
+        async function initializeWeb3() {
             try {
-                // Kiểm tra xem có MetaMask không
-                if (typeof window.ethereum === 'undefined') {
-                    alert('Vui lòng cài đặt MetaMask để thực hiện giao dịch!');
-                    return;
+                if (typeof ethers === 'undefined') { showError('Thư viện blockchain chưa được tải. Vui lòng refresh!'); return false; }
+                if (typeof window.ethereum === 'undefined') { showError('Vui lòng cài MetaMask để sử dụng!'); return false; }
+
+                web3 = new ethers.providers.Web3Provider(window.ethereum);
+                const accounts = await Promise.race([
+                    window.ethereum.request({ method: 'eth_requestAccounts' }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 15000))
+                ]);
+                if (!accounts || accounts.length === 0) throw new Error('No accounts found');
+
+                const signer = web3.getSigner();
+                userAccount = await signer.getAddress();
+
+                const network = await web3.getNetwork();
+                if (network.chainId !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC) {
+                    const switched = await switchToBSCTestnet();
+                    if (!switched) throw new Error('Failed to switch network');
+                    web3 = new ethers.providers.Web3Provider(window.ethereum);
                 }
 
-                // Hiển thị loading state
-                const voteButtons = document.querySelectorAll(`[onclick*="voteOnWithdrawal(${requestId}"]`);
-                voteButtons.forEach(btn => {
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-                });
+                try {
+                    contract = new ethers.Contract(CONTRACT_CONFIG.CONTRACT_ADDRESS, CONTRACT_CONFIG.CONTRACT_ABI, signer);
+                    await contract.campaignCounter();
+                } catch {
+                    throw new Error('Không thể kết nối với smart contract');
+                }
 
-                // Placeholder cho việc gọi smart contract
-                // Ở đây sẽ tích hợp với Web3.js hoặc Ethers.js để call contract function
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate transaction
-                
-                const actionText = agree ? 'ủng hộ' : 'phản đối';
-                alert(`Bỏ phiếu ${actionText} thành công! Giao dịch đã được ghi nhận trên blockchain.`);
-                
-                // Reload trang để cập nhật trạng thái
-                window.location.reload();
-                
+                return true;
             } catch (error) {
-                console.error('Lỗi khi bỏ phiếu:', error);
-                alert('Có lỗi xảy ra khi bỏ phiếu. Vui lòng thử lại!');
-                
-                // Reset buttons
-                const voteButtons = document.querySelectorAll(`[onclick*="voteOnWithdrawal(${requestId}"]`);
-                voteButtons.forEach(btn => {
-                    btn.disabled = false;
-                });
-                // Restore original text - will need to be more specific in real implementation
-                window.location.reload();
+                console.error('Web3 init error:', error);
+                if (error.code === 4001) showError('Bạn đã từ chối kết nối ví.');
+                else if (error.code === -32002) showError('Yêu cầu kết nối đang chờ trong MetaMask.');
+                else if (error.message === 'Connection timeout') showError('Kết nối ví bị timeout.');
+                else if (error.message === 'No accounts found') showError('Vui lòng unlock MetaMask.');
+                else showError(error.message || 'Không thể kết nối với ví.');
+                return false;
             }
         }
+
+        async function switchToBSCTestnet() {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: CONTRACT_CONFIG.EXPECTED_CHAIN_ID_HEX }],
+                });
+                return true;
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: CONTRACT_CONFIG.EXPECTED_CHAIN_ID_HEX,
+                                chainName: 'BSC Testnet',
+                                nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+                                rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/'],
+                                blockExplorerUrls: ['https://testnet.bscscan.com/']
+                            }]
+                        });
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: CONTRACT_CONFIG.EXPECTED_CHAIN_ID_HEX }],
+                        });
+                        return true;
+                    } catch (addError) {
+                        if (addError.code === 4001) showError('Bạn đã từ chối thêm BSC Testnet.');
+                        else showError('Không thể thêm BSC Testnet.');
+                        return false;
+                    }
+                } else if (switchError.code === 4001) {
+                    showError('Bạn đã từ chối chuyển mạng.');
+                    return false;
+                } else {
+                    showError('Không thể chuyển sang BSC Testnet.');
+                    return false;
+                }
+            }
+        }
+
+        async function investInCampaign(campaignId) {
+            let originalText = '';
+            try {
+                const amountInput = document.getElementById('investment-amount');
+                const amount = parseFloat(amountInput.value);
+                if (!amount || amount <= 0) { showError('Vui lòng nhập số tiền hợp lệ!'); return; }
+                if (amount < 0.01) { showError('Tối thiểu 0.01 BNB!'); return; }
+                const maxAmount = @((Model.GoalAmount - Model.CurrentRaisedAmount).ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+                if (amount > maxAmount) { showError(`Không vượt quá ${maxAmount} BNB!`); return; }
+
+                if (!web3 || !contract || !userAccount) { const ok = await initializeWeb3(); if (!ok) return; }
+                const network = await web3.getNetwork();
+                if (network.chainId !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC) { showError('Hãy chuyển BSC Testnet!'); return; }
+
+                const investBtn = document.getElementById('invest-btn');
+                if (investBtn){ originalText = investBtn.innerHTML; investBtn.disabled = true; investBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...'; }
+
+                // verify campaign on chain
+                const c = await contract.campaigns(campaignId);
+                if (c.id.toString() === '0') throw new Error('Campaign not found on blockchain');
+                const now = Math.floor(Date.now()/1000);
+                if (c.endTime.toNumber() < now) throw new Error('Campaign has ended');
+
+                const amountWei = ethers.utils.parseEther(amount.toString());
+                const tx = await contract.invest(campaignId, { value: amountWei, gasLimit: 300000 });
+                showSuccess('Giao dịch đã gửi! Đang chờ xác nhận...');
+                const receipt = await tx.wait();
+                if (receipt.status === 1){
+                    showSuccess('Đầu tư thành công!');
+                    amountInput.value = ''; document.getElementById('ownership-percentage').textContent = '0';
+                }else{ showError('Giao dịch thất bại!'); }
+            } catch (error) {
+                console.error(error);
+                if (error.code === 4001) showError('Bạn đã huỷ giao dịch.');
+                else if (String(error.message).includes('insufficient')) showError('Không đủ BNB.');
+                else showError(error.message || 'Có lỗi xảy ra khi đầu tư.');
+            } finally {
+                const investBtn = document.getElementById('invest-btn');
+                if (investBtn){ investBtn.disabled = false; investBtn.innerHTML = originalText || 'Đầu tư ngay'; }
+            }
+        }
+
+        function showSuccess(message){ const n = createNotification(message, 'success'); document.body.appendChild(n); setTimeout(()=>n.remove(), 5000); }
+        function showError(message){ const n = createNotification(message, 'error'); document.body.appendChild(n); setTimeout(()=>n.remove(), 5000); }
+        function createNotification(message, type){
+            const el = document.createElement('div');
+            el.className = `notification ${type}`;
+            el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;"><i class="fas ${type==='success'?'fa-check-circle':'fa-exclamation-triangle'}"></i><span>${message}</span></div>`;
+            return el;
+        }
+
+        function voteOnCampaign(campaignId){ if (confirm('Bạn có muốn tham gia bỏ phiếu cho dự án này không?')) window.location.href = `/Campaigns/Vote/${campaignId}`; }
+        function claimRefund(campaignId){ if (confirm('Bạn chắc claim lại tiền?')) claimRefundFromContract(campaignId); }
+
+        async function claimRefundFromContract(campaignId){
+            let originalText='';
+            try{
+                if (!web3 || !contract || !userAccount) { const ok = await initializeWeb3(); if (!ok) return; }
+                const network = await web3.getNetwork();
+                if (network.chainId !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC){ showError('Hãy chuyển BSC Testnet!'); return; }
+
+                const refundBtn = document.getElementById('refund-btn');
+                originalText = refundBtn.innerHTML; refundBtn.disabled = true; refundBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+
+                const tx = await contract.refund(campaignId, { gasLimit: 150000 });
+                showSuccess('Đã gửi giao dịch claim refund...');
+                const receipt = await tx.wait();
+                if (receipt.status === 1){ showSuccess('Claim refund thành công!'); setTimeout(()=>window.location.reload(), 3000); }
+                else showError('Giao dịch thất bại!');
+            }catch(error){
+                console.error(error);
+                if (error.code === 4001) showError('Bạn đã huỷ giao dịch.');
+                else showError(error.message || 'Có lỗi khi claim refund.');
+            }finally{
+                const refundBtn = document.getElementById('refund-btn');
+                if (refundBtn){ refundBtn.disabled = false; refundBtn.innerHTML = originalText; }
+            }
+        }
+
+        function voteOnWithdrawal(requestId, agree){
+            const actionText = agree?'ủng hộ':'phản đối';
+            if (confirm(`Bạn có chắc chắn muốn ${actionText} yêu cầu rút vốn này không?`)) voteOnWithdrawalRequest(requestId, agree);
+        }
+
+        async function voteOnWithdrawalRequest(requestId, agree){
+            try{
+                if (!web3 || !contract || !userAccount) { const ok = await initializeWeb3(); if (!ok) return; }
+                const network = await web3.getNetwork();
+                if (network.chainId !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC){ showError('Hãy chuyển BSC Testnet!'); return; }
+
+                const voteButtons = document.querySelectorAll(`[onclick*="voteOnWithdrawal(${requestId}"]`);
+                const originalTexts = [];
+                voteButtons.forEach((btn,i)=>{ originalTexts[i]=btn.innerHTML; btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Đang xử lý...'; });
+
+                const tx = await contract.voteForWithdrawal(@Model.Id, requestId, agree, { gasLimit: 150000 });
+                showSuccess(`Đã gửi bỏ phiếu ${agree?'ủng hộ':'phản đối'}...`);
+                const receipt = await tx.wait();
+                if (receipt.status === 1){ showSuccess('Bỏ phiếu thành công!'); setTimeout(()=>window.location.reload(), 3000); }
+                else showError('Giao dịch thất bại!');
+            }catch(error){
+                console.error(error);
+                if (error.code === 4001) showError('Bạn đã huỷ giao dịch.');
+                else showError(error.message || 'Có lỗi khi bỏ phiếu.');
+            }finally{
+                const voteButtons = document.querySelectorAll(`[onclick*="voteOnWithdrawal(${requestId}"]`);
+                voteButtons.forEach((btn)=>{ btn.disabled=false; btn.innerHTML = btn.innerHTML.includes('spinner') ? (btn.textContent.includes('Ủng hộ')?'<i class="fas fa-thumbs-up"></i> Ủng hộ':'<i class="fas fa-thumbs-down"></i> Phản đối') : btn.innerHTML; });
+            }
+        }
+
+        // ===== Demo load list (giữ logic phía dưới nguyên gốc) =====
+        async function loadWithdrawalRequests(campaignId) {
+            try {
+                await ensureWalletConnected();
+                const contract = await getContract();
+                const requestsElement = document.getElementById('withdrawal-requests');
+                requestsElement.innerHTML = `
+                    <div class="withdrawal-request-card">
+                        <div class="request-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                            <span class="request-amount" style="font-weight:800; color:var(--primary);">Yêu cầu rút: 10 BNB</span>
+                            <span class="status-badge status-pending">Đang bỏ phiếu</span>
+                        </div>
+                        <p style="margin:0 0 10px; color: var(--text-color)">Lý do: Mua thiết bị và nguyên liệu cho dự án</p>
+                        <div class="vote-stats" style="display:grid; gap:8px; margin: 8px 0 10px;">
+                            <div class="vote-stat" style="display:flex;justify-content:space-between; background: rgba(255,255,255,.04); border:1px solid var(--secondary); border-radius:8px; padding:8px;">
+                                <div>Phiếu ủng hộ</div><div style="color: var(--success);">45 BNB (65%)</div>
+                            </div>
+                            <div class="vote-stat" style="display:flex;justify-content:space-between; background: rgba(255,255,255,.04); border:1px solid var(--secondary); border-radius:8px; padding:8px;">
+                                <div>Phiếu phản đối</div><div style="color: #ef4444;">24 BNB (35%)</div>
+                            </div>
+                        </div>
+                        <div class="vote-buttons" style="display:flex; gap:10px;">
+                            <button class="btn btn-success" onclick="voteForWithdrawal(${campaignId}, 0, true)"><i class="fas fa-thumbs-up"></i> Ủng hộ</button>
+                            <button class="btn btn-danger" onclick="voteForWithdrawal(${campaignId}, 0, false)"><i class="fas fa-thumbs-down"></i> Phản đối</button>
+                        </div>
+                    </div>`;
+            } catch (error) {
+                console.error('Error loading withdrawal requests:', error);
+                document.getElementById('withdrawal-requests').innerHTML = '<p style="color: var(--danger);">Không thể tải danh sách yêu cầu rút tiền.</p>';
+            }
+        }
+
+        async function voteForWithdrawal(campaignId, requestId, agree) {
+            try{
+                await ensureWalletConnected();
+                const contract = await getContract();
+                const voteButtons = document.querySelectorAll(`[onclick*="voteForWithdrawal(${campaignId}, ${requestId}"]`);
+                const originals = [];
+                voteButtons.forEach((b,i)=>{ originals[i]=b.innerHTML; b.disabled=true; b.innerHTML='<i class="fas fa-spinner fa-spin"></i> Đang xử lý...'; });
+
+                const tx = await contract.voteForWithdrawal(campaignId, requestId, agree, { gasLimit: 150000 });
+                showSuccess(`Đã gửi bỏ phiếu ${agree?'ủng hộ':'phản đối'}...`);
+                const receipt = await tx.wait();
+                if (receipt.status === 1) { showSuccess('Bỏ phiếu thành công!'); setTimeout(()=>loadWithdrawalRequests(campaignId), 2000); }
+                else showError('Giao dịch bỏ phiếu thất bại!');
+
+                voteButtons.forEach((b,i)=>{ b.disabled=false; b.innerHTML = originals[i]; });
+            }catch(error){
+                console.error('Voting error:', error);
+                showError(error.message || 'Có lỗi khi bỏ phiếu.');
+                const voteButtons = document.querySelectorAll(`[onclick*="voteForWithdrawal(${campaignId}, ${requestId}"]`);
+                voteButtons.forEach((b)=>{ b.disabled=false; });
+            }
+        }
+
+        async function addProfit(campaignId) {
+            try {
+                await ensureWalletConnected();
+                const contract = await getContract();
+                const input = document.getElementById('profit-amount');
+                const amount = parseFloat(input.value);
+                if (isNaN(amount) || amount <= 0) { showError('Nhập số tiền hợp lệ!'); return; }
+                if (amount < 0.01) { showError('Tối thiểu 0.01 BNB!'); return; }
+                const wei = ethers.utils.parseEther(amount.toString());
+                const btn = document.getElementById('add-profit-btn');
+                const t = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+                const tx = await contract.addProfit(campaignId, { value: wei, gasLimit: 200000 });
+                showSuccess('Đã gửi giao dịch thêm lợi nhuận...');
+                const r = await tx.wait();
+                if (r.status === 1){ showSuccess(`Thêm lợi nhuận ${amount} BNB thành công!`); input.value=''; setTimeout(()=>loadProfitList(campaignId), 2000); }
+                else showError('Giao dịch thất bại!');
+                btn.disabled=false; btn.innerHTML = t;
+            } catch (e) {
+                console.error(e); showError(e.message || 'Có lỗi khi thêm lợi nhuận.');
+                const btn = document.getElementById('add-profit-btn'); if (btn){ btn.disabled=false; btn.innerHTML='<i class="fas fa-plus"></i> Thêm lợi nhuận'; }
+            }
+        }
+
+        async function loadProfitList(campaignId) {
+            try {
+                await ensureWalletConnected();
+                const contract = await getContract();
+                const host = document.getElementById('profit-list');
+                host.innerHTML = `
+                    <div class="withdrawal-request-card">
+                        <div class="profit-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <span class="profit-amount" style="color:var(--success); font-weight:800;">Lợi nhuận: 5 BNB</span>
+                            <span class="status-badge status-completed">Có thể nhận</span>
+                        </div>
+                        <p>Phần của bạn: 0.5 BNB (10% ownership)</p>
+                        <button class="btn btn-success" onclick="claimProfit(${campaignId}, 0)"><i class="fas fa-money-bill-wave"></i> Nhận lợi nhuận</button>
+                    </div>
+                    <div class="withdrawal-request-card" style="opacity:.85;">
+                        <div class="profit-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <span class="profit-amount" style="color:var(--success); font-weight:800;">Lợi nhuận: 3 BNB</span>
+                            <span class="status-badge" style="background:rgba(150,160,180,.2); color:#cbd5e1; border:1px solid rgba(150,160,180,.3)">Đã nhận</span>
+                        </div>
+                        <p>Đã nhận: 0.3 BNB (10% ownership)</p>
+                    </div>`;
+            } catch (error) {
+                console.error('Error loading profits:', error);
+                document.getElementById('profit-list').innerHTML = '<p style="color:var(--danger);">Không thể tải danh sách lợi nhuận.</p>';
+            }
+        }
+
+        async function claimProfit(campaignId, profitIndex) {
+            try{
+                await ensureWalletConnected();
+                const contract = await getContract();
+                const btn = document.querySelector(`[onclick*="claimProfit(${campaignId}, ${profitIndex}"]`);
+                const t = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+                const tx = await contract.claimProfit(campaignId, profitIndex, { gasLimit: 200000 });
+                showSuccess('Đã gửi giao dịch nhận lợi nhuận...');
+                const r = await tx.wait();
+                if (r.status === 1) { showSuccess('Nhận lợi nhuận thành công!'); setTimeout(()=>loadProfitList(campaignId), 2000); }
+                else showError('Giao dịch thất bại!');
+                btn.disabled=false; btn.innerHTML = t;
+            }catch(e){
+                console.error(e); showError(e.message || 'Có lỗi khi nhận lợi nhuận.');
+                const btn = document.querySelector(`[onclick*="claimProfit(${campaignId}, ${profitIndex}"]`);
+                if (btn){ btn.disabled=false; btn.innerHTML='<i class="fas fa-money-bill-wave"></i> Nhận lợi nhuận'; }
+            }
+        }
+
+        // ===== Helper giả lập wallet/contract (placeholder giống bản cũ) =====
+        async function ensureWalletConnected(){ if (!web3 || !contract || !userAccount) await initializeWeb3(); }
+        async function getContract(){ return contract; }
+
+        async function initializeStatusInterface() {
+            const campaignId = @Model.Id;
+            const status = @((int)Model.Status);
+            if (status === 4) { await loadWithdrawalRequests(campaignId); }
+            else if (status === 5) {
+                try {
+                    await ensureWalletConnected();
+                    const currentUser = userAccount;
+                    const ownerAddress = '@Model.OwnerAddress';
+                    if (currentUser && currentUser.toLowerCase() === ownerAddress.toLowerCase()) {
+                        document.getElementById('owner-section').style.display = 'block';
+                        document.getElementById('investor-section').style.display = 'none';
+                    } else {
+                        document.getElementById('owner-section').style.display = 'none';
+                        document.getElementById('investor-section').style.display = 'block';
+                        await loadProfitList(campaignId);
+                    }
+                } catch {
+                    document.getElementById('owner-section').style.display = 'none';
+                    document.getElementById('investor-section').style.display = 'block';
+                }
+            }
+        }
+
+        console.log('Roadmap auto-update disabled - using server-side database status only');
+
+        // ===== Transaction Toggle Functionality =====
+        let showingAllTransactions = false;
+        function toggleAllTransactions() {
+            const allInvestments = @Html.Raw(Json.Serialize((Model.Investments ?? new List<InvestDapp.Shared.Models.Investment>()).OrderByDescending(i => i.Timestamp).Select(i => new { 
+                InvestorAddress = i.InvestorAddress, 
+                Amount = i.Amount, 
+                Timestamp = i.Timestamp, 
+                TransactionHash = i.TransactionHash 
+            }).ToList()));
+            const container = document.querySelector('#recent-transactions .row');
+            const toggleBtn = document.getElementById('toggle-text');
+            
+            if (!showingAllTransactions) {
+                // Show all transactions
+                let html = '';
+                allInvestments.forEach(investment => {
+                    const avatarText = investment.investorAddress.substring(2, 4).toUpperCase();
+                    const shortAddr = investment.investorAddress.substring(0, 6) + '...' + investment.investorAddress.slice(-4);
+                    const timestamp = new Date(investment.timestamp).toLocaleString('vi-VN');
+                    const txHash = investment.transactionHash;
+                    const bscLink = txHash ? `<a href="https://testnet.bscscan.com/tx/${txHash}" target="_blank" 
+                                                style="color: var(--primary); text-decoration:none; font-weight:600; transition: opacity .2s;"
+                                                onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                                <i class="fas fa-external-link-alt"></i> BSCScan
+                                             </a>` : '';
+                    
+                    html += `
+                        <div class="transaction-item" style="display:flex; align-items:center; gap: var(--sp-3); padding: var(--sp-2); border:1px solid var(--border); border-radius: 10px; margin-bottom: var(--sp-2); background: rgba(255,255,255,.02);">
+                            <div class="avatar" style="width:40px; height:40px; border-radius:50%; background: conic-gradient(from 180deg,#6cf0ff,#9b6bff,#6cf0ff); display:grid; place-items:center; color:#04121c; font-weight:900; font-size: var(--fs-1);">
+                                ${avatarText}
+                            </div>
+                            <div style="flex:1; min-width:0;">
+                                <div style="display:flex; align-items:center; gap: var(--sp-2); margin-bottom:4px;">
+                                    <span style="font-weight:700; font-size: var(--fs-2);">${shortAddr}</span>
+                                    <span style="color:var(--ok); font-weight:800; font-family: 'Fira Code', monospace;">+${parseFloat(investment.amount).toFixed(3)} BNB</span>
+                                </div>
+                                <div style="color: var(--muted); font-size: var(--fs-1); display:flex; align-items:center; gap: var(--sp-2);">
+                                    <span><i class="fas fa-clock"></i> ${timestamp}</span>
+                                    ${bscLink}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+                toggleBtn.textContent = 'Thu gọn';
+                showingAllTransactions = true;
+            } else {
+                // Show only first 5 transactions - reload page to reset
+                location.reload();
+            }
+        }
+
+        // ===== Real-time Transaction Updates =====
+        let lastUpdateTime = new Date();
+        let transactionPollingInterval;
+
+        function startTransactionPolling() {
+            if (transactionPollingInterval) {
+                clearInterval(transactionPollingInterval);
+            }
+            
+            transactionPollingInterval = setInterval(async () => {
+                try {
+          const response = await fetch(`/api/campaigns/@Model.Id/summary?since=${lastUpdateTime.toISOString()}`);
+          if (response.ok) {
+            const payload = await response.json();
+            if (payload) {
+              // update totals
+              const totalEl = document.getElementById('total-raised');
+              const investorEl = document.getElementById('investor-count');
+              const filledBar = document.getElementById('filled-bar');
+              if (totalEl && typeof payload.currentRaised !== 'undefined') {
+                totalEl.textContent = Number(payload.currentRaised).toFixed(2) + ' BNB';
+              }
+              if (investorEl && typeof payload.investorCount !== 'undefined') {
+                investorEl.textContent = payload.investorCount;
+              }
+              if (filledBar && typeof payload.currentRaised !== 'undefined') {
+                // Use invariant string formatting when embedding server value to avoid locale decimal issues
+                const goal = parseFloat('@Model.GoalAmount.ToString("F8", System.Globalization.CultureInfo.InvariantCulture)');
+                const raised = Number(payload.currentRaised);
+                let pct = (goal > 0) ? (raised / goal * 100) : 0;
+                if (!isFinite(pct) || isNaN(pct)) pct = 0;
+                // clamp to [0,100]
+                pct = Math.max(0, Math.min(100, pct));
+                filledBar.style.width = pct.toFixed(2) + '%';
+              }
+
+              const latestInvestments = payload.latest || [];
+              if (latestInvestments.length > 0) {
+                updateTransactionDisplay(latestInvestments);
+                lastUpdateTime = new Date();
+              }
+            }
+          }
+                } catch (error) {
+                    console.warn('Failed to poll for new transactions:', error);
+                }
+            }, 15000);
+        }
+
+        function updateTransactionDisplay(newInvestments) {
+            if (!newInvestments || newInvestments.length === 0) return;
+            
+            const container = document.querySelector('#recent-transactions .row');
+            if (!container) return;
+            
+            // Create HTML for new transactions
+            let newHtml = '';
+            newInvestments.forEach(investment => {
+                const avatarText = investment.investorAddress.substring(2, 4).toUpperCase();
+                const shortAddr = investment.investorAddress.substring(0, 6) + '...' + investment.investorAddress.slice(-4);
+                const timestamp = new Date(investment.timestamp).toLocaleString('vi-VN');
+                const txHash = investment.transactionHash;
+                const bscLink = txHash ? `<a href="https://testnet.bscscan.com/tx/${txHash}" target="_blank" 
+                                            style="color: var(--primary); text-decoration:none; font-weight:600; transition: opacity .2s;"
+                                            onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                            <i class="fas fa-external-link-alt"></i> BSCScan
+                                         </a>` : '';
+                
+                newHtml += `
+                    <div class="transaction-item new-transaction" style="display:flex; align-items:center; gap: var(--sp-3); padding: var(--sp-2); border:1px solid var(--primary); border-radius: 10px; margin-bottom: var(--sp-2); background: rgba(108,240,255,.1); animation: newTransactionGlow 2s ease-out;">
+                        <div class="avatar" style="width:40px; height:40px; border-radius:50%; background: conic-gradient(from 180deg,#6cf0ff,#9b6bff,#6cf0ff); display:grid; place-items:center; color:#04121c; font-weight:900; font-size: var(--fs-1);">
+                            ${avatarText}
+                        </div>
+                        <div style="flex:1; min-width:0;">
+                            <div style="display:flex; align-items:center; gap: var(--sp-2); margin-bottom:4px;">
+                                <span style="font-weight:700; font-size: var(--fs-2);">${shortAddr}</span>
+                                <span style="color:var(--ok); font-weight:800; font-family: 'Fira Code', monospace;">+${parseFloat(investment.amount).toFixed(3)} BNB</span>
+                                <span style="background: var(--primary); color: var(--dark); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700;">MỚI</span>
+                            </div>
+                            <div style="color: var(--muted); font-size: var(--fs-1); display:flex; align-items:center; gap: var(--sp-2);">
+                                <span><i class="fas fa-clock"></i> ${timestamp}</span>
+                                ${bscLink}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Add new transactions to the top
+            container.insertAdjacentHTML('afterbegin', newHtml);
+            
+            // Remove "MỚI" badge and animation after 5 seconds
+            setTimeout(() => {
+                const newTransactions = container.querySelectorAll('.new-transaction');
+                newTransactions.forEach(item => {
+                    item.classList.remove('new-transaction');
+                    item.style.border = '1px solid var(--border)';
+                    item.style.background = 'rgba(255,255,255,.02)';
+                    item.style.animation = 'none';
+                    const newBadge = item.querySelector('span:last-child');
+                    if (newBadge && newBadge.textContent === 'MỚI') {
+                        newBadge.remove();
+                    }
+                });
+            }, 10000);
+            
+            console.log(`Added ${newInvestments.length} new transaction(s)`);
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            startTransactionPolling();
+            console.log('Real-time transaction polling started');
+        });
     </script>
 }

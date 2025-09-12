@@ -6,326 +6,112 @@
 }
 
 @section Styles {
-    <style>
-        /* --- BIẾN MÀU SẮC --- */
-        :root {
-            --bg-dark: #0a0e1a;
-            --bg-light: #12182b;
-            --primary: #00aaff;
-            --primary-light: #00c6ff;
-            --secondary: #272c44;
-            --text-color: #e0e0e0;
-            --text-muted: #8a93b3;
-            --success: #00d4aa;
-            --warning: #ffb800;
-            --danger: #ff6b6b;
-            --gradient: linear-gradient(135deg, var(--primary), var(--primary-light));
-        }
+<style>
+/* ===== POSTS LIST – KHỚP LAYOUT, KHÔNG DÙNG :root ===== */
 
-        .posts-container {
-            max-width: 1200px;
-            margin: 120px auto 60px;
-            padding: 0 20px;
-        }
+.pl-page{max-width:1200px;margin:calc(var(--header-h,72px) + 28px) auto 64px;padding:0 16px;color:var(--fg)}
+.pl-camp{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px;box-shadow:var(--shadow);margin-bottom:22px
+}
+.pl-camp__row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
+.pl-camp__title{color:var(--primary);font-size:1.6rem;font-weight:900;margin:0 0 6px}
+.pl-camp__meta{color:var(--muted);font-size:.95rem;font-weight:600;display:flex;gap:18px;flex-wrap:wrap}
 
-        .campaign-header {
-            background: var(--bg-light);
-            border: 1px solid var(--secondary);
-            border-radius: 16px;
-            padding: 30px;
-            margin-bottom: 30px;
-        }
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 16px;border-radius:12px;border:1px solid var(--border);
+    background:var(--glass);color:var(--fg);text-decoration:none;font-weight:800;font-size:.92rem;transition:.2s ease;cursor:pointer}
+.btn:hover{transform:translateY(-1px);border-color:var(--primary);color:var(--primary)}
+.btn--primary{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border-color:color-mix(in oklab,var(--primary) 45%, var(--border))}
+.btn--primary:hover{transform:translateY(-1px);filter:saturate(1.02)}
+.btn--warn{background:color-mix(in oklab,var(--warning, #ffb800) 18%, transparent);color:var(--warning,#ffb800);border-color:color-mix(in oklab,var(--warning,#ffb800) 40%, var(--border))}
+.btn--danger{background:color-mix(in oklab,var(--danger,#ff6b6b) 16%, transparent);color:var(--danger,#ff6b6b);border-color:color-mix(in oklab,var(--danger,#ff6b6b) 40%, var(--border))}
 
-        .campaign-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+/* List */
+.pl-grid{display:grid;grid-template-columns:1fr;gap:16px}
 
-        .campaign-details h2 {
-            color: var(--primary);
-            margin-bottom: 10px;
-            font-size: 1.8rem;
-        }
+/* Card */
+.pl-card{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    overflow:hidden;box-shadow:var(--shadow);animation:plUp .5s ease
+}
+.pl-card:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,.25)}
 
-        .campaign-meta {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
+.pl-card__head{padding:18px;border-bottom:1px solid var(--border)}
+.pl-title{font-size:1.25rem;font-weight:900;line-height:1.35;margin:0 0 10px;color:var(--fg)}
+.pl-title a{color:inherit;text-decoration:none}
+.pl-title a:hover{color:var(--primary)}
 
-        .posts-actions {
-            display: flex;
-            gap: 15px;
-        }
+.pl-meta{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.pl-info{display:flex;align-items:center;gap:14px;color:var(--muted);font-weight:600;font-size:.95rem}
 
-        .btn-action {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-
-            .btn-primary:hover {
-                background: var(--primary-light);
-                transform: translateY(-1px);
-            }
-
-        .btn-secondary {
-            background: var(--secondary);
-            color: var(--text-color);
-            border: 1px solid var(--secondary);
-        }
-
-            .btn-secondary:hover {
-                background: transparent;
-                border-color: var(--primary);
-                color: var(--primary);
-            }
-
-        .posts-grid {
-            display: grid;
-            gap: 25px;
-        }
-
-        .post-card {
-            background: var(--bg-light);
-            border: 1px solid var(--secondary);
-            border-radius: 16px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            animation: slideInUp 0.6s ease-out;
-        }
-
-            .post-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 8px 25px rgba(0, 170, 255, 0.1);
-            }
-
-        .post-header {
-            padding: 25px;
-            border-bottom: 1px solid var(--secondary);
-            position: relative;
-        }
-
-        .post-title {
-            color: var(--text-color);
-            font-size: 1.4rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-            line-height: 1.4;
-        }
-
-            .post-title a {
-                color: inherit;
-                text-decoration: none;
-                transition: color 0.3s ease;
-            }
-
-                .post-title a:hover {
-                    color: var(--primary);
-                }
-
-        .post-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .post-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .post-type {
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .type-introduction {
-            background: rgba(0, 170, 255, 0.2);
-            color: var(--primary);
-        }
-
-        .type-update {
-            background: rgba(0, 212, 170, 0.2);
-            color: var(--success);
-        }
-
-        .type-achievement {
-            background: rgba(255, 184, 0, 0.2);
-            color: var(--warning);
-        }
-
-        .type-announcement {
-            background: rgba(255, 107, 107, 0.2);
-            color: var(--danger);
-        }
-
-        .post-status {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .status-pending {
-            background: rgba(255, 184, 0, 0.2);
-            color: var(--warning);
-        }
-
-        .status-approved {
-            background: rgba(0, 212, 170, 0.2);
-            color: var(--success);
-        }
-
-        .status-rejected {
-            background: rgba(255, 107, 107, 0.2);
-            color: var(--danger);
-        }
-
-        .post-content {
-            padding: 25px;
-            color: var(--text-muted);
-            line-height: 1.6;
-        }
-
-        .post-excerpt {
-            max-height: 100px;
-            overflow: hidden;
-            position: relative;
-        }
-
-            .post-excerpt::after {
-                content: '...';
-                position: absolute;
-                bottom: 0;
-                right: 0;
-                background: var(--bg-light);
-                padding-left: 20px;
-            }
-
-        .post-actions {
-            padding: 20px 25px;
-            background: var(--bg-dark);
-            border-top: 1px solid var(--secondary);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .post-stats {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 80px 20px;
-            color: var(--text-muted);
-        }
-
-        .empty-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-
-        .empty-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: var(--text-color);
-        }
-
-        .empty-description {
-            font-size: 1rem;
-            line-height: 1.6;
-            margin-bottom: 30px;
-        }
-
-        /* Responsive */
-        @@media (max-width: 768px) {
-            .campaign-info {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 20px;
-            }
-
-            .posts-actions {
-                width: 100%;
-                justify-content: stretch;
-            }
-
-            .btn-action {
-                flex: 1;
-                justify-content: center;
-            }
-
-            .post-meta {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-        }
-
-        /* Animation */
-        @@keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
+.badge{
+    display:inline-flex;align-items:center;gap:8px;min-height:28px;padding:0 10px;border-radius:999px;font-size:.75rem;font-weight:800;
+    border:1px solid var(--border);background:var(--glass);letter-spacing:.2px;line-height:1;color:var(--fg)
 }
 
-<div class="posts-container">
+/* small circular dot to the left of the badge text; uses current text color for tint */
+.badge::before{
+    content:'';display:inline-block;width:12px;height:12px;border-radius:50%;background:currentColor;opacity:.16;flex:0 0 auto;margin-left:-2px;margin-right:6px;transform:translateY(-0px)
+}
+
+.badge--intro{color:#3498db;border-color:color-mix(in oklab,#3498db 40%, var(--border));background:color-mix(in oklab,#3498db 12%, transparent)}
+.badge--update{color:#00d4aa;border-color:color-mix(in oklab,#00d4aa 40%, var(--border));background:color-mix(in oklab,#00d4aa 12%, transparent)}
+.badge--achv{color:var(--warning,#ffb800);border-color:color-mix(in oklab,var(--warning,#ffb800) 40%, var(--border));background:color-mix(in oklab,var(--warning,#ffb800) 12%, transparent)}
+.badge--anno{color:#9b59b6;border-color:color-mix(in oklab,#9b59b6 40%, var(--border));background:color-mix(in oklab,#9b59b6 12%, transparent)}
+
+.chip{
+    padding:6px 12px;border-radius:999px;font-size:.75rem;font-weight:900;display:inline-flex;align-items:center;gap:6px;
+    border:1px solid
+}
+.chip--pending{color:var(--warning,#ffb800);border-color:color-mix(in oklab,var(--warning,#ffb800) 45%, var(--border));background:color-mix(in oklab,var(--warning,#ffb800) 14%, transparent)}
+.chip--approved{color:var(--success,#16c79a);border-color:color-mix(in oklab,var(--success,#16c79a) 45%, var(--border));background:color-mix(in oklab,var(--success,#16c79a) 14%, transparent)}
+.chip--rejected{color:var(--danger,#ff6b6b);border-color:color-mix(in oklab,var(--danger,#ff6b6b) 45%, var(--border));background:color-mix(in oklab,var(--danger,#ff6b6b) 14%, transparent)}
+
+.pl-card__body{padding:18px;color:var(--muted);line-height:1.65}
+.pl-excerpt{position:relative;max-height:96px;overflow:hidden}
+.pl-excerpt:after{content:"";position:absolute;left:0;right:0;bottom:0;height:36px;background:linear-gradient(to bottom, rgba(0,0,0,0), var(--card))}
+
+.pl-card__foot{
+    padding:14px 18px;border-top:1px solid var(--border);background:var(--glass);
+    display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap
+}
+.pl-stats{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.9rem;font-weight:700}
+
+/* Empty */
+.pl-empty{ text-align:center;padding:72px 16px;color:var(--muted);border:1px dashed var(--border);
+    border-radius:var(--radius);background:var(--glass) }
+.pl-empty__icon{font-size:3rem;margin-bottom:10px;opacity:.7}
+.pl-empty__title{font-size:1.4rem;color:var(--fg);font-weight:900;margin:8px 0}
+
+/* Responsive */
+@@media (max-width:768px){
+    .pl-camp__row{align-items:flex-start}
+    .btn{width:100%;justify-content:center}
+    .pl-meta{flex-direction:column;align-items:flex-start}
+}
+
+/* Animations */
+@@keyframes plUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+</style>
+}
+
+<div class="pl-page">
     <!-- Campaign Header -->
     @if (campaign != null)
     {
-        <div class="campaign-header">
-            <div class="campaign-info">
-                <div class="campaign-details">
-                    <h2>@campaign.Name</h2>
-                    <div class="campaign-meta">
+        <section class="pl-camp">
+            <div class="pl-camp__row">
+                <div>
+                    <h2 class="pl-camp__title">@campaign.Name</h2>
+                    <div class="pl-camp__meta">
                         <span><i class="fas fa-calendar-alt"></i> Tạo lúc: @campaign.CreatedAt.ToString("dd/MM/yyyy")</span>
-                        <span style="margin-left: 20px;"><i class="fas fa-eye"></i> @(Model?.Count() ?? 0) bài viết</span>
+                        <span><i class="fas fa-eye"></i> @(Model?.Count() ?? 0) bài viết</span>
                     </div>
                 </div>
-                <div class="posts-actions">
-                    <a href="@Url.Action("Details", new { id = campaign.Id })" class="btn-action btn-secondary">
-                        <i class="fas fa-arrow-left"></i>
-                        Quay Lại
+
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                    <a href="@Url.Action("Details", new { id = campaign.Id })" class="btn">
+                        <i class="fas fa-arrow-left"></i> Quay lại
                     </a>
 
                     @{
@@ -336,14 +122,8 @@
                         var canCreatePost = false;
                         if (isOwner)
                         {
-                            if (!existingPosts)
-                            {
-                                canCreatePost = true;
-                            }
-                            else if (campaign.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
-                            {
-                                canCreatePost = true;
-                            }
+                            if (!existingPosts) { canCreatePost = true; }
+                            else if (campaign.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved) { canCreatePost = true; }
                         }
                     }
 
@@ -351,77 +131,66 @@
                     {
                         @if (canCreatePost)
                         {
-                            <a href="@Url.Action("CreatePost", new { campaignId = campaign.Id })" class="btn-action btn-primary">
+                            <a href="@Url.Action("CreatePost", new { campaignId = campaign.Id })" class="btn btn--primary">
                                 <i class="fas fa-plus"></i>
-                                @if (!existingPosts)
-                                {
-                                    <text>Tạo Bài Viết Đầu Tiên</text>
-                                }
-                                else
-                                {
-                                    <text>Tạo Bài Viết Mới</text>
-                                }
+                                @( !existingPosts ? "Tạo Bài Viết Đầu Tiên" : "Tạo Bài Viết Mới")
                             </a>
                         }
                         else if (campaign.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Pending)
                         {
-                            <span class="btn-action" style="background: var(--warning); color: white; cursor: not-allowed;">
-                                <i class="fas fa-clock"></i>
-                                Chờ Admin Duyệt Chiến Dịch
+                            <span class="btn btn--warn" style="cursor:not-allowed">
+                                <i class="fas fa-clock"></i> Chờ Admin duyệt chiến dịch
                             </span>
                         }
                     }
                 </div>
             </div>
-        </div>
+        </section>
     }
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success" style="background: rgba(0, 212, 170, 0.1); border-left: 4px solid var(--success); color: var(--success); padding: 15px 20px; border-radius: 8px; margin-bottom: 25px;">
+        <div style="background:color-mix(in oklab,var(--success,#16c79a) 12%, transparent);border:1px solid color-mix(in oklab,var(--success,#16c79a) 35%, var(--border));color:var(--success,#16c79a);padding:12px 16px;border-radius:12px;margin-bottom:16px;font-weight:700">
             <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
         </div>
     }
 
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger" style="background: rgba(255, 107, 107, 0.1); border-left: 4px solid var(--danger); color: var(--danger); padding: 15px 20px; border-radius: 8px; margin-bottom: 25px;">
+        <div style="background:color-mix(in oklab,var(--danger,#ff6b6b) 12%, transparent);border:1px solid color-mix(in oklab,var(--danger,#ff6b6b) 35%, var(--border));color:var(--danger,#ff6b6b);padding:12px 16px;border-radius:12px;margin-bottom:16px;font-weight:700">
             <i class="fas fa-exclamation-triangle"></i> @TempData["ErrorMessage"]
         </div>
     }
 
     @if (Model?.Any() == true)
     {
-        <!-- Posts Grid -->
-        <div class="posts-grid">
+        <!-- Posts Grid (giữ 1 cột như bố cục cũ) -->
+        <section class="pl-grid">
             @foreach (var post in Model.OrderByDescending(p => p.CreatedAt))
             {
-                <div class="post-card">
-                    <div class="post-header">
-                        <h3 class="post-title">
-                            <a href="@Url.Action("PostDetails", new { id = post.Id })">
-                                @post.Title
-                            </a>
+                <article class="pl-card">
+                    <div class="pl-card__head">
+                        <h3 class="pl-title">
+                            <a href="@Url.Action("PostDetails", new { id = post.Id })">@post.Title</a>
                         </h3>
 
-                        <div class="post-meta">
-                            <div class="post-info">
+                        <div class="pl-meta">
+                            <div class="pl-info">
                                 @switch (post.PostType)
                                 {
                                     case InvestDapp.Shared.Enums.PostType.Introduction:
-                                        <span class="post-type type-introduction">Giới Thiệu</span>
+                                        <span class="badge badge--intro">Giới thiệu</span>
                                         break;
                                     case InvestDapp.Shared.Enums.PostType.Update:
-                                        <span class="post-type type-update">Cập Nhật</span>
+                                        <span class="badge badge--update">Cập nhật</span>
                                         break;
                                     case InvestDapp.Shared.Enums.PostType.Achievement:
-                                        <span class="post-type type-achievement">Thành Tựu</span>
+                                        <span class="badge badge--achv">Thành tựu</span>
                                         break;
                                     case InvestDapp.Shared.Enums.PostType.Announcement:
-                                        <span class="post-type type-announcement">Thông Báo</span>
+                                        <span class="badge badge--anno">Thông báo</span>
                                         break;
                                 }
-
                                 <span><i class="fas fa-calendar-alt"></i> @post.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
                                 <span><i class="fas fa-eye"></i> @post.ViewCount lượt xem</span>
                             </div>
@@ -429,74 +198,64 @@
                             @switch (post.ApprovalStatus)
                             {
                                 case InvestDapp.Shared.Enums.ApprovalStatus.Pending:
-                                    <span class="post-status status-pending">
-                                        <i class="fas fa-clock"></i> Chờ Duyệt
-                                    </span>
+                                    <span class="chip chip--pending"><i class="fas fa-clock"></i> Chờ duyệt</span>
                                     break;
                                 case InvestDapp.Shared.Enums.ApprovalStatus.Approved:
-                                    <span class="post-status status-approved">
-                                        <i class="fas fa-check-circle"></i> Đã Duyệt
-                                    </span>
+                                    <span class="chip chip--approved"><i class="fas fa-check-circle"></i> Đã duyệt</span>
                                     break;
                                 case InvestDapp.Shared.Enums.ApprovalStatus.Rejected:
-                                    <span class="post-status status-rejected">
-                                        <i class="fas fa-times-circle"></i> Bị Từ Chối
-                                    </span>
+                                    <span class="chip chip--rejected"><i class="fas fa-times-circle"></i> Bị từ chối</span>
                                     break;
                             }
                         </div>
                     </div>
 
-                    <div class="post-content">
-                        <div class="post-excerpt">
+                    <div class="pl-card__body">
+                        <div class="pl-excerpt">
                             @Html.Raw(post.Content?.Substring(0, Math.Min(post.Content.Length, 200))?.Replace("\n", "<br/>"))
                         </div>
                     </div>
 
-                    <div class="post-actions">
-                        <div class="post-stats">
+                    <div class="pl-card__foot">
+                        <div class="pl-stats">
                             @if (!string.IsNullOrEmpty(post.Tags))
                             {
                                 <span><i class="fas fa-tags"></i> @post.Tags</span>
                             }
                             @if (post.IsFeatured)
                             {
-                                <span style="color: var(--warning);"><i class="fas fa-star"></i> Nổi bật</span>
+                                <span style="color:var(--warning,#ffb800)"><i class="fas fa-star"></i> Nổi bật</span>
                             }
                         </div>
 
-                        <div style="display: flex; gap: 10px;">
-                            <a href="@Url.Action("PostDetails", new { id = post.Id })" class="btn-action btn-secondary" style="padding: 8px 16px; font-size: 0.85rem;">
-                                <i class="fas fa-eye"></i>
-                                Xem Chi Tiết
+                        <div style="display:flex;gap:10px;flex-wrap:wrap">
+                            <a href="@Url.Action("PostDetails", new { id = post.Id })" class="btn" style="padding:10px 14px;font-size:.88rem">
+                                <i class="fas fa-eye"></i> Xem chi tiết
                             </a>
 
                             @if (User.FindFirst("WalletAddress")?.Value == post.AuthorAddress)
                             {
-                                <form method="post" action="@Url.Action("DeletePost", new { id = post.Id })" style="display: inline;" 
+                                <form method="post" action="@Url.Action("DeletePost", new { id = post.Id })" style="display:inline"
                                       onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết này?');">
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn-action" style="background: var(--danger); color: white; padding: 8px 16px; font-size: 0.85rem;">
-                                        <i class="fas fa-trash"></i>
-                                        Xóa
+                                    <button type="submit" class="btn btn--danger" style="padding:10px 14px;font-size:.88rem">
+                                        <i class="fas fa-trash"></i> Xóa
                                     </button>
                                 </form>
                             }
                         </div>
                     </div>
-                </div>
+                </article>
             }
-        </div>
+        </section>
     }
     else
     {
         <!-- Empty State -->
-        <div class="empty-state">
-            <div class="empty-icon">
-                <i class="fas fa-newspaper"></i>
-            </div>
-            <h2 class="empty-title">Chưa Có Bài Viết Nào</h2>
-            <p class="empty-description">
+        <div class="pl-empty">
+            <div class="pl-empty__icon"><i class="fas fa-newspaper"></i></div>
+            <div class="pl-empty__title">Chưa có bài viết nào</div>
+            <p style="margin:8px 0 18px">
                 @if (campaign?.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
                 {
                     <text>Chiến dịch này chưa có bài viết nào. Hãy tạo bài viết để chia sẻ thông tin với nhà đầu tư!</text>
@@ -512,19 +271,12 @@
             </p>
 
             @if (User.FindFirst("WalletAddress")?.Value == campaign?.OwnerAddress &&
-                    (campaign?.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved ||
-                    campaign?.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Pending))
+                (campaign?.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved ||
+                 campaign?.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Pending))
             {
-                <a href="@Url.Action("CreatePost", new { campaignId = campaign.Id })" class="btn-action btn-primary" style="padding: 15px 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 170, 255, 0.3);">
+                <a href="@Url.Action("CreatePost", new { campaignId = campaign.Id })" class="btn btn--primary" style="padding:14px 22px">
                     <i class="fas fa-plus"></i>
-                    @if (campaign?.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Pending)
-                    {
-                        <text>Tạo Bài Viết Đầu Tiên</text>
-                    }
-                    else
-                    {
-                        <text>Tạo Bài Viết Mới</text>
-                    }
+                    @(campaign?.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Pending ? "Tạo Bài Viết Đầu Tiên" : "Tạo Bài Viết Mới")
                 </a>
             }
         </div>
@@ -532,13 +284,11 @@
 </div>
 
 @section Scripts {
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add staggered animation to post cards
-            const cards = document.querySelectorAll('.post-card');
-            cards.forEach((card, index) => {
-                card.style.animationDelay = `${index * 0.1}s`;
-            });
-        });
-    </script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    // Staggered animation
+    const cards = document.querySelectorAll('.pl-card');
+    cards.forEach((c,i)=> c.style.animationDelay = `${i*0.08}s`);
+});
+</script>
 }

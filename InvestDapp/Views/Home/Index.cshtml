@@ -1,609 +1,760 @@
 ﻿@using Microsoft.AspNetCore.Authorization
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Trang chủ";
     Layout = "~/Pages/_Layout.cshtml";
 }
+
 @section Styles {
     <style>
-        /* --- Hero Section --- */
-        .hero {
-            padding-top: 150px;
-            padding-bottom: 100px;
-            text-align: center;
-            background-image: radial-gradient(circle at 50% 0%, rgba(0, 170, 255, 0.15), transparent 40%);
-        }
-
-        .hero-content h1 {
-            font-size: 3.5rem;
-            font-weight: 700;
-            line-height: 1.2;
-            margin-bottom: 20px;
-        }
-
-        .hero-content p {
-            font-size: 1.2rem;
-            max-width: 700px;
-            margin: 0 auto 30px;
-            color: var(--text-muted);
-        }
-
-        .hero-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-
-
-        /* --- General Section Styling --- */
-        section {
-            padding: 80px 0;
-            opacity: 0;
-            transform: translateY(30px);
-            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-        }
-
-            section.visible {
-                opacity: 1;
-                transform: translateY(0);
-            }
-
-            section h2 {
-                text-align: center;
-                font-size: 2.5rem;
-                margin-bottom: 50px;
-            }
-
-        /* --- Stats Section --- */
-        .stats-section .container {
-            display: flex;
-            justify-content: space-around;
-            gap: 30px;
-        }
-
-        .stat-card {
-            background-color: var(--bg-light);
-            padding: 30px;
-            border-radius: 12px;
-            text-align: center;
-            flex: 1;
-            border: 1px solid var(--secondary);
-        }
-
-        .stat-number {
-            font-size: 3rem;
-            font-weight: 700;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: block;
-        }
-
-        .stat-card p {
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-
-        /* --- Projects Section --- */
-        .project-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 30px;
-        }
-
-        .project-card {
-            background-color: var(--bg-light);
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--secondary);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        /* ====== LANDING (scoped) ====== */
+        .landing {
+            --speed: 820ms;
             position: relative;
         }
+        /* vùng slide toàn màn hình (trừ topbar fixed) */
+        #slides {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            z-index: 1;
+        }
 
-            .project-card:hover {
-                transform: translateY(-10px);
-                box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        #slidesTrack {
+            height: 100%;
+            width: 100%;
+            transition: transform var(--speed) cubic-bezier(.22,.61,.36,1);
+            will-change: transform;
+        }
+
+        .slide {
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+            display: grid;
+            place-items: center;
+            padding: clamp(12px,3vw,36px);
+        }
+
+        .slide-inner {
+            width: min(1200px,94vw);
+            margin: auto;
+            z-index: 1;
+        }
+
+        /* orbs background */
+        .orb {
+            position: absolute;
+            width: 520px;
+            height: 520px;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: .28;
+            z-index: 0
+        }
+
+        .cyan {
+            background: radial-gradient(closest-side, rgba(108,240,255,.9), rgba(108,240,255,0))
+        }
+
+        .violet {
+            background: radial-gradient(closest-side, rgba(155,107,255,.9), rgba(155,107,255,0))
+        }
+        @@keyframes float {
+            50%
+
+        {
+            transform: translateY(-18px) translateX(10px)
+        }
+
+        }
+
+        .float-slow {
+            animation: float 12s ease-in-out infinite
+        }
+
+        .float-rev {
+            animation: float 14s ease-in-out infinite reverse
+        }
+
+        /* hero */
+        .hero {
+            display: grid;
+            grid-template-columns: 1.1fr .9fr;
+            gap: 36px;
+            align-items: center
+        }
+
+            .hero h1 {
+                font-size: clamp(36px,6vw,64px);
+                line-height: 1.05;
+                margin: 0 0 10px
             }
 
-            .project-card img {
+            .hero p {
+                color: var(--muted);
+                margin: 0 0 20px
+            }
+
+            .hero .actions {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap
+            }
+
+        .pill {
+            background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 10px 14px
+        }
+
+        .hero-visual {
+            position: relative;
+            height: min(520px,66vh);
+            border-radius: 14px;
+            background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            overflow: hidden
+        }
+
+        .gridfx {
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(to right, rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.06) 1px, transparent 1px);
+            background-size: 40px 40px;
+            mask-image: radial-gradient(100% 60% at 100% 0%, black 60%, transparent 100%);
+            animation: gridMove 8s linear infinite
+        }
+        @@keyframes gridMove {
+            to
+
+        {
+            background-position: -200px 200px, -200px 200px
+        }
+
+        }
+
+        .coin {
+            position: absolute;
+            display: grid;
+            place-items: center;
+            width: 120px;
+            height: 120px;
+            border-radius: 28px;
+            backdrop-filter: blur(10px);
+            background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow)
+        }
+
+            .coin svg {
+                width: 56px;
+                height: 56px;
+                filter: drop-shadow(0 0 10px rgba(108,240,255,.6))
+            }
+
+        .btc {
+            top: 34px;
+            left: 34px;
+            transform: rotate(-6deg)
+        }
+
+        .bnb {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%,-50%) scale(1.08)
+        }
+
+        .eth {
+            bottom: 28px;
+            right: 28px;
+            transform: rotate(8deg)
+        }
+
+        .ticker {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 58px;
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            background: linear-gradient(90deg, rgba(108,240,255,.08), rgba(155,107,255,.08));
+            border-top: 1px solid var(--border);
+            overflow: hidden
+        }
+
+        .marquee {
+            display: flex;
+            gap: 24px;
+            white-space: nowrap;
+            animation: slideX 18s linear infinite
+        }
+        @@keyframes slideX {
+            to
+
+        {
+            transform: translateX(-50%)
+        }
+
+        }
+
+        .pair {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 0 10px
+        }
+
+            .pair .sym {
+                opacity: .9;
+                font-weight: 700
+            }
+
+            .pair .px {
+                font-weight: 800
+            }
+
+        .chg.up {
+            color: #19e58c
+        }
+
+        .chg.down {
+            color: #ff8e8e
+        }
+
+        /* stats */
+        .stats h2 {
+            font-size: clamp(28px,4.2vw,42px);
+            margin: 0 0 14px
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4,minmax(0,1fr));
+            gap: 16px
+        }
+
+        .stat {
+            background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: var(--shadow);
+            padding: 18px;
+            text-align: center
+        }
+
+        .num {
+            font-size: clamp(24px,4.6vw,44px);
+            font-weight: 800
+        }
+
+        .k {
+            color: var(--muted);
+            margin-top: 6px
+        }
+
+        /* projects */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3,minmax(0,1fr));
+            gap: 16px
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: transform .2s
+        }
+
+            .card:hover {
+                transform: translateY(-4px)
+            }
+
+            .card img {
                 width: 100%;
-                height: 200px;
-                object-fit: cover;
+                height: 180px;
+                object-fit: cover
             }
+
+        .content {
+            padding: 16px
+        }
 
         .badge {
             position: absolute;
-            top: 15px;
-            right: 15px;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: white;
+            top: 12px;
+            right: 12px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: .8rem;
+            color: #fff;
+            background: linear-gradient(90deg,#00e0ff,#9b6bff)
         }
 
-            .badge.new {
-                background: var(--gradient);
-            }
-
             .badge.hot {
-                background: linear-gradient(90deg, #ff4d4d, #ff8c4d);
+                background: linear-gradient(90deg,#ff4d4d,#ff8c4d)
             }
 
             .badge.dao {
-                background: linear-gradient(90deg, #4d4dff, #8c4dff);
-            }
-
-        .card-content {
-            padding: 25px;
-        }
-
-            .card-content h3 {
-                font-size: 1.5rem;
-                margin-bottom: 15px;
+                background: linear-gradient(90deg,#4d4dff,#8c4dff)
             }
 
         .progress-bar {
             height: 8px;
-            background-color: var(--secondary);
-            border-radius: 4px;
+            background: rgba(255,255,255,.12);
+            border-radius: 6px;
             overflow: hidden;
-            margin-bottom: 10px;
+            margin: 8px 0
         }
 
         .progress {
             height: 100%;
-            background: var(--gradient);
-            border-radius: 4px;
+            background: linear-gradient(90deg,var(--primary),var(--accent))
         }
 
-        .project-stats {
+        .meta {
             display: flex;
             justify-content: space-between;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-bottom: 15px;
+            color: var(--muted);
+            font-size: .95rem
         }
 
-        .roi {
-            font-size: 1rem;
-            color: var(--text-color);
-            margin-bottom: 20px;
-        }
-
-            .roi strong {
-                color: #00ffaa;
-            }
-
-        .card-content .btn {
-            width: 100%;
-        }
-
-        .btn.disabled {
-            background: var(--secondary);
-            cursor: not-allowed;
-        }
-
-        /* --- Why Us Section --- */
-        .feature-grid {
+        /* faq */
+        .faq {
+            width: min(900px,92vw);
+            margin: auto;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
+            gap: 10px
         }
 
-        .feature-item {
-            background-color: var(--bg-light);
-            padding: 30px;
+        .qa {
+            background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+            border: 1px solid var(--border);
             border-radius: 12px;
-            text-align: center;
-            border: 1px solid var(--secondary);
-            transition: background-color 0.3s ease;
+            overflow: hidden
         }
 
-            .feature-item:hover {
-                background-color: var(--secondary);
-            }
-
-            .feature-item i {
-                font-size: 2.5rem;
-                background: var(--gradient);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                margin-bottom: 15px;
-            }
-
-            .feature-item h3 {
-                font-size: 1.3rem;
-                margin-bottom: 10px;
-            }
-
-            .feature-item p {
-                color: var(--text-muted);
-            }
-
-        /* --- Partners Section --- */
-        .partners-logos {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 40px;
-        }
-
-            .partners-logos img {
-                height: 40px;
-                opacity: 0.6;
-                transition: opacity 0.3s ease;
-                filter: grayscale(100%);
-            }
-
-                .partners-logos img:hover {
-                    opacity: 1;
-                    filter: grayscale(0%);
-                }
-
-        /* --- Newsletter Section --- */
-        .newsletter-section {
-            background-color: var(--bg-light);
-            border-radius: 12px;
-            padding: 60px;
-            margin: 80px auto;
-            max-width: 1200px;
-        }
-
-        .newsletter-content {
-            text-align: center;
-        }
-
-            .newsletter-content h2 {
-                font-size: 2.2rem;
-                margin-bottom: 10px;
-            }
-
-            .newsletter-content p {
-                color: var(--text-muted);
-                margin-bottom: 30px;
-            }
-
-        .newsletter-form {
-            display: flex;
-            justify-content: center;
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: var(--bg-dark);
-            border-radius: 8px;
-            padding: 8px;
-        }
-
-            .newsletter-form input {
-                flex-grow: 1;
-                background: transparent;
-                border: none;
-                outline: none;
-                color: white;
-                padding: 0 20px;
-                font-size: 1rem;
-            }
-
-            .newsletter-form button {
-                flex-shrink: 0;
-            }
-
-        /* --- FAQ Section --- */
-        .faq-accordion {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .faq-item {
-            background-color: var(--bg-light);
-            border: 1px solid var(--secondary);
-            border-radius: 8px;
-            margin-bottom: 15px;
-            overflow: hidden;
-        }
-
-        .faq-question {
+        .q {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px;
+            padding: 14px 16px;
             cursor: pointer;
-            font-weight: 600;
-            font-size: 1.1rem;
+            font-weight: 700
         }
 
-            .faq-question i {
-                transition: transform 0.3s ease;
-            }
-
-        .faq-answer {
+        .a {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+            transition: max-height .28s ease;
+            color: var(--muted);
+            padding: 0 16px
         }
 
-            .faq-answer p {
-                padding: 0 20px 20px;
-                color: var(--text-muted);
-                line-height: 1.8;
+        .qa.open .a {
+            max-height: 200px;
+            padding: 0 16px 14px
+        }
+
+        /* partners */
+        .logos {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 26px
+        }
+
+            .logos img {
+                height: 40px;
+                opacity: .75;
+                filter: grayscale(100%);
+                transition: all .2s
             }
 
-        .faq-item.active .faq-answer {
-            max-height: 200px; /* Adjust if answer is longer */
+                .logos img:hover {
+                    opacity: 1;
+                    filter: none
+                }
+
+        /* newsletter */
+        .nl {
+            text-align: center
         }
 
-        .faq-item.active .faq-question i {
-            transform: rotate(180deg);
+            .nl .form {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 8px;
+                width: min(560px,90vw);
+                margin: 12px auto 0;
+                background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                padding: 8px
+            }
+
+            .nl input {
+                background: transparent;
+                border: 0;
+                outline: none;
+                color: var(--fg);
+                padding: 0 12px
+            }
+
+        /* right dots */
+        .dots {
+            position: fixed;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 3
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.25);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: transform .18s, background .18s
+        }
+
+            .dot.active {
+                background: linear-gradient(180deg, var(--primary), var(--accent));
+                transform: scale(1.25)
+            }
+
+        /* responsive */
+        @@media (max-width:1080px) {
+            .hero
+
+        {
+            grid-template-columns: 1fr;
+            gap: 24px
+        }
+
+        .hero-visual {
+            height: 380px
+        }
+
+        .cards {
+            grid-template-columns: 1fr
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2,minmax(0,1fr))
+        }
+
+        .nl .form {
+            grid-template-columns: 1fr
+        }
+
+        }
+        /* reduce motion */
+        @@media (prefers-reduced-motion: reduce) {
+            #slidesTrack
+
+        {
+            transition: none
+        }
+
+        .orb {
+            animation: none
+        }
+
+        .marquee {
+            animation: none
+        }
+
         }
     </style>
 }
 
+<div class="landing">
+    <div id="slides">
+        <div id="slidesTrack">
+            <!-- SLIDE 0: HERO -->
+            <section class="slide" id="s-hero" aria-label="Hero">
+                <div class="orb cyan float-slow" style="top:-140px; right:-140px"></div>
+                <div class="orb violet float-rev" style="bottom:-180px; left:-160px"></div>
+
+                <div class="slide-inner hero">
+                    <div>
+                        <span class="pill" style="display:inline-block;margin-bottom:10px;">New • Web3 Launchpad</span>
+                        <h1>Trang chủ crypto hiện đại <span style="-webkit-background-clip:text;background-clip:text;background:linear-gradient(90deg,var(--primary),var(--accent));color:transparent">slide-by-slide</span></h1>
+                        <p>Không cuộn dài. Mỗi màn hình là một câu chuyện: hero, thống kê, dự án, FAQ, đối tác và newsletter.</p>
+                        <div class="actions">
+                            <a class="btn" data-goto="2" href="#s-projects">Khám phá Dự án</a>
+                            @if (User.Identity.IsAuthenticated)
+                            {
+                                <a id="kycBtn" class="btn secondary" href="/Kyc/FundraiserKycView">KYC Nhà gây quỹ</a>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="hero-visual" aria-hidden="true">
+                        <div class="gridfx"></div>
+                        <div class="coin btc">
+                            <svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg"><circle cx="128" cy="128" r="110" fill="none" stroke="#ffd580" stroke-width="10" /><path d="M104 72h40a28 28 0 0 1 0 56h-40zm0 56h44a28 28 0 0 1 0 56h-44" stroke="#ffd580" stroke-width="16" fill="none" stroke-linecap="round" /></svg>
+                        </div>
+                        <div class="coin bnb">
+                            <svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg"><rect x="58" y="58" width="140" height="140" rx="18" ry="18" fill="none" stroke="#f3d355" stroke-width="10" /><path d="M92 128l36-36 36 36-36 36-36-36z" fill="none" stroke="#f3d355" stroke-width="12" /></svg>
+                        </div>
+                        <div class="coin eth">
+                            <svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg"><path d="M128 28l60 100-60 34-60-34 60-100z" fill="none" stroke="#cbbcff" stroke-width="10" /><path d="M128 238l60-90-60 34-60-34 60 90z" fill="none" stroke="#cbbcff" stroke-width="10" /></svg>
+                        </div>
+
+                        <div class="ticker">
+                            <div class="marquee" id="marquee">
+                                <div class="pair"><span class="sym">BTC/USDT</span><span class="px">$ 67,420</span><span class="chg up">+2.41%</span></div>
+                                <div class="pair"><span class="sym">ETH/USDT</span><span class="px">$ 2,420</span><span class="chg down">-0.58%</span></div>
+                                <div class="pair"><span class="sym">BNB/USDT</span><span class="px">$ 590</span><span class="chg up">+1.12%</span></div>
+                                <div class="pair"><span class="sym">SOL/USDT</span><span class="px">$ 155</span><span class="chg up">+0.42%</span></div>
+                                <!-- duplicate for seamless loop -->
+                                <div class="pair"><span class="sym">BTC/USDT</span><span class="px">$ 67,420</span><span class="chg up">+2.41%</span></div>
+                                <div class="pair"><span class="sym">ETH/USDT</span><span class="px">$ 2,420</span><span class="chg down">-0.58%</span></div>
+                                <div class="pair"><span class="sym">BNB/USDT</span><span class="px">$ 590</span><span class="chg up">+1.12%</span></div>
+                                <div class="pair"><span class="sym">SOL/USDT</span><span class="px">$ 155</span><span class="chg up">+0.42%</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 1: STATS -->
+            <section class="slide" id="s-stats" aria-label="Stats">
+                <div class="orb cyan float-slow" style="top:auto; bottom:-140px; right:-140px"></div>
+                <div class="slide-inner stats">
+                    <h2>Tăng trưởng theo thời gian thực</h2>
+                    <div class="stats-grid">
+                        <div class="stat"><div class="num counter" data-to="15000000" data-prefix="$">$0</div><div class="k">Tổng vốn đã huy động</div></div>
+                        <div class="stat"><div class="num counter" data-to="8245">0</div><div class="k">Nhà đầu tư</div></div>
+                        <div class="stat"><div class="num counter" data-to="216">0</div><div class="k">Dự án thành công</div></div>
+                        <div class="stat"><div class="num counter" data-to="980000000" data-prefix="$">$0</div><div class="k">TVL</div></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 2: PROJECTS -->
+            <section class="slide" id="s-projects" aria-label="Projects">
+                <div class="orb violet float-rev" style="top:-140px; left:-140px"></div>
+                <div class="slide-inner">
+                    <h2 style="margin-bottom:12px">Dự án nổi bật</h2>
+                    <p class="k" style="margin-bottom:16px">Thẻ mẫu — có thể bind từ API sau.</p>
+
+                    <div class="cards">
+                        <article class="card">
+                            <img src="https://images.unsplash.com/photo-1639755243236-4098a8c4f09d?q=80&w=1600&auto=format&fit=crop" alt="DeFi project cover" />
+                            <span class="badge">Mới</span>
+                            <div class="content">
+                                <h3>DeFi QuantumLeap</h3>
+                                <div class="progress-bar"><div class="progress" style="width:75%"></div></div>
+                                <div class="meta"><span>75%</span><span>$150,000 / $200,000</span></div>
+                                <a href="#" class="btn">Đầu tư ngay</a>
+                            </div>
+                        </article>
+
+                        <article class="card">
+                            <img src="https://images.unsplash.com/photo-1642104793542-b69806505342?q=80&w=1600&auto=format&fit=crop" alt="NFT project cover" />
+                            <span class="badge hot">Sắp hoàn thành</span>
+                            <div class="content">
+                                <h3>NFT Metaverse Hub</h3>
+                                <div class="progress-bar"><div class="progress" style="width:92%"></div></div>
+                                <div class="meta"><span>92%</span><span>$460,000 / $500,000</span></div>
+                                <a href="#" class="btn">Đầu tư ngay</a>
+                            </div>
+                        </article>
+
+                        <article class="card">
+                            <img src="https://images.unsplash.com/photo-1640578622184-45373a3c220e?q=80&w=1600&auto=format&fit=crop" alt="Green project cover" />
+                            <span class="badge dao">DAO Vote</span>
+                            <div class="content">
+                                <h3>GreenBlock Chain</h3>
+                                <div class="progress-bar"><div class="progress" style="width:100%"></div></div>
+                                <div class="meta"><span>100%</span><span>$100,000 / $100,000</span></div>
+                                <a href="#" class="btn secondary">Xem biểu quyết</a>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 3: FAQ -->
+            <section class="slide" id="s-faq" aria-label="FAQ">
+                <div class="slide-inner">
+                    <h2 style="margin-bottom:12px">FAQ</h2>
+                    <p class="k" style="margin-bottom:16px">Accordion đơn giản, chạy client-side.</p>
+                    <div class="faq" id="faqList">
+                        <div class="qa"><div class="q">Có thể đầu tư bằng token nào? <span>＋</span></div><div class="a"><p>Hỗ trợ BNB, BUSD, USDT trên BSC; sẽ mở rộng thêm.</p></div></div>
+                        <div class="qa"><div class="q">Nền tảng có thu phí không? <span>＋</span></div><div class="a"><p>Phí 2–5% trên vốn huy động thành công; không có phí ẩn.</p></div></div>
+                        <div class="qa"><div class="q">Dự án có đảm bảo thành công? <span>＋</span></div><div class="a"><p>Không thể đảm bảo. Có cơ chế DAO giám sát rút vốn. Hãy DYOR.</p></div></div>
+                        <div class="qa"><div class="q">Khi nào hiện nút KYC? <span>＋</span></div><div class="a"><p>Nếu <code>User.Identity.IsAuthenticated</code> là true, nút KYC xuất hiện ở Hero.</p></div></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 4: PARTNERS -->
+            <section class="slide" id="s-partners" aria-label="Partners">
+                <div class="slide-inner">
+                    <h2 style="margin-bottom:12px">Đối tác & Audit</h2>
+                    <p class="k" style="margin-bottom:16px">Logo minh hoạ; thay bằng ảnh thật của bạn.</p>
+                    <div class="logos">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/0/0a/CertiK_logo.png" alt="CertiK logo">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/57/Chainlink_Logo.png" alt="Chainlink logo">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/57/Binance_Logo.png" alt="Binance logo">
+                        <img src="https://images.seeklogo.com/logo-png/43/1/quantstamp-logo-png_seeklogo-438075.png" alt="Quantstamp logo">
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 5: NEWSLETTER -->
+            <section class="slide" id="s-newsletter" aria-label="Newsletter">
+                <div class="slide-inner nl">
+                    <h2>Nhận bản tin</h2>
+                    <p class="k">Cập nhật dự án, tips bảo mật, và sự kiện.</p>
+                    <form id="nlForm" class="form" action="#" method="post" novalidate>
+                        <input id="nlEmail" type="email" placeholder="Nhập email của bạn..." required />
+                        <button class="btn" type="submit">Đăng ký</button>
+                    </form>
+                    <p id="nlMsg" class="k" style="margin-top:10px"></p>
+                    <div style="margin-top:20px"><a class="btn secondary" data-goto="0" href="#s-hero">Về Trang chủ</a></div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- dots (nav nội trang) -->
+    <div class="dots" aria-label="Slide pagination">
+        <button class="dot active" data-goto="0" aria-label="Trang 1"></button>
+        <button class="dot" data-goto="1" aria-label="Trang 2"></button>
+        <button class="dot" data-goto="2" aria-label="Trang 3"></button>
+        <button class="dot" data-goto="3" aria-label="Trang 4"></button>
+        <button class="dot" data-goto="4" aria-label="Trang 5"></button>
+        <button class="dot" data-goto="5" aria-label="Trang 6"></button>
+    </div>
+</div>
+
 @section Scripts {
     <script>
-                document.addEventListener('DOMContentLoaded', () => {
+        (function(){
+          // ===== Core refs
+          const track = document.getElementById('slidesTrack') || document.querySelector('#slides > div');
+          const slides = Array.from(document.querySelectorAll('.slide'));
+          const dots = Array.from(document.querySelectorAll('.dot'));
+          // chỉ bắt [data-goto] trong main/dots để nav header không điều khiển slide
+          const gotoEls = Array.from(document.querySelectorAll('main [data-goto], .dots [data-goto]'));
 
-            // --- Animation on Scroll using Intersection Observer ---
-            const sections = document.querySelectorAll('section');
+          let index = 0, lock = false;
+          const N = slides.length;
 
-            const observerOptions = {
-                root: null, // observes intersections relative to the viewport
-                rootMargin: '0px',
-                threshold: 0.1 // 10% of the section must be visible
-            };
+          const anchors = ['s-hero','s-stats','s-projects','s-faq','s-partners','s-newsletter'];
+          function clamp(i){ return Math.max(0, Math.min(N-1, i)); }
+          function setActive(i){ dots.forEach((d,k)=>d.classList.toggle('active',k===i)); }
+          function go(i){
+            i = clamp(i);
+            index = i;
+            if(track) track.style.transform = `translateY(${-i*100}%)`;
+            setActive(i);
+            history.replaceState(null,'','#'+anchors[i]);
+          }
 
-            const sectionObserver = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('visible');
-                        // Optional: unobserve after it's visible to save resources
-                        // observer.unobserve(entry.target);
-                    }
-                });
-            }, observerOptions);
+          // wheel (debounce so one slide per gesture)
+          function onWheel(e){
+            // đừng bắt khi rê trên chat panel hoặc input
+            const target = e.target;
+            if(target.closest('#chatPanel') || target.closest('input,textarea,select')) return;
+            if(lock) return; lock = true;
+            const dy = (e.deltaY || e.wheelDelta || -e.detail);
+            if(dy>0) go(index+1); else go(index-1);
+            setTimeout(()=>lock=false, 850);
+          }
+          // keyboard
+          function onKey(e){
+            if(e.target.closest('input,textarea')) return;
+            if(['ArrowDown','PageDown'].includes(e.key)) go(index+1);
+            if(['ArrowUp','PageUp'].includes(e.key)) go(index-1);
+            if(e.key==='Home') go(0);
+            if(e.key==='End') go(N-1);
+          }
+          // touch
+          let touchStart=null;
+          function onTouchStart(e){ if(e.target.closest('#chatPanel')) return; touchStart = e.touches[0].clientY; }
+          function onTouchEnd(e){
+            if(touchStart==null) return;
+            const dy = (e.changedTouches[0].clientY - touchStart);
+            if(Math.abs(dy) > 50){ if(dy<0) go(index+1); else go(index-1); }
+            touchStart = null;
+          }
 
-            sections.forEach(section => {
-                sectionObserver.observe(section);
+          // init listeners
+          window.addEventListener('wheel', onWheel, {passive:true});
+          window.addEventListener('keydown', onKey);
+          document.getElementById('slides')?.addEventListener('touchstart', onTouchStart, {passive:true});
+          document.getElementById('slides')?.addEventListener('touchend', onTouchEnd, {passive:true});
+
+          gotoEls.forEach(el=>{
+            el.addEventListener('click', e=>{
+              const to = parseInt(el.dataset.goto,10);
+              if(!isNaN(to)){ e.preventDefault(); go(to); }
             });
+          });
 
+          // deep-link on load
+          const map = { 's-hero':0,'s-stats':1,'s-projects':2,'s-faq':3,'s-partners':4,'s-newsletter':5 };
+          if(location.hash){ const h = location.hash.replace('#',''); if(map[h]!==undefined) index = map[h]; }
+          go(index);
 
-            // --- Animated Number Counter for Stats Section ---
-            const statNumbers = document.querySelectorAll('.stat-number');
-
-            const animateNumber = (element) => {
-                const target = +element.getAttribute('data-target');
-                const duration = 2000; // 2 seconds
-                const stepTime = 20; // update every 20ms
-                const totalSteps = duration / stepTime;
-                const increment = target / totalSteps;
-                let current = 0;
-
-                const timer = setInterval(() => {
-                    current += increment;
-                    if (current >= target) {
-                        element.innerText = target.toLocaleString('en-US');
-                        clearInterval(timer);
-                    } else {
-                        element.innerText = Math.ceil(current).toLocaleString('en-US');
-                    }
-                }, stepTime);
-            };
-
-            const statsObserver = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        statNumbers.forEach(number => animateNumber(number));
-                        // Stop observing the stats section after animation starts
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.5 }); // Start when 50% of the stats section is visible
-
-            const statsSection = document.getElementById('stats');
-            if (statsSection) {
-                statsObserver.observe(statsSection);
-            }
-
-            // --- FAQ Accordion Logic ---
-            const faqItems = document.querySelectorAll('.faq-item');
-
-            faqItems.forEach(item => {
-                const question = item.querySelector('.faq-question');
-                question.addEventListener('click', () => {
-                    // Check if the current item is already active
-                    const isActive = item.classList.contains('active');
-
-                    // Optional: Close all other items
-                    faqItems.forEach(otherItem => {
-                        otherItem.classList.remove('active');
-                    });
-
-                    // If the clicked item was not active, open it
-                    if (!isActive) {
-                        item.classList.add('active');
-                    }
-                });
+          // ===== Stats counter when stats slide visible =====
+          const io = new IntersectionObserver((entries,obs)=>{
+            entries.forEach(en=>{
+              if(!en.isIntersecting) return;
+              en.target.querySelectorAll('.counter').forEach(el=>{
+                const to = +el.dataset.to || 0;
+                const prefix = el.dataset.prefix || '';
+                let cur = 0;
+                const steps = 48, inc = Math.max(1, Math.round(to/steps));
+                const t = setInterval(()=>{
+                  cur += inc;
+                  if(cur >= to){ cur=to; clearInterval(t); }
+                  el.textContent = prefix + cur.toLocaleString('en-US');
+                }, 20);
+              });
+              obs.unobserve(en.target);
             });
+          }, {threshold:.45});
+          const statsSlide = document.getElementById('s-stats');
+          if(statsSlide) io.observe(statsSlide);
 
-        });
+          // ===== FAQ accordion =====
+          document.getElementById('faqList')?.addEventListener('click', (e)=>{
+            const q = e.target.closest('.q'); if(!q) return;
+            q.parentElement.classList.toggle('open');
+          });
+
+          // ===== Newsletter demo =====
+          document.getElementById('nlForm')?.addEventListener('submit', (e)=>{
+            e.preventDefault();
+            const v = document.getElementById('nlEmail').value.trim();
+            document.getElementById('nlMsg').textContent = v ? ('Đã nhận: ' + v + ' (demo)') : '';
+            e.target.reset();
+          });
+
+          // disable motion if prefers-reduced-motion
+          if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+            document.querySelectorAll('.orb').forEach(o=>o.style.animation='none');
+            if(track) track.style.transition = 'none';
+          }
+        })();
     </script>
 }
-    <section id="hero" class="hero">
-        <div class="container hero-content">
-            <h1>Nền Tảng Kêu Gọi Vốn Phi Tập Trung Thế Hệ Mới</h1>
-            <p>Đầu tư minh bạch, an toàn và tiếp cận nguồn vốn toàn cầu một cách dễ dàng thông qua sức mạnh của Smart Contract.</p>
-            <div class="hero-buttons">
-            <a href="#projects" class="btn btn-primary">Khám phá Dự án</a>
-            @if(User.Identity.IsAuthenticated)
-            {
-                <a href="/Kyc/FundraiserKycView" class="btn btn-primary">Đăng kí đầu tư</a>
-            }
-            </div>
-        </div>
-    </section>
-
-    <section id="stats" class="stats-section">
-        <div class="container">
-            <div class="stat-card">
-                <h3 class="stat-number" data-target="15000000">0</h3>
-                <p>Tổng vốn đã huy động (USD)</p>
-            </div>
-            <div class="stat-card">
-                <h3 class="stat-number" data-target="8245">0</h3>
-                <p>Nhà đầu tư tham gia</p>
-            </div>
-            <div class="stat-card">
-                <h3 class="stat-number" data-target="216">0</h3>
-                <p>Dự án đã thành công</p>
-            </div>
-        </div>
-    </section>
-
-    <section id="projects" class="projects-section">
-        <div class="container">
-            <h2>Dự án nổi bật</h2>
-            <div class="project-grid">
-                <div class="project-card">
-                    <img src="https://images.unsplash.com/photo-1639755243236-4098a8c4f09d?q=80&w=1932&auto=format&fit=crop" alt="Project Image">
-                    <span class="badge new">Mới</span>
-                    <div class="card-content">
-                        <h3>DeFi QuantumLeap</h3>
-                        <div class="progress-bar">
-                            <div class="progress" style="width: 75%;"></div>
-                        </div>
-                        <div class="project-stats">
-                            <span>75%</span>
-                            <span>$150,000 / $200,000</span>
-                        </div>
-                        <p class="roi">ROI kỳ vọng: <strong>+35%</strong></p>
-                        <button class="btn btn-gradient">Đầu tư ngay</button>
-                    </div>
-                </div>
-                <div class="project-card">
-                    <img src="https://images.unsplash.com/photo-1642104793542-b69806505342?q=80&w=1932&auto=format&fit=crop" alt="Project Image">
-                    <span class="badge hot">Sắp hoàn thành</span>
-                    <div class="card-content">
-                        <h3>NFT Metaverse Hub</h3>
-                        <div class="progress-bar">
-                            <div class="progress" style="width: 92%;"></div>
-                        </div>
-                        <div class="project-stats">
-                            <span>92%</span>
-                            <span>$460,000 / $500,000</span>
-                        </div>
-                        <p class="roi">Còn <strong>3 ngày</strong></p>
-                        <button class="btn btn-gradient">Đầu tư ngay</button>
-                    </div>
-                </div>
-                <div class="project-card">
-                    <img src="https://images.unsplash.com/photo-1640578622184-45373a3c220e?q=80&w=1932&auto=format&fit=crop" alt="Project Image">
-                    <span class="badge dao">DAO Vote</span>
-                    <div class="card-content">
-                        <h3>GreenBlock Chain</h3>
-                        <div class="progress-bar">
-                            <div class="progress" style="width: 100%;"></div>
-                        </div>
-                        <div class="project-stats">
-                            <span>100%</span>
-                            <span>$100,000 / $100,000</span>
-                        </div>
-                        <p class="roi">Đang biểu quyết rút vốn</p>
-                        <button class="btn btn-secondary disabled">Xem biểu quyết</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="why-us" class="why-us-section">
-        <div class="container">
-            <h2>Tại sao chọn DAppLaunch?</h2>
-            <div class="feature-grid">
-                <div class="feature-item">
-                    <i class="fas fa-shield-halved"></i>
-                    <h3>Bảo mật bất biến</h3>
-                    <p>Mọi giao dịch được ghi nhận vĩnh viễn và không thể thay đổi trên Blockchain.</p>
-                </div>
-                <div class="feature-item">
-                    <i class="fas fa-users-cog"></i>
-                    <h3>Quy trình phân quyền</h3>
-                    <p>Nhà đầu tư có quyền biểu quyết cho các quyết định quan trọng của dự án.</p>
-                </div>
-                <div class="feature-item">
-                    <i class="fas fa-rocket"></i>
-                    <h3>Tiếp cận dễ dàng</h3>
-                    <p>Loại bỏ rào cản từ ngân hàng và các quỹ đầu tư truyền thống (VC).</p>
-                </div>
-                <div class="feature-item">
-                    <i class="fas fa-hand-holding-dollar"></i>
-                    <h3>Lợi nhuận minh bạch</h3>
-                    <p>Smart Contract tự động phân phối lợi nhuận một cách công bằng và rõ ràng.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="partners" class="partners-section">
-        <div class="container">
-            <h2>Đối tác & Đơn vị Audit</h2>
-            <div class="partners-logos">
-            <img src="https://tse3.mm.bing.net/th/id/OIP.ZrEbYSfrrORdLiIq8ZpW1QHaHa?r=0&rs=1&pid=ImgDetMain&o=7&rm=3" alt="CertiK Logo" style="width : 200px; height : 200px">
-            <img src="https://th.bing.com/th/id/OIP.Wdwv9_9SgxzzpveuIOnHOgHaHT?r=0&o=7rm=3&rs=1&pid=ImgDetMain&o=7&rm=3" alt="Chainlink Logo" style="width : 200px; height : 200px">
-            <img src="https://tse2.mm.bing.net/th/id/OIP.fiSfLveTZW17iZsRAHEgEgHaHa?r=0&rs=1&pid=ImgDetMain&o=7&rm=3" alt="Binance Labs Logo" style="width : 200px; height : 200px">
-            <img src="https://images.seeklogo.com/logo-png/43/1/quantstamp-logo-png_seeklogo-438075.png" alt="Quantstamp Logo" style="width : 200px; height : 200px">
-            </div>
-        </div>
-    </section>
-
-    <section id="newsletter" class="newsletter-section">
-        <div class="container newsletter-content">
-            <h2>Never want to miss a sale?</h2>
-            <p>Sign up for our newsletter and get the latest news and updates.</p>
-            <form class="newsletter-form">
-                <input type="email" placeholder="Nhập email của bạn..." required>
-                <button type="submit" class="btn btn-gradient">Đăng ký</button>
-            </form>
-        </div>
-    </section>
-
-    <section id="faq" class="faq-section">
-        <div class="container">
-            <h2>Câu hỏi thường gặp (FAQ)</h2>
-            <div class="faq-accordion">
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Có thể đầu tư bằng token nào?</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Hiện tại, chúng tôi hỗ trợ các loại tiền điện tử phổ biến như BNB, BUSD, và USDT trên mạng BNB Smart Chain. Chúng tôi sẽ mở rộng sang các chain và token khác trong tương lai.</p>
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Nền tảng có thu phí không?</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Chúng tôi thu một khoản phí nhỏ (thường từ 2-5%) trên tổng số vốn huy động thành công của mỗi dự án. Khoản phí này được dùng để duy trì và phát triển nền tảng. Không có phí ẩn nào khác.</p>
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Dự án có được đảm bảo thành công không?</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Đầu tư vào các dự án khởi nghiệp luôn đi kèm với rủi ro. Chúng tôi cung cấp cơ chế biểu quyết (DAO) để cộng đồng giám sát việc rút vốn, nhưng không thể đảm bảo 100% thành công cho mọi dự án. Hãy tự nghiên cứu (DYOR) trước khi đầu tư.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    <div class="popup-overlay" id="popup-overlay"></div>
-    <div id="popup" class="popup-modal">
-        <h3>Nhập thông tin của bạn</h3>
-        <input type="text" id="nameInput" placeholder="Tên" />
-        <input type="email" id="emailInput" placeholder="Email" />
-        <button id="saveProfileBtn" class="btn">Lưu</button>
-    </div>

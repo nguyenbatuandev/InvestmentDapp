@@ -7,455 +7,97 @@
 
 @section Styles {
     <style>
-        /* --- BIẾN MÀU SẮC --- */
-        :root {
-            --bg-dark: #0a0e1a;
-            --bg-light: #12182b;
-            --primary: #00aaff;
-            --primary-light: #00c6ff;
-            --secondary: #272c44;
-            --text-color: #e0e0e0;
-            --text-muted: #8a93b3;
-            --success: #00d4aa;
-            --warning: #ffb800;
-            --danger: #ff6b6b;
-            --gradient: linear-gradient(135deg, var(--primary), var(--primary-light));
-        }
+        /* Align CreatePost page to app layout variables */
+        .post-wizard-container{ max-width:1000px; margin: calc(var(--header-h,72px) + 32px) auto 64px; padding:0 }
 
-        .post-wizard-container {
-            max-width: 1000px;
-            margin: 120px auto 60px;
-            padding: 0;
-        }
+        .wizard-steps{ display:flex; align-items:center; justify-content:center; margin-bottom:22px; background:var(--glass); padding:16px; border-radius:var(--radius); border:1px solid var(--border); box-shadow:var(--shadow) }
+        .step{ display:flex; align-items:center; gap:12px; color:var(--muted); font-weight:700 }
+        .step.active{ color:var(--primary-2) }
+        .step.completed{ color:var(--success) }
+        .step-number{ min-width:40px; height:40px; border-radius:50%; background:var(--border); color:var(--muted); display:flex; align-items:center; justify-content:center; font-weight:800 }
+        .step.active .step-number{ background:var(--primary-2); color:#04121b; box-shadow:0 8px 26px rgba(0,170,255,.08) }
+        .step.completed .step-number{ background:var(--success); color:#04121b }
+        .step-connector{ width:80px; height:2px; background:var(--border); margin:0 16px }
 
-        /* Progress Steps */
-        .wizard-steps {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 40px;
-            background: var(--bg-light);
-            padding: 20px;
-            border-radius: 16px;
-            border: 1px solid var(--secondary);
-        }
+        .campaign-info-card{ background:var(--gradient); border-radius:var(--radius); padding:20px; margin-bottom:20px; color:var(--fg); box-shadow:0 8px 32px rgba(0,170,255,.06) }
+        .campaign-info-card h3{ margin:0 0 8px; font-size:1.15rem }
+        .campaign-meta{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:12px }
+        .meta-item{ background:var(--card); padding:10px 12px; border-radius:10px; border:1px solid var(--border) }
+        .meta-label{ font-size:.85rem; color:var(--muted); margin-bottom:4px }
+        .meta-value{ font-weight:800; color:var(--primary-2) }
 
-        .step {
-            display: flex;
-            align-items: center;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
+        .form-container{ background:var(--glass); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; box-shadow:var(--shadow) }
+        .form-header{ background:var(--gradient); padding:20px 18px; text-align:left; color:var(--fg); display:flex; align-items:center; gap:12px }
+        .form-header h2{ margin:0; font-size:1.25rem; font-weight:800 }
+        .form-header p{ margin:0; color:var(--muted); font-size:.95rem }
+        .form-body{ padding:20px 18px }
 
-            .step.active {
-                color: var(--primary);
-            }
+        .post-type-selector{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:18px }
+        .post-type-option{ background:var(--card); border:2px solid var(--border); border-radius:12px; padding:16px; cursor:pointer; transition:all .2s ease; text-align:center; position:relative; overflow:hidden }
+        .post-type-option::before{ content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg, transparent, rgba(0,170,255,.08), transparent); transition:left .45s }
+        .post-type-option:hover::before{ left:100% }
+        .post-type-option:hover{ border-color:var(--primary-2); background:linear-gradient(90deg, rgba(0,170,255,.04), rgba(0,170,255,.02)); transform:translateY(-3px); box-shadow:0 6px 20px rgba(0,0,0,0.15) }
+        .post-type-option.selected{ border-color:var(--primary-2); border-width:2px; background:linear-gradient(90deg, rgba(0,170,255,.06), rgba(0,170,255,.04)); transform:translateY(-3px); box-shadow:0 10px 30px rgba(0,170,255,0.15) }
+        .post-type-option input[type="radio"]{ display:none }
+        .post-type-icon{ font-size:2.2rem; margin-bottom:10px; color:var(--primary-2); transition:all .2s ease }
+        .post-type-option:hover .post-type-icon, .post-type-option.selected .post-type-icon{ transform:scale(1.1) }
+        .post-type-title{ font-weight:800; margin-bottom:8px; color:var(--fg); font-size:1.1rem }
+        .post-type-desc{ font-size:.9rem; color:var(--muted) }
 
-            .step.completed {
-                color: var(--success);
-            }
+        .form-group{ margin-bottom:16px }
+        .form-label{ display:block; margin-bottom:6px; font-weight:700; color:var(--fg); font-size:.92rem }
+        .required{ color:var(--danger) }
 
-        .step-number {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--secondary);
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            margin-right: 10px;
-            transition: all 0.3s ease;
-        }
+        .form-control{ width:100%; padding:10px 12px; background:var(--card); border:1px solid var(--border); border-radius:10px; color:var(--fg); font-size:14px; transition:all .12s }
+        .form-control:focus{ outline:none; border-color:var(--primary-2); box-shadow:0 8px 26px rgba(0,170,255,.06) }
 
-        .step.active .step-number {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 0 20px rgba(0, 170, 255, 0.4);
-        }
+    .editor-container{ border:1px solid var(--border); border-radius:10px; overflow:hidden; transition:all .2s ease; margin-bottom:8px; background:var(--card) }
+    .editor-container:focus-within{ border-color:var(--primary-2); box-shadow:0 8px 26px rgba(0,170,255,.12) }
+    .editor-placeholder{ background:var(--card); min-height:360px; padding:12px; color:var(--fg) }
+        
+        /* CKEditor specific styles for dark theme integration */
+        .cke_chrome { border-color: transparent !important; box-shadow: none !important; background: var(--card) !important; }
+        .cke_top { background: var(--card) !important; border-bottom: 1px solid var(--border) !important; }
+        .cke_bottom { background: var(--card) !important; border-top: 1px solid var(--border) !important; }
+        .cke_reset_all, .cke_reset_all * { color: var(--fg) !important; }
+        .cke_combo_button, .cke_button { background: var(--card) !important; border-color: var(--border) !important; }
+        .cke_combo_button:hover, .cke_button:hover { background: var(--bg-light) !important; border-color: var(--primary-2) !important; }
+        .cke_button_on { background: var(--primary-2) !important; color: #04121b !important; }
+        .cke_button_icon { filter: brightness(1.5) contrast(1.2); }
+        .cke_dialog_body { background: var(--card) !important; border: 1px solid var(--border) !important; color: var(--fg) !important; }
+        .cke_dialog_title { background: var(--gradient) !important; color: var(--fg) !important; }
+        .cke_dialog_footer { background: var(--card) !important; }
+        .cke_dialog_tab { background: var(--card) !important; color: var(--fg) !important; border-color: var(--border) !important; }
+        .cke_dialog_tab_selected { background: var(--primary-2) !important; color: #04121b !important; }
+        .cke_combo_text { color: var(--fg) !important; }
+        .cke_combo_arrow { border-top-color: var(--fg) !important; }
+        .cke_panel { background: var(--card) !important; border-color: var(--border) !important; }
+        .cke_list a { color: var(--fg) !important; }
+        .cke_list a:hover { background: var(--bg-light) !important; }
 
-        .step.completed .step-number {
-            background: var(--success);
-            color: white;
-        }
+        .tags-input{ display:flex; flex-wrap:wrap; gap:8px; min-height:44px; padding:8px; background:var(--card); border:1px solid var(--border); border-radius:10px }
+        .tag{ background:var(--primary-2); color:#04121b; padding:5px 10px; border-radius:20px; font-size:.85rem; display:flex; align-items:center; gap:6px }
+        .tag-remove{ cursor:pointer; font-weight:800 }
 
-        .step-connector {
-            width: 80px;
-            height: 2px;
-            background: var(--secondary);
-            margin: 0 20px;
-        }
+        .checkbox-group{ display:flex; align-items:center; gap:10px; padding:10px; background:var(--card); border-radius:10px; border:1px solid var(--border); cursor:pointer }
+        .checkbox-group:hover{ border-color:var(--primary-2) }
+        .checkbox-group input[type="checkbox"]{ width:18px; height:18px; accent-color:var(--primary-2) }
 
-        .step.completed + .step-connector {
-            background: var(--success);
-        }
+        .form-actions{ background:transparent; padding:14px 18px; display:flex; justify-content:space-between; align-items:center }
+        .btn-wizard{ padding:10px 16px; border-radius:10px; font-weight:800; display:inline-flex; align-items:center; gap:8px; text-decoration:none }
+        .btn-primary-wizard{ background:var(--gradient); color:var(--fg); box-shadow:0 10px 30px rgba(0,170,255,.06) }
+        .btn-primary-wizard:hover{ transform:translateY(-2px) }
+        .btn-secondary-wizard{ background:var(--card); color:var(--fg); border:1px solid var(--border); padding:9px 14px }
 
-        /* Campaign Info Card */
-        .campaign-info-card {
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            border-radius: 16px;
-            padding: 25px;
-            margin-bottom: 30px;
-            color: white;
-            box-shadow: 0 8px 32px rgba(0, 170, 255, 0.3);
-        }
+        .alert{ padding:12px 14px; border-radius:10px; margin-bottom:12px; border-left:4px solid }
+        .alert-danger{ background:rgba(255,107,107,.06); border-left-color:var(--danger); color:var(--danger) }
+        .text-danger{ color:var(--danger); font-size:.85rem; margin-top:6px; display:none; align-items:center; gap:6px }
+        .text-danger:not(:empty){ display:flex }
 
-            .campaign-info-card h3 {
-                margin-bottom: 15px;
-                font-size: 1.3rem;
-            }
+        @@media (max-width:768px){ .wizard-steps{ flex-direction:column; gap:12px } .step-connector{ width:2px;height:30px;margin:10px 0 } .post-type-selector{ grid-template-columns:1fr } .campaign-meta{ grid-template-columns:1fr } .form-body,.form-actions{ padding:14px } .form-actions{ flex-direction:column; gap:12px } .btn-wizard{ width:100%; justify-content:center } }
 
-        .campaign-meta {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .meta-item {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px 15px;
-            border-radius: 8px;
-            backdrop-filter: blur(10px);
-        }
-
-        .meta-label {
-            font-size: 0.85rem;
-            opacity: 0.8;
-            margin-bottom: 2px;
-        }
-
-        .meta-value {
-            font-weight: 600;
-        }
-
-        /* Main Form Container */
-        .form-container {
-            background: var(--bg-light);
-            border-radius: 20px;
-            border: 1px solid var(--secondary);
-            overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        .form-header {
-            background: var(--gradient);
-            padding: 30px;
-            text-align: center;
-            color: white;
-        }
-
-            .form-header h2 {
-                font-size: 2rem;
-                margin-bottom: 10px;
-                font-weight: 700;
-            }
-
-        .form-body {
-            padding: 40px;
-        }
-
-        /* Post Type Selector */
-        .post-type-selector {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .post-type-option {
-            background: var(--bg-dark);
-            border: 2px solid var(--secondary);
-            border-radius: 12px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-            .post-type-option::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: -100%;
-                width: 100%;
-                height: 100%;
-                background: linear-gradient(90deg, transparent, rgba(0, 170, 255, 0.1), transparent);
-                transition: left 0.5s ease;
-            }
-
-            .post-type-option:hover::before {
-                left: 100%;
-            }
-
-            .post-type-option:hover,
-            .post-type-option.selected {
-                border-color: var(--primary);
-                background: rgba(0, 170, 255, 0.1);
-                transform: translateY(-2px);
-                box-shadow: 0 5px 20px rgba(0, 170, 255, 0.2);
-            }
-
-            .post-type-option input[type="radio"] {
-                display: none;
-            }
-
-        .post-type-icon {
-            font-size: 2rem;
-            margin-bottom: 10px;
-            display: block;
-            color: var(--primary);
-        }
-
-        .post-type-title {
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: var(--text-color);
-        }
-
-        .post-type-desc {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        /* Form Elements */
-        .form-group {
-            margin-bottom: 25px;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: var(--text-color);
-            font-size: 0.95rem;
-        }
-
-        .required {
-            color: var(--danger);
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 15px 18px;
-            background: var(--bg-dark);
-            border: 2px solid var(--secondary);
-            border-radius: 12px;
-            color: var(--text-color);
-            font-size: 16px;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-
-            .form-control:focus {
-                outline: none;
-                border-color: var(--primary);
-                box-shadow: 0 0 20px rgba(0, 170, 255, 0.2);
-                transform: translateY(-1px);
-            }
-
-        /* Rich Text Editor Area */
-        .editor-container {
-            border: 2px solid var(--secondary);
-            border-radius: 12px;
-            overflow: hidden;
-            transition: border-color 0.3s ease;
-        }
-
-            .editor-container:focus-within {
-                border-color: var(--primary);
-                box-shadow: 0 0 20px rgba(0, 170, 255, 0.2);
-            }
-
-        .editor-placeholder {
-            background: var(--bg-dark);
-            min-height: 400px;
-            padding: 20px;
-            color: var(--text-color);
-        }
-
-        /* Tags Input */
-        .tags-input {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            min-height: 50px;
-            padding: 10px;
-            background: var(--bg-dark);
-            border: 2px solid var(--secondary);
-            border-radius: 12px;
-            cursor: text;
-        }
-
-        .tag {
-            background: var(--primary);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .tag-remove {
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        /* Checkbox Styling */
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 15px;
-            background: var(--bg-dark);
-            border-radius: 12px;
-            border: 2px solid var(--secondary);
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-            .checkbox-group:hover {
-                border-color: var(--primary);
-            }
-
-            .checkbox-group input[type="checkbox"] {
-                width: 20px;
-                height: 20px;
-                accent-color: var(--primary);
-            }
-
-        /* Form Actions */
-        .form-actions {
-            background: var(--bg-dark);
-            padding: 30px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .btn-wizard {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary-wizard {
-            background: var(--gradient);
-            color: white;
-            box-shadow: 0 4px 15px rgba(0, 170, 255, 0.3);
-        }
-
-            .btn-primary-wizard:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 25px rgba(0, 170, 255, 0.4);
-            }
-
-        .btn-secondary-wizard {
-            background: var(--secondary);
-            color: var(--text-color);
-            border: 2px solid var(--secondary);
-        }
-
-            .btn-secondary-wizard:hover {
-                background: transparent;
-                border-color: var(--primary);
-                color: var(--primary);
-            }
-
-        /* Alert Styling */
-        .alert {
-            padding: 15px 20px;
-            border-radius: 12px;
-            margin-bottom: 25px;
-            border-left: 4px solid;
-        }
-
-        .alert-danger {
-            background: rgba(255, 107, 107, 0.1);
-            border-left-color: var(--danger);
-            color: var(--danger);
-        }
-
-        .text-danger {
-            color: var(--danger);
-            font-size: 0.85rem;
-            margin-top: 5px;
-            display: none; /* Hide by default */
-            align-items: center;
-            gap: 5px;
-        }
-
-        /* Show validation errors only when they contain actual error text */
-        .text-danger:not(:empty) {
-            display: flex;
-        }
-
-        /* Responsive */
-        @@media (max-width: 768px) {
-            .wizard-steps {
-                flex-direction: column;
-                gap: 15px;
-            }
-
-            .step-connector {
-                width: 2px;
-                height: 30px;
-                margin: 10px 0;
-            }
-
-            .post-type-selector {
-                grid-template-columns: 1fr;
-            }
-
-            .campaign-meta {
-                grid-template-columns: 1fr;
-            }
-
-            .form-body,
-            .form-actions {
-                padding: 20px;
-            }
-
-            .form-actions {
-                flex-direction: column;
-                gap: 15px;
-            }
-
-            .btn-wizard {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-
-        /* Animation */
-        .form-container {
-            animation: slideInUp 0.6s ease-out;
-        }
-
-        @@keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+        /* animations */
+        @@keyframes slideInUp{ from{ opacity:0; transform:translateY(12px) } to{ opacity:1; transform:none } }
     </style>
 }
 
@@ -650,202 +292,131 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 
+    <!-- Nếu layout có CKEditor cũ, vô hiệu hóa để khỏi báo lỗi -->
+    <script>
+    (function() {
+        if (window.CKEDITOR) {
+            try {
+                CKEDITOR.disableAutoInline = true;
+                // Gỡ plugin gây lỗi nếu ai đó set global config
+                CKEDITOR.config.extraPlugins = (CKEDITOR.config.extraPlugins || '')
+                    .split(',')
+                    .map(function(s){ return s.trim(); })
+                    .filter(function(p){ return p && p !== 'image2' && p !== 'tableresize'; })
+                    .join(',');
+                // Hủy mọi instance nếu có
+                for (var k in CKEDITOR.instances) {
+                    if (CKEDITOR.instances[k]) CKEDITOR.instances[k].destroy(true);
+                }
+            } catch (e) { /* ignore */ }
+        }
+    })();
+    </script>
+
     <!-- TinyMCE Editor -->
     <script src="https://cdn.jsdelivr.net/npm/tinymce@7.1.0/tinymce.min.js" referrerpolicy="origin"></script>
 
     <script>
-        // Initialize TinyMCE with Vietnamese language and better configuration
+    document.addEventListener('DOMContentLoaded', function () {
         tinymce.init({
             selector: '#tinymce-editor',
             height: 500,
-        language: 'en',
-        menubar: 'file edit view insert format tools table help',
-        plugins: [
-            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-            'insertdatetime', 'media', 'table', 'help', 'wordcount', 'emoticons',
-            'codesample', 'pagebreak', 'nonbreaking'
+            language: 'en',
+            menubar: 'file edit view insert format tools table help',
+            plugins: [
+                'advlist','autolink','lists','link','image','charmap','preview',
+                'anchor','searchreplace','visualblocks','code','fullscreen',
+                'insertdatetime','media','table','help','wordcount','emoticons',
+                'codesample','pagebreak','nonbreaking'
             ],
-            toolbar: 'undo redo | styles | bold italic underline strikethrough | ' +
-                    'alignleft aligncenter alignright alignjustify | ' +
-                    'bullist numlist outdent indent | ' +
-                    'link image media table | ' +
-                    'forecolor backcolor | ' +
-                    'emoticons charmap | ' +
-                    'codesample | ' +
-                    'preview code | ' +
-                    'fullscreen help',
-
-            content_style: `
-                body {
-                    font-family: 'Poppins', Arial, sans-serif;
-                    font-size: 16px;
-                    line-height: 1.6;
-                    background-color: #0a0e1a;
-                    color: #e0e0e0;
-                    margin: 20px;
-                }
-                h1, h2, h3, h4, h5, h6 {
-                    color: #ffffff;
-                    margin-top: 20px;
-                    margin-bottom: 10px;
-                }
-                p {
-                    margin-bottom: 15px;
-                }
-                a {
-                    color: #00aaff;
-                }
-                blockquote {
-                    border-left: 4px solid #00aaff;
-                    margin: 20px 0;
-                    padding-left: 20px;
-                    color: #8a93b3;
-                    font-style: italic;
-                }
-                code {
-                    background-color: #12182b;
-                    color: #00aaff;
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                }
-                pre {
-                    background-color: #12182b;
-                    border: 1px solid #272c44;
-                    border-radius: 8px;
-                    padding: 15px;
-                    overflow-x: auto;
-                }
-            `,
+            toolbar:
+                'undo redo | styles | bold italic underline strikethrough | ' +
+                'alignleft aligncenter alignright alignjustify | ' +
+                'bullist numlist outdent indent | ' +
+                'link image media table | forecolor backcolor | ' +
+                'emoticons charmap | codesample | preview code | fullscreen help',
 
             skin: 'oxide-dark',
             content_css: 'dark',
 
-            // Placeholder text
-            placeholder: 'Viết nội dung bài viết tại đây...\n\nMột số gợi ý:\n• Giới thiệu về dự án và tầm nhìn\n• Mục tiêu và kế hoạch sử dụng vốn\n• Đội ngũ phát triển và kinh nghiệm\n• Lộ trình phát triển chi tiết\n• Các thành tựu đã đạt được',
+            // CSS trong khung soạn thảo (có rule cho bảng)
+            content_style: `
+                body{font-family:Poppins,Arial,sans-serif;font-size:16px;line-height:1.6;background:#0a0e1a;color:#e0e0e0;margin:20px}
+                h1,h2,h3,h4,h5,h6{color:#fff;margin:20px 0 10px}
+                a{color:#00aaff}
+                blockquote{border-left:4px solid #00aaff;margin:20px 0;padding-left:20px;color:#8a93b3;font-style:italic}
+                code{background:#12182b;color:#00aaff;padding:2px 6px;border-radius:4px}
+                pre{background:#12182b;border:1px solid #272c44;border-radius:8px;padding:15px;overflow-x:auto}
+                table{border-collapse:collapse;width:100%;margin:12px 0}
+                th,td{border:1px solid #2d3b55;padding:8px 10px;vertical-align:top}
+                th{background:#162136;color:#e6e9ef;font-weight:700}
+                tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+            `,
 
-            // Enhanced configuration
+            // Khác
             branding: false,
             promotion: false,
-            // Add GPL license key to avoid evaluation warning in console
             license_key: 'gpl',
-            resize: true,
-            statusbar: true,
-
-            // Image upload (nếu cần) - keep disabled by default
             automatic_uploads: false,
-
-            // Content filtering
             paste_data_images: true,
-            paste_as_text: false,
-
-            // Advanced settings
             verify_html: false,
             cleanup: true,
             convert_urls: false,
 
-            // Custom formats
-            style_formats: [
-                {
-                    title: 'Tiêu đề lớn',
-                    block: 'h1'
-                },
-                {
-                    title: 'Tiêu đề phụ',
-                    block: 'h2'
-                },
-                {
-                    title: 'Tiêu đề nhỏ',
-                    block: 'h3'
-                },
-                {
-                    title: 'Đoạn văn',
-                    block: 'p'
-                },
-                {
-                    title: 'Trích dẫn',
-                    block: 'blockquote'
-                },
-                {
-                    title: 'Code inline',
-                    inline: 'code'
-                }
-            ],
-
-            // File browser callback for images
-            file_picker_callback: function(callback, value, meta) {
+            // File picker ảnh (base64, đủ dùng dev)
+            file_picker_callback: function (cb, value, meta) {
                 if (meta.filetype === 'image') {
                     var input = document.createElement('input');
-                    input.setAttribute('type', 'file');
-                    input.setAttribute('accept', 'image/*');
-
-                    input.onchange = function() {
-                        var file = this.files[0];
-                        var reader = new FileReader();
-
-                        reader.onload = function() {
-                            var id = 'blobid' + (new Date()).getTime();
-                            var blobCache = tinymce.activeEditor.editorUpload.blobCache;
-                            var base64 = reader.result.split(',')[1];
-                            var blobInfo = blobCache.create(id, file, base64);
+                    input.type = 'file'; input.accept = 'image/*';
+                    input.onchange = function () {
+                        var file = this.files[0], reader = new FileReader();
+                        reader.onload = function () {
+                            const id = 'blobid' + (new Date()).getTime();
+                            const blobCache = tinymce.activeEditor.editorUpload.blobCache;
+                            const base64 = reader.result.split(',')[1];
+                            const blobInfo = blobCache.create(id, file, base64);
                             blobCache.add(blobInfo);
-
-                            callback(blobInfo.blobUri(), { title: file.name });
+                            cb(blobInfo.blobUri(), { title: file.name });
                         };
                         reader.readAsDataURL(file);
                     };
-
                     input.click();
                 }
             },
 
-            // Setup callback
-            setup: function(editor) {
-                editor.on('init', function() {
-                    console.log('TinyMCE editor đã được khởi tạo thành công');
-                });
+            setup: function (editor) {
+                editor.on('init', function(){ console.log('TinyMCE ready'); });
+                editor.on('change', function(){ editor.save(); });
+            },
 
-                editor.on('change', function() {
-                    editor.save();
-                });
-            }
+            // Placeholder
+            placeholder: 'Viết nội dung bài viết tại đây...'
         });
 
-        // Post type selection
-        document.querySelectorAll('.post-type-option').forEach(option => {
-            option.addEventListener('click', function() {
-                document.querySelectorAll('.post-type-option').forEach(opt => opt.classList.remove('selected'));
+        // Chọn loại bài viết (giữ nguyên UX)
+        document.querySelectorAll('.post-type-option').forEach(function (opt) {
+            opt.addEventListener('click', function () {
+                document.querySelectorAll('.post-type-option').forEach(function (o){ o.classList.remove('selected'); });
                 this.classList.add('selected');
-                const radio = this.querySelector('input[type="radio"]');
-                if (radio) radio.checked = true;
+                var radio = this.querySelector('input[type="radio"]'); if (radio) radio.checked = true;
             });
         });
 
-        // Initialize selected state
-        document.addEventListener('DOMContentLoaded', function() {
-            const checkedRadio = document.querySelector('input[name="PostType"]:checked');
-            if (checkedRadio) {
-                checkedRadio.closest('.post-type-option').classList.add('selected');
+        // Submit
+        var form = document.getElementById('postForm');
+        var submitBtn = document.getElementById('submitBtn');
+        form.addEventListener('submit', function (e) {
+            tinymce.triggerSave();
+            var ed = tinymce.get('tinymce-editor');
+            var content = ed ? ed.getContent() : '';
+            if (!content.trim()) {
+                e.preventDefault();
+                alert('Vui lòng nhập nội dung bài viết!');
+                return false;
             }
-
-            // Form submission handling
-            const form = document.getElementById('postForm');
-            const submitBtn = document.getElementById('submitBtn');
-
-            form.addEventListener('submit', function(e) {
-                // Get content from TinyMCE and validate
-                tinymce.triggerSave();
-
-                const content = tinymce.get('tinymce-editor').getContent();
-                if (!content || content.trim() === '') {
-                    e.preventDefault();
-                    alert('Vui lòng nhập nội dung bài viết!');
-                    return false;
-                }
-
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang Đăng Bài...';
-                submitBtn.disabled = true;
-            });
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang Đăng Bài...';
+            submitBtn.disabled = true;
         });
+    });
     </script>
 }

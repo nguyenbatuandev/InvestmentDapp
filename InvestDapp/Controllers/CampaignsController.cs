@@ -1,26 +1,33 @@
 ﻿using InvestDapp.Application.CampaignService;
+using InvestDapp.Application.MessageService;
 using InvestDapp.Application.UserService;
 using InvestDapp.Shared.Common.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace InvestDapp.Controllers
 {
     [Authorize]
     public class CampaignsController : Controller
     {
-        private readonly ICampaignPostService _campaignPostService;
-        private readonly IUserService _userService;
+    private readonly ICampaignPostService _campaignPostService;
+    private readonly IUserService _userService;
+    private readonly IConversationService _conversationService;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
         public CampaignsController(
             ICampaignPostService campaignPostService,
-            IUserService userService)
+            IUserService userService,
+            IConversationService conversationService,
+            IServiceScopeFactory serviceScopeFactory)
         {
             _campaignPostService = campaignPostService;
             _userService = userService;
+            _conversationService = conversationService;
+            _serviceScopeFactory = serviceScopeFactory;
         }
 
-        [Authorize(Roles = "KycVerified,Admin")]
         public async Task<IActionResult> Index()
         {
             try
@@ -278,18 +285,42 @@ namespace InvestDapp.Controllers
 
                 var post = await _campaignPostService.CreatePostAsync(request, wallet);
 
-                // Kiểm tra xem đây có phải bài viết đầu tiên không
+                // Lấy thông tin user để có UserId
+                var user = await _userService.GetUserByWalletAddressAsync(wallet);
+                if (user != null)
+                {
+                    var postUrl = Url.Action("PostDetails", "Campaigns", new { id = post.Id }, Request.Scheme);
+                    
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            using var scope = _serviceScopeFactory.CreateScope();
+                            var convoService = scope.ServiceProvider.GetRequiredService<IConversationService>();
+                            await convoService.SendPostNotificationToCampaignGroupAsync(
+                                request.CampaignId,
+                                user.Data.ID,
+                                post.Title,
+                                postUrl);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error sending post notification: {ex.Message}");
+                        }
+                    });
+                }
+
                 var campaign = await _campaignPostService.GetCampaignByIdAsync(request.CampaignId);
                 var allPosts = await _campaignPostService.GetPostsByCampaignIdAsync(request.CampaignId);
-                bool isFirstPost = allPosts.Count() == 1; // Chỉ có 1 bài viết là bài vừa tạo
+                bool isFirstPost = allPosts.Count() == 1;
 
                 if (isFirstPost)
                 {
-                    TempData["SuccessMessage"] = "Bài viết đầu tiên đã được tạo và tự động phê duyệt! Chiến dịch hiện đang chờ admin duyệt.";
+                    TempData["SuccessMessage"] = "Bài viết đầu tiên đã được tạo và tự động phê duyệt! Chiến dịch hiện đang chờ admin duyệt. Thông báo đã được gửi vào group chat.";
                 }
                 else
                 {
-                    TempData["SuccessMessage"] = "Bài viết đã được tạo thành công và đang chờ admin duyệt.";
+                    TempData["SuccessMessage"] = "Bài viết đã được tạo thành công và đang chờ admin duyệt. Thông báo đã được gửi vào group chat.";
                 }
 
                 return RedirectToAction("AwaitingApproval", new { campaignId = request.CampaignId });
@@ -358,7 +389,7 @@ namespace InvestDapp.Controllers
                 TempData["ErrorMessage"] = ex.Message;
                 return RedirectToAction("Index", "Home");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 if (Request.Headers["Content-Type"].ToString().Contains("application/json") || 
                     Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
@@ -410,6 +441,88 @@ namespace InvestDapp.Controllers
             ViewBag.HasMorePages = posts.Count() == pageSize;
 
             return View(posts);
+        }
+
+        // API: Get latest investments for real-time updates
+        [HttpGet("api/campaigns/{id}/investments/latest")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetLatestInvestments(int id, DateTime? since = null)
+        {
+            try
+            {
+                var campaign = await _campaignPostService.GetCampaignByIdAsync(id);
+                if (campaign == null)
+                    return NotFound();
+
+                var cutoffTime = since ?? DateTime.UtcNow.AddMinutes(-5); // Default: last 5 minutes
+                
+                if (campaign.Investments == null)
+                {
+                    return Json(new List<object>());
+                }
+
+                var latestInvestments = campaign.Investments
+                    .Where(i => i.Timestamp > cutoffTime)
+                    .OrderByDescending(i => i.Timestamp)
+                    .Select(i => new { 
+                        InvestorAddress = i.InvestorAddress, 
+                        Amount = i.Amount, 
+                        Timestamp = i.Timestamp, 
+                        TransactionHash = i.TransactionHash 
+                    })
+                    .ToList();
+
+                return Json(latestInvestments);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        // GET: /api/campaigns/{id}/summary - returns totals + latest investments for realtime UI
+        [HttpGet("api/campaigns/{id}/summary")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetCampaignSummary(int id, DateTime? since = null)
+        {
+            try
+            {
+                var campaign = await _campaignPostService.GetCampaignByIdAsync(id);
+                if (campaign == null) return NotFound();
+
+                var cutoffTime = since ?? DateTime.UtcNow.AddMinutes(-5);
+
+                List<object> latestInvestments;
+                if (campaign.Investments == null)
+                {
+                    latestInvestments = new List<object>();
+                }
+                else
+                {
+                    latestInvestments = campaign.Investments
+                        .Where(i => i.Timestamp > cutoffTime)
+                        .OrderByDescending(i => i.Timestamp)
+                        .Select(i => (object)new {
+                            InvestorAddress = i.InvestorAddress,
+                            Amount = i.Amount,
+                            Timestamp = i.Timestamp,
+                            TransactionHash = i.TransactionHash
+                        })
+                        .ToList();
+                }
+
+                var summary = new {
+                    currentRaised = campaign.CurrentRaisedAmount,
+                    investorCount = campaign.InvestorCount,
+                    latest = latestInvestments
+                };
+
+                return Json(summary);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
     }
 }
