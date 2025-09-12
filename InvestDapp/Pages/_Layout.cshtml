@@ -420,6 +420,41 @@
             color: var(--fg);
             padding: 0 12px;
         }
+
+        dialog#newWalletModal::backdrop {
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+        }
+
+        dialog#newWalletModal {
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        dialog#newWalletModal form {
+            background: linear-gradient(180deg, rgba(6,8,12,0.92), rgba(6,8,12,0.86));
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 14px;
+            padding: 16px;
+            color: var(--fg);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+
+        dialog#newWalletModal .nl-input {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.04);
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: var(--fg);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        dialog#newWalletModal .nl-input::placeholder {
+            color: var(--muted);
+            opacity: 0.95;
+        }
     </style>
 
     @RenderSection("Styles", required: false)
@@ -496,7 +531,7 @@
 
     <!-- Modal ví mới -->
     <dialog id="newWalletModal">
-        <form method="dialog" id="newWalletForm" style="min-width:320px; background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); border:1px solid var(--border); border-radius:14px; padding:16px; color:var(--fg)">
+        <form method="dialog" id="newWalletForm" style="min-width:320px;">
             <h3>Chào mừng ví mới</h3>
             <p class="text-muted">Hoàn tất thông tin để đồng bộ hồ sơ.</p>
             <div style="display:grid; gap:8px; margin:10px 0">
@@ -617,16 +652,18 @@
             if(n>0) try{ bell?.play?.(); }catch{}
           }
 
-          async function getUserProfile(){
-            try{
-              const r=await fetch('/User/GetUserProfile',{cache:'no-store'});
-              if(!r.ok) return;
-              const p=await r.json();
-              if(p?.avatar) avatarImg.src=p.avatar;
-              if(p?.avatarUrl) avatarImg.src=p.avatarUrl;
-              if(p?.roles?.includes?.('Admin')) adminLink.classList.remove('hidden');
-            }catch{}
-          }
+                    // Fetch profile for a specific wallet if provided, otherwise fallback to server-side session profile
+                    async function getUserProfile(walletAddr){
+                        try{
+                            const url = walletAddr ? ('/User/GetUserProfile?wallet='+encodeURIComponent(walletAddr)) : '/User/GetUserProfile';
+                            const r = await fetch(url, { cache: 'no-store' });
+                            if(!r.ok) return;
+                            const p = await r.json();
+                            if(p?.avatar) avatarImg.src = p.avatar;
+                            if(p?.avatarUrl) avatarImg.src = p.avatarUrl;
+                            if(p?.roles?.includes?.('Admin')) adminLink.classList.remove('hidden');
+                        }catch(e){ console.warn('getUserProfile error', e); }
+                    }
 
           async function checkWalletOnServer(address){
             try{
@@ -647,32 +684,73 @@
             }catch{}
           }
 
-          function setConnected(connected,address){
-            show(connectBtn, !connected);
-            show(walletDropdown, connected);
-            if(connected){
-              shortAddr.textContent=shorten(address);
-              setupRealtime();
-              getUserProfile();
-            }else{
-              stopRealtime();
-              setUnread(0);
-            }
-          }
+                    function setConnected(connected,address){
+                        show(connectBtn, !connected);
+                        show(walletDropdown, connected);
+                        if(connected){
+                            shortAddr.textContent = shorten(address);
+                            setupRealtime();
+                            getUserProfile(address);
+                        }else{
+                            stopRealtime();
+                            setUnread(0);
+                        }
+                    }
 
-          async function connectWallet(){
-            if(!window.ethereum){ alert('⚠️ Cần MetaMask để kết nối ví.'); return; }
-            try{
-              const accounts = await window.ethereum.request({ method:'eth_requestAccounts' });
-              const addr = (accounts&&accounts[0])||'';
-              localStorage.setItem('connectedWallet', addr);
-              const info = await checkWalletOnServer(addr);
-              if(info && (info.isNew===true || info.exists===false) && typeof newWalletModal?.showModal==='function'){
-                newWalletModal.showModal();
-              }
-              setConnected(true, addr);
-            }catch(err){ console.warn(err); }
-          }
+                    // Ensure the provider is set to BSC Testnet (chainId 0x61). Try to switch, and if missing, add the chain.
+                    async function ensureBscTestnet(){
+                        if(!window.ethereum) return false;
+                        const targetChainId = '0x61'; // BSC Testnet
+                        try{
+                            const current = await window.ethereum.request({ method: 'eth_chainId' }).catch(()=>null);
+                            if(current === targetChainId) return true;
+                            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params:[{ chainId: targetChainId }] });
+                            return true;
+                        }catch(switchError){
+                            // 4902 means the chain has not been added to MetaMask
+                            try{
+                                if(switchError && (switchError.code === 4902 || switchError.message?.includes('Unrecognized chain'))){
+                                    await window.ethereum.request({
+                                        method: 'wallet_addEthereumChain',
+                                        params: [{
+                                            chainId: '0x61',
+                                            chainName: 'BSC Testnet',
+                                            nativeCurrency: { name: 'Binance Coin', symbol: 'tBNB', decimals: 18 },
+                                            rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/','https://data-seed-prebsc-2-s1.binance.org:8545/'],
+                                            blockExplorerUrls: ['https://testnet.bscscan.com']
+                                        }]
+                                    });
+                                    // after adding, try switching again
+                                    await window.ethereum.request({ method: 'wallet_switchEthereumChain', params:[{ chainId: '0x61' }] });
+                                    return true;
+                                }
+                            }catch(addErr){
+                                console.warn('Failed to add BSC Testnet to wallet', addErr);
+                                return false;
+                            }
+                            console.warn('Failed to switch to BSC Testnet', switchError);
+                            return false;
+                        }
+                    }
+
+                    async function connectWallet(){
+                        if(!window.ethereum){ alert('⚠️ Cần MetaMask để kết nối ví.'); return; }
+                        try{
+                            const ok = await ensureBscTestnet();
+                            if(!ok){
+                                alert('Vui lòng chuyển mạng sang BSC Testnet trong MetaMask rồi thử lại.');
+                                return;
+                            }
+                            const accounts = await window.ethereum.request({ method:'eth_requestAccounts' });
+                            const addr = (accounts&&accounts[0])||'';
+                            localStorage.setItem('connectedWallet', addr);
+                            const info = await checkWalletOnServer(addr);
+                            if(info && (info.isNew===true || info.exists===false) && typeof newWalletModal?.showModal==='function'){
+                                newWalletModal.showModal();
+                            }
+                            setConnected(true, addr);
+                        }catch(err){ console.warn(err); }
+                    }
 
           connectBtn?.addEventListener('click', connectWallet);
           trigger?.addEventListener('click', (e)=>{ e.stopPropagation(); menu.classList.toggle('open'); trigger.setAttribute('aria-expanded', menu.classList.contains('open')?'true':'false'); });
@@ -715,10 +793,22 @@
                             setConnected(false);
                         }
                     }
-          if(window.ethereum){
-            window.ethereum.on?.('accountsChanged', ()=>location.reload());
-            window.ethereum.on?.('chainChanged', ()=>location.reload());
-          }
+                    if(window.ethereum){
+                        // When user changes accounts, update UI to reflect the new active account without forcing a full reload.
+                        window.ethereum.on?.('accountsChanged', (accounts)=>{
+                            try{
+                                const a = (accounts && accounts[0]) || null;
+                                if(a){
+                                    localStorage.setItem('connectedWallet', a);
+                                    setConnected(true, a);
+                                }else{
+                                    localStorage.removeItem('connectedWallet');
+                                    setConnected(false);
+                                }
+                            }catch(e){ console.warn('accountsChanged handler error', e); }
+                        });
+                        window.ethereum.on?.('chainChanged', ()=>location.reload());
+                    }
           window.addEventListener('pageshow', attemptAutoConnect);
 
           // ===== Realtime notifications =====
