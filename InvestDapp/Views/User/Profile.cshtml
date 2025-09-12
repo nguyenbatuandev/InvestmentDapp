@@ -5,421 +5,520 @@
 
 @section Styles {
     <style>
-        @@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-
-        /* === TIỆN ÍCH QUAN TRỌNG NHẤT === */
         .hidden {
-            display: none !important;
-        }
-        /* ================================== */
-
-        .profile-container {
-            padding-top: 100px;
-            padding-bottom: 10px;
-            width: 100%;
-            max-width: 1100px;
-            margin: 0 auto;
+            display: none !important
         }
 
-        .profile-header {
-            margin-bottom: 2.5rem;
+        /* ===== Hero (cover) ===== */
+        .profile-hero {
+            padding-top: calc(var(--header-h,72px) + 28px);
+            padding-bottom: 18px;
+            width: min(1200px,94vw);
+            margin: auto;
         }
 
-            .profile-header h1 {
-                font-size: 2.25rem;
-                font-weight: 700;
-                margin-bottom: 0.5rem;
-                background: var(--gradient);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-                text-fill-color: transparent;
-            }
-
-            .profile-header p {
-                font-size: 1.1rem;
-                color: var(--text-muted);
-            }
-
-        .profile-body {
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 2.5rem;
-        }
-
-        .profile-display-card {
-            background-color: var(--bg-light);
-            border: 1px solid var(--secondary);
+        .hero-card {
+            background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+            border: 1px solid var(--border);
             border-radius: 16px;
-            padding: 2rem;
-            text-align: center;
-            height: fit-content;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            box-shadow: var(--shadow);
+            padding: 18px;
+            display: grid;
+            grid-template-columns: 140px 1fr auto;
+            gap: 16px;
+            align-items: center;
+            position: relative;
         }
 
-        .avatar-image {
+        .hero-avatar {
+            position: relative;
             width: 120px;
             height: 120px;
             border-radius: 50%;
-            border: 4px solid var(--primary);
-            object-fit: cover;
-            margin-bottom: 1.5rem;
+            border: 3px solid var(--primary);
+            overflow: hidden;
+            background: #223;
         }
 
-        .user-identity {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .user-name {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--text-color);
-        }
-
-        .verify-icon {
-            width: 22px;
-            height: 22px;
-            color: var(--primary);
-        }
-
-        .pending-icon {
-            width: 22px;
-            height: 22px;
-            color: #ffc107; /* Màu vàng cho trạng thái chờ */
-        }
-
-        .x-icon {
-            width: 22px;
-            height: 22px;
-            color: #ff4d4d;
-        }
-
-        .user-wallet {
-            font-family: monospace;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            word-break: break-all;
-            padding: 0 1rem;
-        }
-
-        .bio-display {
-            margin-top: 2rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--secondary);
-            text-align: left;
-        }
-
-            .bio-display h3 {
-                font-size: 1rem;
-                font-weight: 500;
-                color: var(--text-muted);
-                margin-bottom: 0.5rem;
-            }
-
-            .bio-display p {
-                color: var(--text-color);
-                line-height: 1.6;
-            }
-
-        .form-card {
-            background-color: var(--bg-light);
-            border: 1px solid var(--secondary);
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-            .form-group label {
-                display: block;
-                font-size: 0.9rem;
-                font-weight: 500;
-                margin-bottom: 0.5rem;
-                color: var(--text-muted);
-            }
-
-            .form-group input, .form-group textarea {
+            .hero-avatar img {
                 width: 100%;
-                background-color: var(--bg-dark);
-                border: 1px solid var(--secondary);
-                border-radius: 8px;
-                padding: 12px 14px;
-                color: var(--text-color);
-                font-size: 1rem;
-                font-family: 'Poppins', sans-serif;
-                transition: border-color 0.2s, box-shadow 0.2s;
+                height: 100%;
+                object-fit: cover
             }
 
-                .form-group input:focus, .form-group textarea:focus {
-                    outline: none;
-                    border-color: var(--primary);
-                    box-shadow: 0 0 0 3px rgba(0, 170, 255, 0.2);
-                }
+        .kyc-badge {
+            position: absolute;
+            right: -6px;
+            bottom: -6px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+            border: 1px solid var(--border);
+        }
 
-            .form-group textarea {
-                resize: vertical;
-                min-height: 80px;
+            .kyc-badge svg {
+                width: 16px;
+                height: 16px
             }
 
-        .form-actions {
-            text-align: right;
-            margin-top: 2rem;
-        }
-
-        .kyc-status-wrapper {
-            margin-top: 30px;
-            border-top: 1px solid var(--secondary);
-            padding-top: 20px;
-        }
-
-        #kycStatusContainer {
+        .name-row {
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap
+        }
+
+        .hero-name {
+            font-size: 1.4rem;
+            font-weight: 800
+        }
+
+        .pill {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+            color: var(--muted)
+        }
+
+        .wallet-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap
+        }
+
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace
+        }
+
+        .muted {
+            color: var(--muted)
+        }
+
+        .btn {
+            --glow: rgba(108,240,255,.45);
+            background: linear-gradient(180deg, rgba(108,240,255,.18), rgba(155,107,255,.18));
+            border: 1px solid var(--border);
+            color: var(--fg);
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform .18s, box-shadow .18s;
+        }
+
+            .btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 26px var(--glow)
+            }
+
+            .btn.secondary {
+                background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02))
+            }
+
+            .btn.inline {
+                height: 40px
+            }
+
+        .hero-actions {
+            display: flex;
             gap: 8px;
-            margin-bottom: 15px;
-            min-height: 24px;
+            flex-wrap: wrap
         }
 
-        @@media (max-width: 992px) {
-            .profile-body {
-                grid-template-columns: 1fr;
-            }
+        .save-state {
+            min-height: 20px;
+            font-size: .95rem;
+            text-align: right
         }
 
-        @@media (max-width: 768px) {
-            body {
-                padding: 1rem;
+            .save-state.saving {
+                color: #ffd27d
             }
 
-            .profile-header h1 {
-                font-size: 1.8rem;
+            .save-state.ok {
+                color: #19e58c
             }
+
+            .save-state.err {
+                color: #ff8e8e
+            }
+
+        /* ===== Main grid ===== */
+        .profile-main {
+            width: min(1200px,94vw);
+            margin: 16px auto 30px;
+            display: grid;
+            grid-template-columns: 1fr .9fr;
+            gap: 18px
+        }
+        @@media (max-width: 980px) {
+            .profile-main
+
+        {
+            grid-template-columns: 1fr
+        }
+
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden
+        }
+
+        .card-hd {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .card-bd {
+            padding: 16px
+        }
+
+        /* Edit form */
+        .grid-form {
+            display: grid;
+            gap: 14px
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 160px 1fr;
+            gap: 12px;
+            align-items: center
+        }
+        @@media (max-width:640px) {
+            .row
+
+        {
+            grid-template-columns: 1fr
+        }
+
+        }
+
+        .label {
+            color: var(--muted);
+            font-size: .9rem
+        }
+
+        .input, .textarea {
+            width: 100%;
+            background: rgba(255,255,255,.03);
+            color: var(--fg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            outline: none
+        }
+
+            .input:focus, .textarea:focus {
+                border-color: var(--primary);
+                box-shadow: 0 0 0 3px rgba(0,170,255,.18)
+            }
+
+        .textarea {
+            min-height: 96px;
+            resize: vertical
+        }
+
+        /* Avatar inline editor */
+        .avatar-editor {
+            display: grid;
+            gap: 10px
+        }
+
+        .avatar-line {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 8px
+        }
+        @@media (max-width:640px) {
+            .avatar-line
+
+        {
+            grid-template-columns: 1fr
+        }
+
+        }
+
+        /* Notifications (right) */
+        .notice-list {
+            display: grid;
+            gap: 10px
+        }
+
+        .notice-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02))
         }
     </style>
 }
 
-<div class="profile-container hidden">
-    <div class="profile-header">
-        <h1>Account Settings</h1>
-        <p>Manage your account details and investment preferences.</p>
-    </div>
-
-    <div class="profile-body">
-        <div class="profile-display-card">
-            <div class="avatar-section">
-                <img id="displayAvatar" src="" alt="User Avatar" class="avatar-image">
-            </div>
-            <div class="user-identity">
-                <h2 id="displayName" class="user-name"></h2>
-                <svg id="mainVerifyIcon" class="verify-icon hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-1.25 17.292l-4.5-4.364 1.857-1.858 2.643 2.506 5.643-5.784 1.857 1.857-7.5 7.643z" />
-                </svg>
-            </div>
-            <p id="displayWallet" class="user-wallet"></p>
-            <div class="bio-display">
-                <h3>Bio</h3>
-                <p id="displayBio"></p>
-            </div>
-
-            <div class="kyc-status-wrapper">
-                <div id="kycStatusContainer">
-                    <svg id="kycVerifyIcon" class="verify-icon hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-1.25 17.292l-4.5-4.364 1.857-1.858 2.643 2.506 5.643-5.784 1.857 1.857-7.5 7.643z" /></svg>
-                    <svg id="kycPendingIcon" class="pending-icon hidden" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm-1-5h2v2h-2zm0-8h2v6h-2z" /></svg>
-                    <svg id="kycXIcon" class="x-icon hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2C6.486,2,2,6.486,2,12s4.486,10,10,10s10-4.486,10-10S17.514,2,12,2z M16.207,14.793l-1.414,1.414L12,13.414 l-2.793,2.793l-1.414-1.414L10.586,12L7.793,9.207l1.414-1.414L12,10.586l2.793-2.793l1.414,1.414L13.414,12L16.207,14.793z" /></svg>
-                    <span id="kycStatusMessage"></span>
+<div id="profileRoot" class="hidden">
+    <!-- ===== HERO ===== -->
+    <section class="profile-hero">
+        <div class="hero-card">
+            <div class="hero-avatar">
+                <img id="displayAvatar" src="" alt="Avatar">
+                <div id="kycBadge" class="kyc-badge hidden" title="KYC">
+                    <!-- sẽ đổi icon theo trạng thái -->
+                    <svg id="kycIconDot" viewBox="0 0 16 16" fill="currentColor" class="muted"><circle cx="8" cy="8" r="6" /></svg>
                 </div>
-                <a id="kycButton" href="@Url.Action("FundraiserKycView", "Kyc")" class="btn btn-primary hidden"></a>
             </div>
-        </div>
 
-        <div class="profile-edit-form">
-            <div class="form-card">
-                <div class="form-group"><label for="inputName">Full Name</label><input type="text" id="inputName" placeholder="Enter your full name"></div>
-                <div class="form-group"><label for="inputEmail">Email Address</label><input type="email" id="inputEmail" placeholder="Enter your email"></div>
-                <div class="form-group"><label for="inputAvatar">Avatar URL</label><input type="text" id="inputAvatar" placeholder="https://example.com/image.png"></div>
-                <div class="form-group"><label for="inputBio">Your Bio</label><textarea id="inputBio" rows="4" placeholder="Tell us a little about yourself"></textarea></div>
-                <div class="form-actions"><button id="saveButton" class="btn btn-primary">Save Changes</button></div>
+            <div>
+                <div class="name-row">
+                    <div id="displayName" class="hero-name"></div>
+                    <svg id="mainVerifyIcon" class="hidden" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:var(--primary)">
+                        <path d="M12 0c-6.6 0-12 5.4-12 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm-1.25 17.292l-4.5-4.364 1.857-1.858 2.643 2.506 5.643-5.784 1.857 1.857-7.5 7.643z" />
+                    </svg>
+                    <span id="kycPill" class="pill hidden">KYC</span>
+                </div>
+                <div class="wallet-row">
+                    <span class="muted">Wallet:</span>
+                    <span id="displayWallet" class="mono"></span>
+                    <button class="btn secondary inline" id="btnCopy">Copy</button>
+                </div>
+                <div class="muted" id="displayBio" style="margin-top:6px;line-height:1.6"></div>
+            </div>
+
+            <div>
+                <div id="saveState" class="save-state"></div>
+                <div class="hero-actions" style="margin-top:8px">
+                    <a id="kycButton" href="@Url.Action("FundraiserKycView", "Kyc")" class="btn secondary hidden">KYC</a>
+                </div>
             </div>
         </div>
-    </div>
+    </section>
+
+    <!-- ===== MAIN GRID ===== -->
+    <section class="profile-main">
+        <!-- LEFT: Edit form -->
+        <article class="card">
+            <div class="card-hd">
+                <strong>Chỉnh sửa hồ sơ</strong>
+                <button id="btnSaveAll" class="btn">Lưu thay đổi</button>
+            </div>
+            <div class="card-bd grid-form">
+                <div class="row">
+                    <label class="label" for="inputName">Full Name</label>
+                    <input id="inputName" class="input" placeholder="Enter your full name" />
+                </div>
+                <div class="row">
+                    <label class="label" for="inputEmail">Email</label>
+                    <input id="inputEmail" type="email" class="input" placeholder="name@domain.com" />
+                </div>
+
+                <div class="row">
+                    <label class="label">Avatar URL</label>
+                    <div class="avatar-editor">
+                        <div class="avatar-line">
+                            <input id="inputAvatar" class="input" placeholder="https://domain.com/avatar.png" />
+                            <button id="btnPreview" class="btn secondary" type="button">Xem trước</button>
+                            <button id="btnSaveAvatar" class="btn" type="button">Lưu ảnh</button>
+                        </div>
+                        <div id="avatarHint" class="muted" style="min-height:18px"></div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <label class="label" for="inputBio">Bio</label>
+                    <textarea id="inputBio" class="textarea" placeholder="Tell us a little about yourself"></textarea>
+                </div>
+            </div>
+        </article>
+
+        <!-- RIGHT: Notifications -->
+        <aside class="card">
+            <div class="card-hd">
+                <strong>Thông báo</strong>
+                <button id="btnClearNoti" class="btn secondary">Xoá tất cả</button>
+            </div>
+            <div class="card-bd">
+                <div id="noticeList" class="notice-list"></div>
+            </div>
+        </aside>
+    </section>
 </div>
 
 @section Scripts {
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // === KHAI BÁO BIẾN DOM (Giữ nguyên) ===
-            const profileContainer = document.querySelector('.profile-container');
-            const displayAvatar = document.getElementById('displayAvatar');
-            const displayName = document.getElementById('displayName');
-            const mainVerifyIcon = document.getElementById('mainVerifyIcon');
-            const displayWallet = document.getElementById('displayWallet');
-            const displayBio = document.getElementById('displayBio');
-            const inputName = document.getElementById('inputName');
-            const inputEmail = document.getElementById('inputEmail');
-            const inputAvatar = document.getElementById('inputAvatar');
-            const inputBio = document.getElementById('inputBio');
-            const saveButton = document.getElementById('saveButton');
-            const kycVerifyIcon = document.getElementById('kycVerifyIcon');
-            const kycPendingIcon = document.getElementById('kycPendingIcon');
-            const kycXIcon = document.getElementById('kycXIcon');
-            const kycStatusMessage = document.getElementById('kycStatusMessage');
-            const kycButton = document.getElementById('kycButton');
+        (function(){
+          const root = document.getElementById('profileRoot');
 
-            // === CÁC HÀM XỬ LÝ (Giữ nguyên) ===
-            function populateProfileData(user) {
-                displayAvatar.src = user.avatar || 'https://th.bing.com/th/id/OIP.34uCVzo4gA7hdyLl7GYVJwHaHa?w=211&h=211&c=7&r=0&o=7&dpr=2&pid=1.7&rm=3';
-                displayName.textContent = user.name || 'Unnamed';
-                displayWallet.textContent = user.walletAddress || 'Not available';
-                displayBio.textContent = user.bio || 'No bio provided.';
-                inputName.value = user.name || '';
-                inputEmail.value = user.email || '';
-                inputAvatar.value = user.avatar || '';
-                inputBio.value = user.bio || '';
+          // HERO refs
+          const displayAvatar = document.getElementById('displayAvatar');
+          const displayName   = document.getElementById('displayName');
+          const displayWallet = document.getElementById('displayWallet');
+          const displayBio    = document.getElementById('displayBio');
+          const mainVerifyIcon= document.getElementById('mainVerifyIcon');
+          const kycButton     = document.getElementById('kycButton');
+          const kycPill       = document.getElementById('kycPill');
+          const kycBadge      = document.getElementById('kycBadge');
+          const kycIconDot    = document.getElementById('kycIconDot');
+          const saveState     = document.getElementById('saveState');
+
+          // Form refs
+          const inputName     = document.getElementById('inputName');
+          const inputEmail    = document.getElementById('inputEmail');
+          const inputAvatar   = document.getElementById('inputAvatar');
+          const inputBio      = document.getElementById('inputBio');
+          const btnPreview    = document.getElementById('btnPreview');
+          const btnSaveAvatar = document.getElementById('btnSaveAvatar');
+          const btnSaveAll    = document.getElementById('btnSaveAll');
+          const avatarHint    = document.getElementById('avatarHint');
+
+          // Notifications
+          const noticeList    = document.getElementById('noticeList');
+          const btnClearNoti  = document.getElementById('btnClearNoti');
+
+          // Header avatar (layout) nếu có
+          const headerAvatar  = document.getElementById('avatar');
+
+          // Copy wallet
+          const btnCopy       = document.getElementById('btnCopy');
+
+          function toast(msg){
+            if(window.DApp?.showCustomAlert){ window.DApp.showCustomAlert(msg); return; }
+            let t=document.createElement('div');
+            t.textContent=msg; t.style.cssText='position:fixed;top:88px;right:16px;z-index:9999;background:rgba(0,0,0,.7);color:#fff;padding:10px 14px;border-radius:10px';
+            document.body.appendChild(t); setTimeout(()=>t.remove(),2200);
+          }
+          function token(){
+            if(typeof window.getRequestVerificationToken==='function') return window.getRequestVerificationToken();
+            const el=document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]'); return el?el.value:'';
+          }
+          function setState(type,text){ saveState.className='save-state '+(type||''); saveState.textContent=text||''; if(type==='ok') setTimeout(()=>saveState.textContent='',1200); }
+
+
+          function mapUser(u){
+            return {
+              name: u?.name || u?.fullName || u?.username || 'Unnamed',
+              email: u?.email || '',
+              wallet: u?.walletAddress || '',
+              avatar: u?.avatarUrl || u?.avatar || '',
+              bio: u?.bio || ''
             }
+          }
 
-            function updateKycStatus(data) {
-                kycVerifyIcon.classList.add('hidden');
-                kycPendingIcon.classList.add('hidden');
-                kycXIcon.classList.add('hidden');
-                kycButton.classList.add('hidden');
-                mainVerifyIcon.classList.add('hidden');
+          function renderUser(u){
+            const d=mapUser(u);
+            displayAvatar.src = d.avatar || ('https://api.dicebear.com/7.x/identicon/svg?seed='+(d.wallet||'guest'));
+            displayName.textContent = d.name;
+            displayWallet.textContent = d.wallet || 'Not available';
+            displayBio.textContent = d.bio || 'No bio provided.';
+            inputName.value=d.name; inputEmail.value=d.email; inputAvatar.value=d.avatar; inputBio.value=d.bio;
+            if(headerAvatar && d.avatar){ headerAvatar.src = d.avatar; }
+          }
 
-                if (!data || !data.success) {
-                    kycXIcon.classList.remove('hidden');
-                    kycStatusMessage.textContent = "Error checking status";
-                    return;
-                }
+          function renderKyc(res){
+            // reset
+            mainVerifyIcon.classList.add('hidden'); kycButton.classList.add('hidden'); kycPill.classList.add('hidden'); kycBadge.classList.add('hidden');
+            kycIconDot.style.color = 'var(--muted)';
 
-                switch (data.message) {
-                    case "0":
-                        kycXIcon.classList.remove('hidden');
-                        kycStatusMessage.textContent = "Not Verified";
-                        kycButton.textContent = "Verify KYC Now";
-                        kycButton.classList.remove('hidden');
-                        break;
-                    case "1":
-                        kycPendingIcon.classList.remove('hidden');
-                        kycStatusMessage.textContent = "KYC Pending Review";
-                        break;
-                    case "2":
-                        kycVerifyIcon.classList.remove('hidden');
-                        kycStatusMessage.textContent = "KYC Verified";
-                        mainVerifyIcon.classList.remove('hidden');
-                        break;
-                    case "3":
-                        kycXIcon.classList.remove('hidden');
-                        kycStatusMessage.textContent = "KYC Rejected";
-                        kycButton.textContent = "Re-submit KYC";
-                        kycButton.classList.remove('hidden');
-                        break;
-                    default:
-                        kycXIcon.classList.remove('hidden');
-                        kycStatusMessage.textContent = "Unknown Status";
-                        break;
-                }
+            if(!res || res.success===false){
+              // unknown/error
+              kycBadge.classList.remove('hidden'); kycIconDot.style.color = '#ff8e8e'; kycPill.textContent='KYC Error'; kycPill.classList.remove('hidden');
+              return;
             }
-
-            // === ✨ TỐI ƯU HÓA LOGIC TẢI DỮ LIỆU ===
-
-            // 1. Hàm để tải và hiển thị Profile
-            async function loadProfile() {
-                try {
-                    const response = await fetch('/User/GetUserProfile');
-                    if (!response.ok) {
-                        // Nếu lỗi, vẫn hiển thị form trống để người dùng không thấy trang trắng
-                        console.error(`Error fetching profile: ${response.statusText}`);
-                        DApp.showCustomAlert(`Error fetching profile.`);
-                        return;
-                    }
-                    const user = await response.json();
-                    populateProfileData(user);
-                } catch (error) {
-                    console.error("Critical error fetching profile:", error);
-                    DApp.showCustomAlert("Failed to load user profile.");
-                }
+            switch(String(res.message)){
+              case '2': // verified
+                mainVerifyIcon.classList.remove('hidden');
+                kycBadge.classList.remove('hidden'); kycIconDot.style.color = '#19e58c';
+                kycPill.textContent='Verified'; kycPill.classList.remove('hidden');
+                break;
+              case '1': // pending
+                kycBadge.classList.remove('hidden'); kycIconDot.style.color = '#ffd27d';
+                kycPill.textContent='Pending'; kycPill.classList.remove('hidden');
+                break;
+              case '3': // rejected
+                kycBadge.classList.remove('hidden'); kycIconDot.style.color = '#ff8e8e';
+                kycPill.textContent='Rejected'; kycPill.classList.remove('hidden');
+                kycButton.textContent='Re-submit KYC'; kycButton.classList.remove('hidden');
+                break;
+              default: // 0 not verified
+                kycBadge.classList.remove('hidden'); kycIconDot.style.color = 'var(--muted)';
+                kycPill.textContent='Not Verified'; kycPill.classList.remove('hidden');
+                kycButton.textContent='Verify KYC Now'; kycButton.classList.remove('hidden');
+                break;
             }
+          }
 
-            // 2. Hàm để tải và hiển thị trạng thái KYC
-            async function loadKycStatus() {
-                try {
-                    const response = await fetch('/Kyc/CheckKyc');
-                    if (!response.ok) {
-                        updateKycStatus({ success: false }); // Cập nhật UI với trạng thái lỗi
-                        console.error(`Error checking KYC: ${response.statusText}`);
-                        return;
-                    }
-                    const kycData = await response.json();
-                    updateKycStatus(kycData);
-                } catch (error) {
-                    updateKycStatus({ success: false }); // Cập nhật UI với trạng thái lỗi
-                    console.error("Critical error checking KYC:", error);
-                }
-            }
+          // Data loaders
+          async function loadProfile(){
+            try{
+              const r=await fetch('/User/GetUserProfile',{cache:'no-store'});
+              if(!r.ok) throw new Error('Fetch profile failed');
+              const data=await r.json();
+              renderUser(data);
+            }catch(e){ setState('err','Không tải được hồ sơ'); }
+          }
+          async function loadKyc(){
+            try{
+              const r=await fetch('/Kyc/CheckKyc',{cache:'no-store'});
+              if(!r.ok) throw new Error('Fetch KYC failed');
+              const data=await r.json(); renderKyc(data);
+            }catch(e){ renderKyc({success:false}); }
+          }
 
-            // 3. Hàm khởi tạo chính
-            async function initializePage() {
-                // ✨ Hiển thị container ngay lập tức để người dùng thấy bố cục
-                profileContainer.classList.remove('hidden');
+          // Save handlers
+          async function saveAll(){
+            const body={ name:inputName.value.trim(), email:inputEmail.value.trim(), avatar:inputAvatar.value.trim(), bio:inputBio.value.trim() };
+            btnSaveAll.disabled=true; const o=btnSaveAll.textContent; btnSaveAll.textContent='Saving…'; setState('saving','Đang lưu…');
+            try{
+              const r=await fetch('/User/UpdateProfile',{method:'POST', headers:{'Content-Type':'application/json', ...(token()?{'RequestVerificationToken':token()}: {})}, body:JSON.stringify(body)});
+              if(!r.ok){ let msg='Server error'; try{const e=await r.json(); msg=e?.message||msg;}catch{} throw new Error(msg); }
+              renderUser({...body, walletAddress: displayWallet.textContent});
+              setState('ok','Đã lưu'); toast('Profile updated successfully!');
+            }catch(err){ setState('err',err.message||'Lỗi lưu'); toast('Failed to update profile.'); }
+            finally{ btnSaveAll.disabled=false; btnSaveAll.textContent=o; }
+          }
+          function previewAvatar(){
+            const url=inputAvatar.value.trim(); if(!url){ avatarHint.textContent=''; return; }
+            displayAvatar.src=url; avatarHint.textContent='Xem trước — bấm "Lưu ảnh" để cập nhật.';
+          }
+          async function saveAvatarOnly(){
+            const url=inputAvatar.value.trim(); if(!url){ avatarHint.textContent='Chưa nhập URL'; return; }
+            btnSaveAvatar.disabled=true; const o=btnSaveAvatar.textContent; btnSaveAvatar.textContent='Saving…'; setState('saving','Đang lưu avatar…');
+            try{
+              const r=await fetch('/User/UpdateProfile',{method:'POST',headers:{'Content-Type':'application/json', ...(token()?{'RequestVerificationToken':token()}: {})}, body:JSON.stringify({avatar:url})});
+              if(!r.ok) throw new Error('Save avatar failed');
+              displayAvatar.src=url; if(headerAvatar) headerAvatar.src=url;
+              avatarHint.textContent='Đã cập nhật ảnh đại diện'; setState('ok','Đã lưu avatar');
+            }catch(e){ setState('err','Lưu avatar lỗi');}
+            finally{ btnSaveAvatar.disabled=false; btnSaveAvatar.textContent=o; }
+          } 
 
-                // ✨ Gọi cả hai hàm tải dữ liệu chạy song song mà không block nhau
-                await Promise.all([
-                    loadProfile(),
-                    loadKycStatus()
-                ]);
-            }
+          // Events
+          btnPreview.addEventListener('click', previewAvatar);
+          btnSaveAvatar.addEventListener('click', saveAvatarOnly);
+          btnSaveAll.addEventListener('click', saveAll);
+          btnClearNoti.addEventListener('click', ()=> noticeList.innerHTML='');
+          btnCopy.addEventListener('click', async ()=>{
+            const t = displayWallet.textContent?.trim(); if(!t) return;
+            try{ await navigator.clipboard.writeText(t); toast('Đã copy địa chỉ ví'); }catch{ toast('Không copy được'); }
+          });
 
-            // === ✨ TỐI ƯU HÓA NÚT LƯU ===
-            saveButton.addEventListener('click', async function () {
-                // Hiện loading trên nút để báo cho người dùng
-                saveButton.disabled = true;
-                saveButton.textContent = 'Saving...';
-
-                const updatedUser = {
-                    name: inputName.value,
-                    email: inputEmail.value,
-                    avatar: inputAvatar.value,
-                    bio: inputBio.value
-                };
-                try {
-                    const response = await fetch('/User/UpdateProfile', { // Sửa lỗi chính tả "UpdatePofile" -> "UpdateProfile" nếu cần
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(updatedUser)
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        DApp.showCustomAlert(`Failed to update profile: ${errorData.message || 'Server error'}`);
-                        return; // Dừng lại ở đây nếu lỗi
-                    }
-
-                    DApp.showCustomAlert('Profile updated successfully!');
-
-                    // ✨ CẢI TIẾN: Cập nhật giao diện trực tiếp thay vì tải lại trang
-                    // Ta cần thêm walletAddress vào object để hàm populateProfileData không bị lỗi
-                    updatedUser.walletAddress = displayWallet.textContent;
-                    populateProfileData(updatedUser);
-
-                } catch (error) {
-                    console.error("Update failed:", error);
-                    DApp.showCustomAlert("An error occurred while updating. Check console for details.");
-                } finally {
-                    // Dù thành công hay thất bại, bật lại nút
-                    saveButton.disabled = false;
-                    saveButton.textContent = 'Save Changes';
-                }
-            });
-
-            // === CHẠY HÀM KHI TẢI TRANG ===
-            initializePage();
-        });
+          // Init
+          root.classList.remove('hidden');
+          Promise.all([loadProfile(), loadKyc()]);
+        })();
     </script>
 }

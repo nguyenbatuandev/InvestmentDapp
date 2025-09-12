@@ -1,234 +1,1099 @@
 ﻿
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Admin Dashboard";
     Layout = "~/Areas/admin/Views/Shared/_Layout.cshtml";
 }
 
-
 <!-- ========================= Main ==================== -->
 <div class="main">
-    <div class="topbar">
-        <div class="toggle">
-            <ion-icon name="menu-outline"></ion-icon>
-        </div>
-
-        <div class="search">
-            <label>
-                <input type="text" placeholder="Search here">
-                <ion-icon name="search-outline"></ion-icon>
-            </label>
-        </div>
-
-        <div class="user">
-            <img src="assets/imgs/customer01.jpg" alt="">
-        </div>
-    </div>
-
-    <!-- ======================= Cards ================== -->
-    <div class="cardBox">
-        <div class="card">
-            <div>
-                <div class="numbers">1,504</div>
-                <div class="cardName">Daily Views</div>
+    <!-- ======================= Header ================== -->
+    <div class="dashboard-header">
+        <div class="header-content">
+            <div class="header-left">
+                <h1>Welcome back, Admin!</h1>
+                <p>Here's what's happening with your investment platform today.</p>
             </div>
-
-            <div class="iconBx">
-                <ion-icon name="eye-outline"></ion-icon>
-            </div>
-        </div>
-
-        <div class="card">
-            <div>
-                <div class="numbers">80</div>
-                <div class="cardName">Sales</div>
-            </div>
-
-            <div class="iconBx">
-                <ion-icon name="cart-outline"></ion-icon>
-            </div>
-        </div>
-
-        <div class="card">
-            <div>
-                <div class="numbers">284</div>
-                <div class="cardName">Comments</div>
-            </div>
-
-            <div class="iconBx">
-                <ion-icon name="chatbubbles-outline"></ion-icon>
-            </div>
-        </div>
-
-        <div class="card">
-            <div>
-                <div class="numbers">$7,842</div>
-                <div class="cardName">Earning</div>
-            </div>
-
-            <div class="iconBx">
-                <ion-icon name="cash-outline"></ion-icon>
+            <div class="header-right">
+                <div class="date-time">
+                    <span class="date">@DateTime.Now.ToString("dddd, MMMM dd, yyyy")</span>
+                    <span class="time" id="current-time"></span>
+                </div>
+                <div class="quick-actions">
+                    <button class="quick-btn" onclick="location.href='@Url.Action("Create", "Manage_Campaigns", new { area = "admin" })'">
+                        <ion-icon name="add-outline"></ion-icon>
+                        New Campaign
+                    </button>
+                    <button class="quick-btn" onclick="location.href='@Url.Action("Kyc", "Users", new { area = "admin" })'">
+                        <ion-icon name="document-text-outline"></ion-icon>
+                        Review KYC
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- ================ Order Details List ================= -->
-    <div class="details">
-        <div class="recentOrders">
-            <div class="cardHeader">
-                <h2>Recent Orders</h2>
-                <a href="#" class="btn">View All</a>
+    <!-- ======================= Overview Cards ================== -->
+    <div class="overview-section">
+        <div class="section-title">
+            <h2>Platform Overview</h2>
+            <p>Key metrics and performance indicators</p>
+        </div>
+        
+        <div class="cardBox">
+            <div class="card active-campaigns">
+                <div class="card-content">
+                    <div class="numbers">24</div>
+                    <div class="cardName">Active Campaigns</div>
+                    <div class="trend">
+                        <ion-icon name="trending-up-outline"></ion-icon>
+                        <span>+12% from last month</span>
+                    </div>
+                </div>
+                <div class="iconBx">
+                    <ion-icon name="rocket-outline"></ion-icon>
+                </div>
             </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <td>Name</td>
-                        <td>Price</td>
-                        <td>Payment</td>
-                        <td>Status</td>
-                    </tr>
-                </thead>
+            <div class="card total-investors">
+                <div class="card-content">
+                    <div class="numbers">1,247</div>
+                    <div class="cardName">Total Investors</div>
+                    <div class="trend">
+                        <ion-icon name="trending-up-outline"></ion-icon>
+                        <span>+8% from last month</span>
+                    </div>
+                </div>
+                <div class="iconBx">
+                    <ion-icon name="people-outline"></ion-icon>
+                </div>
+            </div>
 
-                <tbody>
-                    <tr>
-                        <td>Star Refrigerator</td>
-                        <td>$1200</td>
-                        <td>Paid</td>
-                        <td><span class="status delivered">Delivered</span></td>
-                    </tr>
+            <div class="card total-investment">
+                <div class="card-content">
+                    <div class="numbers">$847,250</div>
+                    <div class="cardName">Total Investment</div>
+                    <div class="trend">
+                        <ion-icon name="trending-up-outline"></ion-icon>
+                        <span>+23% from last month</span>
+                    </div>
+                </div>
+                <div class="iconBx">
+                    <ion-icon name="wallet-outline"></ion-icon>
+                </div>
+            </div>
 
-                    <tr>
-                        <td>Dell Laptop</td>
-                        <td>$110</td>
-                        <td>Due</td>
-                        <td><span class="status pending">Pending</span></td>
-                    </tr>
+            <div class="card avg-roi">
+                <div class="card-content">
+                    <div class="numbers">12.5%</div>
+                    <div class="cardName">Avg. ROI</div>
+                    <div class="trend">
+                        <ion-icon name="trending-up-outline"></ion-icon>
+                        <span>+2.1% from last month</span>
+                    </div>
+                </div>
+                <div class="iconBx">
+                    <ion-icon name="trending-up-outline"></ion-icon>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                    <tr>
-                        <td>Apple Watch</td>
-                        <td>$1200</td>
-                        <td>Paid</td>
-                        <td><span class="status return">Return</span></td>
-                    </tr>
+    <!-- ======================= Quick Stats ================== -->
+    <div class="quick-stats">
+        <div class="stat-item">
+            <div class="stat-number">18</div>
+            <div class="stat-label">Pending KYC</div>
+            <div class="stat-action">
+                <a href="@Url.Action("Kyc", "Users", new { area = "admin" })">Review</a>
+            </div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">7</div>
+            <div class="stat-label">Campaigns Ending Soon</div>
+            <div class="stat-action">
+                <a href="#">View</a>
+            </div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">$52K</div>
+            <div class="stat-label">Pending Withdrawals</div>
+            <div class="stat-action">
+                <a href="#">Process</a>
+            </div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">156</div>
+            <div class="stat-label">New Messages</div>
+            <div class="stat-action">
+                <a href="@Url.Action("Index", "Messages", new { area = "admin" })">Read</a>
+            </div>
+        </div>
+    </div>
 
-                    <tr>
-                        <td>Addidas Shoes</td>
-                        <td>$620</td>
-                        <td>Due</td>
-                        <td><span class="status inProgress">In Progress</span></td>
-                    </tr>
+    <!-- ================ Main Dashboard Content ================= -->
+    <div class="dashboard-content">
+        <!-- Left Column -->
+        <div class="left-column">
+            <!-- Recent Campaigns -->
+            <div class="section-card">
+                <div class="cardHeader">
+                    <div class="header-info">
+                        <h2>Recent Campaigns</h2>
+                        <p>Latest investment opportunities</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="filter-btn">
+                            <ion-icon name="filter-outline"></ion-icon>
+                            Filter
+                        </button>
+                        <a href="@Url.Action("Index", "Manage_Campaigns", new { area = "admin" })" class="btn">View All</a>
+                    </div>
+                </div>
 
-                    <tr>
-                        <td>Star Refrigerator</td>
-                        <td>$1200</td>
-                        <td>Paid</td>
-                        <td><span class="status delivered">Delivered</span></td>
-                    </tr>
+                <div class="table-container">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th>Campaign</th>
+                                <th>Target</th>
+                                <th>Raised</th>
+                                <th>Progress</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="campaign-info">
+                                        <div class="campaign-avatar">
+                                            <ion-icon name="leaf-outline"></ion-icon>
+                                        </div>
+                                        <div class="campaign-details">
+                                            <strong>Green Energy Initiative</strong>
+                                            <span>Renewable energy project</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>$500,000</td>
+                                <td>$385,000</td>
+                                <td>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 77%"></div>
+                                    </div>
+                                    <span class="progress-text">77%</span>
+                                </td>
+                                <td><span class="status delivered">Active</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-icon" title="View Details">
+                                            <ion-icon name="eye-outline"></ion-icon>
+                                        </button>
+                                        <button class="btn-icon" title="Edit">
+                                            <ion-icon name="create-outline"></ion-icon>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="campaign-info">
+                                        <div class="campaign-avatar">
+                                            <ion-icon name="rocket-outline"></ion-icon>
+                                        </div>
+                                        <div class="campaign-details">
+                                            <strong>Tech Startup Fund</strong>
+                                            <span>AI technology development</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>$250,000</td>
+                                <td>$180,000</td>
+                                <td>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 72%"></div>
+                                    </div>
+                                    <span class="progress-text">72%</span>
+                                </td>
+                                <td><span class="status pending">Pending</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-icon" title="View Details">
+                                            <ion-icon name="eye-outline"></ion-icon>
+                                        </button>
+                                        <button class="btn-icon" title="Approve">
+                                            <ion-icon name="checkmark-outline"></ion-icon>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="campaign-info">
+                                        <div class="campaign-avatar">
+                                            <ion-icon name="home-outline"></ion-icon>
+                                        </div>
+                                        <div class="campaign-details">
+                                            <strong>Real Estate Development</strong>
+                                            <span>Commercial property investment</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>$1,000,000</td>
+                                <td>$750,000</td>
+                                <td>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 75%"></div>
+                                    </div>
+                                    <span class="progress-text">75%</span>
+                                </td>
+                                <td><span class="status inProgress">Voting</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-icon" title="View Details">
+                                            <ion-icon name="eye-outline"></ion-icon>
+                                        </button>
+                                        <button class="btn-icon" title="Manage">
+                                            <ion-icon name="settings-outline"></ion-icon>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-                    <tr>
-                        <td>Dell Laptop</td>
-                        <td>$110</td>
-                        <td>Due</td>
-                        <td><span class="status pending">Pending</span></td>
-                    </tr>
-
-                    <tr>
-                        <td>Apple Watch</td>
-                        <td>$1200</td>
-                        <td>Paid</td>
-                        <td><span class="status return">Return</span></td>
-                    </tr>
-
-                    <tr>
-                        <td>Addidas Shoes</td>
-                        <td>$620</td>
-                        <td>Due</td>
-                        <td><span class="status inProgress">In Progress</span></td>
-                    </tr>
-                </tbody>
-            </table>
+            <!-- Performance Chart -->
+            <div class="section-card chart-section">
+                <div class="cardHeader">
+                    <div class="header-info">
+                        <h2>Investment Performance</h2>
+                        <p>Monthly investment trends</p>
+                    </div>
+                    <div class="chart-controls">
+                        <select class="period-select">
+                            <option>Last 6 months</option>
+                            <option>Last year</option>
+                            <option>All time</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-placeholder">
+                    <div class="chart-bars">
+                        <div class="bar" style="height: 60%"></div>
+                        <div class="bar" style="height: 80%"></div>
+                        <div class="bar" style="height: 45%"></div>
+                        <div class="bar" style="height: 90%"></div>
+                        <div class="bar" style="height: 75%"></div>
+                        <div class="bar" style="height: 95%"></div>
+                    </div>
+                    <div class="chart-labels">
+                        <span>Jan</span>
+                        <span>Feb</span>
+                        <span>Mar</span>
+                        <span>Apr</span>
+                        <span>May</span>
+                        <span>Jun</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- ================= New Customers ================ -->
-        <div class="recentCustomers">
-            <div class="cardHeader">
-                <h2>Recent Customers</h2>
+        <!-- Right Column -->
+        <div class="right-column">
+            <!-- Recent Activities -->
+            <div class="section-card activities-section">
+                <div class="cardHeader">
+                    <div class="header-info">
+                        <h2>Recent Activities</h2>
+                        <p>Latest platform events</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="view-all-btn">View All</button>
+                    </div>
+                </div>
+
+                <div class="activities-list">
+                    <div class="activity-item">
+                        <div class="activity-icon success">
+                            <ion-icon name="person-add-outline"></ion-icon>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">New User Registered</div>
+                            <div class="activity-description">John Doe joined the platform</div>
+                            <div class="activity-time">2 hours ago</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon info">
+                            <ion-icon name="wallet-outline"></ion-icon>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Investment Made</div>
+                            <div class="activity-description">$5,000 invested in Green Energy</div>
+                            <div class="activity-time">3 hours ago</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon warning">
+                            <ion-icon name="rocket-outline"></ion-icon>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Campaign Launched</div>
+                            <div class="activity-description">Tech Startup Fund went live</div>
+                            <div class="activity-time">5 hours ago</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon success">
+                            <ion-icon name="checkmark-circle-outline"></ion-icon>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">KYC Approved</div>
+                            <div class="activity-description">User ID: 12485 verification complete</div>
+                            <div class="activity-time">6 hours ago</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon success">
+                            <ion-icon name="arrow-up-outline"></ion-icon>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Profit Distributed</div>
+                            <div class="activity-description">Healthcare Campaign dividends paid</div>
+                            <div class="activity-time">8 hours ago</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <table>
-                <tr>
-                    <td width="60px">
-                        <div class="imgBx"><img src="assets/imgs/customer02.jpg" alt=""></div>
-                    </td>
-                    <td>
-                        <h4>David <br> <span>Italy</span></h4>
-                    </td>
-                </tr>
+            <!-- System Health -->
+            <div class="section-card system-health">
+                <div class="cardHeader">
+                    <div class="header-info">
+                        <h2>System Health</h2>
+                        <p>Platform status overview</p>
+                    </div>
+                </div>
+                <div class="health-metrics">
+                    <div class="health-item">
+                        <div class="health-label">Server Status</div>
+                        <div class="health-status online">
+                            <span class="status-dot"></span>
+                            Online
+                        </div>
+                    </div>
+                    <div class="health-item">
+                        <div class="health-label">Blockchain Connection</div>
+                        <div class="health-status online">
+                            <span class="status-dot"></span>
+                            Connected
+                        </div>
+                    </div>
+                    <div class="health-item">
+                        <div class="health-label">Database</div>
+                        <div class="health-status online">
+                            <span class="status-dot"></span>
+                            Operational
+                        </div>
+                    </div>
+                    <div class="health-item">
+                        <div class="health-label">API Response Time</div>
+                        <div class="health-value">125ms</div>
+                    </div>
+                </div>
+            </div>
 
-                <tr>
-                    <td width="60px">
-                        <div class="imgBx"><img src="assets/imgs/customer01.jpg" alt=""></div>
-                    </td>
-                    <td>
-                        <h4>Amit <br> <span>India</span></h4>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td width="60px">
-                        <div class="imgBx"><img src="assets/imgs/customer02.jpg" alt=""></div>
-                    </td>
-                    <td>
-                        <h4>David <br> <span>Italy</span></h4>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td width="60px">
-                        <div class="imgBx"><img src="assets/imgs/customer01.jpg" alt=""></div>
-                    </td>
-                    <td>
-                        <h4>Amit <br> <span>India</span></h4>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td width="60px">
-                        <div class="imgBx"><img src="assets/imgs/customer02.jpg" alt=""></div>
-                    </td>
-                    <td>
-                        <h4>David <br> <span>Italy</span></h4>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td width="60px">
-                        <div class="imgBx"><img src="assets/imgs/customer01.jpg" alt=""></div>
-                    </td>
-                    <td>
-                        <h4>Amit <br> <span>India</span></h4>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td width="60px">
-                        <div class="imgBx"><img src="assets/imgs/customer01.jpg" alt=""></div>
-                    </td>
-                    <td>
-                        <h4>David <br> <span>Italy</span></h4>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td width="60px">
-                        <div class="imgBx"><img src="assets/imgs/customer02.jpg" alt=""></div>
-                    </td>
-                    <td>
-                        <h4>Amit <br> <span>India</span></h4>
-                    </td>
-                </tr>
-            </table>
+            <!-- Top Investors -->
+            <div class="section-card top-investors">
+                <div class="cardHeader">
+                    <div class="header-info">
+                        <h2>Top Investors</h2>
+                        <p>This month's leaders</p>
+                    </div>
+                </div>
+                <div class="investors-list">
+                    <div class="investor-item">
+                        <div class="investor-rank">1</div>
+                        <div class="investor-info">
+                            <div class="investor-name">Michael Chen</div>
+                            <div class="investor-amount">$45,000</div>
+                        </div>
+                    </div>
+                    <div class="investor-item">
+                        <div class="investor-rank">2</div>
+                        <div class="investor-info">
+                            <div class="investor-name">Sarah Johnson</div>
+                            <div class="investor-amount">$32,500</div>
+                        </div>
+                    </div>
+                    <div class="investor-item">
+                        <div class="investor-rank">3</div>
+                        <div class="investor-info">
+                            <div class="investor-name">David Rodriguez</div>
+                            <div class="investor-amount">$28,750</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
+<style>
+    /* Dashboard Header Styles */
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+    }
+
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .header-left h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .header-left p {
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+
+    .header-right {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-end;
+    }
+
+    .date-time {
+        text-align: right;
+    }
+
+    .date-time .date {
+        display: block;
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+
+    .date-time .time {
+        display: block;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+
+    .quick-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .quick-btn {
+        background: rgba(255,255,255,0.2);
+        border: 2px solid rgba(255,255,255,0.3);
+        color: white;
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+    }
+
+    .quick-btn:hover {
+        background: rgba(255,255,255,0.3);
+        transform: translateY(-2px);
+    }
+
+    /* Section Title */
+    .section-title {
+        margin-bottom: 1.5rem;
+    }
+
+    .section-title h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 0.25rem;
+    }
+
+    .section-title p {
+        color: var(--gray);
+        font-size: 0.9rem;
+    }
+
+    /* Enhanced Card Styles */
+    .overview-section .cardBox {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .overview-section .card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.05);
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .overview-section .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+
+    .overview-section .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    }
+
+    .card-content {
+        flex: 1;
+    }
+
+    .card-content .numbers {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .card-content .cardName {
+        font-size: 1rem;
+        color: var(--gray);
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+    }
+
+    .trend {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #10b981;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .trend ion-icon {
+        font-size: 1.2rem;
+    }
+
+    /* Quick Stats */
+    .quick-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-item {
+        background: white;
+        padding: 1.25rem;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .stat-number {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--blue);
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--gray);
+        margin-bottom: 0.75rem;
+    }
+
+    .stat-action a {
+        color: var(--blue);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    /* Dashboard Content Layout */
+    .dashboard-content {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+    }
+
+    .section-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.05);
+        margin-bottom: 1.5rem;
+    }
+
+    .cardHeader {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .header-info h2 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 0.25rem;
+    }
+
+    .header-info p {
+        color: var(--gray);
+        font-size: 0.875rem;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .filter-btn, .view-all-btn {
+        background: var(--gray-light);
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--gray-dark);
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .filter-btn:hover, .view-all-btn:hover {
+        background: var(--gray);
+        color: white;
+    }
+
+    /* Modern Table */
+    .table-container {
+        overflow-x: auto;
+    }
+
+    .modern-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+
+    .modern-table th {
+        background: var(--gray-light);
+        color: var(--gray-dark);
+        font-weight: 600;
+        padding: 1rem 0.75rem;
+        text-align: left;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .modern-table td {
+        padding: 1rem 0.75rem;
+        border-bottom: 1px solid #e5e7eb;
+        vertical-align: middle;
+    }
+
+    .modern-table tbody tr:hover {
+        background: var(--gray-light);
+    }
+
+    .campaign-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .campaign-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--blue);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .campaign-details strong {
+        display: block;
+        font-weight: 600;
+        color: var(--dark);
+        margin-bottom: 0.25rem;
+    }
+
+    .campaign-details span {
+        color: var(--gray);
+        font-size: 0.8rem;
+    }
+
+    .progress-bar {
+        width: 80px;
+        height: 6px;
+        background: #e5e7eb;
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 0.25rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--blue);
+        border-radius: 3px;
+    }
+
+    .progress-text {
+        font-size: 0.8rem;
+        color: var(--gray);
+        font-weight: 600;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 6px;
+        background: var(--gray-light);
+        color: var(--gray-dark);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+        background: var(--blue);
+        color: white;
+    }
+
+    /* Chart Section */
+    .chart-controls {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .period-select {
+        padding: 0.5rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        background: white;
+        color: var(--gray-dark);
+        font-weight: 600;
+    }
+
+    .chart-placeholder {
+        height: 250px;
+        background: var(--gray-light);
+        border-radius: 10px;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+    }
+
+    .chart-bars {
+        display: flex;
+        align-items: end;
+        gap: 0.5rem;
+        height: 180px;
+        margin-bottom: 1rem;
+    }
+
+    .bar {
+        flex: 1;
+        background: var(--blue);
+        border-radius: 4px 4px 0 0;
+        min-height: 20px;
+        opacity: 0.8;
+        transition: all 0.3s;
+    }
+
+    .bar:hover {
+        opacity: 1;
+        background: var(--blue-dark);
+    }
+
+    .chart-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: var(--gray);
+        font-weight: 600;
+    }
+
+    /* Activities */
+    .activities-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .activity-item {
+        display: flex;
+        gap: 1rem;
+        padding: 1rem 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .activity-icon.success {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    .activity-icon.info {
+        background: #dbeafe;
+        color: #2563eb;
+    }
+
+    .activity-icon.warning {
+        background: #fef3c7;
+        color: #d97706;
+    }
+
+    .activity-title {
+        font-weight: 600;
+        color: var(--dark);
+        margin-bottom: 0.25rem;
+    }
+
+    .activity-description {
+        color: var(--gray);
+        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .activity-time {
+        color: var(--gray);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    /* System Health */
+    .health-metrics {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .health-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        background: var(--gray-light);
+        border-radius: 8px;
+    }
+
+    .health-label {
+        font-weight: 600;
+        color: var(--gray-dark);
+    }
+
+    .health-status {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+    }
+
+    .health-status.online {
+        color: #16a34a;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+    .health-value {
+        font-weight: 700;
+        color: var(--blue);
+    }
+
+    /* Top Investors */
+    .investors-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .investor-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem;
+        background: var(--gray-light);
+        border-radius: 8px;
+    }
+
+    .investor-rank {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: var(--blue);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.875rem;
+    }
+
+    .investor-name {
+        font-weight: 600;
+        color: var(--dark);
+        margin-bottom: 0.25rem;
+    }
+
+    .investor-amount {
+        color: var(--gray);
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 1200px) {
+        .dashboard-content {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .header-content {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .quick-actions {
+            justify-content: center;
+        }
+
+        .cardBox {
+            grid-template-columns: 1fr;
+        }
+
+        .quick-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .dashboard-header {
+            padding: 1.5rem;
+        }
+
+        .quick-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .header-actions {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .filter-btn, .view-all-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<script>
+    // Real-time clock
+    function updateTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+        const timeElement = document.getElementById('current-time');
+        if (timeElement) {
+            timeElement.textContent = timeString;
+        }
+    }
+
+    // Update time every second
+    setInterval(updateTime, 1000);
+    updateTime(); // Initial call
+
+    // Add some interactive animations
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animate cards on load
+        const cards = document.querySelectorAll('.card, .section-card');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+
+        // Simulate chart animation
+        const bars = document.querySelectorAll('.bar');
+        bars.forEach((bar, index) => {
+            const originalHeight = bar.style.height;
+            bar.style.height = '0%';
+            setTimeout(() => {
+                bar.style.transition = 'height 1s ease';
+                bar.style.height = originalHeight;
+            }, 500 + index * 100);
+        });
+    });
+</script>

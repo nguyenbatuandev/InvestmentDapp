@@ -1,11 +1,14 @@
 ﻿
+using InvestDapp.Application.MessageService;
 using InvestDapp.Infrastructure.Data;
 using InvestDapp.Infrastructure.Data.Config;
 using InvestDapp.Infrastructure.Data.interfaces;
 using InvestDapp.Shared.Models.BlockchainModels;
+using InvestDapp.Shared.Models.Message;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NBitcoin.Secp256k1;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
@@ -22,19 +25,21 @@ namespace Invest.Application.EventService
         private readonly ICampaignEventRepository _eventRepository;
         private readonly ILogger<CampaignEventService> _logger;
         private readonly BlockchainConfig _config;
-
+        private readonly IConversationService _conversationService;
         public CampaignEventService(
             Web3 web3,
             InvestDbContext dbContext,
             ICampaignEventRepository eventRepository,
             ILogger<CampaignEventService> logger,
-            IOptions<BlockchainConfig> config) // Inject config
+            IOptions<BlockchainConfig> config,
+            IConversationService conversationService) 
         {
             _web3 = web3;
             _dbContext = dbContext;
             _eventRepository = eventRepository;
             _logger = logger;
-            _config = config.Value; // Lấy giá trị config
+            _config = config.Value;
+            _conversationService = conversationService;
         }
 
         public async Task ProcessNewEventsAsync(CancellationToken cancellationToken)
@@ -81,6 +86,19 @@ namespace Invest.Application.EventService
                         var timestamp = block.Timestamp;  // Đơn vị là seconds từ Unix epoch
                         DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds((long)timestamp.Value).UtcDateTime;
 
+                        var condersationID = await _dbContext.Conversations
+                            .FirstOrDefaultAsync(x => x.CampaignId == (int)evt.CampaignId);
+                        var user = await _dbContext.Users
+                            .FirstOrDefaultAsync(x => x.WalletAddress == evt.Investor.ToString());
+
+                        var alreadyJoined = await _dbContext.Participants
+                            .AnyAsync(p => p.ConversationId == condersationID.ConversationId && p.UserId == user.ID);
+
+                        if (!alreadyJoined)
+                        {
+                            await _conversationService.AddMemberToGroupAsync(condersationID.ConversationId, user.ID, user.ID);
+                        }
+
                         // Gọi repository để cập nhật DB
                         await _eventRepository.HandleInvestmentReceivedAsync(evt.CampaignId, evt.Investor, evt.Amount, evt.CurrentRaisedAmount,txHash, dateTime);
                        
@@ -108,7 +126,6 @@ namespace Invest.Application.EventService
                         // Lấy timestamp của block
                         var timestamp = block.Timestamp;  // Đơn vị là seconds từ Unix epoch
                         DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds((long)timestamp.Value).UtcDateTime;
-
 
                         await _eventRepository.HandleProfitAddedAsync(evt.Id ,evt.CampaignId, evt.Amount , txHash , dateTime);
 

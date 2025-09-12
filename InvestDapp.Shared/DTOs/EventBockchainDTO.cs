@@ -15,7 +15,7 @@ namespace InvestDapp.Shared.DTOs
             [Parameter("uint256", "endTime", 5, false)] public BigInteger EndTime { get; set; }
         }
 
-        [Nethereum.ABI.FunctionEncoding.Attributes.Event("investmentReceived")]
+        [Nethereum.ABI.FunctionEncoding.Attributes.Event("InvestmentReceived")]
         public class InvestmentReceivedEventDTO : IEventDTO
         {
             [Parameter("uint256", "campaignId", 1, true)]

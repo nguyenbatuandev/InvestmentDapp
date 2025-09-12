@@ -4,553 +4,509 @@
 }
 
 @section Styles {
-    <style>
-        .page-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 120px 20px 60px
-        }
+<style>
+/* ===== Page & Grid ===== */
+.kyc-page{ min-height:100vh; padding:calc(var(--header-h,72px) + 24px) 18px 60px; }
+.kyc-wrap{ width:min(1200px,96vw); margin:0 auto; display:grid; grid-template-columns:300px 1fr; gap:18px; }
+.hidden{ display:none !important; }
 
-        .kyc-container {
-            width: 100%;
-            max-width: 1000px;
-            background-color: var(--bg-light);
-            border-radius: 12px;
-            border: 1px solid var(--secondary);
-            padding: 40px;
-            box-shadow: 0 15px 50px rgba(0,0,0,.2)
-        }
+/* ===== Notice Bar (thanh thông báo) ===== */
+.notice {
+  position: sticky; top: calc(var(--header-h,72px) + 8px); z-index: 60;
+  padding: 12px 14px; border:1px solid var(--border); border-left: 6px solid var(--primary);
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+  color: var(--fg); border-radius: 12px; box-shadow: var(--shadow);
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.notice__msg{ font-weight:700; letter-spacing:.2px }
+.notice--success{ border-left-color:#22c55e }
+.notice--error{ border-left-color:#ef4444 }
+.notice__close{ background:transparent; border:0; color:var(--muted); font-weight:800; cursor:pointer }
+.notice.hidden{ display:none !important; }
 
-        #fundraiser-kyc-form {
-            display: flex;
-            flex-direction: column;
-            gap: 30px
-        }
+/* ===== Aside ===== */
+.kyc-aside{
+  position:sticky; top:calc(var(--header-h,72px) + 24px); align-self:start;
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+  border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); padding:18px;
+}
+.aside-head h1{ margin:0 0 6px; font-size:22px; font-weight:800;
+  background:var(--gradient); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.aside-head p{ margin:0; color:var(--muted) }
+.step-list{ list-style:none; margin:16px 0 14px; padding:0; display:grid; gap:10px }
+.step-item{
+  display:flex; gap:10px; align-items:center; border:1px solid var(--border);
+  border-radius:12px; padding:10px; background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  color:var(--muted); font-weight:700; letter-spacing:.2px; cursor:default;
+}
+.step-item.active{ color:var(--fg); box-shadow:0 6px 22px rgba(108,240,255,.18) }
+.step-dot{
+  width:22px;height:22px;border-radius:50%; display:grid;place-items:center; font-size:12px;
+  border:1px solid var(--border); background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+}
+.aside-note{ margin-top:8px; padding:12px; border:1px dashed var(--border); border-radius:12px; color:var(--muted); font-size:.95rem; }
 
-        .kyc-header {
-            text-align: center;
-            margin-bottom: 10px
-        }
+/* ===== Main / Cards ===== */
+.kyc-main{ display:grid; }
+.card{
+  display:flex; flex-direction:column;   /* để chia đều & dính action xuống đáy */
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+  border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); padding:18px;
+  min-height: var(--panel-equal, auto);  /* sẽ set bằng JS theo chiều cao aside */
+}
+.card-title{
+  margin:2px 0 14px; padding:0 0 10px; border-bottom:1px solid var(--border);
+  font-size:16px; font-weight:800; display:flex; gap:10px; align-items:center;
+}
+.card-title i{ color:var(--primary) }
+.card-body{ flex:1 1 auto; display:block } /* thân card chiếm phần còn lại */
+.wiz-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:10px }
 
-            .kyc-header h1 {
-                font-size: 32px;
-                font-weight: 700;
-                margin-bottom: 8px;
-                background: var(--gradient);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-                text-fill-color: transparent
-            }
+/* Two-column form layout */
+.two-col{ display:grid; grid-template-columns:1fr 1fr; gap:16px 22px }
+@@media (max-width: 980px){ .kyc-wrap{ grid-template-columns:1fr } .kyc-aside{ position:static } .two-col{ grid-template-columns:1fr } }
 
-            .kyc-header p {
-                font-size: 15px;
-                color: var(--text-muted);
-                max-width: 600px;
-                margin: 0 auto
-            }
+/* Inputs */
+.form-group{ display:flex; flex-direction:column; gap:8px }
+.form-group label{ color:var(--muted); font-size:.95rem; font-weight:600 }
+.required-star{ color:#ff4d4d }
+.input, .select{
+  width:100%; background:rgba(255,255,255,.03); color:var(--fg);
+  border:1px solid var(--border); border-radius:10px; padding:12px 14px; outline:none; font:inherit;
+  transition:border-color .2s, box-shadow .2s;
+}
+.input::placeholder{ color:var(--muted); opacity:.65 }
+.input:focus, .select:focus{ border-color:var(--primary); box-shadow:0 0 0 3px rgba(0,170,255,.18) }
 
-        .form-section {
-            border: none;
-            padding: 0
-        }
-
-        .form-section-title {
-            font-size: 18px;
-            font-weight: 600;
-            padding-bottom: 12px;
-            margin-bottom: 20px;
-            border-bottom: 1px solid var(--secondary);
-            display: flex;
-            align-items: center;
-            gap: 12px
-        }
-
-            .form-section-title i {
-                color: var(--primary)
-            }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 20px
-        }
-
-            .form-group:last-child {
-                margin-bottom: 0
-            }
-
-            .form-group label {
-                font-size: 14px;
-                font-weight: 500;
-                color: var(--text-muted)
-            }
-
-                .form-group label .required-star {
-                    color: #ff4d4d
-                }
-
-            .form-group input, .form-group select {
-                width: 100%;
-                background-color: var(--bg-dark);
-                border: 1px solid var(--secondary);
-                border-radius: 8px;
-                padding: 12px 16px;
-                color: var(--text-color);
-                font-size: 15px;
-                font-family: 'Poppins',sans-serif;
-                transition: border-color .3s ease,box-shadow .3s ease
-            }
-
-                .form-group input::placeholder {
-                    color: var(--text-muted);
-                    opacity: .6
-                }
-
-                .form-group input:focus, .form-group select:focus {
-                    outline: none;
-                    border-color: var(--primary);
-                    box-shadow: 0 0 0 3px rgba(0,170,255,.2)
-                }
-
-        .two-column-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0 30px
-        }
-
-        .account-type-selector {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px
-        }
-
-            .account-type-selector input[type=radio] {
-                display: none
-            }
-
-            .account-type-selector label {
-                text-align: center;
-                padding: 12px;
-                border: 1px solid var(--secondary);
-                border-radius: 8px;
-                cursor: pointer;
-                transition: all .3s ease;
-                font-weight: 500;
-                background-color: var(--bg-dark)
-            }
-
-            .account-type-selector input[type=radio]:checked + label {
-                background: var(--gradient);
-                color: #fff;
-                border-color: var(--primary-light)
-            }
-
-        .file-upload-label {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            padding: 20px;
-            background-color: var(--bg-dark);
-            border: 2px dashed var(--secondary);
-            border-radius: 8px;
-            cursor: pointer;
-            text-align: center;
-            transition: all .3s ease;
-            height: 100%
-        }
-
-            .file-upload-label:hover {
-                border-color: var(--primary)
-            }
-
-            .file-upload-label.has-file {
-                border-style: solid;
-                border-color: var(--primary)
-            }
-
-            .file-upload-label i {
-                font-size: 24px;
-                color: var(--primary)
-            }
-
-            .file-upload-label span {
-                font-size: 13px;
-                color: var(--text-muted);
-                word-break: break-all
-            }
-
-        .file-upload-input {
-            display: none
-        }
-
-        .form-footer {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-            margin-top: 10px;
-            padding-top: 25px;
-            border-top: 1px solid var(--secondary)
-        }
-
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 12px
-        }
-
-            .checkbox-group input[type=checkbox] {
-                appearance: none;
-                width: 20px;
-                height: 20px;
-                background-color: var(--bg-dark);
-                border: 1px solid var(--secondary);
-                border-radius: 6px;
-                cursor: pointer;
-                position: relative
-            }
-
-                .checkbox-group input[type=checkbox]:checked {
-                    background: var(--primary);
-                    border-color: var(--primary-light)
-                }
-
-                    .checkbox-group input[type=checkbox]:checked::after {
-                        content: '\f00c';
-                        font-family: 'Font Awesome 6 Free';
-                        font-weight: 900;
-                        font-size: 12px;
-                        color: #fff;
-                        position: absolute;
-                        top: 50%;
-                        left: 50%;
-                        transform: translate(-50%,-50%)
-                    }
-
-            .checkbox-group label {
-                font-size: 13px;
-                color: var(--text-muted)
-            }
-
-                .checkbox-group label a {
-                    color: var(--primary-light);
-                    text-decoration: none
-                }
-
-        @@media (max-width:960px) {
-            .page-wrapper {
-                padding: 100px 10px 40px
-            }
-
-            .kyc-container {
-                padding: 25px
-            }
-
-            .two-column-layout {
-                grid-template-columns: 1fr
-            }
-
-            .form-footer {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 25px
-            }
-
-                .form-footer .btn {
-                    width: 100%
-                }
-        }
-    </style>
+/* Account type pills */
+.account-type-selector{ display:grid; grid-template-columns:1fr 1fr; gap:12px }
+.account-type-selector input[type=radio]{ display:none }
+.account-type-selector label{
+  cursor:pointer; text-align:center; padding:12px 10px; font-weight:800;
+  border:1px solid var(--border); border-radius:12px;
+  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  transition:transform .15s, box-shadow .15s, border-color .15s;
+}
+.account-type-selector label:hover{ transform:translateY(-2px) }
+.account-type-selector input[type=radio]:checked + label{
+  background:linear-gradient(180deg, rgba(108,240,255,.18), rgba(155,107,255,.18));
+  border-color:var(--primary); box-shadow:0 10px 26px rgba(108,240,255,.25); color:#fff;
 }
 
-<div class="page-wrapper">
-    <div class="kyc-container">
-        <div class="kyc-header">
-            <h1>Xác Minh Danh Tính</h1>
-            <p>Hoàn thành các bước xác minh để đủ điều kiện tạo chiến dịch kêu gọi vốn.</p>
+/* Upload */
+.file-upload-label{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  min-height:140px; padding:18px; text-align:center; cursor:pointer;
+  border:2px dashed var(--border); border-radius:12px;
+  background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+  transition:border-color .2s, background .2s, transform .15s;
+}
+.file-upload-label i{ font-size:22px; color:var(--primary) }
+.file-upload-label span{ font-size:.92rem; color:var(--muted); word-break:break-all }
+.file-upload-label:hover{ border-color:var(--primary) }
+.file-upload-label.drag{ border-color:var(--primary); background:linear-gradient(180deg, rgba(108,240,255,.12), rgba(155,107,255,.10)); transform:translateY(-1px) }
+.file-upload-label.has-file{ border-style:solid; border-color:var(--primary) }
+.file-upload-input{ display:none }
+
+/* Footer / check */
+.form-footer{
+  margin-top:6px; padding-top:14px; border-top:1px solid var(--border);
+  display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap
+}
+.checkbox-group{ display:flex; align-items:center; gap:10px }
+.checkbox{
+  appearance:none; width:20px; height:20px; border-radius:6px;
+  background:rgba(255,255,255,.03); border:1px solid var(--border); cursor:pointer; position:relative
+}
+.checkbox:checked{ background:var(--primary); border-color:var(--primary) }
+.checkbox:checked::after{
+  content:'\f00c'; font:900 12px 'Font Awesome 6 Free'; color:#fff; position:absolute; inset:0; display:grid; place-items:center;
+}
+.checkbox-group label{ color:var(--muted); font-size:.95rem }
+.checkbox-group a{ color:var(--primary); text-decoration:none }
+
+/* Buttons */
+.btn{
+  --glow: rgba(108,240,255,.45);
+  background: linear-gradient(180deg, rgba(108,240,255,.18), rgba(155,107,255,.18));
+  border:1px solid var(--border); color:var(--fg); padding:12px 16px; border-radius:12px; font-weight:800; cursor:pointer;
+  transition:transform .15s, box-shadow .15s, opacity .15s;
+}
+.btn:hover{ transform:translateY(-2px); box-shadow:0 10px 26px var(--glow) }
+.btn:disabled{ opacity:.6; cursor:not-allowed }
+.btn.secondary{ background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)) }
+</style>
+}
+
+<div class="kyc-page">
+  <!-- Thanh thông báo -->
+  <div id="kycNotice" class="notice hidden">
+    <div class="notice__msg" id="kycNoticeMsg">...</div>
+    <button class="notice__close" id="kycNoticeClose" aria-label="Đóng">✕</button>
+  </div>
+
+  <div class="kyc-wrap">
+    <!-- Sidebar -->
+    <aside class="kyc-aside" id="kycAside" aria-label="Tiến trình KYC">
+      <div class="aside-head">
+        <h1>Xác Minh Danh Tính</h1>
+        <p>Điền theo từng bước và bấm <strong>Tiếp</strong>.</p>
+      </div>
+      <ol class="step-list">
+        <li class="step-item active" id="s1"><span class="step-dot">1</span>Loại tài khoản</li>
+        <li class="step-item" id="s2"><span class="step-dot">2</span>Thông tin</li>
+        <li class="step-item" id="s3"><span class="step-dot">3</span>Tài liệu & xác nhận</li>
+      </ol>
+      <div class="aside-note">
+        <strong>Lưu ý:</strong> Ảnh rõ nét; PDF ≤ 10MB. Dấu <span class="required-star">*</span> là bắt buộc.
+      </div>
+    </aside>
+
+    <!-- Main Wizard -->
+    <section class="kyc-main" id="kycMain">
+      <form id="fundraiser-kyc-form" novalidate>
+        <!-- STEP 1 -->
+        <div class="card" id="step-1">
+          <h2 class="card-title"><i class="fa-solid fa-user-check"></i>1. Chọn Loại Tài Khoản</h2>
+          <div class="card-body">
+            <div class="account-type-selector">
+              <input type="radio" id="type-individual" name="AccountTypeRadio" value="individual" checked>
+              <label for="type-individual"><i class="fa-solid fa-user"></i> Cá Nhân</label>
+              <input type="radio" id="type-company" name="AccountTypeRadio" value="company">
+              <label for="type-company"><i class="fa-solid fa-building"></i> Công Ty</label>
+            </div>
+          </div>
+          <div class="wiz-actions">
+            <span class="spacer"></span>
+            <button type="button" class="btn" id="btnNext1">Tiếp</button>
+          </div>
         </div>
 
-        <form id="fundraiser-kyc-form" novalidate>
-            <fieldset class="form-section">
-                <legend class="form-section-title"><i class="fa-solid fa-user-check"></i>1. Chọn Loại Tài Khoản</legend>
-                <div class="account-type-selector">
-                    <input type="radio" id="type-individual" name="AccountTypeRadio" value="individual" checked>
-                    <label for="type-individual"><i class="fa-solid fa-user"></i> Cá Nhân</label>
-                    <input type="radio" id="type-company" name="AccountTypeRadio" value="company">
-                    <label for="type-company"><i class="fa-solid fa-building"></i> Công Ty</label>
+        <!-- STEP 2 -->
+        <div class="card hidden" id="step-2">
+          <h2 id="info-legend" class="card-title"><i class="fa-solid fa-address-card"></i>2. Thông Tin Cá Nhân</h2>
+          <div class="card-body">
+            <div class="two-col">
+              <div>
+                <div id="individual-col-1">
+                  <div class="form-group">
+                    <label for="individual-name">Họ và Tên đầy đủ <span class="required-star">*</span></label>
+                    <input class="input" type="text" id="individual-name" name="FullName" placeholder="Ví dụ: Nguyễn Văn An" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="individual-id-number">Số Căn Cước Công Dân (CCCD) <span class="required-star">*</span></label>
+                    <input class="input" type="text" id="individual-id-number" name="IdNumber" placeholder="12 số trên CCCD" pattern="\d{12}" title="Vui lòng nhập đúng 12 số CCCD." required>
+                  </div>
                 </div>
-            </fieldset>
-
-            <fieldset class="form-section">
-                <legend id="info-legend" class="form-section-title"><i class="fa-solid fa-address-card"></i>2. Thông Tin Cá Nhân</legend>
-                <div class="two-column-layout">
-                    <div>
-                        <div id="individual-col-1">
-                            <div class="form-group">
-                                <label for="individual-name">Họ và Tên đầy đủ <span class="required-star">*</span></label>
-                                <input type="text" id="individual-name" name="FullName" placeholder="Ví dụ: Nguyễn Văn An" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="individual-id-number">Số Căn Cước Công Dân (CCCD) <span class="required-star">*</span></label>
-                                <input type="text" id="individual-id-number" name="IdNumber" placeholder="Nhập 12 số trên CCCD" pattern="\d{12}" title="Vui lòng nhập đúng 12 số CCCD." required>
-                            </div>
-                        </div>
-                        <div id="company-col-1" style="display: none;">
-                            <div class="form-group">
-                                <label for="company-name">Tên công ty đầy đủ <span class="required-star">*</span></label>
-                                <input type="text" id="company-name" name="CompanyName" placeholder="Công ty TNHH FutureTech" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="company-reg-number">Mã số đăng ký kinh doanh <span class="required-star">*</span></label>
-                                <input type="text" id="company-reg-number" name="RegistrationNumber" required>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <div id="individual-col-2">
-                            <div class="form-group">
-                                <label for="individual-nationality">Quốc tịch <span class="required-star">*</span></label>
-                                <input type="text" id="individual-nationality" name="Nationality" placeholder="Ví dụ: Việt Nam" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="contact-email-ind">Email liên hệ <span class="required-star">*</span></label>
-                                <input type="email" id="contact-email-ind" name="ContactEmail" placeholder="email@example.com" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="individual-website">Website / LinkedIn (Không bắt buộc)</label>
-                                <input type="url" id="individual-website" name="WebsiteOrLinkedIn" placeholder="https://www.linkedin.com/in/...">
-                            </div>
-                        </div>
-                        <div id="company-col-2" style="display: none;">
-                            <div class="form-group">
-                                <label for="company-country">Quốc gia đăng ký <span class="required-star">*</span></label>
-                                <input type="text" id="company-country" name="RegisteredCountry" placeholder="Ví dụ: Việt Nam" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="contact-email-com">Email liên hệ <span class="required-star">*</span></label>
-                                <input type="email" id="contact-email-com" name="ContactEmail" placeholder="email@congty.com" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="company-website">Website / LinkedIn (Không bắt buộc)</label>
-                                <input type="url" id="company-website" name="WebsiteOrLinkedIn" placeholder="https://www.yourcompany.com">
-                            </div>
-                        </div>
-                    </div>
+                <div id="company-col-1" style="display:none;">
+                  <div class="form-group">
+                    <label for="company-name">Tên công ty đầy đủ <span class="required-star">*</span></label>
+                    <input class="input" type="text" id="company-name" name="CompanyName" placeholder="Công ty TNHH FutureTech" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="company-reg-number">Mã số đăng ký kinh doanh <span class="required-star">*</span></label>
+                    <input class="input" type="text" id="company-reg-number" name="RegistrationNumber" required>
+                  </div>
                 </div>
-            </fieldset>
-
-            <fieldset class="form-section">
-                <legend class="form-section-title"><i class="fa-solid fa-cloud-arrow-up"></i>3. Tải Lên Tài Liệu</legend>
-                <div class="two-column-layout">
-                    <div>
-                        <div id="individual-docs-col1">
-                            <div class="form-group">
-                                <label for="individual-id-front">Mặt trước CCCD/Passport <span class="required-star">*</span></label>
-                                <label for="individual-id-front" class="file-upload-label">
-                                    <i class="fa-regular fa-image"></i>
-                                    <span>Nhấn để tải ảnh lên</span>
-                                </label>
-                                <input type="file" id="individual-id-front" name="IdFrontImage" class="file-upload-input" accept="image/png, image/jpeg" required>
-                            </div>
-                        </div>
-                        <div id="company-docs-col1" style="display: none;">
-                            <div class="form-group">
-                                <label for="company-certificate">Giấy chứng nhận ĐKKD <span class="required-star">*</span></label>
-                                <label for="company-certificate" class="file-upload-label">
-                                    <i class="fa-solid fa-file-pdf"></i>
-                                    <span>Tải file PDF lên</span>
-                                </label>
-                                <input type="file" id="company-certificate" name="BusinessLicensePdf" class="file-upload-input" accept=".pdf,application/pdf" required>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <div id="individual-docs-col2">
-                            <div class="form-group">
-                                <label for="individual-selfie">Ảnh selfie cùng CCCD <span class="required-star">*</span></label>
-                                <label for="individual-selfie" class="file-upload-label">
-                                    <i class="fa-solid fa-camera-retro"></i>
-                                    <span>Nhấn để tải ảnh lên</span>
-                                </label>
-                                <input type="file" id="individual-selfie" name="SelfieWithIdImage" class="file-upload-input" accept="image/png, image/jpeg" required>
-                            </div>
-                        </div>
-                        <div id="company-docs-col2" style="display: none;">
-                            <div class="form-group">
-                                <label for="company-director-id">CCCD/Passport Giám đốc <span class="required-star">*</span></label>
-                                <label for="company-director-id" class="file-upload-label">
-                                    <i class="fa-regular fa-address-card"></i>
-                                    <span>Nhấn để tải ảnh lên</span>
-                                </label>
-                                <input type="file" id="company-director-id" name="DirectorIdImage" class="file-upload-input" accept="image/png, image/jpeg" required>
-                            </div>
-                        </div>
-                    </div>
+              </div>
+              <div>
+                <div id="individual-col-2">
+                  <div class="form-group">
+                    <label for="individual-nationality">Quốc tịch <span class="required-star">*</span></label>
+                    <input class="input" type="text" id="individual-nationality" name="Nationality" placeholder="Việt Nam" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="contact-email-ind">Email liên hệ <span class="required-star">*</span></label>
+                    <input class="input" type="email" id="contact-email-ind" name="ContactEmail" placeholder="email@example.com" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="individual-website">Website / LinkedIn (không bắt buộc)</label>
+                    <input class="input" type="url" id="individual-website" name="WebsiteOrLinkedIn" placeholder="https://www.linkedin.com/in/...">
+                  </div>
                 </div>
-            </fieldset>
-
-            <div class="form-footer">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="agree-terms" name="AcceptedTerms" value="true" required>
-                    <label for="agree-terms">Tôi đồng ý với <a href="/terms" target="_blank">Điều khoản & Chính sách</a> <span class="required-star">*</span></label>
+                <div id="company-col-2" style="display:none;">
+                  <div class="form-group">
+                    <label for="company-country">Quốc gia đăng ký <span class="required-star">*</span></label>
+                    <input class="input" type="text" id="company-country" name="RegisteredCountry" placeholder="Việt Nam" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="contact-email-com">Email liên hệ <span class="required-star">*</span></label>
+                    <input class="input" type="email" id="contact-email-com" name="ContactEmail" placeholder="email@congty.com" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="company-website">Website / LinkedIn (không bắt buộc)</label>
+                    <input class="input" type="url" id="company-website" name="WebsiteOrLinkedIn" placeholder="https://www.yourcompany.com">
+                  </div>
                 </div>
-                <button type="submit" class="btn btn-gradient" id="submit-kyc-btn">Nộp Đơn & Hoàn Tất</button>
+              </div>
             </div>
-        </form>
-    </div>
+          </div>
+          <div class="wiz-actions">
+            <button type="button" class="btn secondary" id="btnPrev2">Trước</button>
+            <span class="spacer"></span>
+            <button type="button" class="btn" id="btnNext2">Tiếp</button>
+          </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="card hidden" id="step-3">
+          <h2 class="card-title"><i class="fa-solid fa-cloud-arrow-up"></i>3. Tải Lên Tài Liệu</h2>
+          <div class="card-body">
+            <div class="two-col">
+              <div>
+                <div id="individual-docs-col1">
+                  <div class="form-group">
+                    <label for="individual-id-front">Mặt trước CCCD/Passport <span class="required-star">*</span></label>
+                    <label for="individual-id-front" class="file-upload-label">
+                      <i class="fa-regular fa-image"></i>
+                      <span>Nhấn để chọn ảnh hoặc kéo vào đây</span>
+                    </label>
+                    <input type="file" id="individual-id-front" name="IdFrontImage" class="file-upload-input" accept="image/png, image/jpeg" required>
+                  </div>
+                </div>
+                <div id="company-docs-col1" style="display:none;">
+                  <div class="form-group">
+                    <label for="company-certificate">Giấy chứng nhận ĐKKD <span class="required-star">*</span></label>
+                    <label for="company-certificate" class="file-upload-label">
+                      <i class="fa-solid fa-file-pdf"></i>
+                      <span>Nhấn để chọn PDF hoặc kéo vào đây</span>
+                    </label>
+                    <input type="file" id="company-certificate" name="BusinessLicensePdf" class="file-upload-input" accept=".pdf,application/pdf" required>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div id="individual-docs-col2">
+                  <div class="form-group">
+                    <label for="individual-selfie">Ảnh selfie cùng CCCD <span class="required-star">*</span></label>
+                    <label for="individual-selfie" class="file-upload-label">
+                      <i class="fa-solid fa-camera-retro"></i>
+                      <span>Nhấn để chọn ảnh hoặc kéo vào đây</span>
+                    </label>
+                    <input type="file" id="individual-selfie" name="SelfieWithIdImage" class="file-upload-input" accept="image/png, image/jpeg" required>
+                  </div>
+                </div>
+                <div id="company-docs-col2" style="display:none;">
+                  <div class="form-group">
+                    <label for="company-director-id">CCCD/Passport Giám đốc <span class="required-star">*</span></label>
+                    <label for="company-director-id" class="file-upload-label">
+                      <i class="fa-regular fa-address-card"></i>
+                      <span>Nhấn để chọn ảnh hoặc kéo vào đây</span>
+                    </label>
+                    <input type="file" id="company-director-id" name="DirectorIdImage" class="file-upload-input" accept="image/png, image/jpeg" required>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-footer">
+            <div class="checkbox-group">
+              <input class="checkbox" type="checkbox" id="agree-terms" name="AcceptedTerms" value="true" required>
+              <label for="agree-terms">Tôi đồng ý với <a href="/terms" target="_blank">Điều khoản & Chính sách</a> <span class="required-star">*</span></label>
+            </div>
+            <div class="wiz-actions">
+              <button type="button" class="btn secondary" id="btnPrev3">Trước</button>
+              <button type="submit" class="btn" id="submit-kyc-btn">Nộp Đơn & Hoàn Tất</button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </section>
+  </div>
 </div>
 
 @section Scripts {
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // --- DOM Elements ---
-            const kycForm = document.getElementById('fundraiser-kyc-form');
-            const submitButton = document.getElementById('submit-kyc-btn');
-            const infoLegend = document.getElementById('info-legend');
-            const individualRadio = document.getElementById('type-individual');
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  /* ====== Notice bar helpers (thanh thông báo) ====== */
+  const $notice = document.getElementById('kycNotice');
+  const $msg    = document.getElementById('kycNoticeMsg');
+  const $close  = document.getElementById('kycNoticeClose');
+  let noticeTimer = null;
 
-            const elementsToShowForIndividual = [
-                document.getElementById('individual-col-1'),
-                document.getElementById('individual-col-2'),
-                document.getElementById('individual-docs-col1'),
-                document.getElementById('individual-docs-col2')
-            ];
-            const elementsToShowForCompany = [
-                document.getElementById('company-col-1'),
-                document.getElementById('company-col-2'),
-                document.getElementById('company-docs-col1'),
-                document.getElementById('company-docs-col2')
-            ];
+  function showNotice(text, type='success', timeout=3500){
+    $notice.classList.remove('hidden','notice--success','notice--error');
+    $notice.classList.add(type==='error'?'notice--error':'notice--success');
+    $msg.textContent = text;
+    clearTimeout(noticeTimer);
+    noticeTimer = setTimeout(hideNotice, timeout);
+  }
+  function hideNotice(){ $notice.classList.add('hidden'); }
+  $close.addEventListener('click', hideNotice);
 
-            const allIndividualInputs = elementsToShowForIndividual.flatMap(el => Array.from(el.querySelectorAll('input')));
-            const allCompanyInputs = elementsToShowForCompany.flatMap(el => Array.from(el.querySelectorAll('input')));
+  /* ====== Equal height: card = aside ====== */
+  const aside = document.getElementById('kycAside');
+  const cards = [ 'step-1','step-2','step-3' ].map(id => document.getElementById(id));
+  function syncHeights(){
+    // Chỉ áp dụng desktop; mobile bỏ để tránh card quá cao
+    if(window.innerWidth <= 980){
+      document.documentElement.style.removeProperty('--panel-equal');
+      return;
+    }
+    const h = aside?.offsetHeight || 0;
+    document.documentElement.style.setProperty('--panel-equal', h ? (h + 'px') : 'auto');
+  }
+  window.addEventListener('load', syncHeights);
+  window.addEventListener('resize', syncHeights);
 
-            // --- Functions ---
-            function toggleAccountType() {
-                const isIndividual = individualRadio.checked;
+  /* ====== Wizard logic (giữ toàn bộ id/name/endpoint) ====== */
+  const steps = [ document.getElementById('step-1'), document.getElementById('step-2'), document.getElementById('step-3') ];
+  const dots  = [ document.getElementById('s1'), document.getElementById('s2'), document.getElementById('s3') ];
+  const btnNext1 = document.getElementById('btnNext1');
+  const btnNext2 = document.getElementById('btnNext2');
+  const btnPrev2 = document.getElementById('btnPrev2');
+  const btnPrev3 = document.getElementById('btnPrev3');
 
-                elementsToShowForIndividual.forEach(el => el.style.display = isIndividual ? 'block' : 'none');
-                elementsToShowForCompany.forEach(el => el.style.display = isIndividual ? 'none' : 'block');
+  const kycForm = document.getElementById('fundraiser-kyc-form');
+  const submitButton = document.getElementById('submit-kyc-btn');
 
-                // Chỉ đặt 'required' cho các input có trong HTML gốc, trừ trường không bắt buộc
-                allIndividualInputs.forEach(input => {
-                    if(input.name !== 'WebsiteOrLinkedIn') input.required = isIndividual;
-                });
-                allCompanyInputs.forEach(input => {
-                    if(input.name !== 'WebsiteOrLinkedIn') input.required = !isIndividual;
-                });
+  const individualRadio = document.getElementById('type-individual');
 
-                if (isIndividual) {
-                    infoLegend.innerHTML = '<i class="fa-solid fa-address-card"></i>2. Thông Tin Cá Nhân';
-                } else {
-                    infoLegend.innerHTML = '<i class="fa-regular fa-building"></i>2. Thông Tin Công Ty';
-                }
-            }
+  const elIndCols = [
+    document.getElementById('individual-col-1'),
+    document.getElementById('individual-col-2'),
+    document.getElementById('individual-docs-col1'),
+    document.getElementById('individual-docs-col2')
+  ];
+  const elComCols = [
+    document.getElementById('company-col-1'),
+    document.getElementById('company-col-2'),
+    document.getElementById('company-docs-col1'),
+    document.getElementById('company-docs-col2')
+  ];
+  const allIndInputs = elIndCols.flatMap(el => Array.from(el.querySelectorAll('input')));
+  const allComInputs = elComCols.flatMap(el => Array.from(el.querySelectorAll('input')));
+  const infoLegend = document.getElementById('info-legend');
 
-            function handleFileSelection(event) {
-                const input = event.target;
-                const file = input.files[0];
-                const label = input.previousElementSibling;
-                if (!label || !label.classList.contains('file-upload-label')) return;
-                const span = label.querySelector('span');
-                if (file) {
-                    span.textContent = file.name;
-                    label.classList.add('has-file');
-                } else {
-                    span.textContent = label.dataset.defaultText || 'Nhấn để tải ảnh lên';
-                    label.classList.remove('has-file');
-                }
-            }
+  function markStep(i){
+    dots.forEach((d,k)=> d.classList.toggle('active', k <= i));
+    steps.forEach((s,k)=> s.classList.toggle('hidden', k !== i));
+    const firstInput = steps[i].querySelector('input,select,button');
+    if(firstInput) firstInput.focus({preventScroll:true});
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    syncHeights(); // cập nhật chiều cao khi chuyển bước
+  }
 
-            async function handleFormSubmit(event) {
-                event.preventDefault();
-                if (!kycForm.checkValidity()) {
-                    kycForm.reportValidity();
-                    return;
-                }
+  function visibleRequiredInvalid(container){
+    const els = container.querySelectorAll('input,select,textarea');
+    for(const el of els){
+      if(el.required && isVisible(el)){
+        if(el.type === 'file'){ if(!el.files || !el.files.length) return el; }
+        else if(!el.checkValidity()) return el;
+      }
+    }
+    return null;
+  }
+  function isVisible(el){ return !!(el.offsetParent || el.getClientRects().length); }
 
-                submitButton.disabled = true;
-                submitButton.textContent = 'Đang xử lý...';
+  // Toggle loại tài khoản
+  function toggleAccountType(){
+    const isInd = individualRadio.checked;
+    elIndCols.forEach(el => el.style.display = isInd ? 'block' : 'none');
+    elComCols.forEach(el => el.style.display = isInd ? 'none' : 'block');
+    allIndInputs.forEach(input => { if(input.name !== 'WebsiteOrLinkedIn') input.required = isInd; });
+    allComInputs.forEach(input => { if(input.name !== 'WebsiteOrLinkedIn') input.required = !isInd; });
+    infoLegend.innerHTML = isInd
+      ? '<i class="fa-solid fa-address-card"></i>2. Thông Tin Cá Nhân'
+      : '<i class="fa-regular fa-building"></i>2. Thông Tin Công Ty';
+    syncHeights();
+  }
+  document.querySelectorAll('input[name="AccountTypeRadio"]').forEach(r => r.addEventListener('change', toggleAccountType));
+  toggleAccountType();
 
-                const formData = new FormData();
-                const activeType = individualRadio.checked ? 'individual' : 'company';
+  // Upload UI
+  function handleFileSelection(event){
+    const input = event.target;
+    const file = input.files[0];
+    const label = input.previousElementSibling;
+    if(!label || !label.classList.contains('file-upload-label')) return;
+    const span = label.querySelector('span');
+    if(file){ span.textContent = file.name; label.classList.add('has-file'); }
+    else{ span.textContent = label.dataset.defaultText || 'Nhấn để tải lên'; label.classList.remove('has-file'); }
+    syncHeights();
+  }
+  document.querySelectorAll('.file-upload-input').forEach(input=>{
+    const label = input.previousElementSibling;
+    if(label && label.querySelector('span')) label.dataset.defaultText = label.querySelector('span').textContent;
+    input.addEventListener('change', handleFileSelection);
+    ['dragenter','dragover'].forEach(evn=> label.addEventListener(evn, e=>{ e.preventDefault(); e.stopPropagation(); label.classList.add('drag'); }));
+    ['dragleave','drop'].forEach(evn=> label.addEventListener(evn, e=>{ e.preventDefault(); e.stopPropagation(); label.classList.remove('drag'); }));
+    label.addEventListener('drop', e=>{
+      const dt = e.dataTransfer; if(!dt || !dt.files || !dt.files.length) return;
+      input.files = dt.files; input.dispatchEvent(new Event('change', {bubbles:true}));
+    });
+  });
 
-                formData.append('AccountType', activeType);
-                formData.append('AcceptedTerms', document.getElementById('agree-terms').checked);
+  // Điều hướng
+  let stepIndex = 0; markStep(stepIndex);
+  btnNext1.addEventListener('click', ()=>{ stepIndex = 1; markStep(stepIndex); });
+  btnPrev2.addEventListener('click', ()=>{ stepIndex = 0; markStep(stepIndex); });
+  btnNext2.addEventListener('click', ()=>{
+    const bad = visibleRequiredInvalid(document.getElementById('step-2'));
+    if(bad){ bad.reportValidity?.(); bad.scrollIntoView({behavior:'smooth', block:'center'}); return; }
+    stepIndex = 2; markStep(stepIndex);
+  });
+  btnPrev3.addEventListener('click', ()=>{ stepIndex = 1; markStep(stepIndex); });
 
-                if (activeType === 'individual') {
-                    formData.append('FullName', document.getElementById('individual-name').value);
-                    formData.append('IdNumber', document.getElementById('individual-id-number').value);
-                    formData.append('Nationality', document.getElementById('individual-nationality').value);
-                    formData.append('ContactEmail', document.getElementById('contact-email-ind').value);
-                    formData.append('WebsiteOrLinkedIn', document.getElementById('individual-website').value);
-                    if (document.getElementById('individual-id-front').files[0]) {
-                        formData.append('IdFrontImage', document.getElementById('individual-id-front').files[0]);
-                    }
-                    if (document.getElementById('individual-selfie').files[0]) {
-                        formData.append('SelfieWithIdImage', document.getElementById('individual-selfie').files[0]);
-                    }
-                } else {
-                    formData.append('CompanyName', document.getElementById('company-name').value);
-                    formData.append('RegistrationNumber', document.getElementById('company-reg-number').value);
-                    formData.append('RegisteredCountry', document.getElementById('company-country').value);
-                    formData.append('ContactEmail', document.getElementById('contact-email-com').value);
-                    formData.append('WebsiteOrLinkedIn', document.getElementById('company-website').value);
-                    if (document.getElementById('company-certificate').files[0]) {
-                        formData.append('BusinessLicensePdf', document.getElementById('company-certificate').files[0]);
-                    }
-                    if (document.getElementById('company-director-id').files[0]) {
-                        formData.append('DirectorIdImage', document.getElementById('company-director-id').files[0]);
-                    }
-                }
+  // Submit giữ nguyên endpoint
+  kycForm.addEventListener('submit', async (event)=>{
+    event.preventDefault();
+    const bad = visibleRequiredInvalid(document.getElementById('step-3'));
+    if(bad){ bad.reportValidity?.(); bad.scrollIntoView({behavior:'smooth', block:'center'}); return; }
 
-                try {
-                    const response = await fetch('/Kyc/SubmitKyc', { method: 'POST', body: formData });
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        DApp.showCustomAlert('Lỗi: ' + errorData.message); // <-- SỬ DỤNG HÀM TOÀN CỤC
-                        return;
-                    }
-                    else{
-                        DApp.showCustomAlert('Nộp đơn KYC thành công!'); // <-- SỬ DỤNG HÀM TOÀN CỤC
-                    kycForm.reset();
-                    document.querySelectorAll('.file-upload-label').forEach(label => {
-                        label.classList.remove('has-file');
-                        label.querySelector('span').textContent = label.dataset.defaultText || 'Nhấn để tải ảnh lên';
-                    });
-                    toggleAccountType();
-                    }
-                    
-                } catch (error) {
-                    console.error('Lỗi mạng hoặc server:', error);
-                    DApp.showCustomAlert('Không thể kết nối đến máy chủ. Vui lòng thử lại.'); // <-- SỬ DỤNG HÀM TOÀN CỤC
-                } finally {
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Nộp Đơn & Hoàn Tất';
-                }
-            }
+    submitButton.disabled = true;
+    submitButton.textContent = 'Đang xử lý...';
 
-            // --- Event Listeners ---
-            document.querySelectorAll('input[name="AccountTypeRadio"]').forEach(radio => radio.addEventListener('change', toggleAccountType));
+    const formData = new FormData();
+    const isInd = individualRadio.checked;
+    formData.append('AccountType', isInd ? 'individual' : 'company');
+    formData.append('AcceptedTerms', document.getElementById('agree-terms').checked);
 
-            document.querySelectorAll('.file-upload-input').forEach(input => {
-                const label = input.previousElementSibling;
-                if (label && label.querySelector('span')) {
-                    label.dataset.defaultText = label.querySelector('span').textContent;
-                }
-                input.addEventListener('change', handleFileSelection);
-            });
+    try{
+      if(isInd){
+        formData.append('FullName', document.getElementById('individual-name').value);
+        formData.append('IdNumber', document.getElementById('individual-id-number').value);
+        formData.append('Nationality', document.getElementById('individual-nationality').value);
+        formData.append('ContactEmail', document.getElementById('contact-email-ind').value);
+        formData.append('WebsiteOrLinkedIn', document.getElementById('individual-website').value);
+        if(document.getElementById('individual-id-front').files[0]) formData.append('IdFrontImage', document.getElementById('individual-id-front').files[0]);
+        if(document.getElementById('individual-selfie').files[0]) formData.append('SelfieWithIdImage', document.getElementById('individual-selfie').files[0]);
+      }else{
+        formData.append('CompanyName', document.getElementById('company-name').value);
+        formData.append('RegistrationNumber', document.getElementById('company-reg-number').value);
+        formData.append('RegisteredCountry', document.getElementById('company-country').value);
+        formData.append('ContactEmail', document.getElementById('contact-email-com').value);
+        formData.append('WebsiteOrLinkedIn', document.getElementById('company-website').value);
+        if(document.getElementById('company-certificate').files[0]) formData.append('BusinessLicensePdf', document.getElementById('company-certificate').files[0]);
+        if(document.getElementById('company-director-id').files[0]) formData.append('DirectorIdImage', document.getElementById('company-director-id').files[0]);
+      }
 
-            kycForm.addEventListener('submit', handleFormSubmit);
+      const response = await fetch('/Kyc/SubmitKyc', { method:'POST', body: formData });
+      if(!response.ok){
+        const err = await response.json().catch(()=>({message:'Lỗi máy chủ'}));
+        showNotice('Lỗi: ' + (err.message || 'Không xác định'), 'error');
+        return;
+      }
 
-            // --- Initialisation ---
-            toggleAccountType();
-        });
-    </script>
+      showNotice('Nộp đơn KYC thành công!', 'success');
+      // Reset nhưng không rời trang
+      kycForm.reset();
+      document.querySelectorAll('.file-upload-label').forEach(label=>{
+        label.classList.remove('has-file');
+        label.querySelector('span').textContent = label.dataset.defaultText || 'Nhấn để tải lên';
+      });
+      toggleAccountType();
+      stepIndex = 0; markStep(stepIndex);
+
+    }catch(err){
+      console.error(err);
+      showNotice('Không thể kết nối máy chủ. Vui lòng thử lại.', 'error');
+    }finally{
+      submitButton.disabled = false;
+      submitButton.textContent = 'Nộp Đơn & Hoàn Tất';
+    }
+  });
+});
+</script>
 }

@@ -1,4 +1,5 @@
-﻿using Invest.Application.EventService;
+﻿using Invest.Application.EventListener;
+using Invest.Application.EventService;
 using InvestDapp.Application.AuthService;
 using InvestDapp.Application.CampaignService;
 using InvestDapp.Application.KycService;
@@ -71,6 +72,7 @@ builder.Services.AddScoped<ITradingRepository, TradingRepository>();
 // Register hosted services
 builder.Services.AddHostedService<MarketDataWorker>();
 builder.Services.AddHostedService<TradingEngine>();
+builder.Services.AddHostedService<CampaignEventListener>();
 // =======================
 // 9. ĐĂNG KÝ REPOSITORY VÀ SERVICE
 // =======================

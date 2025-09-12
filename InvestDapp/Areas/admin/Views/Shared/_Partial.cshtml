@@ -1,5 +1,5 @@
 ﻿<li>
-    <a href="@Url.Action("")">
+    <a href="@Url.Action("Index", "Dashboard", new { area = "admin" })">
         <span class="icon">
             <ion-icon name="home-outline"></ion-icon>
         </span>
@@ -7,17 +7,60 @@
     </a>
 </li>
 
-<li>
-    <a href="#">
+<li class="has-submenu">
+    <a href="javascript:void(0)" class="dropdown-toggle">
         <span class="icon">
             <ion-icon name="people-outline"></ion-icon>
         </span>
-        <span class="title">Campaigns</span>
+        <span class="title">Manage Campaigns</span>
+        <span class="arrow">
+            <ion-icon name="chevron-down-outline"></ion-icon>
+        </span>
     </a>
+    <ul class="submenu">
+        <li>
+            <a href="/admin/manage-campaigns/index">Campaign</a>
+        </li>
+        <li><a href="@Url.Action("Analytics", "Manage_Campaigns", new { area = "admin" })">Analytics</a></li>
+        <li><a href="@Url.Action("Reports", "Manage_Campaigns", new { area = "admin" })">Reports</a></li>
+    </ul>
+</li>
+
+<li class="has-submenu">
+    <a href="javascript:void(0)" class="dropdown-toggle">
+        <span class="icon">
+            <ion-icon name="wallet-outline"></ion-icon>
+        </span>
+        <span class="title">Investments</span>
+        <span class="arrow">
+            <ion-icon name="chevron-down-outline"></ion-icon>
+        </span>
+    </a>
+    <ul class="submenu">
+        <li><a href="@Url.Action("Pending", "Investments", new { area = "admin" })">Pending</a></li>
+        <li><a href="@Url.Action("Completed", "Investments", new { area = "admin" })">Completed</a></li>
+        <li><a href="@Url.Action("Refunds", "Investments", new { area = "admin" })">Refunds</a></li>
+    </ul>
+</li>
+
+<li class="has-submenu">
+    <a href="javascript:void(0)" class="dropdown-toggle">
+        <span class="icon">
+            <ion-icon name="people-circle-outline"></ion-icon>
+        </span>
+        <span class="title">Users</span>
+        <span class="arrow">
+            <ion-icon name="chevron-down-outline"></ion-icon>
+        </span>
+    </a>
+    <ul class="submenu">
+        <li><a href="@Url.Action("Kyc", "Users", new { area = "admin" })">KYC Verification</a></li>
+        <li><a href="@Url.Action("Blocked", "Users", new { area = "admin" })">Blocked Users</a></li>
+    </ul>
 </li>
 
 <li>
-    <a href="#">
+    <a href="@Url.Action("Index", "Messages", new { area = "admin" })">
         <span class="icon">
             <ion-icon name="chatbubble-outline"></ion-icon>
         </span>
@@ -25,35 +68,35 @@
     </a>
 </li>
 
-<li>
-    <a href="#">
-        <span class="icon">
-            <ion-icon name="help-outline"></ion-icon>
-        </span>
-        <span class="title">Help</span>
-    </a>
-</li>
-
-<li>
-    <a href="#">
+<li class="has-submenu">
+    <a href="javascript:void(0)" class="dropdown-toggle">
         <span class="icon">
             <ion-icon name="settings-outline"></ion-icon>
         </span>
         <span class="title">Settings</span>
-    </a>
-</li>
-
-<li>
-    <a href="#">
-        <span class="icon">
-            <ion-icon name="lock-closed-outline"></ion-icon>
+        <span class="arrow">
+            <ion-icon name="chevron-down-outline"></ion-icon>
         </span>
-        <span class="title">Password</span>
+    </a>
+    <ul class="submenu">
+        <li><a href="@Url.Action("General", "Settings", new { area = "admin" })">General</a></li>
+        <li><a href="@Url.Action("Security", "Settings", new { area = "admin" })">Security</a></li>
+        <li><a href="@Url.Action("Notifications", "Settings", new { area = "admin" })">Notifications</a></li>
+        <li><a href="@Url.Action("Blockchain", "Settings", new { area = "admin" })">Blockchain</a></li>
+    </ul>
+</li>
+
+<li>
+    <a href="@Url.Action("Help", "Support", new { area = "admin" })">
+        <span class="icon">
+            <ion-icon name="help-outline"></ion-icon>
+        </span>
+        <span class="title">Help & Support</span>
     </a>
 </li>
 
 <li>
-    <a href="#">
+    <a href="@Url.Action("Logout", "Account", new { area = "" })">
         <span class="icon">
             <ion-icon name="log-out-outline"></ion-icon>
         </span>

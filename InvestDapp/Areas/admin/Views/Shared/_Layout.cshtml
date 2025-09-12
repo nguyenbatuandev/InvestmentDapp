@@ -56,7 +56,8 @@
         background: var(--blue);
         border-left: 10px solid var(--blue);
         transition: 0.5s;
-        overflow: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
         z-index: 1000;
     }
 
@@ -65,10 +66,10 @@
         }
 
         .navigation ul {
-            position: absolute;
-            top: 0;
-            left: 0;
+            position: relative; /* keep list in-flow so submenu expansion pushes siblings */
             width: 100%;
+            z-index: 1001;
+            padding: 10px 0; /* small vertical padding */
         }
 
             .navigation ul li {
@@ -83,12 +84,6 @@
                 .navigation ul li.hovered {
                     background-color: var(--white);
                 }
-
-                .navigation ul li:nth-child(1) {
-                    margin-bottom: 40px;
-                    pointer-events: none;
-                }
-
                 .navigation ul li a {
                     position: relative;
                     display: block;
@@ -124,6 +119,122 @@
                     line-height: 60px;
                     text-align: start;
                     white-space: nowrap;
+                    flex: 1;
+                }
+
+                .navigation ul li a .arrow {
+                    position: relative;
+                    display: block;
+                    min-width: 30px;
+                    height: 60px;
+                    line-height: 60px;
+                    text-align: center;
+                    transition: transform 0.3s ease;
+                }
+
+                .navigation ul li.active .arrow {
+                    transform: rotate(180deg);
+                }
+
+                /* Submenu Styles (in-flow by default) */
+                .navigation ul li.has-submenu .submenu {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
+                    background: rgba(255, 255, 255, 0.04);
+                    max-height: 0;
+                    overflow: hidden;
+                    transition: max-height 0.28s ease, padding 0.25s ease;
+                    width: 100%;
+                }
+
+                .navigation ul li.has-submenu.active .submenu {
+                    max-height: 400px; /* allow enough room for items */
+                    padding-bottom: 6px;
+                }
+
+                .navigation ul li.has-submenu .submenu li {
+                    border-radius: 0;
+                    background: transparent;
+                    border-top-left-radius: 0;
+                    border-bottom-left-radius: 0;
+                }
+
+                .navigation ul li.has-submenu .submenu li:hover {
+                    background: rgba(255, 255, 255, 0.1);
+                }
+
+                .navigation ul li.has-submenu .submenu li::before,
+                .navigation ul li.has-submenu .submenu li::after {
+                    display: none;
+                }
+
+                .navigation ul li.has-submenu .submenu li a {
+                    padding-left: 80px;
+                    font-size: 14px;
+                    color: var(--blue); /* submenu text is blue */
+                    border-radius: 0;
+                    height: 40px;
+                    line-height: 40px;
+                    min-width: auto;
+                }
+
+                .navigation ul li.has-submenu .submenu li a::before,
+                .navigation ul li.has-submenu .submenu li a::after {
+                    display: none;
+                }
+
+                /* Submenu hover color: when sidebar is expanded (parent becomes white),
+                   use blue text for contrast; when sidebar is collapsed the floating
+                   panel has a blue background so keep hover text white. */
+                .navigation:not(.active) ul li.has-submenu .submenu li:hover a {
+                    color: var(--blue);
+                }
+
+                /* Collapsed/floating panel hover (explicit) */
+                .navigation.active ul li.has-submenu.active .submenu li:hover a,
+                .floating-submenu .submenu li:hover a {
+                    color: var(--white);
+                }
+
+                /* Remove hover effects for dropdown toggles */
+                .navigation ul li.has-submenu:hover {
+                    background-color: var(--white);
+                }
+
+                .navigation ul li.has-submenu:hover > a {
+                    color: var(--blue);
+                }
+
+                .navigation ul li.has-submenu.active:hover {
+                    background-color: var(--white);
+                }
+
+
+                /* Collapsed state: use floating submenu panels */
+                .navigation.active ul li.has-submenu .submenu {
+                    /* default hidden in collapsed-mode; JS will position and show when active */
+                    position: absolute;
+                    left: 80px;
+                    top: 0;
+                    width: 220px;
+                    background: var(--blue);
+                    border-radius: 8px;
+                    box-shadow: var(--shadow-lg);
+                    z-index: 10000;
+                    display: none; /* hidden until JS sets display:block for the active one */
+                    max-height: none;
+                    overflow: visible;
+                }
+
+                /* when sidebar is collapsed and dropdown is active we show floating panel */
+                .navigation.active ul li.has-submenu.active .submenu {
+                    display: block !important;
+                }
+
+                .navigation.active ul li.has-submenu .submenu li a {
+                    padding-left: 20px;
+                    padding-right: 20px;
                 }
 
                 /* --------- curve outside ---------- */
@@ -528,6 +639,20 @@
             left: 0;
         }
 
+        .navigation.active ul li.has-submenu .submenu {
+            position: relative;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 0;
+            box-shadow: none;
+            display: block;
+        }
+
+        .navigation.active ul li.has-submenu:hover .submenu {
+            display: block;
+        }
+
         .main {
             width: 100%;
             left: 0;
@@ -562,6 +687,10 @@
         .main {
             padding: 15px;
         }
+
+        .navigation ul li.has-submenu .submenu li a {
+            padding-left: 60px;
+        }
     }
 
     @@media (max-width: 480px) {
@@ -576,7 +705,7 @@
         .navigation {
             width: 100%;
             left: -100%;
-            z-index: 1000;
+            z-index: 10000;
         }
 
             .navigation.active {
@@ -598,6 +727,11 @@
 
         .search {
             width: 150px;
+        }
+
+        .navigation ul li.has-submenu .submenu li a {
+            padding-left: 40px;
+            font-size: 13px;
         }
     }
 </style>
@@ -624,35 +758,240 @@
 
     <!-- =========== Scripts =========  -->
     <script>
-        let list = document.querySelectorAll(".navigation li");
-
-        function activeLink() {
-          list.forEach((item) => {
-            item.classList.remove("hovered");
-          });
-          this.classList.add("hovered");
-        }
-
-        list.forEach((item) => item.addEventListener("mouseover", activeLink));
-
-        // Menu Toggle
-        let toggle = document.querySelector(".toggle");
-        let navigation = document.querySelector(".navigation");
-        let main = document.querySelector(".main");
-
-        toggle.onclick = function () {
-          navigation.classList.toggle("active");
-          main.classList.toggle("active");
-        };
-
-        // Auto-hide alerts
+        // Improved navigation: compute floating submenu position when sidebar is collapsed
         document.addEventListener('DOMContentLoaded', function() {
+            const navigation = document.querySelector('.navigation');
+            const main = document.querySelector('.main');
+            const toggle = document.querySelector('.toggle');
+
+            // helper: close all dropdowns and remove inline positioning + clear hover states
+            function closeAllDropdowns(removeInline = true) {
+                document.querySelectorAll('.has-submenu.active').forEach(item => {
+                    item.classList.remove('active');
+                    if (removeInline) {
+                        const sm = item.querySelector('.submenu');
+                        if (sm) {
+                            sm.style.position = '';
+                            sm.style.top = '';
+                            sm.style.left = '';
+                            sm.style.display = '';
+                            sm.style.zIndex = '';
+                        }
+                    }
+                });
+                // clear hovered state on all nav items
+                document.querySelectorAll('.navigation li.hovered').forEach(i => i.classList.remove('hovered'));
+            }
+
+            // Create a floating submenu panel appended to body when nav is collapsed
+            function createFloatingSubmenu(parentLi) {
+                // remove existing floating
+                removeFloatingPanel();
+
+                const sm = parentLi.querySelector('.submenu');
+                if (!sm || !navigation) return;
+
+                // only for collapsed sidebar
+                if (!navigation.classList.contains('active')) {
+                    return; // in expanded mode, keep in-flow
+                }
+
+                // clone submenu to floating panel
+                const clone = sm.cloneNode(true);
+                const panel = document.createElement('div');
+                panel.className = 'floating-submenu';
+                panel.style.position = 'fixed';
+                panel.style.background = getComputedStyle(navigation).backgroundColor || 'var(--blue)';
+                panel.style.borderRadius = '8px';
+                panel.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+                panel.style.zIndex = 12000;
+                panel.style.overflow = 'auto';
+                panel.style.maxHeight = '60vh';
+                panel.appendChild(clone);
+
+                document.body.appendChild(panel);
+
+                // position next to navigation
+                const navRect = navigation.getBoundingClientRect();
+                const parentRect = parentLi.getBoundingClientRect();
+                const top = Math.max(8, parentRect.top - 8);
+                const left = navRect.right + 8;
+
+                panel.style.left = left + 'px';
+                panel.style.top = top + 'px';
+                panel.style.width = '260px';
+
+                // prevent clicks inside panel from closing
+                panel.addEventListener('click', function(e) { e.stopPropagation(); });
+                return panel;
+            }
+
+            function removeFloatingPanel() {
+                const existing = document.querySelector('.floating-submenu');
+                if (existing) existing.remove();
+            }
+
+            // setup consistent hover behavior for all nav items
+            const navItems = document.querySelectorAll('.navigation ul li');
+            navItems.forEach(item => {
+                item.addEventListener('mouseenter', function() {
+                    // clear other hovered
+                    navItems.forEach(i => i.classList.remove('hovered'));
+                    // skip brand item (InvestDapp) which has pointer-events disabled
+                    const titleEl = item.querySelector('.title');
+                    const titleText = titleEl ? titleEl.textContent.trim() : '';
+                    if (titleText && titleText.toLowerCase() === 'investdapp') return;
+                    item.classList.add('hovered');
+                });
+
+                item.addEventListener('mouseleave', function() {
+                    item.classList.remove('hovered');
+                });
+            });
+
+            // toggle sidebar
+            if (toggle && navigation && main) {
+                toggle.addEventListener('click', function() {
+                    navigation.classList.toggle('active');
+                    main.classList.toggle('active');
+
+                    // when toggling, close dropdowns and reset inline styles
+                    closeAllDropdowns(true);
+                    removeFloatingPanel();
+                });
+            }
+
+            // dropdown toggles with auto-close on mouseleave
+            const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+            const closeTimers = new Map();
+            const CLOSE_DELAY = 100;
+
+            function clearCloseTimer(li) {
+                const t = closeTimers.get(li);
+                if (t) {
+                    clearTimeout(t);
+                    closeTimers.delete(li);
+                }
+            }
+
+            function startCloseTimer(li) {
+                clearCloseTimer(li);
+                const t = setTimeout(() => {
+                    li.classList.remove('active');
+                    li.classList.remove('hovered');
+                    // remove floating panel if exists
+                    removeFloatingPanel();
+                    closeTimers.delete(li);
+                }, CLOSE_DELAY);
+                closeTimers.set(li, t);
+            }
+
+            // Open dropdowns on hover, close after delay on leave
+            dropdownToggles.forEach(dt => {
+                const parentLi = dt.closest('li.has-submenu');
+                if (!parentLi) return;
+
+                const sm = parentLi.querySelector('.submenu');
+
+                function onEnter() {
+                    // clear any pending close timer for this li
+                    clearCloseTimer(parentLi);
+
+                    // close other dropdowns
+                    document.querySelectorAll('.has-submenu.active').forEach(item => {
+                        if (item !== parentLi) {
+                            item.classList.remove('active');
+                            item.classList.remove('hovered');
+                            clearCloseTimer(item);
+                        }
+                    });
+
+                    parentLi.classList.add('active');
+                    parentLi.classList.add('hovered');
+
+                    // create floating panel when collapsed; in expanded mode CSS handles showing in-flow
+                    const panel = createFloatingSubmenu(parentLi);
+
+                    // attach hover listeners to floating panel or submenu to manage auto-close
+                    const targetPanel = document.querySelector('.floating-submenu') || sm;
+                    if (targetPanel) {
+                        targetPanel.addEventListener('mouseenter', () => clearCloseTimer(parentLi));
+                        targetPanel.addEventListener('mouseleave', () => startCloseTimer(parentLi));
+                    }
+                }
+
+                function onLeave() {
+                    // start close timer
+                    startCloseTimer(parentLi);
+                }
+
+                // attach handlers
+                parentLi.addEventListener('mouseenter', onEnter);
+                parentLi.addEventListener('mouseleave', onLeave);
+                // also support hovering the toggle itself
+                dt.addEventListener('mouseenter', onEnter);
+                dt.addEventListener('mouseleave', onLeave);
+            });
+
+            // close when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.has-submenu')) {
+                    closeAllDropdowns(true);
+                }
+            });
+
+            // prevent submenu internal clicks from bubbling
+            document.querySelectorAll('.submenu').forEach(sm => {
+                sm.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            });
+
+            // reposition floating submenu on resize/scroll
+            function repositionAll() {
+                removeFloatingPanel();
+                document.querySelectorAll('.has-submenu.active').forEach(li => {
+                    // recreate floating panel for first active
+                    createFloatingSubmenu(li);
+                });
+            }
+
+            window.addEventListener('resize', repositionAll);
+            window.addEventListener('scroll', function() {
+                // on scroll, hide floating panel to avoid misposition
+                removeFloatingPanel();
+            });
+
+            // auto-hide alerts
             const alerts = document.querySelectorAll('.alert');
             alerts.forEach(alert => {
                 setTimeout(() => {
                     alert.style.opacity = '0';
-                    setTimeout(() => alert.remove(), 300);
+                    setTimeout(() => {
+                        if (alert.parentNode) alert.remove();
+                    }, 300);
                 }, 5000);
+            });
+
+            // set active menu item by URL
+            const currentPath = window.location.pathname.toLowerCase();
+            const menuLinks = document.querySelectorAll('.navigation a[href]');
+            menuLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && href.toLowerCase() === currentPath) {
+                    const parentLi = link.closest('li');
+                    if (parentLi && parentLi.closest('.submenu')) {
+                        const parentDropdown = parentLi.closest('.has-submenu');
+                        if (parentDropdown) {
+                            parentDropdown.classList.add('active');
+                            // create floating only when nav is collapsed
+                            if (navigation.classList.contains('active')) {
+                                createFloatingSubmenu(parentDropdown);
+                            }
+                        }
+                    }
+                    if (parentLi) parentLi.classList.add('hovered');
+                }
             });
         });
     </script>
