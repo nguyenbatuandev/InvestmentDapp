@@ -474,9 +474,10 @@
                             @(Model.GoalAmount > 0 ? (Model.CurrentRaisedAmount / Model.GoalAmount * 100).ToString("F1") : "0")%
                         </span>
                     </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: @(Model.GoalAmount > 0 ? (Model.CurrentRaisedAmount / Model.GoalAmount * 100) : 0)%"></div>
-                    </div>
+                        <div class="progress-bar">
+                            @{ var _pct = Model.GoalAmount > 0 ? (Model.CurrentRaisedAmount / Model.GoalAmount * 100) : 0; var _pctStr = _pct.ToString("F2", System.Globalization.CultureInfo.InvariantCulture); }
+                            <div class="progress-fill" style="width: @_pctStr%"></div>
+                        </div>
                     <div class="progress-info">
                         <span>@Model.CurrentRaisedAmount BNB</span>
                         <span>@Model.GoalAmount BNB</span>

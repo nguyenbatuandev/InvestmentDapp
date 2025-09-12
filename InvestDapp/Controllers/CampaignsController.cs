@@ -389,7 +389,7 @@ namespace InvestDapp.Controllers
                 TempData["ErrorMessage"] = ex.Message;
                 return RedirectToAction("Index", "Home");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 if (Request.Headers["Content-Type"].ToString().Contains("application/json") || 
                     Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
@@ -441,6 +441,88 @@ namespace InvestDapp.Controllers
             ViewBag.HasMorePages = posts.Count() == pageSize;
 
             return View(posts);
+        }
+
+        // API: Get latest investments for real-time updates
+        [HttpGet("api/campaigns/{id}/investments/latest")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetLatestInvestments(int id, DateTime? since = null)
+        {
+            try
+            {
+                var campaign = await _campaignPostService.GetCampaignByIdAsync(id);
+                if (campaign == null)
+                    return NotFound();
+
+                var cutoffTime = since ?? DateTime.UtcNow.AddMinutes(-5); // Default: last 5 minutes
+                
+                if (campaign.Investments == null)
+                {
+                    return Json(new List<object>());
+                }
+
+                var latestInvestments = campaign.Investments
+                    .Where(i => i.Timestamp > cutoffTime)
+                    .OrderByDescending(i => i.Timestamp)
+                    .Select(i => new { 
+                        InvestorAddress = i.InvestorAddress, 
+                        Amount = i.Amount, 
+                        Timestamp = i.Timestamp, 
+                        TransactionHash = i.TransactionHash 
+                    })
+                    .ToList();
+
+                return Json(latestInvestments);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        // GET: /api/campaigns/{id}/summary - returns totals + latest investments for realtime UI
+        [HttpGet("api/campaigns/{id}/summary")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetCampaignSummary(int id, DateTime? since = null)
+        {
+            try
+            {
+                var campaign = await _campaignPostService.GetCampaignByIdAsync(id);
+                if (campaign == null) return NotFound();
+
+                var cutoffTime = since ?? DateTime.UtcNow.AddMinutes(-5);
+
+                List<object> latestInvestments;
+                if (campaign.Investments == null)
+                {
+                    latestInvestments = new List<object>();
+                }
+                else
+                {
+                    latestInvestments = campaign.Investments
+                        .Where(i => i.Timestamp > cutoffTime)
+                        .OrderByDescending(i => i.Timestamp)
+                        .Select(i => (object)new {
+                            InvestorAddress = i.InvestorAddress,
+                            Amount = i.Amount,
+                            Timestamp = i.Timestamp,
+                            TransactionHash = i.TransactionHash
+                        })
+                        .ToList();
+                }
+
+                var summary = new {
+                    currentRaised = campaign.CurrentRaisedAmount,
+                    investorCount = campaign.InvestorCount,
+                    latest = latestInvestments
+                };
+
+                return Json(summary);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
     }
 }

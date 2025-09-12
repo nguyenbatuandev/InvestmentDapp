@@ -170,6 +170,8 @@ namespace InvestDapp.Infrastructure.Data.Repository
             return await _context.Campaigns
                 .Include(c => c.category)
                 .Include(c => c.Posts)
+                .Include(c => c.Investments)
+                .Include(c => c.WithdrawalRequests)
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 

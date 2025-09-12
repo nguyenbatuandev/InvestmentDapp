@@ -5,595 +5,269 @@
 }
 
 @section Styles {
-    <style>
-        /* --- BIẾN MÀU SẮC --- */
-        :root {
-            --bg-dark: #0a0e1a;
-            --bg-light: #12182b;
-            --primary: #00aaff;
-            --primary-light: #00c6ff;
-            --secondary: #272c44;
-            --text-color: #e0e0e0;
-            --text-muted: #8a93b3;
-            --success: #00d4aa;
-            --warning: #ffb800;
-            --danger: #ff6b6b;
-            --gradient: linear-gradient(135deg, var(--primary), var(--primary-light));
-        }
+<style>
+/* ===== BÁM CSS TỪ LAYOUT, KHÔNG DÙNG :root ===== */
 
-        .my-campaigns-container {
-            max-width: 1200px;
-            margin: 120px auto 60px;
-            padding: 0 20px;
-        }
+/* khung trang */
+.mc-wrap{max-width:1200px;margin:calc(var(--header-h,72px) + 32px) auto 64px;padding:0 16px;color:var(--fg)}
 
-        .page-header {
-            background: var(--gradient);
-            border-radius: 20px;
-            padding: 40px;
-            text-align: center;
-            color: white;
-            margin-bottom: 40px;
-            box-shadow: 0 10px 40px rgba(0, 170, 255, 0.3);
-        }
+/* hero */
+.mc-hero{
+    background:var(--glass);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:24px 22px;
+    margin-bottom:18px
+}
+.mc-hero h1{margin:0 0 6px;font-weight:800;letter-spacing:.2px;font-size:1.9rem}
+.mc-hero p{margin:0;color:var(--muted)}
 
-            .page-header h1 {
-                font-size: 2.5rem;
-                margin-bottom: 15px;
-                font-weight: 700;
-            }
+/* quick actions */
+.mc-qacts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:14px 0 26px}
+.mc-qbtn{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 12px;border:1px solid var(--border);
+    border-radius:12px;background:var(--glass);color:var(--fg);text-decoration:none;
+    box-shadow:var(--shadow);transition:transform .16s, box-shadow .16s, border-color .16s
+}
+.mc-qbtn:hover{transform:translateY(-2px);border-color:color-mix(in oklab,var(--primary) 60%, transparent)}
+.mc-qbtn i{opacity:.9}
 
-            .page-header p {
-                font-size: 1.1rem;
-                opacity: 0.9;
-            }
+/* lưới card */
+.mc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
 
-        .campaigns-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
-        }
+/* card (đồng cao) */
+.mc-card{
+    display:flex;flex-direction:column;min-height:380px;
+    background:var(--glass);border:1px solid var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow);overflow:hidden
+}
+.mc-ch{position:relative;padding:18px 18px 12px;border-bottom:1px solid var(--border)}
+.mc-title{font-weight:700;margin:0 0 6px;line-height:1.35}
+.mc-title a{color:var(--fg);text-decoration:none}
+.mc-title a:hover{color:var(--primary)}
+.mc-desc{color:var(--muted);font-size:.95rem;line-height:1.6;margin:0 0 8px}
 
-        .campaign-card {
-            background: var(--bg-light);
-            border: 1px solid var(--secondary);
-            border-radius: 16px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            animation: slideInUp 0.6s ease-out;
-            position: relative;
-        }
+.mc-badge{
+    position:absolute;top:14px;right:14px;padding:6px 10px;border-radius:999px;
+    font-weight:800;font-size:.74rem;letter-spacing:.3px;display:inline-flex;align-items:center;gap:6px;
+    border:1px solid var(--border);background:var(--card)
+}
+.badge-pending{color:#ffb800;border-color:color-mix(in oklab,#ffb800 40%, var(--border))}
+.badge-approved{color:#00d4aa;border-color:color-mix(in oklab,#00d4aa 40%, var(--border))}
+.badge-rejected{color:#ff6b6b;border-color:color-mix(in oklab,#ff6b6b 40%, var(--border))}
 
-            .campaign-card:hover {
-                transform: translateY(-8px);
-                box-shadow: 0 12px 30px rgba(0, 170, 255, 0.15);
-            }
+/* body linh hoạt để đồng cao */
+.mc-cb{display:flex;flex-direction:column;gap:14px;padding:14px 16px;flex:1}
 
-        .card-header {
-            padding: 25px;
-            border-bottom: 1px solid var(--secondary);
-            position: relative;
-        }
+/* stats */
+.mc-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.mc-stat{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
+.mc-stat .v{font-weight:800}
+.mc-stat .l{color:var(--muted);font-size:.8rem}
 
-        .campaign-title {
-            color: var(--text-color);
-            font-size: 1.3rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-            line-height: 1.4;
-        }
+/* tiến độ */
+.mc-prog .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.mc-prog .lbl{font-weight:700}
+.mc-prog .pct{font-weight:800;color:var(--primary)}
+.mc-bar{height:8px;background:var(--card);border:1px solid var(--border);border-radius:999px;overflow:hidden}
+.mc-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));width:0%;transition:width .7s ease}
+.mc-prog .meta{display:flex;justify-content:space-between;color:var(--muted);font-size:.8rem;margin-top:6px}
 
-            .campaign-title a {
-                color: inherit;
-                text-decoration: none;
-                transition: color 0.3s ease;
-            }
+/* time */
+.mc-time{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.9rem}
 
-                .campaign-title a:hover {
-                    color: var(--primary);
-                }
+/* actions: dùng .btn của layout - standardize button sizing/alignment */
+.mc-actions{
+    margin-top:auto;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    /* make each action cell equal height so buttons line up */
+    grid-auto-rows:44px;
+    align-items:stretch;
+}
+.mc-actions .btn,
+.mc-actions > span {
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:44px;
+    box-sizing:border-box;
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    color:var(--fg);
+    font-weight:800;
+    text-decoration:none;
+}
+.mc-actions .btn.secondary{opacity:.95}
+.mc-actions > span{background:transparent;border:0}
 
-        .campaign-short-desc {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
+/* empty state & notices khớp layout */
+.notice{
+    background:var(--glass);border:1px solid var(--border);border-left:4px solid;
+    border-radius:12px;padding:12px 14px;box-shadow:var(--shadow);margin-bottom:12px
+}
+.notice.ok{border-left-color:#00d4aa}
+.notice.err{border-left-color:#ff6b6b}
 
-        .status-badge {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
+.mc-empty{background:var(--glass);border:1px solid var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow);text-align:center;padding:48px}
+.mc-empty i{font-size:44px;opacity:.85;margin-bottom:10px;display:inline-block}
+.mc-empty p{color:var(--muted);margin:6px 0 18px}
+.mc-empty .btn{
+    padding:12px 18px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    vertical-align:middle;
+}
+.mc-empty .btn i{font-size:1.05em;line-height:1;display:inline-block}
 
-        .status-pending {
-            background: rgba(255, 184, 0, 0.2);
-            color: var(--warning);
-            border: 1px solid rgba(255, 184, 0, 0.3);
-        }
-
-        .status-approved {
-            background: rgba(0, 212, 170, 0.2);
-            color: var(--success);
-            border: 1px solid rgba(0, 212, 170, 0.3);
-        }
-
-        .status-rejected {
-            background: rgba(255, 107, 107, 0.2);
-            color: var(--danger);
-            border: 1px solid rgba(255, 107, 107, 0.3);
-        }
-
-        .card-body {
-            padding: 25px;
-        }
-
-        .campaign-stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .stat-item {
-            background: var(--bg-dark);
-            padding: 12px 15px;
-            border-radius: 8px;
-            border: 1px solid var(--secondary);
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--primary);
-            margin-bottom: 2px;
-        }
-
-        .stat-label {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .progress-section {
-            margin-bottom: 20px;
-        }
-
-        .progress-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .progress-label {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-color);
-        }
-
-        .progress-percentage {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--primary);
-        }
-
-        .progress-bar {
-            height: 8px;
-            background: var(--secondary);
-            border-radius: 4px;
-            overflow: hidden;
-            margin-bottom: 8px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: var(--gradient);
-            border-radius: 4px;
-            transition: width 0.8s ease;
-        }
-
-        .progress-info {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .card-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .btn-action {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            flex: 1;
-            justify-content: center;
-            min-width: 100px;
-        }
-
-        .btn-primary-action {
-            background: var(--primary);
-            color: white;
-        }
-
-            .btn-primary-action:hover {
-                background: var(--primary-light);
-                transform: translateY(-1px);
-            }
-
-        .btn-secondary-action {
-            background: var(--secondary);
-            color: var(--text-color);
-            border: 1px solid var(--secondary);
-        }
-
-            .btn-secondary-action:hover {
-                background: transparent;
-                border-color: var(--primary);
-                color: var(--primary);
-            }
-
-        .timeline-info {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-bottom: 15px;
-        }
-
-        .time-left {
-            color: var(--warning);
-            font-weight: 600;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 80px 20px;
-            color: var(--text-muted);
-        }
-
-        .empty-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-
-        .empty-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: var(--text-color);
-        }
-
-        .empty-description {
-            font-size: 1rem;
-            line-height: 1.6;
-            margin-bottom: 30px;
-        }
-
-        .create-campaign-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 15px 30px;
-            background: var(--gradient);
-            color: white;
-            text-decoration: none;
-            border-radius: 12px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 170, 255, 0.3);
-        }
-
-            .create-campaign-btn:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 25px rgba(0, 170, 255, 0.4);
-            }
-
-        /* Quick Actions */
-        .quick-actions {
-            background: var(--bg-light);
-            border: 1px solid var(--secondary);
-            border-radius: 16px;
-            padding: 25px;
-            margin-bottom: 40px;
-        }
-
-            .quick-actions h3 {
-                color: var(--primary);
-                margin-bottom: 20px;
-                font-size: 1.2rem;
-            }
-
-        .quick-actions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-
-        .quick-action-btn {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 15px 20px;
-            background: var(--bg-dark);
-            border: 1px solid var(--secondary);
-            border-radius: 12px;
-            color: var(--text-color);
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-
-            .quick-action-btn:hover {
-                border-color: var(--primary);
-                background: rgba(0, 170, 255, 0.1);
-                color: var(--primary);
-            }
-
-        /* Responsive */
-        @@media (max-width: 768px) {
-            .campaigns-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .campaign-stats {
-                grid-template-columns: 1fr;
-            }
-
-            .card-actions {
-                flex-direction: column;
-            }
-
-            .btn-action {
-                flex: none;
-            }
-        }
-
-        /* Animation */
-        @@keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
+/* responsive */
+@@media (max-width:768px){
+    .mc-grid{grid-template-columns:1fr}
+    .mc-actions{grid-template-columns:1fr}
+    .mc-stats{grid-template-columns:1fr}
+}
+</style>
 }
 
-<div class="my-campaigns-container">
-    <!-- Page Header -->
-    <div class="page-header">
-        <h1><i class="fas fa-rocket"></i> Chiến Dịch Của Tôi</h1>
-        <p>Quản lý và theo dõi các chiến dịch huy động vốn của bạn</p>
+<div class="mc-wrap">
+    <div class="mc-hero">
+        <h1>Chiến Dịch Của Tôi</h1>
+        <p>Quản lý & theo dõi các chiến dịch huy động vốn bạn đã tạo.</p>
+
+        <div class="mc-qacts">
+            <a href="@Url.Action("Create")" class="mc-qbtn"><span>Tạo chiến dịch mới</span></a>
+            <a href="@Url.Action("Index","Campaigns")" class="mc-qbtn"><i class="fa-solid fa-compass"></i><span>Khám phá dự án</span></a>
+            <a href="/Admin" class="mc-qbtn"><i class="fa-solid fa-chart-line"></i><span>Thống kê</span></a>
+        </div>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="notice ok"><i class="fa-solid fa-circle-check"></i> @TempData["SuccessMessage"]</div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="notice err"><i class="fa-solid fa-triangle-exclamation"></i> @TempData["ErrorMessage"]</div>
+        }
     </div>
-
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success" style="background: rgba(0, 212, 170, 0.1); border-left: 4px solid var(--success); color: var(--success); padding: 15px 20px; border-radius: 8px; margin-bottom: 25px;">
-            <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
-        </div>
-    }
-
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger" style="background: rgba(255, 107, 107, 0.1); border-left: 4px solid var(--danger); color: var(--danger); padding: 15px 20px; border-radius: 8px; margin-bottom: 25px;">
-            <i class="fas fa-exclamation-triangle"></i> @TempData["ErrorMessage"]
-        </div>
-    }
 
     @if (Model?.Any() == true)
     {
-        <!-- Quick Actions -->
-        <div class="quick-actions">
-            <h3><i class="fas fa-bolt"></i> Thao Tác Nhanh</h3>
-            <div class="quick-actions-grid">
-                <a href="@Url.Action("Create")" class="quick-action-btn">
-                    <i class="fas fa-plus"></i>
-                    <span>Tạo Chiến Dịch Mới</span>
-                </a>
-                <a href="@Url.Action("Index")" class="quick-action-btn">
-                    <i class="fas fa-search"></i>
-                    <span>Khám Phá Dự Án</span>
-                </a>
-                <a href="/Admin" class="quick-action-btn">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Thống Kê</span>
-                </a>
-            </div>
-        </div>
-
-        <!-- Campaigns Grid -->
-        <div class="campaigns-grid">
-            @foreach (var campaign in Model.OrderByDescending(c => c.CreatedAt))
+        <div class="mc-grid">
+            @foreach (var c in Model.OrderByDescending(x => x.CreatedAt))
             {
-                <div class="campaign-card">
-                    <div class="card-header">
-                        @switch (campaign.ApprovalStatus)
-                        {
-                            case InvestDapp.Shared.Enums.ApprovalStatus.Pending:
-                                @switch (campaign.Status)
-                                {
-                                    case InvestDapp.Shared.Enums.CampaignStatus.PendingPost:
-                                        <span class="status-badge status-pending">
-                                            <i class="fas fa-pen"></i> Chờ Bài Viết
-                                        </span>
-                                        break;
-                                    case InvestDapp.Shared.Enums.CampaignStatus.PendingApproval:
-                                        <span class="status-badge status-pending">
-                                            <i class="fas fa-clock"></i> Chờ Duyệt
-                                        </span>
-                                        break;
-                                    default:
-                                        <span class="status-badge status-pending">
-                                            <i class="fas fa-clock"></i> Chờ Duyệt
-                                        </span>
-                                        break;
-                                }
-                                break;
-                            case InvestDapp.Shared.Enums.ApprovalStatus.Approved:
-                                @switch (campaign.Status)
-                                {
-                                    case InvestDapp.Shared.Enums.CampaignStatus.Active:
-                                        <span class="status-badge status-approved">
-                                            <i class="fas fa-play-circle"></i> Đang Gây Quỹ
-                                        </span>
-                                        break;
-                                    case InvestDapp.Shared.Enums.CampaignStatus.Completed:
-                                        <span class="status-badge status-approved">
-                                            <i class="fas fa-check-circle"></i> Hoàn Thành
-                                        </span>
-                                        break;
-                                    default:
-                                        <span class="status-badge status-approved">
-                                            <i class="fas fa-check-circle"></i> Đã Duyệt
-                                        </span>
-                                        break;
-                                }
-                                break;
-                            case InvestDapp.Shared.Enums.ApprovalStatus.Rejected:
-                                <span class="status-badge status-rejected">
-                                    <i class="fas fa-times-circle"></i> Bị Từ Chối
-                                </span>
-                                break;
+                var pct = c.GoalAmount > 0 ? (double)c.CurrentRaisedAmount / (double)c.GoalAmount * 100d : 0d;
+                var pctStr = pct.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
+                <article class="mc-card">
+                    <header class="mc-ch">
+                        @{
+                            string badgeCls = "badge-pending"; string badgeText = "Chờ duyệt"; string badgeIcon = "fa-clock";
+                            if (c.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
+                            {
+                                badgeCls = "badge-approved"; badgeText = c.Status switch {
+                                    InvestDapp.Shared.Enums.CampaignStatus.Active => "Đang gây quỹ",
+                                    InvestDapp.Shared.Enums.CampaignStatus.Completed => "Hoàn thành",
+                                    InvestDapp.Shared.Enums.CampaignStatus.Voting => "Đang bỏ phiếu",
+                                    _ => "Đã duyệt"
+                                };
+                                badgeIcon = c.Status switch {
+                                    InvestDapp.Shared.Enums.CampaignStatus.Active => "fa-play",
+                                    InvestDapp.Shared.Enums.CampaignStatus.Completed => "fa-check-circle",
+                                    InvestDapp.Shared.Enums.CampaignStatus.Voting => "fa-vote-yea",
+                                    _ => "fa-check"
+                                };
+                            }
+                            else if (c.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Rejected)
+                            { badgeCls="badge-rejected"; badgeText="Bị từ chối"; badgeIcon="fa-times-circle"; }
                         }
+                        <div class="mc-badge @badgeCls"><i class="fa-solid @badgeIcon"></i>@badgeText</div>
 
-                        <h3 class="campaign-title">
-                            <a href="@Url.Action("Details", new { id = campaign.Id })">
-                                @campaign.Name
-                            </a>
+                        <h3 class="mc-title">
+                            <a href="@Url.Action("Details", new { id = c.Id })">@c.Name</a>
                         </h3>
-                        <p class="campaign-short-desc">@campaign.ShortDescription</p>
-                    </div>
+                        <p class="mc-desc">@c.ShortDescription</p>
+                        <div class="mc-time"><i class="fa-regular fa-calendar"></i>
+                            <span>Tạo lúc @c.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                        </div>
+                    </header>
 
-                    <div class="card-body">
-                        <div class="campaign-stats">
-                            <div class="stat-item">
-                                <div class="stat-value">@campaign.GoalAmount</div>
-                                <div class="stat-label">Mục Tiêu (BNB)</div>
+                    <div class="mc-cb">
+                        <div class="mc-stats">
+                            <div class="mc-stat">
+                                <div class="v">@c.GoalAmount</div>
+                                <div class="l">Mục tiêu (BNB)</div>
                             </div>
-                            <div class="stat-item">
-                                <div class="stat-value">@campaign.CurrentRaisedAmount</div>
-                                <div class="stat-label">Đã Huy Động (BNB)</div>
+                            <div class="mc-stat">
+                                <div class="v">@c.CurrentRaisedAmount</div>
+                                <div class="l">Đã huy động (BNB)</div>
                             </div>
                         </div>
 
-                        <div class="progress-section">
-                            <div class="progress-header">
-                                <span class="progress-label">Tiến Độ</span>
-                                <span class="progress-percentage">
-                                    @(campaign.GoalAmount > 0 ? (campaign.CurrentRaisedAmount / campaign.GoalAmount * 100).ToString("F1") : "0")%
-                                </span>
+                        <div class="mc-prog">
+                            <div class="hd">
+                                <div class="lbl">Tiến độ</div>
+                                <div class="pct">@((c.GoalAmount>0? (c.CurrentRaisedAmount/c.GoalAmount*100).ToString("F1"):"0"))%</div>
                             </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: @(campaign.GoalAmount > 0 ? (campaign.CurrentRaisedAmount / campaign.GoalAmount * 100) : 0)%"></div>
+                            <div class="mc-bar">
+                                <div class="mc-fill" style="width:@pctStr%"></div>
                             </div>
-                            <div class="progress-info">
-                                <span>@campaign.InvestorCount nhà đầu tư</span>
-                                <span>@((campaign.EndTime - DateTime.UtcNow).Days) ngày còn lại</span>
+                            <div class="meta">
+                                <span>@c.InvestorCount nhà đầu tư</span>
+                                <span>@((c.EndTime - DateTime.UtcNow).Days) ngày còn lại</span>
                             </div>
                         </div>
 
-                        <div class="timeline-info">
-                            <i class="fas fa-calendar-alt"></i>
-                            <span>Tạo lúc:</span>
-                            <span>@campaign.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
-                        </div>
+                        <div class="mc-actions">
+                            <a class="btn" href="@Url.Action("Details", new { id = c.Id })"><i class="fa-solid fa-eye"></i>&nbsp;Details</a>
+                            <a class="btn" href="@Url.Action("Dashboard", new { id = c.Id })"><i class="fa-solid fa-gauge-high"></i>&nbsp;Dashboard</a>
 
-                        <div class="card-actions">
-                            <a href="@Url.Action("Details", new { id = campaign.Id })" class="btn-action btn-primary-action">
-                                <i class="fas fa-eye"></i>
-                                Chi Tiết
-                            </a>
-
-                            <a href="@Url.Action("Dashboard", new { id = campaign.Id })" class="btn-action btn-primary-action">
-                                <i class="fas fa-tachometer-alt"></i>
-                                Dashboard
-                            </a>
-
-                            @if (campaign.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
+                            @if (c.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
                             {
-                                <a href="@Url.Action("Posts", new { campaignId = campaign.Id })" class="btn-action btn-secondary-action">
-                                    <i class="fas fa-newspaper"></i>
-                                    Bài Viết
-                                </a>
+                                <a class="btn secondary" href="@Url.Action("Posts", new { campaignId = c.Id })"><i class="fa-solid fa-newspaper"></i>&nbsp;Post</a>
                             }
-                            else if (campaign.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Pending)
+                            else if (c.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Pending)
                             {
-                                <a href="@Url.Action("AwaitingApproval", new { campaignId = campaign.Id })" class="btn-action btn-secondary-action">
-                                    <i class="fas fa-hourglass-half"></i>
-                                    Theo Dõi
-                                </a>
+                                <a class="btn secondary" href="@Url.Action("AwaitingApproval", new { campaignId = c.Id })"><i class="fa-regular fa-hourglass-half"></i>&nbsp;Theo dõi</a>
+                            }
+                            else
+                            {
+                                <span></span>
                             }
                         </div>
                     </div>
-                </div>
+                </article>
             }
         </div>
     }
     else
     {
-        <!-- Empty State -->
-        <div class="empty-state">
-            <div class="empty-icon">
-                <i class="fas fa-rocket"></i>
-            </div>
-            <h2 class="empty-title">Chưa Có Chiến Dịch Nào</h2>
-            <p class="empty-description">
-                Bạn chưa tạo chiến dịch huy động vốn nào. Hãy bắt đầu biến ý tưởng của bạn thành hiện thực!
-            </p>
-            <a href="@Url.Action("Create")" class="create-campaign-btn">
-                <i class="fas fa-plus"></i>
-                Tạo Chiến Dịch Đầu Tiên
-            </a>
+        <div class="mc-empty">
+            <i class="fa-solid fa-rocket"></i>
+            <h3 style="margin:0 0 6px;font-weight:800">Chưa có chiến dịch nào</h3>
+            <p>Hãy bắt đầu biến ý tưởng của bạn thành hiện thực.</p>
+            <a href="@Url.Action("Create")" class="btn"><i class="fa-solid fa-plus"></i>&nbsp;Tạo chiến dịch đầu tiên</a>
         </div>
     }
 </div>
 
-@section Scripts {
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add staggered animation to campaign cards
-            const cards = document.querySelectorAll('.campaign-card');
-            cards.forEach((card, index) => {
-                card.style.animationDelay = `${index * 0.1}s`;
-            });
-
-            // Animate progress bars
-            const progressBars = document.querySelectorAll('.progress-fill');
-            progressBars.forEach(bar => {
-                const width = bar.style.width;
-                bar.style.width = '0%';
-
-                setTimeout(() => {
-                    bar.style.width = width;
-                }, 500 + Math.random() * 500);
-            });
+@section Scripts{
+<script>
+document.addEventListener('DOMContentLoaded',()=> {
+    // animate progress width sau khi mount
+    requestAnimationFrame(()=> {
+        document.querySelectorAll('.mc-fill').forEach(el=>{
+            const w = el.style.width; el.style.width='0%';
+            setTimeout(()=> el.style.width = w, 50);
         });
-    </script>
+    });
+});
+</script>
 }
