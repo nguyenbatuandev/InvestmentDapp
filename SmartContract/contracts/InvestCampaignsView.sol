@@ -1,268 +1,208 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-// Import hợp đồng chính để kế thừa toàn bộ trạng thái và logic nội bộ.
-import "./InvestCampaigns.sol";
+// Dùng alias để IDE/Plugin không hiểu nhầm định danh
+import { InvestCampaigns as InvestCampaignsBase } from "./InvestCampaigns.sol";
 
 /**
- * @title InvestCampaignsExtendedView
- * @dev Phiên bản view mở rộng, cung cấp các hàm truy vấn nâng cao về lọc và thống kê.
- * Kế thừa toàn bộ trạng thái từ InvestCampaigns nhưng chỉ chứa các hàm không thay đổi dữ liệu.
+ * @title InvestCampaignsView
+ * @dev View mở rộng, chỉ có hàm đọc. Kế thừa từ InvestCampaigns để truy cập state.
  */
-contract InvestCampaignsView is InvestCampaigns {
+contract InvestCampaignsView is InvestCampaignsBase {
+    // Base constructor không có tham số => không cần gọi tường minh
+    constructor() {}
 
-    /**
-     * @dev Constructor chỉ cần gọi constructor của hợp đồng cha.
-     */
-    constructor() InvestCampaigns() {}
+    // ------------ Helpers ------------
+    function _exists(uint256 _campaignId) internal view returns (bool) {
+        return campaigns[_campaignId].owner != address(0);
+    }
 
-    // =================================================================
-    // == CÁC HÀM TRUY VẤN (VIEW FUNCTIONS)
-    // =================================================================
-
-    // --- TRUY VẤN CHIẾN DỊCH ---
-
-    /**
-     * @notice Lấy thông tin chi tiết của một chiến dịch dựa trên ID.
-     * @param _campaignId ID của chiến dịch cần truy vấn.
-     * @return Campaign struct chứa toàn bộ dữ liệu của chiến dịch.
-     */
+    // ------------ TRUY VẤN CHIẾN DỊCH ------------
     function getCampaignDetails(uint256 _campaignId) external view returns (Campaign memory) {
-        require(_campaignId > 0 && _campaignId <= campaignCounter, "Campaign ID is invalid");
+        require(_exists(_campaignId), "Campaign not found");
         return campaigns[_campaignId];
     }
 
-    /**
-     * @notice Lấy một danh sách các chiến dịch với hỗ trợ phân trang.
-     * @param _offset Vị trí bắt đầu lấy dữ liệu trong danh sách toàn bộ chiến dịch.
-     * @param _limit Số lượng tối đa các chiến dịch cần trả về.
-     * @return Một mảng các Campaign struct.
-     */
     function getAllCampaigns(uint256 _offset, uint256 _limit) external view returns (Campaign[] memory) {
-        uint256 total = campaignCounter;
-        if (_offset >= total) {
-            return new Campaign[](0);
+        uint256 totalReal = 0;
+        for (uint256 i = 1; i <= campaignCounter; i++) {
+            if (_exists(i)) totalReal++;
         }
+        if (_offset >= totalReal) return new Campaign[](0);
 
-        uint256 count = total - _offset > _limit ? _limit : total - _offset;
-        Campaign[] memory result = new Campaign[](count);
+        uint256 size = totalReal - _offset;
+        if (size > _limit) size = _limit;
 
-        for (uint256 i = 0; i < count; i++) {
-            // ID chiến dịch bắt đầu từ 1, nên cần +1
-            result[i] = campaigns[_offset + i + 1];
-        }
-        return result;
-    }
-
-    /**
-     * @notice Lấy các chiến dịch theo trạng thái cụ thể (Active, Completed, Failed), có phân trang.
-     */
-    function getCampaignsByStatus(CampaignStatus _status, uint256 _offset, uint256 _limit) external view returns (Campaign[] memory) {
-        uint256 total = campaignCounter;
-        uint256[] memory tempIds = new uint256[](total);
-        uint256 count = 0;
-        
-        // Vòng lặp đầu tiên để thu thập ID của các chiến dịch hợp lệ.
-        for (uint256 i = 1; i <= total; i++) {
-            if (campaigns[i].status == _status) {
-                tempIds[count] = i;
-                count++;
-            }
-        }
-
-        if (_offset >= count) {
-            return new Campaign[](0);
-        }
-
-        uint256 size = count - _offset > _limit ? _limit : count - _offset;
         Campaign[] memory result = new Campaign[](size);
-
-        // Vòng lặp thứ hai để xây dựng mảng kết quả từ các ID đã lọc.
-        for (uint256 i = 0; i < size; i++) {
-            result[i] = campaigns[tempIds[_offset + i]];
-        }
-        return result;
-    }
-
-    /**
-     * @notice Lấy danh sách các ID chiến dịch của một người tạo cụ thể.
-     */
-    function getCampaignsByCreator(address _creator) external view returns (uint256[] memory) {
-        uint256 total = campaignCounter;
-        uint256[] memory tempCampaigns = new uint256[](total);
-        uint256 count = 0;
-        
-        for (uint256 i = 1; i <= total; i++) {
-            if (campaigns[i].owner == _creator) {
-                tempCampaigns[count] = campaigns[i].id;
-                count++;
+        uint256 seen = 0;
+        uint256 filled = 0;
+        for (uint256 i = 1; i <= campaignCounter && filled < size; i++) {
+            if (_exists(i)) {
+                if (seen++ >= _offset) {
+                    result[filled++] = campaigns[i];
+                }
             }
         }
+        return result;
+    }
 
-        uint256[] memory result = new uint256[](count);
-        for (uint256 i = 0; i < count; i++) {
-            result[i] = tempCampaigns[i];
+    function getCampaignsByStatus(
+        CampaignStatus _status,
+        uint256 _offset,
+        uint256 _limit
+    ) external view returns (Campaign[] memory) {
+        uint256 total = 0;
+        for (uint256 i = 1; i <= campaignCounter; i++) {
+            if (_exists(i) && campaigns[i].status == _status) total++;
+        }
+        if (_offset >= total) return new Campaign[](0);
+
+        uint256 size = total - _offset;
+        if (size > _limit) size = _limit;
+
+        Campaign[] memory result = new Campaign[](size);
+        uint256 seen = 0;
+        uint256 filled = 0;
+        for (uint256 i = 1; i <= campaignCounter && filled < size; i++) {
+            if (_exists(i) && campaigns[i].status == _status) {
+                if (seen++ >= _offset) {
+                    result[filled++] = campaigns[i];
+                }
+            }
         }
         return result;
     }
 
-    // --- TRUY VẤN TƯƠNG TÁC NGƯỜI DÙNG ---
-
-    /**
-     * @notice Lấy lịch sử quyên góp của một chiến dịch (có phân trang).
-     */
-    function getinvestmentsForCampaign(uint256 _campaignId, uint256 _offset, uint256 _limit) external view returns (Investment[] memory) {
-        Investment[] storage investmentsList = campaignInvestments[_campaignId];
-        uint256 total = investmentsList.length;
-
-        if (_offset >= total) {
-            return new Investment[](0);
+    function getCampaignsByCreator(address _creator) external view returns (uint256[] memory) {
+        uint256 count = 0;
+        for (uint256 i = 1; i <= campaignCounter; i++) {
+            if (_exists(i) && campaigns[i].owner == _creator) count++;
         }
+        uint256[] memory ids = new uint256[](count);
+        uint256 idx = 0;
+        for (uint256 i = 1; i <= campaignCounter && idx < count; i++) {
+            if (_exists(i) && campaigns[i].owner == _creator) {
+                ids[idx++] = campaigns[i].id;
+            }
+        }
+        return ids;
+    }
 
-        uint256 count = total - _offset > _limit ? _limit : total - _offset;
+    // ------------ TRUY VẤN TƯƠNG TÁC ------------
+    function getinvestmentsForCampaign(
+        uint256 _campaignId,
+        uint256 _offset,
+        uint256 _limit
+    ) external view returns (Investment[] memory) {
+        Investment[] storage list = campaignInvestments[_campaignId];
+        uint256 total = list.length;
+        if (_offset >= total) return new Investment[](0);
+
+        uint256 count = total - _offset;
+        if (count > _limit) count = _limit;
+
         Investment[] memory result = new Investment[](count);
-
         for (uint256 i = 0; i < count; i++) {
-            result[i] = investmentsList[_offset + i];
+            result[i] = list[_offset + i];
         }
         return result;
     }
 
-    /**
-     * @notice Lấy danh sách các yêu cầu rút tiền của một chiến dịch (có phân trang).
-     */
-    function getWithdrawalRequestsForCampaign(uint256 _campaignId, uint256 _offset, uint256 _limit) external view returns (WithdrawalRequest[] memory) {
-        WithdrawalRequest[] storage requestsList = withdrawalRequests[_campaignId];
-        uint256 total = requestsList.length;
+    function getWithdrawalRequestsForCampaign(
+        uint256 _campaignId,
+        uint256 _offset,
+        uint256 _limit
+    ) external view returns (WithdrawalRequest[] memory) {
+        WithdrawalRequest[] storage list = withdrawalRequests[_campaignId];
+        uint256 total = list.length;
+        if (_offset >= total) return new WithdrawalRequest[](0);
 
-        if (_offset >= total) {
-            return new WithdrawalRequest[](0);
-        }
-        
-        uint256 count = total - _offset > _limit ? _limit : total - _offset;
+        uint256 count = total - _offset;
+        if (count > _limit) count = _limit;
+
         WithdrawalRequest[] memory result = new WithdrawalRequest[](count);
-
         for (uint256 i = 0; i < count; i++) {
-            result[i] = requestsList[_offset + i];
+            result[i] = list[_offset + i];
         }
         return result;
     }
 
-    /**
-     * @notice Lấy tổng số tiền một nhà tài trợ đã quyên góp cho một chiến dịch.
-     */
     function getInvestorBalanceForCampaign(uint256 _campaignId, address _investor) external view returns (uint256) {
         return campaignInvestorBalances[_campaignId][_investor];
     }
-    
-    /**
-     * @notice Kiểm tra xem một người đã bỏ phiếu cho một yêu cầu rút tiền hay chưa.
-     */
+
     function hasVoted(uint256 _campaignId, uint256 _requestId, address _voter) external view returns (bool) {
         return withdrawalVotes[_campaignId][_requestId][_voter];
     }
 
-    // --- TRUY VẤN LỢI NHUẬN ---
-
-    /**
-     * @notice Lấy tổng lợi nhuận của một chiến dịch.
-     */
+    // ------------ TRUY VẤN LỢI NHUẬN ------------
     function getTotalProfitForCampaign(uint256 _campaignId) external view returns (uint256) {
-        
         return totalProfits[_campaignId];
     }
 
-    /**
-     * @notice Kiểm tra xem một nhà tài trợ đã nhận lợi nhuận từ chiến dịch chưa.
-     */
-    function hasClaimedProfit(uint256 _campaignId, uint256 _profitId, address _investor) external view returns (bool) {
-        return profitClaimed[_campaignId][_profitId][_investor];
+    function hasClaimedProfit(uint256 _campaignId, uint256 _profitIndex, address _investor) external view returns (bool) {
+        return profitClaimed[_campaignId][_profitIndex][_investor];
     }
-
-    // --- TRUY VẤN NỀN TẢNG VÀ VAI TRÒ ---
-    
-    /**
-     * @notice Lấy các số liệu thống kê tổng quan của toàn bộ nền tảng.
-     */
-    function getPlatformStats() external view returns (
-        uint256 totalCampaigns,
-        uint256 totalActive,
-        uint256 totalCompleted,
-        uint256 totalFailed,
-        uint256 totalFundsRaised
-    ) {
-        totalCampaigns = campaignCounter;
-        uint256 totalRaised = 0;
-
-        for (uint256 i = 1; i <= totalCampaigns; i++) {
-            Campaign storage campaign = campaigns[i];
-            if (campaign.status == CampaignStatus.Active) {
-                totalActive++;
-            } else if (campaign.status == CampaignStatus.Completed) {
-                totalCompleted++;
-            } else if (campaign.status == CampaignStatus.Failed) {
-                totalFailed++;
-            }
-            totalRaised += campaigns[i].currentRaisedAmount;
-        }
-        
-        return (totalCampaigns, totalActive, totalCompleted, totalFailed, totalRaised);
-    }
-
-    /**
-     * @notice Kiểm tra xem một người dùng có phải là Admin hay không.
-     */
-    function isAdmin(address _user) external view returns (bool) {
-        return hasRole(ADMIN_ROLE, _user);
-    }
-
-    /**
-     * @notice Kiểm tra xem một người dùng có phải là Creator hay không.
-     */
-    function isCreator(address _user) external view returns (bool) {
-        return hasRole(CREATOR_ROLE, _user);
-    }
-
 
     function getProfitClaimStatuses(
         uint256 _campaignId,
         uint256 _profitIndex,
         address[] memory _investors
     ) external view returns (bool[] memory) {
-        // --- KIỂM TRA ĐẦU VÀO ---
-        require(_campaignId > 0 && _campaignId <= campaignCounter, "Campaign ID is invalid");
+        require(_exists(_campaignId), "Campaign not found");
         require(_profitIndex < listProfits[_campaignId].length, "Profit index out of bounds");
 
-        // --- LOGIC CHÍNH ---
-        uint256 investorCount = _investors.length;
-        bool[] memory statuses = new bool[](investorCount);
-
-        // Duyệt qua mảng địa chỉ đầu vào và truy vấn trực tiếp từ mapping `profitClaimed`.
-        for (uint256 i = 0; i < investorCount; i++) {
+        uint256 n = _investors.length;
+        bool[] memory statuses = new bool[](n);
+        for (uint256 i = 0; i < n; i++) {
             statuses[i] = profitClaimed[_campaignId][_profitIndex][_investors[i]];
         }
-
         return statuses;
     }
 
-    function getProfitClaimStatuses (
+    function getProfitClaimStatuses(
         uint256 _campaignId,
         address[] memory _investors
     ) external view returns (bool[] memory) {
-        // --- KIỂM TRA ĐẦU VÀO ---
-        require(_campaignId > 0 && _campaignId <= campaignCounter, "Campaign ID is invalid");
+        require(_exists(_campaignId), "Campaign not found");
 
-        // --- LOGIC CHÍNH ---
         uint256 profitCount = listProfits[_campaignId].length;
-        bool[] memory statuses = new bool[](profitCount * _investors.length);
+        uint256 n = _investors.length;
 
+        bool[] memory statuses = new bool[](profitCount * n);
         for (uint256 i = 0; i < profitCount; i++) {
-            for (uint256 j = 0; j < _investors.length; j++) {
-                statuses[i * _investors.length + j] = profitClaimed[_campaignId][i][_investors[j]];
+            for (uint256 j = 0; j < n; j++) {
+                statuses[i * n + j] = profitClaimed[_campaignId][i][_investors[j]];
             }
         }
-
         return statuses;
     }
 
+    // ------------ NỀN TẢNG & VAI TRÒ ------------
+    function getPlatformStats() external view returns (
+        uint256 totalCampaigns_,
+        uint256 totalActive,
+        uint256 totalCompleted,
+        uint256 totalFailed,
+        uint256 totalFundsRaised
+    ) {
+        for (uint256 i = 1; i <= campaignCounter; i++) {
+            if (!_exists(i)) continue;
+            totalCampaigns_++;
+            Campaign storage c = campaigns[i];
+            if (c.status == CampaignStatus.Active) totalActive++;
+            else if (c.status == CampaignStatus.Completed) totalCompleted++;
+            else if (c.status == CampaignStatus.Failed) totalFailed++;
+            totalFundsRaised += c.currentRaisedAmount;
+        }
+        return (totalCampaigns_, totalActive, totalCompleted, totalFailed, totalFundsRaised);
+    }
+
+    function isAdmin(address _user) external view returns (bool) {
+        return hasRole(ADMIN_ROLE, _user);
+    }
+
+    function isCreator(address _user) external view returns (bool) {
+        return hasRole(CREATOR_ROLE, _user);
+    }
 }

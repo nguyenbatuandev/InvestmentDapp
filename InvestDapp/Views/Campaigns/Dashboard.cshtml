@@ -4,6 +4,8 @@
     Layout = "~/Pages/_Layout.cshtml";
 }
 
+@Html.AntiForgeryToken()
+
 @section Styles {
 <style>
 
@@ -73,9 +75,22 @@
 .btn-ok{ background: linear-gradient(135deg,#28a745,#20c997); border:0; color:#fff; }
 .btn-bad{ background: linear-gradient(135deg,#dc3545,#e74c3c); border:0; color:#fff; }
 
-.aside-links{ display:flex; flex-wrap:wrap; gap:10px; border-top:1px solid var(--border); padding-top: var(--sp-3); }
-.aside-links a{ color: var(--muted); text-decoration:none; font-weight:700; }
-.aside-links a:hover{ color: var(--primary); }
+.aside-links{
+  display:flex; flex-wrap:wrap; gap:10px; border-top:1px solid var(--border); padding-top: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+.aside-links a{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:8px 12px; border-radius:999px; font-weight:700; text-decoration:none;
+  color: var(--fg); background: linear-gradient(135deg, rgba(108,240,255,.04), rgba(155,107,255,.02));
+  border:1px solid rgba(255,255,255,.03); transition: transform .12s, box-shadow .12s, background .12s, color .12s;
+}
+.aside-links a .icon{ display:inline-grid; place-items:center; width:18px; height:18px; font-size:12px; border-radius:6px; background: rgba(255,255,255,.02); }
+.aside-links a:hover{ transform: translateY(-3px); box-shadow: 0 10px 24px rgba(108,240,255,.10); color: var(--primary); background: linear-gradient(135deg, rgba(108,240,255,.12), rgba(155,107,255,.06)); }
+.aside-links a.active{ background: linear-gradient(135deg, rgba(108,240,255,.22), rgba(155,107,255,.18)); color:#04121c; border-color: rgba(108,240,255,.28); }
+
+@@media (max-width: 1080px){ .aside-links{ justify-content:center; } .aside-links a{ flex:1 1 calc(50% - 8px); text-align:center; } }
+@@media (max-width: 520px){ .aside-links a{ flex:1 1 100%; } }
 
 /* ========== Header (main) ========== */
 .header{ padding: var(--sp-4); position: relative; }
@@ -208,11 +223,35 @@
         }
         else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Failed)
         {
+          var currentUserWallet = User.FindFirst("WalletAddress")?.Value;
+          var hasInvested = Model.Investments?.Any(i => i.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase)) ?? false;
+          var hasClaimedRefund = Model.Refunds?.Any(r => r.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase)) ?? false;
+          
           <div class="card glass" style="padding:var(--sp-4); text-align:center">
             <i class="fa-solid fa-exclamation-triangle" style="color:var(--bad)"></i>
             <div class="h2" style="font-size:var(--fs-3); margin:6px 0 4px">Chiến dịch thất bại</div>
-            <div class="muted" style="font-size:var(--fs-1); margin-bottom: var(--sp-2)">Nhà đầu tư có thể claim hoàn tiền.</div>
-            <button class="btn" id="refund-btn" onclick="claimRefund(@Model.Id)">Claim hoàn tiền</button>
+            
+            @if (hasInvested && hasClaimedRefund)
+            {
+              <div class="muted" style="font-size:var(--fs-1); margin-bottom: var(--sp-2)">Bạn đã nhận hoàn tiền thành công.</div>
+              <div style="padding:12px; border:1px solid var(--border); border-radius:12px; background: rgba(40,167,69,.10); color:var(--ok);">
+                <i class="fas fa-check-circle"></i> Đã hoàn tiền
+              </div>
+            }
+            else if (hasInvested && !hasClaimedRefund)
+            {
+              <div class="muted" style="font-size:var(--fs-1); margin-bottom: var(--sp-2)">Bạn có thể claim hoàn tiền cho khoản đầu tư của mình.</div>
+              <button class="btn" id="refund-btn" onclick="claimRefund(@Model.Id)">
+                <i class="fa-solid fa-hand-holding-dollar"></i> Claim hoàn tiền
+              </button>
+            }
+            else
+            {
+              <div class="muted" style="font-size:var(--fs-1); margin-bottom: var(--sp-2)">Chiến dịch này đã thất bại. Chỉ nhà đầu tư mới có thể claim hoàn tiền.</div>
+              <div style="padding:12px; border:1px solid var(--border); border-radius:12px; background: rgba(255,184,0,.10); color:var(--warn);">
+                <i class="fas fa-info-circle"></i> Bạn chưa đầu tư vào chiến dịch này
+              </div>
+            }
           </div>
         }
         else
@@ -225,10 +264,9 @@
       </div>
 
       <div class="aside-links">
-        <a href="@Url.Action("Details", new { id = Model.Id })">Chi tiết</a>
-        <a href="@Url.Action("Posts", new { campaignId = Model.Id })">Bài viết</a>
-        @if (Model.WithdrawalRequests?.Any() == true){ <a href="@Url.Action("WithdrawalRequests", new { id = Model.Id })">Rút vốn</a> }
-        <a href="@Url.Action("Index")">Tất cả dự án</a>
+        <a href="@Url.Action("Posts", new { campaignId = Model.Id })" class="@((ViewContext.RouteData.Values["action"]?.ToString() == "Posts") ? "active" : "")"><span class="icon"><i class="fas fa-newspaper"></i></span> Bài viết</a>
+        @if (Model.WithdrawalRequests?.Any() == true){ <a href="@Url.Action("WithdrawalRequests", new { id = Model.Id })" class="@((ViewContext.RouteData.Values["action"]?.ToString() == "WithdrawalRequests") ? "active" : "")"><span class="icon"><i class="fas fa-hand-holding-usd"></i></span> Rút vốn</a> }
+        <a href="@Url.Action("Index")" class="@((ViewContext.RouteData.Values["controller"]?.ToString() == "Campaigns" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"><span class="icon"><i class="fas fa-th-list"></i></span> Tất cả dự án</a>
       </div>
     </aside>
 
@@ -426,7 +464,7 @@
                   <span class="badge b-voting"><i class="fas fa-vote-yea"></i> Đang bỏ phiếu</span>
                 </div>
                 <div class="divider"></div>
-                <p style="margin:0 0 6px;"><b>Số tiền:</b> @request.Amount.ToString("F2") BNB</p>
+                @* <p style="margin:0 0 6px;"><b>Số tiền:</b> @request.Amount.ToString("F2") BNB</p> *@
                 <p style="margin:0 0 6px;"><b>Lý do:</b> @request.Reason.Substring(0, Math.Min(request.Reason.Length, 120))@(request.Reason.Length > 120 ? "..." : "")</p>
                 <p class="muted" style="margin:0 0 10px;"><b>Người yêu cầu:</b> @request.RequesterAddress.Substring(0, 6)...@request.RequesterAddress[^4..]</p>
 
@@ -737,12 +775,57 @@
                 const tx = await contract.refund(campaignId, { gasLimit: 150000 });
                 showSuccess('Đã gửi giao dịch claim refund...');
                 const receipt = await tx.wait();
-                if (receipt.status === 1){ showSuccess('Claim refund thành công!'); setTimeout(()=>window.location.reload(), 3000); }
+                if (receipt.status === 1){ 
+                    showSuccess('Claim refund thành công!');
+                    
+                    // Send result to backend
+          const formData = new FormData();
+          formData.append('CampaignId', campaignId);
+          formData.append('TransactionHash', tx.hash);
+          // include investor address explicitly to help model-binding and repository
+          formData.append('InvestorAddress', (userAccount || '').toString());
+          formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]')?.value || '');
+                    
+          const response = await fetch('/Campaigns/ClaimRefund', {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin' // ensure cookies (antiforgery) are sent
+          });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        showSuccess('Hoàn tiền đã được ghi nhận trong hệ thống!');
+                    } else {
+                        const errorData = await response.json();
+                        showError(errorData.error || 'Có lỗi khi cập nhật refund trên server.');
+                    }
+                    
+                    setTimeout(() => window.location.reload(), 3000);
+                }
                 else showError('Giao dịch thất bại!');
             }catch(error){
-                console.error(error);
-                if (error.code === 4001) showError('Bạn đã huỷ giao dịch.');
-                else showError(error.message || 'Có lỗi khi claim refund.');
+                console.error('Claim refund error:', error);
+                
+                // Restore button state
+                const refundBtn = document.getElementById('refund-btn');
+                if (refundBtn){ refundBtn.disabled = false; refundBtn.innerHTML = originalText; }
+                
+                // Handle specific error types
+                if (error.code === 4001) {
+                    showError('❌ Bạn đã huỷ giao dịch.');
+                } else if (error.code === 'CALL_EXCEPTION') {
+                    // Smart contract reverted
+                    showError('❌ Smart contract từ chối: Có thể bạn chưa đầu tư hoặc đã claim refund rồi.');
+                } else if (error.message && error.message.includes('insufficient funds')) {
+                    showError('❌ Không đủ gas fee để thực hiện giao dịch.');
+                } else if (error.message && error.message.includes('execution reverted')) {
+                    const reason = error.reason || error.data?.message || 'Lý do không xác định';
+                    showError('❌ Giao dịch bị từ chối: ' + reason);
+                } else if (error.receipt && error.receipt.status === 0) {
+                    showError('❌ Giao dịch thất bại: Smart contract từ chối yêu cầu.');
+                } else {
+                    showError('❌ Lỗi: ' + (error.message || 'Có lỗi khi claim refund.'));
+                }
             }finally{
                 const refundBtn = document.getElementById('refund-btn');
                 if (refundBtn){ refundBtn.disabled = false; refundBtn.innerHTML = originalText; }

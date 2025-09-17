@@ -1,7 +1,10 @@
 ﻿using InvestDapp.Infrastructure.Data.interfaces;
 using InvestDapp.Models;
+using InvestDapp.Shared.DTOs;
 using InvestDapp.Shared.Enums;
+using InvestDapp.Shared.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 
 namespace InvestDapp.Infrastructure.Data.Repository
@@ -21,7 +24,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 .Include(c => c.Investments)
                 .Include(c => c.WithdrawalRequests)
                 .Include(c => c.Profits)
-                .Include(c => c.Refund) // Bao gồm Refund nếu cần
+                .Include(c => c.Refunds) 
                 .ToListAsync();
             return campaigns;
         }
@@ -33,7 +36,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 .Include(c => c.Investments)
                 .Include(c => c.WithdrawalRequests)
                 .Include(c => c.Profits)
-                .Include(c => c.Refund) // Bao gồm Refund nếu cần
+                .Include(c => c.Refunds)
                 .FirstOrDefaultAsync(c => c.Id == id);
             return campaign;
         }
@@ -65,7 +68,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 .Include(c => c.Investments)
                 .Include(c => c.WithdrawalRequests)
                 .Include(c => c.Profits)
-                .Include(c => c.Refund)
+                .Include(c => c.Refunds)
                 .FirstOrDefaultAsync(c => c.Id == campaign.Id);
 
             return updated!;
@@ -83,6 +86,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
             return await _context.Campaigns
                 .Include(c => c.category)
                 .Include(c => c.Posts)
+                .Include(c => c.WithdrawalRequests)
                 .Where(c => c.OwnerAddress.ToLower() == ownerAddress.ToLower())
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
@@ -114,6 +118,49 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+        }
+
+        public async Task<WithdrawalRequest> CreatRerequestWithdrawalAsync(WithdrawalRequestDto withdrawalRequestDto)
+        {
+            var qr = new WithdrawalRequest
+            {
+                CampaignId = withdrawalRequestDto.CampaignId,
+                txhash = withdrawalRequestDto.TxHash,
+                Reason = withdrawalRequestDto.Reason,
+                CreatedAt = DateTime.UtcNow,
+                RequesterAddress = withdrawalRequestDto.address,
+                Status = WithdrawalStatus.Pending,
+                AgreeVotes = 0,
+                DisagreeVotes = 0,
+            };
+            _context.WithdrawalRequests.Add(qr);
+            await _context.SaveChangesAsync();
+            return qr;
+        }
+
+        public async Task<Refund> ClaimRefundAsync(ClaimRefundDto refundDto)
+        {
+            if (string.IsNullOrEmpty(refundDto.InvestorAddress))
+                throw new ArgumentException("InvestorAddress is required for ClaimRefund");
+
+            var investorLower = refundDto.InvestorAddress.ToLower();
+            var totalInvested = await _context.Investment
+                .Where(i => i.CampaignId == refundDto.CampaignId && i.InvestorAddress.ToLower() == investorLower)
+                .SumAsync(i => i.Amount);
+                
+            var refund = new Refund
+            {
+                CampaignId = refundDto.CampaignId,
+                TransactionHash = refundDto.TransactionHash,
+                InvestorAddress = refundDto.InvestorAddress,
+                AmountInWei = totalInvested.ToString(),
+                ClaimedAt = DateTime.UtcNow,
+                RefundReason = "Campaign failed or user requested refund"
+            };
+            
+            await _context.Refunds.AddAsync(refund);
+            await _context.SaveChangesAsync();
+            return refund;
         }
     }
 }

@@ -90,6 +90,15 @@
                 margin: 0 0 10px
             }
 
+            .gradient-text{
+                background: linear-gradient(90deg,var(--primary),var(--accent));
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+                color: transparent;
+                display: inline-block;
+            }
+
             .hero p {
                 color: var(--muted);
                 margin: 0 0 20px
@@ -492,7 +501,7 @@
                 <div class="slide-inner hero">
                     <div>
                         <span class="pill" style="display:inline-block;margin-bottom:10px;">New • Web3 Launchpad</span>
-                        <h1>Trang chủ crypto hiện đại <span style="-webkit-background-clip:text;background-clip:text;background:linear-gradient(90deg,var(--primary),var(--accent));color:transparent">slide-by-slide</span></h1>
+                        <h1>Trang chủ crypto hiện đại <span class="gradient-text">slide-by-slide</span></h1>
                         <p>Không cuộn dài. Mỗi màn hình là một câu chuyện: hero, thống kê, dự án, FAQ, đối tác và newsletter.</p>
                         <div class="actions">
                             <a class="btn" data-goto="2" href="#s-projects">Khám phá Dự án</a>

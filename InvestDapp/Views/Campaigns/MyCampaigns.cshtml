@@ -229,17 +229,36 @@
                             <a class="btn" href="@Url.Action("Details", new { id = c.Id })"><i class="fa-solid fa-eye"></i>&nbsp;Details</a>
                             <a class="btn" href="@Url.Action("Dashboard", new { id = c.Id })"><i class="fa-solid fa-gauge-high"></i>&nbsp;Dashboard</a>
 
-                            @if (c.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
-                            {
-                                <a class="btn secondary" href="@Url.Action("Posts", new { campaignId = c.Id })"><i class="fa-solid fa-newspaper"></i>&nbsp;Post</a>
+                            @{
+                                var isPoolFull = c.CurrentRaisedAmount >= c.GoalAmount;
+                                var isPastDeadline = DateTime.UtcNow >= c.EndTime;
+                                var canRequestWithdrawal = c.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved && 
+                                                          isPoolFull && isPastDeadline && 
+                                                          (c.Status == InvestDapp.Shared.Enums.CampaignStatus.Active || c.Status == InvestDapp.Shared.Enums.CampaignStatus.Voting);
+                                var count = c.WithdrawalRequests.Count;
+								
                             }
-                            else if (c.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Pending)
+
+                            @if (canRequestWithdrawal)
                             {
-                                <a class="btn secondary" href="@Url.Action("AwaitingApproval", new { campaignId = c.Id })"><i class="fa-regular fa-hourglass-half"></i>&nbsp;Theo dõi</a>
+                                if(count < 3)
+                                {
+                                    <button class="btn" onclick="requestWithdrawal(@c.Id, '@c.Name')" style="background: linear-gradient(135deg,#28a745,#20c997); border:0; color:#fff;" title="Campaign ID: @c.Id">
+                                        <i class="fa-solid fa-hand-holding-dollar"></i>&nbsp;Withdrawal
+                                    </button>
+                                }
+                                else if(c.IsRefunded == false)
+                                {
+                                    <button class="btn" onclick="Refund(@c.Id)" style="background: linear-gradient(135deg,#28a745,#20c997); border:0; color:#fff;" title="Campaign ID: @c.Id">
+                                        <i class="fa-solid fa-hand-holding-dollar"></i>&nbsp;Refund
+                                    </button>
+                                }
                             }
-                            else
+                            else if (c.IsRefunded == false)
                             {
-                                <span></span>
+                                <button class="btn" onclick="Refund(@c.Id)" style="background: linear-gradient(135deg,#28a745,#20c997); border:0; color:#fff;" title="Campaign ID: @c.Id">
+                                    <i class="fa-solid fa-hand-holding-dollar"></i>&nbsp;Refund
+                                </button>
                             }
                         </div>
                     </div>
@@ -259,15 +278,234 @@
 </div>
 
 @section Scripts{
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script src="~/js/contract-config.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded',()=> {
+// Global variables for blockchain interaction
+let provider, signer, contract, userAddress;
+
+// Initialize blockchain connection
+async function initializeBlockchain() {
+    try {
+        // Check if MetaMask is available
+        if (typeof window.ethereum === 'undefined') {
+            console.warn('MetaMask not detected');
+            return false;
+        }
+
+        // Request account access
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        
+        // Create provider and signer
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
+        
+        // Get user address
+        userAddress = await signer.getAddress();
+        
+        // Create contract instance
+        contract = new ethers.Contract(
+            window.CONTRACT_CONFIG.CONTRACT_ADDRESS,
+            window.CONTRACT_CONFIG.CONTRACT_ABI,
+            signer
+        );
+
+        return true;
+    } catch (error) {
+        console.error('Failed to initialize blockchain:', error);
+        return false;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize blockchain connection on page load
+    initializeBlockchain();
+    
     // animate progress width sau khi mount
-    requestAnimationFrame(()=> {
-        document.querySelectorAll('.mc-fill').forEach(el=>{
-            const w = el.style.width; el.style.width='0%';
-            setTimeout(()=> el.style.width = w, 50);
+    requestAnimationFrame(() => {
+        document.querySelectorAll('.mc-fill').forEach(el => {
+            const w = el.style.width; 
+            el.style.width = '0%';
+            setTimeout(() => el.style.width = w, 50);
         });
     });
 });
+
+// Function to request withdrawal from smart contract
+async function requestWithdrawal(campaignId, campaignName) {
+    try {
+        // Ensure blockchain is initialized
+        if (!contract) {
+            const initialized = await initializeBlockchain();
+            if (!initialized) {
+                alert('⚠️ Cần MetaMask để thực hiện giao dịch.');
+                return;
+            }
+        }
+
+        // Prompt for withdrawal reason
+        const reason = prompt(`Nhập lý do rút vốn cho chiến dịch "${campaignName}":`);
+        if (!reason || reason.trim() === '') {
+            alert('Vui lòng nhập lý do rút vốn.');
+            return;
+        }
+
+        // Show loading state
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>&nbsp;Đang gửi lên blockchain...';
+        button.disabled = true;
+
+        // === STEP 1: CALL SMART CONTRACT FIRST ===
+        console.log('Calling smart contract requestFullWithdrawal...');
+        const tx = await contract.requestFullWithdrawal(campaignId, reason.trim());
+        
+        console.log('Transaction sent to blockchain:', tx.hash);
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>&nbsp;Chờ xác nhận blockchain...';
+        
+        // Wait for transaction confirmation
+        const receipt = await tx.wait();
+        console.log('Blockchain transaction confirmed:', receipt);
+
+        // === STEP 2: SEND RESULT TO BACKEND AFTER BLOCKCHAIN SUCCESS ===
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>&nbsp;Cập nhật hệ thống...';
+        
+        const response = await fetch('/Campaigns/RequestFullWithdrawal', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': window.getRequestVerificationToken()
+            },
+            body: JSON.stringify({
+                campaignId: campaignId,
+                txHash: tx.hash,
+                reason: reason.trim()
+            })
+        });
+
+        if (response.ok) {
+            alert('✅ Yêu cầu rút vốn đã được thực hiện thành công!\n' +
+                  'Giao dịch blockchain: ' + tx.hash + '\n' +
+                  'Hệ thống đã được cập nhật.');
+            // Reload page to reflect changes
+            window.location.reload();
+        } else {
+            console.warn('Backend update failed:', response.status);
+            alert('⚠️ Giao dịch blockchain thành công nhưng không thể cập nhật hệ thống.\n' +
+                  'Giao dịch: ' + tx.hash + '\n' +
+                  'Vui lòng liên hệ admin để kiểm tra.');
+        }
+
+    } catch (error) {
+        console.error('Error in withdrawal process:', error);
+        
+        // Restore button state
+        if (event.target) {
+            event.target.innerHTML = originalText;
+            event.target.disabled = false;
+        }
+
+        // Handle specific errors
+        if (error.code === 4001) {
+            alert('❌ Giao dịch bị hủy bởi người dùng.');
+        } else if (error.message.includes('insufficient funds')) {
+            alert('❌ Không đủ gas fee để thực hiện giao dịch blockchain.');
+        } else if (error.message.includes('execution reverted')) {
+            const reason = error.reason || error.data?.message || 'Lỗi không xác định từ smart contract';
+            alert('❌ Smart contract từ chối giao dịch:\n' + reason);
+        } else if (error.message.includes('user rejected')) {
+            alert('❌ Người dùng từ chối ký giao dịch.');
+        } else {
+            alert('❌ Có lỗi xảy ra: ' + error.message);
+        }
+    }
+}
+
+// Function to handle refund requests
+async function Refund(campaignId) {    
+    // Debug: Check the campaign ID
+    console.log('Refund called with campaignId:', campaignId, 'Type:', typeof campaignId);
+    
+    // Validate campaign ID
+    if (!campaignId || campaignId === 0 || campaignId === '0') {
+        alert('❌ Lỗi: Campaign ID không hợp lệ: ' + campaignId);
+        console.error('Invalid campaign ID:', campaignId);
+        return;
+    }
+    
+    try {
+        // Ensure blockchain is initialized
+        if (!contract) {
+            const initialized = await initializeBlockchain();
+            if (!initialized) {
+                alert('⚠️ Cần MetaMask để thực hiện giao dịch.');
+                return;
+            }
+        }
+
+        // Show loading state
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>&nbsp;';
+        button.disabled = true;
+
+        // === STEP 1: CALL SMART CONTRACT FIRST ===
+        console.log('Calling smart contract updateCampaignStatus with ID:', campaignId);
+        const tx = await contract.updateCampaignStatus(campaignId);
+        
+        console.log('Transaction sent to blockchain:', tx.hash);
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>&nbsp;';
+        
+        // Wait for transaction confirmation
+        const receipt = await tx.wait();
+        console.log('Blockchain transaction confirmed:', receipt);
+
+        // === STEP 2: SEND RESULT TO BACKEND AFTER BLOCKCHAIN SUCCESS ===
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>&nbsp;Cập nhật hệ thống...';
+        const response = await fetch('/Campaigns/Refund', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': window.getRequestVerificationToken()
+            },
+            body: JSON.stringify({ campaignId: campaignId })
+        });
+        
+        if (response.ok) {
+            alert('✅ Yêu cầu hoàn tiền đã được gửi thành công!');
+            window.location.reload();
+        } else {
+            console.warn('Refund request failed:', response.status);
+            alert('⚠️ Không thể gửi yêu cầu hoàn tiền. Vui lòng thử lại.');
+        }
+
+        // Restore button state
+        button.innerHTML = originalText;
+        button.disabled = false;
+
+    } catch (error) {
+        console.error('Error sending refund request:', error);
+        
+        // Restore button state
+        if (event.target) {
+            event.target.innerHTML = originalText;
+            event.target.disabled = false;
+        }
+
+        // Handle specific errors
+        if (error.code === 4001) {
+            alert('❌ Giao dịch bị hủy bởi người dùng.');
+        } else if (error.message.includes('insufficient funds')) {
+            alert('❌ Không đủ gas fee để thực hiện giao dịch blockchain.');
+        } else if (error.message.includes('execution reverted')) {
+            const reason = error.reason || error.data?.message || 'Lỗi không xác định từ smart contract';
+            alert('❌ Smart contract từ chối giao dịch:\n' + reason);
+        } else if (error.message.includes('user rejected')) {
+            alert('❌ Người dùng từ chối ký giao dịch.');
+        } else {
+            alert('❌ Có lỗi xảy ra khi gửi yêu cầu hoàn tiền: ' + error.message);
+        }
+    }
+}
 </script>
 }

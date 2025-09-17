@@ -3,6 +3,7 @@ using InvestDapp.Shared.Common.Request;
 using InvestDapp.Shared.Models;
 using InvestDapp.Shared.Enums;
 using InvestDapp.Models;
+using InvestDapp.Shared.DTOs;
 
 namespace InvestDapp.Application.CampaignService
 {
@@ -156,12 +157,13 @@ namespace InvestDapp.Application.CampaignService
                 categoryId = request.CategoryId,
                 ApprovalStatus = ApprovalStatus.Pending,
                 CreatedAt = DateTime.UtcNow,
-                Status = CampaignStatus.PendingPost, // Bắt đầu với trạng thái chờ bài viết
+                Status = CampaignStatus.PendingPost,
                 CurrentRaisedAmount = 0,
                 TotalInvestmentsOnCompletion = 0,
                 TotalProfitAdded = 0,
                 InvestorCount = 0,
-                DeniedWithdrawalRequestCount = 0
+                DeniedWithdrawalRequestCount = 0,
+                IsRefunded = false
             };
 
             var result = await _campaignRepository.CreateCampaignAsync(campaign);
@@ -225,6 +227,11 @@ namespace InvestDapp.Application.CampaignService
             return await _campaignRepository.GetCampaignsByOwnerAsync(ownerAddress);
         }
 
+        public async Task<bool> UpdateCampaignAsync(Campaign campaign)
+        {
+            return await _repository.UpdateCampaignAsync(campaign);
+        }
+
         public async Task<bool> CanUserEditCampaign(int campaignId, string userAddress)
         {
             var campaign = await _repository.GetCampaignByIdAsync(campaignId);
@@ -247,6 +254,7 @@ namespace InvestDapp.Application.CampaignService
 
             return campaign.ApprovalStatus == ApprovalStatus.Approved;
         }
+
         #endregion
     }
 }

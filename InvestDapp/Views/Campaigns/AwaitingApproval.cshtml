@@ -7,69 +7,168 @@
 
 @section Styles {
     <style>
-        /* Use shared theme variables and match layout spacing */
-        .approval-container { max-width:1000px; margin: calc(var(--header-h,72px) + 32px) auto 64px; padding:0 }
+        /* ===================== CHỜ DUYỆT – FULL CSS (ĐÃ SỬA LỆCH) ===================== */
+        .approval-container{
+        max-width:1000px;
+        margin: calc(var(--header-h,72px) + 32px) auto 64px;
+        padding:0;
+        }
 
-        .wizard-steps{ display:flex; align-items:center; justify-content:center; margin-bottom:24px; background:var(--glass); padding:18px; border-radius:var(--radius); border:1px solid var(--border); box-shadow:var(--shadow) }
+        /* ---------- Wizard Steps (tiến trình 3 bước) ---------- */
+        .approval-container .wizard-steps{
+        display:flex; align-items:center; justify-content:center;
+        margin-bottom:24px;
+        background:var(--glass);
+        padding:18px; border-radius:var(--radius);
+        border:1px solid var(--border); box-shadow:var(--shadow);
+        }
+        .approval-container .step{ display:flex; align-items:center; gap:12px; font-weight:700; color:var(--muted); }
+        .approval-container .step.active{ color:var(--warning); }
+        .approval-container .step.completed{ color:var(--success); }
 
-        .step{ display:flex; align-items:center; gap:12px; color:var(--muted); font-weight:700 }
-        .step.active{ color:var(--warning) }
-        .step.completed{ color:var(--success) }
+        .approval-container .step-number{
+        width:40px; height:40px; border-radius:50%;
+        display:grid; place-items:center;
+        background:var(--border); color:var(--muted);
+        font-weight:800; transition:all .2s;
+        }
+        .approval-container .step.active .step-number{ background:var(--warning); color:#00ff4c; box-shadow:0 6px 26px rgba(255,184,0,.12); }
+        .approval-container .step.completed .step-number{ background:var(--success); color:#009dff; }
+        .approval-container .step-connector{
+        width:80px; height:2px; margin:0 16px;
+        background:var(--border); align-self:center;
+        }
 
-        .step-number{ min-width:40px; height:40px; border-radius:50%; background:var(--border); color:var(--muted); display:flex; align-items:center; justify-content:center; font-weight:800; transition:all .2s }
-        .step.active .step-number{ background:var(--warning); color:#081218; box-shadow:0 6px 26px rgba(255,184,0,.12) }
-        .step.completed .step-number{ background:var(--success); color:#04121b }
+        /* ---------- Cards / Status ---------- */
+        .approval-container .success-card{
+        background:linear-gradient(135deg,var(--success), #00b894);
+        border-radius:var(--radius); padding:28px; color:var(--fg);
+        margin-bottom:20px; box-shadow:0 10px 40px rgba(0,212,170,.12);
+        animation:slideInUp .6s ease-out;
+        text-align: center; 
+        }
+        .approval-container .success-icon{
+        display:inline-flex; align-items:center; justify-content:center;
+        width:56px; height:56px; border-radius:12px;
+        font-size:2.4rem; margin:0 auto 12px; 
+        background:rgba(255,255,255,0.06);
+        }
+        .approval-container .success-card h2{ font-size:1.2rem; margin:0 0 8px; font-weight:800; }
+        .approval-container .success-card p{ margin:0;color:var(--fg);opacity:.95;line-height:1.45 }
 
-        .step-connector{ width:80px; height:2px; background:var(--border); margin:0 16px }
+        .approval-container .status-grid{
+        display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+        gap:18px; margin-bottom:20px;
+        }
+        .approval-container .status-card{
+        background:var(--glass); border:1px solid var(--border);
+        border-radius:var(--radius); padding:18px; transition:.18s;
+        }
+        .approval-container .status-card:hover{ transform:translateY(-6px); box-shadow:var(--shadow) }
+        .approval-container .status-header{ display:flex; align-items:center; gap:10px; margin-bottom:10px }
+        .approval-container .status-icon{
+        width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem;
+        }
+        .approval-container .campaign-status .status-icon{ background:rgba(255,184,0,.08); color:var(--warning) }
+        .approval-container .post-status .status-icon{ background:rgba(255,184,0,.06); color:var(--warning) }
+        .approval-container .status-title{ font-weight:800; color:var(--fg) }
+        .approval-container .status-value{ font-size:1.05rem; margin-bottom:8px; color:var(--primary-2) }
+        .approval-container .status-pending{ color:var(--warning); font-weight:800 }
+        .approval-container .status-description{ color:var(--muted); font-size:.92rem; line-height:1.4 }
 
-        .success-card{ background:linear-gradient(135deg,var(--success), #00b894); border-radius:var(--radius); padding:28px; color:var(--fg); margin-bottom:20px; box-shadow:0 10px 40px rgba(0,212,170,.12); animation:slideInUp .6s ease-out }
-        .success-icon{ font-size:3.2rem; margin-bottom:12px }
-        .success-card h2{ font-size:1.2rem; margin:0 0 8px; font-weight:800 }
-        .success-card p{ margin:0;color:var(--fg);opacity:.95;line-height:1.45 }
+        /* ---------- Timeline (áp dụng mẫu Dashboard: spine 22px + marker 22px) ---------- */
+        .approval-container .timeline-card{
+        background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+        border:1px solid rgba(255,255,255,0.04);
+        border-radius:var(--radius);
+        padding:20px; margin-bottom:22px;
+        box-shadow: 0 8px 28px rgba(2,6,23,0.12);
+        }
+        .approval-container .timeline-header{ display:flex; align-items:center; gap:14px; margin-bottom:14px }
+        .approval-container .timeline-icon{
+        width:44px; height:44px; border-radius:10px;
+        background: linear-gradient(135deg, rgba(108,240,255,.06), rgba(155,107,255,.04));
+        color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.05rem;
+        }
+        .approval-container .timeline-title{ font-weight:800; color:var(--fg); font-size:1.02rem }
 
-        .status-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:18px; margin-bottom:20px }
-        .status-card{ background:var(--glass); border:1px solid var(--border); border-radius:var(--radius); padding:18px; transition:all .18s }
-        .status-card:hover{ transform:translateY(-6px); box-shadow:var(--shadow) }
+        /* FIX LỆCH – reset padding UL, đồng bộ toạ độ bằng biến --tl-spine */
+        .approval-container .timeline-list{
+        list-style:none; margin:0; padding:0 !important;
+        position:relative; --tl-spine: 22px;
+        }
+        .approval-container .timeline-list::before{
+        content:""; position:absolute;
+        left: var(--tl-spine) !important;
+        top:6px; bottom:6px; width:2px;
+        background:var(--border); border-radius:2px;
+        }
+        .approval-container .timeline-item{
+        position:relative; margin-left:0 !important;
+        padding-left: calc(var(--tl-spine) + 34px) !important;
+        }
+        .approval-container .timeline-item::before{
+        content:""; position:absolute; top:2px;
+        left: calc(var(--tl-spine) - 11px) !important; /* tâm marker = spine */
+        width:22px; height:22px; border-radius:50%;
+        border:2px solid var(--border); background: var(--bg);
+        transform:none !important; 
+        }
+        .approval-container .timeline-item.completed::before{ background:rgb(0, 255, 132); border-color:#0dd; }
+        .approval-container .timeline-item.pending::before{ background:rgb(0, 208, 245); border-color:rgb(36, 165, 188); animation:pulse 2s infinite; }
+        .approval-container .timeline-item.future::before{ background:transparent; border-color:var(--border); }
+        .approval-container .timeline-item:hover{ transform: translateX(4px); background: rgba(255,255,255,0.015) }
 
-        .status-header{ display:flex; align-items:center; gap:10px; margin-bottom:10px }
-        .status-icon{ width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem }
-        .campaign-status .status-icon{ background:rgba(255,184,0,.08); color:var(--warning) }
-        .post-status .status-icon{ background:rgba(255,184,0,.06); color:var(--warning) }
+        .approval-container .timeline-step{
+        font-weight:800; color:var(--fg); margin-bottom:6px; font-size:var(--fs-3);
+        display:inline-flex; align-items:center; gap:8px;
+        }
+        .approval-container .timeline-desc{ color:var(--muted); font-size:var(--fs-1); line-height:1.4 }
+        .approval-container .timeline-time{ color:var(--muted); font-size:.82rem; margin-top:8px }
 
-        .status-title{ font-weight:800; color:var(--fg) }
-        .status-value{ font-size:1.05rem; margin-bottom:8px; color:var(--primary-2) }
-        .status-pending{ color:var(--warning); font-weight:800 }
-        .status-description{ color:var(--muted); font-size:.92rem; line-height:1.4 }
+        /* ---------- Buttons ---------- */
+        .approval-container .action-buttons{ text-align:center; margin-top:18px }
+        .approval-container .btn{
+        padding:10px 16px; border-radius:10px; font-size:14px; font-weight:800;
+        cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:8px; margin:0 8px;
+        }
+        .approval-container .btn-primary{ background:var(--gradient); color:var(--fg); box-shadow:0 8px 26px rgba(0,170,255,.08) }
+        .approval-container .btn-primary:hover{ transform:translateY(-2px) }
+        .approval-container .btn-secondary{ background:var(--card); color:var(--fg); border:1px solid var(--border) }
+        .approval-container .btn-secondary:hover{ background:transparent; border-color:var(--primary) }
 
-        .timeline-card{ background:var(--glass); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:18px }
-        .timeline-header{ display:flex; align-items:center; gap:10px; margin-bottom:12px }
-        .timeline-icon{ width:40px; height:40px; border-radius:10px; background:rgba(0,170,255,.06); color:var(--primary); display:flex; align-items:center; justify-content:center }
-        .timeline-title{ font-weight:700; color:var(--fg); font-size:1rem }
+        /* ---------- Notifications (JS createNotification dùng .notification) ---------- */
+        .approval-container .notification{ /* để dùng chung cũng có thể bỏ selector .approval-container */
+        position: fixed; top:20px; right:20px; z-index:10000;
+        padding:12px 14px; border-radius:12px; font-weight:800; color:#fff;
+        box-shadow:0 10px 26px rgba(0,0,0,.3); backdrop-filter: blur(6px);
+        }
+        .notification.success{ background: linear-gradient(135deg,#28a745,#20c997); }
+        .notification.error{   background: linear-gradient(135deg,#dc3545,#e74c3c); }
 
-        .timeline-list{ list-style:none; position:relative; padding-left:28px }
-        .timeline-list::before{ content:''; position:absolute; left:10px; top:0; bottom:0; width:2px; background:var(--border) }
+        /* ---------- Responsive giữ căn thẳng ---------- */
+        @@media (max-width:768px){
+        .approval-container .wizard-steps{ flex-direction:column; gap:12px }
+        .approval-container .step-connector{ width:2px; height:30px; margin:10px 0 }
 
-        .timeline-item{ position:relative; margin-bottom:14px; padding-left:28px }
-        .timeline-item::before{ content:''; position:absolute; left:-6px; top:6px; width:12px; height:12px; border-radius:50%; background:var(--success) }
-        .timeline-item.pending::before{ background:var(--warning); animation:pulse 2s infinite }
-        .timeline-item.future::before{ background:var(--border) }
+        .approval-container .status-grid{ grid-template-columns:1fr }
+        .approval-container .success-card{ padding:16px; }
+        .approval-container .success-icon{ font-size:2.4rem; align-items: center; }
+        .approval-container .success-card h2{ font-size:1.1rem }
 
-        .timeline-step{ font-weight:700; color:var(--fg); margin-bottom:4px }
-        .timeline-desc{ color:var(--muted); font-size:.9rem }
-        .timeline-time{ color:var(--muted); font-size:.8rem; margin-top:6px }
+        /* vẫn thẳng hàng */
+        .approval-container .timeline-list::before{ left: var(--tl-spine) !important; }
+        .approval-container .timeline-item{ padding-left: calc(var(--tl-spine) + 34px) !important; }
+        .approval-container .timeline-item::before{ left: calc(var(--tl-spine) - 11px) !important; }
+        }
 
-        .action-buttons{ text-align:center; margin-top:18px }
-        .btn{ padding:10px 16px; border-radius:10px; font-size:14px; font-weight:800; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:8px; margin:0 8px }
-        .btn-primary{ background:var(--gradient); color:var(--fg); box-shadow:0 8px 26px rgba(0,170,255,.08) }
-        .btn-primary:hover{ transform:translateY(-2px) }
-        .btn-secondary{ background:var(--card); color:var(--fg); border:1px solid var(--border) }
-        .btn-secondary:hover{ background:transparent; border-color:var(--primary) }
-
-        @@media (max-width:768px){ .wizard-steps{ flex-direction:column; gap:12px } .step-connector{ width:2px;height:30px;margin:10px 0 } .status-grid{ grid-template-columns:1fr } .success-card{ padding:16px } .success-icon{ font-size:2.4rem } .success-card h2{ font-size:1.1rem } .action-buttons{ display:flex; flex-direction:column; gap:12px } .btn{ margin:0; justify-content:center } }
-
+        /* ---------- Animations ---------- */
         @@keyframes slideInUp{ from{ opacity:0; transform:translateY(16px) } to{ opacity:1; transform:none } }
-        @@keyframes bounce{ 0%,20%,53%,80%,100%{ transform:translate3d(0,0,0) } 40%,43%{ transform:translate3d(0,-8px,0) } 70%{ transform:translate3d(0,-4px,0) } 90%{ transform:translate3d(0,-2px,0) } }
-        @@keyframes pulse{ 0%{ box-shadow:0 0 0 0 rgba(255,184,0,.6) } 70%{ box-shadow:0 0 0 10px rgba(255,184,0,0) } 100%{ box-shadow:0 0 0 0 rgba(255,184,0,0) } }
+        @@keyframes pulse{
+        0%{ box-shadow:0 0 0 0 rgba(255,184,0,.6) }
+        70%{ box-shadow:0 0 0 10px rgba(255,184,0,0) }
+        100%{ box-shadow:0 0 0 0 rgba(255,184,0,0) }
+        }
     </style>
 }
 
@@ -156,12 +255,12 @@
             </div>
 
             <ul class="timeline-list">
-                <li class="timeline-item">
+                <li class="timeline-item completed">
                     <div class="timeline-step">✅ Tạo chiến dịch</div>
                     <div class="timeline-desc">Bạn đã tạo chiến dịch thành công.</div>
                     <div class="timeline-time">Đã hoàn thành</div>
                 </li>
-                <li class="timeline-item">
+                <li class="timeline-item completed">
                     <div class="timeline-step">✅ Tạo bài viết đầu tiên</div>
                     <div class="timeline-desc">Bài viết đầu tiên đã được gửi để chờ phê duyệt.</div>
                     <div class="timeline-time">Đã hoàn thành</div>

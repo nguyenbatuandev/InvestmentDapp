@@ -1,31 +1,38 @@
 ﻿using InvestDapp.Application.CampaignService;
 using InvestDapp.Application.MessageService;
 using InvestDapp.Application.UserService;
+using InvestDapp.Infrastructure.Data.interfaces;
+using InvestDapp.Models;
 using InvestDapp.Shared.Common.Request;
+using InvestDapp.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using System.Security.Claims;
 
 namespace InvestDapp.Controllers
 {
     [Authorize]
     public class CampaignsController : Controller
     {
-    private readonly ICampaignPostService _campaignPostService;
-    private readonly IUserService _userService;
-    private readonly IConversationService _conversationService;
-    private readonly IServiceScopeFactory _serviceScopeFactory;
+        private readonly ICampaignPostService _campaignPostService;
+        private readonly IUserService _userService;
+        private readonly IConversationService _conversationService;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
+        private readonly ICampaign _campain;
 
         public CampaignsController(
             ICampaignPostService campaignPostService,
             IUserService userService,
             IConversationService conversationService,
-            IServiceScopeFactory serviceScopeFactory)
+            IServiceScopeFactory serviceScopeFactory,
+            ICampaign campaign)
         {
             _campaignPostService = campaignPostService;
             _userService = userService;
             _conversationService = conversationService;
             _serviceScopeFactory = serviceScopeFactory;
+            _campain = campaign;
         }
 
         public async Task<IActionResult> Index()
@@ -290,7 +297,7 @@ namespace InvestDapp.Controllers
                 if (user != null)
                 {
                     var postUrl = Url.Action("PostDetails", "Campaigns", new { id = post.Id }, Request.Scheme);
-                    
+
                     _ = Task.Run(async () =>
                     {
                         try
@@ -352,7 +359,7 @@ namespace InvestDapp.Controllers
 
                 if (post == null)
                 {
-                    if (Request.Headers["Content-Type"].ToString().Contains("application/json") || 
+                    if (Request.Headers["Content-Type"].ToString().Contains("application/json") ||
                         Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                     {
                         return Json(new { success = false, message = "Không tìm thấy bài viết." });
@@ -361,8 +368,8 @@ namespace InvestDapp.Controllers
                 }
 
                 await _campaignPostService.DeletePostAsync(id, wallet);
-                
-                if (Request.Headers["Content-Type"].ToString().Contains("application/json") || 
+
+                if (Request.Headers["Content-Type"].ToString().Contains("application/json") ||
                     Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
                     Request.ContentType?.Contains("multipart/form-data") == true)
                 {
@@ -380,7 +387,7 @@ namespace InvestDapp.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                if (Request.Headers["Content-Type"].ToString().Contains("application/json") || 
+                if (Request.Headers["Content-Type"].ToString().Contains("application/json") ||
                     Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
                     Request.ContentType?.Contains("multipart/form-data") == true)
                 {
@@ -391,7 +398,7 @@ namespace InvestDapp.Controllers
             }
             catch (Exception)
             {
-                if (Request.Headers["Content-Type"].ToString().Contains("application/json") || 
+                if (Request.Headers["Content-Type"].ToString().Contains("application/json") ||
                     Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
                     Request.ContentType?.Contains("multipart/form-data") == true)
                 {
@@ -455,7 +462,7 @@ namespace InvestDapp.Controllers
                     return NotFound();
 
                 var cutoffTime = since ?? DateTime.UtcNow.AddMinutes(-5); // Default: last 5 minutes
-                
+
                 if (campaign.Investments == null)
                 {
                     return Json(new List<object>());
@@ -464,11 +471,12 @@ namespace InvestDapp.Controllers
                 var latestInvestments = campaign.Investments
                     .Where(i => i.Timestamp > cutoffTime)
                     .OrderByDescending(i => i.Timestamp)
-                    .Select(i => new { 
-                        InvestorAddress = i.InvestorAddress, 
-                        Amount = i.Amount, 
-                        Timestamp = i.Timestamp, 
-                        TransactionHash = i.TransactionHash 
+                    .Select(i => new
+                    {
+                        InvestorAddress = i.InvestorAddress,
+                        Amount = i.Amount,
+                        Timestamp = i.Timestamp,
+                        TransactionHash = i.TransactionHash
                     })
                     .ToList();
 
@@ -502,7 +510,8 @@ namespace InvestDapp.Controllers
                     latestInvestments = campaign.Investments
                         .Where(i => i.Timestamp > cutoffTime)
                         .OrderByDescending(i => i.Timestamp)
-                        .Select(i => (object)new {
+                        .Select(i => (object)new
+                        {
                             InvestorAddress = i.InvestorAddress,
                             Amount = i.Amount,
                             Timestamp = i.Timestamp,
@@ -511,7 +520,8 @@ namespace InvestDapp.Controllers
                         .ToList();
                 }
 
-                var summary = new {
+                var summary = new
+                {
                     currentRaised = campaign.CurrentRaisedAmount,
                     investorCount = campaign.InvestorCount,
                     latest = latestInvestments
@@ -522,6 +532,150 @@ namespace InvestDapp.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        // POST: /Campaigns/RequestFullWithdrawal - Record withdrawal request transaction
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RequestFullWithdrawal([FromBody] WithdrawalRequestDto request)
+        {
+            try
+            {
+                // Validate input
+                if (request == null || request.CampaignId <= 0 || string.IsNullOrEmpty(request.TxHash) || string.IsNullOrEmpty(request.Reason))
+                {
+                    return BadRequest(new { error = "Dữ liệu không hợp lệ" });
+                }
+
+                // Get current user wallet
+                var userWallet = User.FindFirst("WalletAddress")?.Value;
+                if (string.IsNullOrEmpty(userWallet))
+                {
+                    return Unauthorized(new { error = "Không tìm thấy địa chỉ ví" });
+                }
+
+                // Verify campaign ownership
+                var campaign = await _campaignPostService.GetCampaignByIdAsync(request.CampaignId);
+                if (campaign == null)
+                {
+                    return NotFound(new { error = "Không tìm thấy chiến dịch" });
+                }
+
+                if (!await _campaignPostService.CanUserEditCampaign(request.CampaignId, userWallet))
+                {
+                    return StatusCode(403, new { error = "Bạn không có quyền thực hiện hành động này" });
+                }
+
+                request.address = userWallet;
+                var withdrawal = await _campain.CreatRerequestWithdrawalAsync(request);
+                return Ok(new
+                {
+                    message = "Yêu cầu rút vốn đã được ghi nhận",
+                    campaignId = request.CampaignId,
+                    txHash = request.TxHash
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Lỗi server: " + ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Refund([FromBody] RefundRequestDto request)
+        {
+            try
+            {
+                if (request == null || request.CampaignId <= 0)
+                {
+                    return BadRequest(new { error = "Campaign ID không hợp lệ" });
+                }
+
+                var campaign = await _campaignPostService.GetCampaignByIdAsync(request.CampaignId);
+                if (campaign == null)
+                {
+                    return NotFound(new { error = "Không tìm thấy chiến dịch" });
+                }
+
+                var wallet = User.FindFirst("WalletAddress")?.Value;
+                if (string.IsNullOrEmpty(wallet) || campaign.OwnerAddress.ToLower() != wallet.ToLower())
+                {
+                    return StatusCode(403, new { error = "Không có quyền thực hiện hành động này" });
+                }
+
+                campaign.IsRefunded = true;
+                campaign.Status = Shared.Enums.CampaignStatus.Failed;
+
+                await _campaignPostService.UpdateCampaignAsync(campaign);
+
+                return Ok(new
+                {
+                    message = "Yêu cầu hoàn tiền cho nhà đầu tư đã được ghi nhận",
+                    campaignId = campaign.Id,
+                    success = true
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Lỗi server: " + ex.Message });
+            }
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ClaimRefund(ClaimRefundDto? claimRefund)
+        {
+            try
+            {
+                if (claimRefund == null)
+                {
+                    return BadRequest(new { error = "Dữ liệu không hợp lệ - payload trống" });
+                }
+
+                // Debug logging
+                Console.WriteLine($"ClaimRefund called with CampaignId: {claimRefund.CampaignId}, TxHash: {claimRefund.TransactionHash}");
+
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.SelectMany(x => x.Value?.Errors.Select(e => e.ErrorMessage) ?? Enumerable.Empty<string>());
+                    return BadRequest(new { error = "Dữ liệu không hợp lệ", details = errors });
+                }
+
+                if (claimRefund.CampaignId <= 0)
+                {
+                    return BadRequest(new { error = "Campaign ID không hợp lệ" });
+                }
+
+                if (string.IsNullOrEmpty(claimRefund.TransactionHash))
+                {
+                    return BadRequest(new { error = "Transaction Hash không được để trống" });
+                }
+
+                var campaign = await _campaignPostService.GetCampaignByIdAsync(claimRefund.CampaignId);
+                if (campaign == null)
+                {
+                    return NotFound(new { error = "Không tìm thấy chiến dịch" });
+                }
+                
+                var wallet = User.FindFirst("WalletAddress")?.Value;
+                if (string.IsNullOrEmpty(wallet))
+                {
+                    return StatusCode(403, new { error = "Không có quyền thực hiện hành động này" });
+                }
+                claimRefund.InvestorAddress = wallet;
+                var result = await _campain.ClaimRefundAsync(claimRefund);
+                return Ok(new
+                {
+                    message = "Yêu cầu hoàn tiền đã được ghi nhận",
+                    campaignId = claimRefund.CampaignId,
+                    txHash = result.TransactionHash,
+                    success = true
+                });
+            }
+            catch(Exception ex)
+            {
+                return StatusCode(500, new { error = "Lỗi server: " + ex.Message });
             }
         }
     }
