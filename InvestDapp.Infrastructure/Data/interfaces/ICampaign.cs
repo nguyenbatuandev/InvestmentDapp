@@ -1,5 +1,7 @@
 ﻿using InvestDapp.Models;
+using InvestDapp.Shared.DTOs;
 using InvestDapp.Shared.Enums;
+using InvestDapp.Shared.Models;
 
 
 namespace InvestDapp.Infrastructure.Data.interfaces
@@ -14,5 +16,7 @@ namespace InvestDapp.Infrastructure.Data.interfaces
 
         // Campaign Services with approval Administration
         Task<IEnumerable<Campaign>> GetCampaignsForAdminAsync(CampaignStatus? status = null, ApprovalStatus? approvalStatus = null, int page = 1, int pageSize = 10);
+        Task<WithdrawalRequest> CreatRerequestWithdrawalAsync(WithdrawalRequestDto withdrawalRequestDto);
+        Task<Refund> ClaimRefundAsync(ClaimRefundDto refundDto);
     }
 }

@@ -2,6 +2,7 @@
 using InvestDapp.Shared.Models;
 using InvestDapp.Shared.Enums;
 using InvestDapp.Models;
+using InvestDapp.Shared.DTOs;
 
 namespace InvestDapp.Application.CampaignService
 {
@@ -24,6 +25,7 @@ namespace InvestDapp.Application.CampaignService
         Task<IEnumerable<Campaign>> GetApprovedCampaignsAsync();
         Task<Campaign?> GetCampaignByIdAsync(int id);
         Task<IEnumerable<Campaign>> GetUserCampaignsAsync(string ownerAddress);
+        Task<bool> UpdateCampaignAsync(Campaign campaign);
         Task<bool> CanUserEditCampaign(int campaignId, string userAddress);
         Task<bool> CanUserCreatePost(int campaignId, string userAddress);
 
@@ -31,6 +33,7 @@ namespace InvestDapp.Application.CampaignService
         Task<bool> ApproveCampaignAsync(int id, string adminWallet, string? adminNotes = null);
         Task<bool> RejectCampaignAsync(int id, string adminWallet, string adminNotes);
         Task<IEnumerable<Campaign>> GetCampaignsForAdminAsync(CampaignStatus? status = null, ApprovalStatus? approvalStatus = null, int page = 1, int pageSize = 10);
+
 
     }
 }

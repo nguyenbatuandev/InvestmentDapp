@@ -180,7 +180,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
             {
                 CampaignId = (int)campaignId,
                 Id = (int)requestId,
-                Amount = (double)Web3.Convert.FromWei(amount),
+                //Amount = (double)Web3.Convert.FromWei(amount),
                 Reason = reason,
                 txhash = txhash,
                 Status = WithdrawalStatus.Pending,

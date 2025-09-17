@@ -540,7 +540,7 @@
                                 <i class="fas fa-money-bill-wave"></i>
                                 Yêu cầu rút vốn #@request.Id
                             </h3>
-                            <div class="request-amount">@request.Amount.ToString("F2") BNB</div>
+                            @* <div class="request-amount">@request.Amount.ToString("F2") BNB</div> *@
                         </div>
                         <div>
                             @{
@@ -569,11 +569,6 @@
                                         statusClass = "status-executed";
                                         statusText = "Đã thực thi";
                                         statusIcon = "fa-check-circle";
-                                        break;
-                                    case InvestDapp.Shared.Enums.WithdrawalStatus.Canceled:
-                                        statusClass = "status-rejected";
-                                        statusText = "Đã hủy";
-                                        statusIcon = "fa-times-circle";
                                         break;
                                 }
                             }

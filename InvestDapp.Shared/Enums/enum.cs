@@ -31,7 +31,6 @@ namespace InvestDapp.Shared.Enums
         Approved,   // Được nhà đầu tư chấp thuận, chờ thực thi
         Executed,   // Đã thực thi thành công
         Rejected,   // Bị từ chối bởi nhà đầu tư
-        Canceled    // Bị hủy bỏ bởi chủ dự án
     }
     // Enums.cs
     public enum ConversationType

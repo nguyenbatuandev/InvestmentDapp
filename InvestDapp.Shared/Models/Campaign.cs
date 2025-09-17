@@ -47,6 +47,7 @@ namespace InvestDapp.Models
         public CampaignStatus Status { get; set; }
         public int InvestorCount { get; set; }
         public int DeniedWithdrawalRequestCount { get; set; } // Ánh xạ từ 'getDenialsRequestedWithDrawCampaigns'
+        public bool IsRefunded { get; set; } // Ánh xạ từ 'isRefunded'
 
         public DateTime CreatedAt { get; set; } // Ngày tạo chiến dịch
 
@@ -54,7 +55,7 @@ namespace InvestDapp.Models
         public virtual ICollection<Investment> Investments { get; set; } = new List<Investment>();
         public virtual ICollection<WithdrawalRequest> WithdrawalRequests { get; set; } = new List<WithdrawalRequest>();
         public virtual ICollection<Profit> Profits { get; set; } = new List<Profit>();
-        public virtual Refund Refund { get; set; }
+        public virtual ICollection<Refund> Refunds { get; set; } = new List<Refund>(); // ✅ Changed to collection
 
         // ✅ THÊM RELATIONSHIP VỚI CAMPAIGNPOST
         public virtual ICollection<CampaignPost> Posts { get; set; } = new List<CampaignPost>();

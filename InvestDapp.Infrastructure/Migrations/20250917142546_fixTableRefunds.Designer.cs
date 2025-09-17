@@ -4,6 +4,7 @@ using InvestDapp.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace InvestDapp.Infrastructure.Migrations
 {
     [DbContext(typeof(InvestDbContext))]
-    partial class InvestDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250917142546_fixTableRefunds")]
+    partial class fixTableRefunds
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -576,16 +579,10 @@ namespace InvestDapp.Infrastructure.Migrations
             modelBuilder.Entity("InvestDapp.Shared.Models.Refund", b =>
                 {
                     b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<double>("Amount")
                         .HasColumnType("float");
-
-                    b.Property<int>("CampaignId")
-                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -599,8 +596,6 @@ namespace InvestDapp.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CampaignId");
 
                     b.ToTable("Refunds");
                 });
@@ -1195,8 +1190,8 @@ namespace InvestDapp.Infrastructure.Migrations
             modelBuilder.Entity("InvestDapp.Shared.Models.Refund", b =>
                 {
                     b.HasOne("InvestDapp.Models.Campaign", "Campaign")
-                        .WithMany("Refunds")
-                        .HasForeignKey("CampaignId")
+                        .WithOne("Refund")
+                        .HasForeignKey("InvestDapp.Shared.Models.Refund", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1233,7 +1228,8 @@ namespace InvestDapp.Infrastructure.Migrations
 
                     b.Navigation("Profits");
 
-                    b.Navigation("Refunds");
+                    b.Navigation("Refund")
+                        .IsRequired();
 
                     b.Navigation("WithdrawalRequests");
                 });

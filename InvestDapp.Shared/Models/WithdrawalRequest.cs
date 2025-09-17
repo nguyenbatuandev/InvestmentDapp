@@ -23,9 +23,6 @@ namespace InvestDapp.Shared.Models
         [Required]
         public string Reason { get; set; }
 
-        [Required]
-        public double Amount { get; set; }
-
         public WithdrawalStatus Status { get; set; }
 
         [Column(TypeName = "decimal(38,0)")]
