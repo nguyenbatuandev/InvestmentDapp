@@ -81,27 +81,28 @@
 /* actions: dùng .btn của layout - standardize button sizing/alignment */
 .mc-actions{
     margin-top:auto;
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:10px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
     /* make each action cell equal height so buttons line up */
-    grid-auto-rows:44px;
     align-items:stretch;
 }
 .mc-actions .btn,
 .mc-actions > span {
-    width:100%;
+    flex:1;
+    min-width:120px;
     display:flex;
     align-items:center;
     justify-content:center;
     min-height:44px;
     box-sizing:border-box;
-    padding:10px 12px;
+    padding:8px 10px;
     border-radius:10px;
     border:1px solid var(--border);
     color:var(--fg);
     font-weight:800;
     text-decoration:none;
+    font-size:0.85rem;
 }
 .mc-actions .btn.secondary{opacity:.95}
 .mc-actions > span{background:transparent;border:0}
@@ -131,7 +132,13 @@
 /* responsive */
 @@media (max-width:768px){
     .mc-grid{grid-template-columns:1fr}
-    .mc-actions{grid-template-columns:1fr}
+    .mc-actions{
+        flex-direction:column;
+    }
+    .mc-actions .btn{
+        min-width:unset;
+        flex:none;
+    }
     .mc-stats{grid-template-columns:1fr}
 }
 </style>
@@ -221,7 +228,13 @@
                             </div>
                             <div class="meta">
                                 <span>@c.InvestorCount nhà đầu tư</span>
-                                <span>@((c.EndTime - DateTime.UtcNow).Days) ngày còn lại</span>
+                                @{
+                                    var daysLeft = (c.EndTime - DateTime.UtcNow).Days;
+                                    string timeText = daysLeft > 0 ? $"{daysLeft} ngày còn lại" : 
+                                                     daysLeft == 0 ? "Hết hạn hôm nay" : 
+                                                     "Đã hết hạn";
+                                }
+                                <span>@timeText</span>
                             </div>
                         </div>
 

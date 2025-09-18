@@ -1,0 +1,678 @@
+﻿
+@{
+    ViewData["Title"] = "TaskAnalysis";
+    Layout = "~/Pages/_Layout.cshtml";
+}
+@section Styles {
+    <style>
+        .wrapper {
+            max-width: 1200px;
+            margin: calc(var(--header-h,72px) + 16px) auto 84px;
+            padding: 20px clamp(12px,3vw,20px)
+        }
+
+        .head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+            .head h1 {
+                margin: 0;
+                font-size: clamp(18px,2.2vw,22px);
+                font-weight: 900
+            }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid currentColor;
+            font-weight: 800;
+            font-size: .8rem;
+			background: rgba(0,170,255,.1);
+        }
+
+
+        /* ===== KPIs ===== */
+        .kpis {
+            display: grid;
+            grid-template-columns: repeat(4,1fr);
+            gap: 12px;
+            margin-bottom: 14px
+        }
+
+        .kpi {
+            background: var(--card,#111827);
+            border: 1px solid var(--border,#2b3752);
+            border-radius: 14px;
+            padding: 14px;
+            box-shadow: var(--shadow,0 10px 30px rgba(0,0,0,.18))
+        }
+
+            .kpi .label {
+                color: var(--muted,#8a93b3);
+                font-size: .9rem
+            }
+
+            .kpi .value {
+                font-weight: 900;
+                font-size: clamp(18px,2.4vw,22px);
+                margin-top: 2px
+            }
+
+            .kpi .delta {
+                font-size: .85rem;
+                margin-top: 6px
+            }
+
+        .delta.up {
+            color: var(--success,#00e676)
+        }
+
+        .delta.down {
+            color: var(--danger,#ff6b6b)
+        }
+
+        /* ===== Toolbar (lọc & sắp xếp) ===== */
+        .toolbar {
+            position: sticky;
+            top: calc(var(--header-h,72px) + 10px);
+            z-index: 5;
+            margin: 0 0 16px
+        }
+
+        .toolbar-inner {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: var(--glass,rgba(20,24,36,.55));
+            border: 1px solid var(--border,#2b3752);
+            border-radius: 14px;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow,0 10px 30px rgba(0,0,0,.18))
+        }
+
+        .input {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--card,#121826);
+            border: 1px solid var(--border,#2b3752);
+            border-radius: 10px;
+            padding: 8px 10px;
+            transition: .16s
+        }
+
+            .input:focus-within {
+                box-shadow: 0 0 0 2px var(--primary-2,#00aaff)
+            }
+
+            .input input {
+                border: none;
+                background: transparent;
+                outline: none;
+                color: var(--fg,#e6e9ef);
+                min-width: 180px
+            }
+
+        .select, .date, .num {
+            background: var(--card,#121826);
+            border: 1px solid var(--border,#2b3752);
+            color: var(--fg,#e6e9ef);
+            border-radius: 10px;
+            padding: 9px 12px
+        }
+
+        .spacer {
+            flex: 1
+        }
+
+        /* ===== Bảng giao dịch ===== */
+        .table-wrap {
+            overflow: auto;
+            border: 1px solid var(--border,#2b3752);
+            border-radius: 14px;
+            background: var(--card,#0e1526);
+            box-shadow: var(--shadow,0 10px 30px rgba(0,0,0,.18))
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 980px
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+            color: var(--muted,#9aa3ba);
+            font-weight: 800;
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--border,#2b3752)
+        }
+
+        tbody td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border,#2b3752);
+            vertical-align: middle
+        }
+
+        tbody tr:hover {
+            background: rgba(255,255,255,.03)
+        }
+
+        th:first-child, td:first-child {
+            padding-left: 16px
+        }
+
+        th:last-child, td:last-child {
+            padding-right: 16px
+        }
+
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            background: var(--card,#0e1526)
+        }
+
+        .name {
+            font-weight: 900;
+            color: var(--fg,#e6e9ef)
+        }
+
+        .sub {
+            color: var(--muted,#8a93b3);
+            font-size: .9rem
+        }
+
+        .num {
+            font-variant-numeric: tabular-nums
+        }
+
+        .hash {
+            font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+            color: var(--muted,#8a93b3)
+        }
+
+        .status {
+            font-size: .8rem;
+            font-weight: 800;
+            border: 1px solid currentColor;
+            border-radius: 999px;
+            padding: 4px 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .s-success {
+            color: var(--success,#00e676)
+        }
+
+        .s-pending {
+            color: var(--warning,#ffb800)
+        }
+
+        .s-failed {
+            color: var(--danger,#ff6b6b)
+        }
+
+        .method {
+            font-size: .8rem;
+            color: var(--muted,#8a93b3)
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        .btn.xs {
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: .9rem
+        }
+
+        /* Empty & toast */
+        .empty {
+            padding: 28px;
+            text-align: center;
+            color: var(--muted,#8a93b3)
+        }
+
+        .toast {
+            position: fixed;
+            right: 16px;
+            bottom: 16px;
+            background: var(--card,#121827);
+            border: 1px solid var(--border,#2b3752);
+            color: var(--fg,#e6e9ef);
+            padding: 12px 14px;
+            border-radius: 10px;
+            box-shadow: var(--shadow,0 10px 30px rgba(0,0,0,.18));
+            opacity: 0;
+            transform: translateY(8px);
+            transition: .2s
+        }
+
+            .toast.show {
+                opacity: 1;
+                transform: none
+            }
+
+        /* Card-list cho mobile */
+        @@media (max-width: 720px) {
+            .kpis
+
+        {
+            grid-template-columns: repeat(2,1fr)
+        }
+
+        .table-wrap {
+            border: none;
+            background: transparent
+        }
+
+        table {
+            display: none
+        }
+
+        .cards {
+            display: grid;
+            gap: 10px
+        }
+
+        .card {
+            background: var(--card,#111827);
+            border: 1px solid var(--border,#2b3752);
+            border-radius: 14px;
+            padding: 12px
+        }
+
+            .card .row {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                margin: 6px 0
+            }
+
+            .card .tag {
+                display: inline-flex;
+                gap: 6px;
+                align-items: center
+            }
+
+        }
+    </style>
+    }
+    <div class="wrapper">
+        <div class="head">
+            <div style="display:flex;align-items:center;gap:10px">
+                <span class="badge" style="color:#00aaff">Ví của tôi</span>
+                <h1>Giao dịch đầu tư</h1>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button class="btn" id="btn-export">Xuất CSV</button>
+                <a class="btn primary" href="/Portfolio">Xem danh mục</a>
+            </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpis" id="kpis">
+            <div class="kpi">
+                <div class="label">Tổng đã đầu tư</div>
+                <div class="value" id="kpi-invested">0 BNB</div>
+                <div class="delta up" id="kpi-invested-delta">+0 BNB 30 ngày</div>
+            </div>
+            <div class="kpi">
+                <div class="label">Số giao dịch</div>
+                <div class="value" id="kpi-count">0</div>
+                <div class="delta" style="color:var(--primary-2,#00aaff)" id="kpi-avg">TB: 0 BNB</div>
+            </div>
+            <div class="kpi">
+                <div class="label">Đang chờ xác nhận</div>
+                <div class="value" id="kpi-pending">0</div>
+                <div class="delta" style="color:var(--warning,#ffb800)" id="kpi-pending-note">—</div>
+            </div>
+            <div class="kpi">
+                <div class="label">Lợi nhuận</div>
+                <div class="value" id="kpi-profit">0 BNB</div>
+                <div class="delta up" id="kpi-profit-rate">Tỷ lệ: 0%</div>
+            </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="toolbar-inner">
+                <div class="input" role="search">🔎 <input id="q" type="search" placeholder="Tìm theo chiến dịch / hash…"></div>
+                <select id="status" class="select" aria-label="Trạng thái">
+                    <option value="all">Trạng thái: Tất cả</option>
+                    <option value="success">Thành công</option>
+                    <option value="pending">Đang chờ</option>
+                    <option value="failed">Thất bại</option>
+                </select>
+                <select id="method" class="select" aria-label="Loại giao dịch">
+                    <option value="all">Loại: Tất cả</option>
+                    <option value="INVEST">Đầu tư</option>
+                    <option value="REFUND">Hoàn tiền</option>
+                    <option value="REWARD">Thưởng</option>
+                </select>
+                <select id="sort" class="select" aria-label="Sắp xếp">
+                    <option value="newest">Mới nhất</option>
+                    <option value="amount">Số tiền lớn</option>
+                    <option value="oldest">Cũ nhất</option>
+                </select>
+                <div class="spacer"></div>
+                <input id="from" type="date" class="date" aria-label="Từ ngày">
+                <input id="to" type="date" class="date" aria-label="Đến ngày">
+                <input id="min" type="number" step="0.01" class="num" placeholder="Min BNB" aria-label="Giá trị tối thiểu">
+                <input id="max" type="number" step="0.01" class="num" placeholder="Max BNB" aria-label="Giá trị tối đa">
+                <button class="btn" id="btn-reset">Làm mới</button>
+            </div>
+        </div>
+
+        <!-- Bảng -->
+        <div class="table-wrap">
+            <table aria-label="Bảng giao dịch">
+                <thead>
+                    <tr>
+                        <th class="sticky-col">Chiến dịch</th>
+                        <th>Tx hash</th>
+                        <th>Loại</th>
+                        <th>Số tiền</th>
+                        <th>Thời gian</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+            <div class="empty" id="empty" hidden>Không có giao dịch nào khớp bộ lọc.</div>
+
+            <!-- Card list for mobile -->
+            <div class="cards" id="cards" hidden></div>
+        </div>
+
+        <!-- Trang -->
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px" id="pagination"></div>
+    </div>
+
+    <div class="toast" id="toast">Đã sao chép!</div>
+    @section Scripts {
+
+    <script>
+        /* ======== Data từ API ======== */
+        let txs = []; // Will be loaded from API
+
+        /* ======== State ======== */
+        let state = {
+          q:'', status:'all', method:'all', sort:'newest',
+          from:'', to:'', min:'', max:'',
+          page:1, size:8
+        };
+
+        /* ======== Utils ======== */
+        const fmt = n => (n || 0).toLocaleString('en-US',{maximumFractionDigits:4});
+        const fmt2 = n => (n || 0).toLocaleString('en-US',{maximumFractionDigits:2});
+        const fmtDate = s => s ? new Date(s).toLocaleString('vi-VN') : 'N/A';
+        const ago30 = () => { const d=new Date(); d.setDate(d.getDate()-30); return d; };
+        const shortHash = h => h ? (h.slice(0,8)+'…'+h.slice(-6)) : '';
+        const bscUrl = h => `https://testnet.bscscan.com/tx/${h}`;
+
+        /* ======== Load data from API ======== */
+        async function loadTransactions() {
+            try {
+                const response = await fetch('/api/user/transactions', {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                // Convert API data to frontend format
+                txs = data.transactions.map(t => ({
+                    id: t.id,
+                    hash: t.hash || '',
+                    campaignId: `CAMP-${t.campaignId}`,
+                    campaign: t.campaignTitle || 'Unknown Campaign',
+                    method: t.method,
+                    amount: parseFloat(t.amount) || 0, // Ensure it's a number
+                    time: t.time,
+                    status: t.isRefunded ? 'refunded' : t.status // Fix status mapping
+                }));
+
+                console.log('Loaded transactions:', txs.length);
+                render(); // Re-render with real data
+            } catch (error) {
+                console.error('Error loading transactions:', error);
+                
+                // Show error message in UI
+                document.getElementById('tbody').innerHTML = `
+                    <tr><td colspan="8" style="text-align:center;color:var(--danger,#ff6b6b);padding:20px">
+                        Lỗi tải dữ liệu: ${error.message}
+                    </td></tr>
+                `;
+            }
+        }
+
+        /* ======== Filter/Sort ======== */
+        function queryData(){
+          const {q,status,method,sort,from,to,min,max} = state;
+          let arr = txs.filter(t=>{
+            const text = (t.campaign+' '+t.hash+' '+t.method).toLowerCase();
+            const okQ = !q || text.includes(q);
+            const okS = status==='all' || t.status===status;
+            const okM = method==='all' || t.method===method;
+            const okFrom = !from || new Date(t.time) >= new Date(from);
+            const okTo = !to || new Date(t.time) <= new Date(to+'T23:59:59');
+            const okMin = !min || t.amount >= parseFloat(min);
+            const okMax = !max || t.amount <= parseFloat(max);
+            return okQ && okS && okM && okFrom && okTo && okMin && okMax;
+          });
+
+          arr.sort((a,b)=>{
+            if (sort==='amount') return b.amount - a.amount;
+            if (sort==='oldest') return new Date(a.time) - new Date(b.time);
+            return new Date(b.time) - new Date(a.time);
+          });
+
+          return arr;
+        }
+
+        /* ======== KPIs ======== */
+        function renderKPIs(data){
+          const invested = data.filter(x=>x.method==='INVEST' && x.status!=='failed')
+                               .reduce((s,x)=>s+x.amount,0);
+          const count = data.length;
+          const profit = data.filter(x=>x.method==='REWARD')
+                             .reduce((s,x)=>s+x.amount,0);
+          const pending = data.filter(x=>x.status==='pending').length;
+
+          const last30 = txs.filter(x=>new Date(x.time)>=ago30())
+                            .filter(x=>x.method==='INVEST' && x.status!=='failed')
+                            .reduce((s,x)=>s+x.amount,0);
+
+          // Calculate profit rate (profit / invested * 100)
+          const profitRate = invested > 0 ? (profit / invested * 100) : 0;
+
+          document.getElementById('kpi-invested').textContent = fmt(invested)+' BNB';
+          document.getElementById('kpi-count').textContent = count.toString();
+          document.getElementById('kpi-pending').textContent = pending.toString();
+          document.getElementById('kpi-profit').textContent = fmt(profit)+' BNB';
+
+          document.getElementById('kpi-invested-delta').textContent = '+'+fmt(last30)+' BNB 30 ngày';
+          document.getElementById('kpi-avg').textContent = 'TB: '+fmt2(count? invested/count:0)+' BNB';
+          document.getElementById('kpi-pending-note').textContent = pending? (pending+' chờ xác nhận'): '—';
+          document.getElementById('kpi-profit-rate').textContent = 'Tỷ lệ: '+Math.round(profitRate)+'%';
+        }
+
+        /* ======== Render table & cards ======== */
+        function statusChip(s){
+          const map = {success:'s-success',pending:'s-pending',failed:'s-failed',refunded:'s-success'};
+          const label = {success:'Thành công',pending:'Đang chờ',failed:'Thất bại',refunded:'Đã hoàn tiền'};
+          return `<span class="status ${map[s]||''}">${label[s]||s}</span>`;
+        }
+        function methodLabel(m){
+          const map = {INVEST:'Đầu tư', REFUND:'Hoàn tiền', REWARD:'Thưởng'};
+          return map[m] || m;
+        }
+
+        function copyText(text){
+          navigator.clipboard.writeText(text).then(()=>toast('Đã sao chép hash'));
+        }
+        function toast(msg){
+          const t=document.getElementById('toast');
+          t.textContent = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1500);
+        }
+
+        function render(){
+          const data = queryData();
+          renderKPIs(data);
+
+          // Pagination
+          const total = data.length, pages = Math.max(1, Math.ceil(total/state.size));
+          if (state.page>pages) state.page = pages;
+          const start = (state.page-1)*state.size;
+          const pageData = data.slice(start, start+state.size);
+
+          // Table
+          const tb = document.getElementById('tbody');
+          tb.innerHTML = '';
+          document.getElementById('empty').hidden = pageData.length>0;
+          document.getElementById('cards').hidden = pageData.length>0; // if table has rows, hide cards
+
+          for (const t of pageData){
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td class="sticky-col">
+                <div class="name"><a href="/Campaigns/Dashboard/${t.campaignId.replace('CAMP-', '')}" style="color:inherit;text-decoration:none">${t.campaign}</a></div>
+                <div class="sub">${t.campaignId}</div>
+              </td>
+              <td class="hash">${shortHash(t.hash)} ${t.hash ? `<button class="btn xs" data-copy="${t.hash}">Copy</button>` : ''}</td>
+              <td><span class="method">${methodLabel(t.method)}</span></td>
+              <td class="num">${fmt(t.amount)} BNB</td>
+              <td>${fmtDate(t.time)}</td>
+              <td>${statusChip(t.status)}</td>
+              <td class="actions">
+                ${t.hash ? `<a class="btn xs" href="${bscUrl(t.hash)}" target="_blank" rel="noopener">BscScan</a>` : ''}
+                <a class="btn xs" href="/Campaigns/Dashboard/${t.campaignId.replace('CAMP-', '')}">Chi tiết</a>
+              </td>
+            `;
+            tb.appendChild(tr);
+          }
+
+          // Copy hash
+          document.querySelectorAll('[data-copy]').forEach(btn=>{
+            btn.addEventListener('click', ()=> copyText(btn.getAttribute('data-copy')));
+          });
+
+          // Cards for mobile (if bạn muốn luôn hiện card ở mobile, có thể bỏ hidden ở CSS)
+          const cards = document.getElementById('cards');
+          cards.innerHTML = '';
+          for (const t of pageData){
+            const c = document.createElement('div');
+            c.className = 'card';
+            c.innerHTML = `
+              <div class="row"><div class="name">${t.campaign}</div><div>${statusChip(t.status)}</div></div>
+              <div class="row"><div class="tag">Tx:</div><div class="hash">${shortHash(t.hash)}</div></div>
+              <div class="row"><div class="tag">Loại:</div><div class="method">${methodLabel(t.method)}</div></div>
+              <div class="row"><div class="tag">Số tiền:</div><div class="num">${fmt(t.amount)} BNB</div></div>
+              <div class="row"><div class="tag">Thời gian:</div><div>${fmtDate(t.time)}</div></div>
+              <div class="row" style="gap:8px">
+                <a class="btn xs" href="/Campaigns/Dashboard/${t.campaignId.replace('CAMP-', '')}">Chiến dịch</a>
+                ${t.hash ? `<a class="btn xs" href="${bscUrl(t.hash)}" target="_blank" rel="noopener">BscScan</a>` : ''}
+                ${t.hash ? `<button class="btn xs" onclick="copyText('${t.hash}')">Copy</button>` : ''}
+              </div>
+            `;
+            cards.appendChild(c);
+          }
+
+          // Pagination render
+          const pag = document.getElementById('pagination'); pag.innerHTML='';
+          for (let i=1;i<=pages;i++){
+            const b=document.createElement('button');
+            b.className='btn'; if (i===state.page) b.classList.add('primary');
+            b.textContent=i; b.addEventListener('click',()=>{state.page=i; render();});
+            pag.appendChild(b);
+          }
+        }
+
+        /* ======== Export CSV ======== */
+        function exportCSV(){
+          const data = queryData().map(t=>({
+            campaignId:t.campaignId,
+            campaign:t.campaign,
+            hash:t.hash,
+            method:t.method,
+            amount:t.amount,
+            time:t.time,
+            status:t.status
+          }));
+          const header = 'campaignId,campaign,hash,method,amount,fee,time,status';
+          const rows = data.map(r=>[
+            r.campaignId, `"${r.campaign.replace(/"/g,'""')}"`, r.hash, r.method,
+            r.amount, r.time, r.status
+          ].join(','));
+          const csv = [header].concat(rows).join('\n');
+          const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'investment-transactions.csv';
+          a.click();
+          URL.revokeObjectURL(a.href);
+        }
+
+        /* ======== Events ======== */
+        document.getElementById('q').addEventListener('input', e=>{ state.q=e.target.value.trim().toLowerCase(); state.page=1; render(); });
+        document.getElementById('status').addEventListener('change', e=>{ state.status=e.target.value; state.page=1; render(); });
+        document.getElementById('method').addEventListener('change', e=>{ state.method=e.target.value; state.page=1; render(); });
+        document.getElementById('sort').addEventListener('change', e=>{ state.sort=e.target.value; state.page=1; render(); });
+        ['from','to','min','max'].forEach(id=>{
+          document.getElementById(id).addEventListener('change', e=>{ state[id]=e.target.value; state.page=1; render(); });
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', ()=>{
+          state={...state,q:'',status:'all',method:'all',sort:'newest',from:'',to:'',min:'',max:'',page:1};
+          ['q','status','method','sort','from','to','min','max'].forEach(id=>{
+            const el=document.getElementById(id);
+            if (!el) return;
+            if (el.tagName==='SELECT') {
+              el.value = id==='status'?'all':id==='method'?'all':'newest';
+            } else el.value='';
+          });
+          render();
+        });
+        document.getElementById('btn-export').addEventListener('click', exportCSV);
+
+        /* ======== Init ======== */
+        document.addEventListener('DOMContentLoaded', function() {
+            // Show loading state initially
+            document.getElementById('tbody').innerHTML = `
+                <tr><td colspan="8" style="text-align:center;padding:20px">
+                    <i class="fa fa-spinner fa-spin"></i> Đang tải dữ liệu...
+                </td></tr>
+            `;
+            
+            // Load data from API
+            loadTransactions();
+        });
+    </script>
+ }

@@ -86,6 +86,9 @@ namespace InvestDapp.Infrastructure.Data.Repository
             return await _context.Campaigns
                 .Include(c => c.category)
                 .Include(c => c.Posts)
+                .Include(c => c.Investments)
+                .Include(c => c.Profits)
+                .Include(c => c.Refunds)
                 .Include(c => c.WithdrawalRequests)
                 .Where(c => c.OwnerAddress.ToLower() == ownerAddress.ToLower())
                 .OrderByDescending(c => c.CreatedAt)

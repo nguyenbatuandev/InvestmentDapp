@@ -633,9 +633,6 @@ namespace InvestDapp.Controllers
                     return BadRequest(new { error = "Dữ liệu không hợp lệ - payload trống" });
                 }
 
-                // Debug logging
-                Console.WriteLine($"ClaimRefund called with CampaignId: {claimRefund.CampaignId}, TxHash: {claimRefund.TransactionHash}");
-
                 if (!ModelState.IsValid)
                 {
                     var errors = ModelState.SelectMany(x => x.Value?.Errors.Select(e => e.ErrorMessage) ?? Enumerable.Empty<string>());
@@ -657,7 +654,7 @@ namespace InvestDapp.Controllers
                 {
                     return NotFound(new { error = "Không tìm thấy chiến dịch" });
                 }
-                
+
                 var wallet = User.FindFirst("WalletAddress")?.Value;
                 if (string.IsNullOrEmpty(wallet))
                 {
@@ -673,10 +670,128 @@ namespace InvestDapp.Controllers
                     success = true
                 });
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return StatusCode(500, new { error = "Lỗi server: " + ex.Message });
             }
         }
+
+        #region analysis transaction
+        public async Task<IActionResult> TaskAnalysis()
+        {
+            return View();
+        }
+
+        // API: Get user's transaction analysis data
+        [HttpGet("api/user/transactions")]
+        public async Task<IActionResult> GetUserTransactions()
+        {
+            try
+            {
+                var wallet = User.FindFirst("WalletAddress")?.Value;
+                if (string.IsNullOrEmpty(wallet))
+                {
+                    return Unauthorized(new { error = "Wallet address not found" });
+                }
+
+                var userCampaigns = await _campaignPostService.GetUserCampaignsAsync(wallet);
+                
+                var transactions = new List<object>();
+                double totalInvestedWei = 0;
+                double totalRefundedWei = 0;
+                int totalRefunds = 0;
+
+                foreach (var campaign in userCampaigns)
+                {
+                    var userInvestments = campaign.Investments ?? Enumerable.Empty<InvestDapp.Shared.Models.Investment>();
+
+                    foreach (var investment in userInvestments)
+                    {
+                        totalInvestedWei += investment.Amount;
+                        
+                        var hasRefund = campaign.Refunds?.Any() ?? false;
+
+                        transactions.Add(new
+                        {
+                            id = investment.TransactionHash ?? $"inv_{investment.Id}",
+                            hash = investment.TransactionHash ?? "",
+                            campaignId = campaign.Id,
+                            campaignTitle = campaign.Name,
+                            method = "INVEST",
+                            amountInWei = investment.Amount,
+                            amount = investment.Amount, 
+                            time = investment.Timestamp,
+                            status = hasRefund ? "refunded" : "success",
+                            isRefunded = hasRefund,
+                            createdAt = investment.Timestamp
+                        });
+                    }
+
+                    var userRefunds = campaign.Refunds ?? Enumerable.Empty<InvestDapp.Shared.Models.Refund>();
+
+                    foreach (var refund in userRefunds)
+                    {
+                        if (double.TryParse(refund.AmountInWei, out double refundAmount))
+                        {
+                            totalRefundedWei += refundAmount;
+                        }
+                        totalRefunds++;
+
+                        transactions.Add(new
+                        {
+                            id = refund.TransactionHash ?? $"ref_{refund.Id}",
+                            hash = refund.TransactionHash ?? "",
+                            campaignId = campaign.Id,
+                            campaignTitle = campaign.Name,
+                            method = "REFUND",
+                            amountInWei = refund.AmountInWei,
+                            amount = double.TryParse(refund.AmountInWei, out double amt) ? amt : 0,
+                            time = refund.ClaimedAt ?? DateTime.UtcNow,
+                            status = "success",
+                            isRefunded = false,
+                            createdAt = refund.ClaimedAt
+                        });
+                    }
+
+                    var userProfits = campaign.Profits ?? Enumerable.Empty<InvestDapp.Shared.Models.Profit>();
+
+                    foreach (var profit in userProfits)
+                    {
+                        transactions.Add(new
+                        {
+                            id = profit.TransactionHash ?? $"profit_{profit.Id}",
+                            hash = profit.TransactionHash ?? "",
+                            campaignId = campaign.Id,
+                            campaignTitle = campaign.Name,
+                            method = "REWARD",
+                            amountInWei = profit.Amount.ToString(),
+                            amount = profit.Amount,
+                            time = profit.CreatedAt,
+                            status = "success",
+                            isRefunded = false,
+                            createdAt = profit.CreatedAt
+                        });
+                    }
+                }
+
+                var result = new
+                {
+                    walletAddress = wallet,
+                    totalInvestedWei = totalInvestedWei.ToString("F4"),
+                    totalTx = transactions.Count,
+                    totalRefundedWei = totalRefundedWei.ToString("F4"),
+                    totalRefunds = totalRefunds,
+                    transactions = transactions.OrderByDescending(t => ((DateTime?)t.GetType().GetProperty("time")?.GetValue(t)) ?? DateTime.MinValue)
+                };
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Server error: " + ex.Message });
+            }
+        }
+
+        #endregion
     }
 }
