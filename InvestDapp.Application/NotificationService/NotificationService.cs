@@ -133,19 +133,15 @@ namespace InvestDapp.Application.NotificationService
 
                 _logger?.LogInformation("Campaign {CampaignId} has {InvestmentCount} investments and {InvestorCount} unique investor addresses", req.CampaignId, investments.Count, investorAddresses.Count);
 
-                const int maxConcurrency = 20;
-                using var throttler = new SemaphoreSlim(maxConcurrency);
-
-                var tasks = investorAddresses.Select(async addr =>
+                var sentCount = 0;
+                foreach (var addr in investorAddresses)
                 {
-                    await throttler.WaitAsync();
                     try
                     {
-                        try
-                        {
-                            var userResp = await _userService.GetUserByWalletAddressAsync(addr!);
-                            if (userResp == null || userResp.Data == null) return false;
+                        var userResp = await _userService.GetUserByWalletAddressAsync(addr!);
 
+                        if (userResp != null && userResp.Data != null)
+                        {
                             var n = new Notification
                             {
                                 UserID = userResp.Data.ID,
@@ -158,46 +154,40 @@ namespace InvestDapp.Application.NotificationService
                             };
 
                             var created = await _repo.CreateAsync(n);
-                            if (created == null) return false;
-
-                            try
+                            if (created != null)
                             {
-                                await _hubContext.Clients.Group($"User_{created.UserID}").SendAsync("NewNotification", new
+                                try
                                 {
-                                    id = created.ID,
-                                    title = created.Title,
-                                    message = created.Message,
-                                    type = created.Type,
-                                    createdAt = created.CreatedAt,
-                                    isRead = created.IsRead
-                                });
+                                    await _hubContext.Clients.Group($"User_{created.UserID}").SendAsync("NewNotification", new
+                                    {
+                                        id = created.ID,
+                                        title = created.Title,
+                                        message = created.Message,
+                                        type = created.Type,
+                                        createdAt = created.CreatedAt,
+                                        isRead = created.IsRead
+                                    });
 
-                                var unreadCount = await _repo.GetUnreadCountAsync(created.UserID);
-                                await _hubContext.Clients.Group($"User_{created.UserID}").SendAsync("UnreadNotificationCountChanged", unreadCount);
+                                    var unreadCount = await _repo.GetUnreadCountAsync(created.UserID);
+                                    await _hubContext.Clients.Group($"User_{created.UserID}").SendAsync("UnreadNotificationCountChanged", unreadCount);
 
-                                _logger?.LogDebug("Real-time notification and count update sent via SignalR for UserId={UserId}", created.UserID);
+                                    _logger?.LogDebug("Real-time notification and count update sent via SignalR for UserId={UserId}", created.UserID);
+                                }
+                                catch (System.Exception signalREx)
+                                {
+                                    _logger?.LogWarning(signalREx, "Failed to send real-time notification via SignalR for UserId={UserId}", created.UserID);
+                                }
+
+                                sentCount++;
+                                continue;
                             }
-                            catch (System.Exception signalREx)
-                            {
-                                _logger?.LogWarning(signalREx, "Failed to send real-time notification via SignalR for UserId={UserId}", created.UserID);
-                            }
-
-                            return true;
-                        }
-                        catch (System.Exception innerEx)
-                        {
-                            _logger?.LogWarning(innerEx, "Failed to notify investor {InvestorAddress} for campaign {CampaignId}", addr, req.CampaignId);
-                            return false;
                         }
                     }
-                    finally
+                    catch (System.Exception innerEx)
                     {
-                        throttler.Release();
+                        _logger?.LogWarning(innerEx, "Failed to notify investor {InvestorAddress} for campaign {CampaignId}", addr, req.CampaignId);
                     }
-                }).ToList();
-
-                var results = await Task.WhenAll(tasks);
-                var sentCount = results.Count(r => r);
+                }
 
                 return new BaseResponse<object> { Success = true, Data = new { Sent = sentCount } };
             }
