@@ -1,5 +1,4 @@
-﻿
-using InvestDapp.Application.Services.Trading;
+﻿using InvestDapp.Application.Services.Trading;
 using InvestDapp.Infrastructure.Data.interfaces;
 using InvestDapp.Shared.Common.Request;
 using InvestDapp.Shared.Models.Trading;

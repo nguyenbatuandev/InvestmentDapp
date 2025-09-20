@@ -1,6 +1,4 @@
-using InvestDapp.Shared.Models;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using InvestDapp.Shared.Models;
 
 namespace InvestDapp.Infrastructure.Data.interfaces
 {

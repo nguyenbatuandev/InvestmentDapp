@@ -4,7 +4,6 @@ using InvestDapp.Shared.DTOs;
 using InvestDapp.Shared.Enums;
 using InvestDapp.Shared.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 
 namespace InvestDapp.Infrastructure.Data.Repository

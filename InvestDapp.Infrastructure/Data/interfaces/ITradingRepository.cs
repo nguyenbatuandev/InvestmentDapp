@@ -1,7 +1,4 @@
-using InvestDapp.Shared.Models.Trading;
-using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using InvestDapp.Shared.Models.Trading;
 
 namespace InvestDapp.Infrastructure.Data.interfaces
 {

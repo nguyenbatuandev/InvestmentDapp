@@ -1,14 +1,13 @@
 ﻿using InvestDapp.Application.CampaignService;
 using InvestDapp.Application.MessageService;
+using InvestDapp.Application.NotificationService;
 using InvestDapp.Application.UserService;
 using InvestDapp.Infrastructure.Data.interfaces;
-using InvestDapp.Models;
 using InvestDapp.Shared.Common.Request;
 using InvestDapp.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
-using System.Security.Claims;
+
 
 namespace InvestDapp.Controllers
 {
@@ -19,6 +18,7 @@ namespace InvestDapp.Controllers
         private readonly IUserService _userService;
         private readonly IConversationService _conversationService;
         private readonly IServiceScopeFactory _serviceScopeFactory;
+        private readonly INotificationService _notificationService;
         private readonly ICampaign _campain;
 
         public CampaignsController(
@@ -26,12 +26,14 @@ namespace InvestDapp.Controllers
             IUserService userService,
             IConversationService conversationService,
             IServiceScopeFactory serviceScopeFactory,
+            INotificationService notificationService,
             ICampaign campaign)
         {
             _campaignPostService = campaignPostService;
             _userService = userService;
             _conversationService = conversationService;
             _serviceScopeFactory = serviceScopeFactory;
+            _notificationService = notificationService;
             _campain = campaign;
         }
 
@@ -222,6 +224,9 @@ namespace InvestDapp.Controllers
                 return RedirectToAction("Details", new { id = campaignId });
             }
 
+            // Removed automatic notification here to avoid duplicate notifications.
+            // Notifications are sent when a post is actually created (POST CreatePost).
+
             ViewBag.Campaign = campaign;
             var model = new CreateCampaignPostRequest { CampaignId = campaignId };
             return View(model);
@@ -294,7 +299,7 @@ namespace InvestDapp.Controllers
 
                 // Lấy thông tin user để có UserId
                 var user = await _userService.GetUserByWalletAddressAsync(wallet);
-                if (user != null)
+                if (user?.Data != null)
                 {
                     var postUrl = Url.Action("PostDetails", "Campaigns", new { id = post.Id }, Request.Scheme);
 
@@ -303,12 +308,19 @@ namespace InvestDapp.Controllers
                         try
                         {
                             using var scope = _serviceScopeFactory.CreateScope();
-                            var convoService = scope.ServiceProvider.GetRequiredService<IConversationService>();
-                            await convoService.SendPostNotificationToCampaignGroupAsync(
-                                request.CampaignId,
-                                user.Data.ID,
-                                post.Title,
-                                postUrl);
+                            var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+
+                            // create per-investor notifications and send realtime events
+                            var notyReq = new CreateNotificationToCampaignRequest
+                            {
+                                CampaignId = request.CampaignId,
+                                Title = $"Bài viết mới: {post.Title}",
+                                Message = $"Một bài viết mới đã được đăng: {post.Title}",
+                                Type = "NewPost",
+                                Data = postUrl
+                            };
+
+                            await notificationService.CreateNotificationForCampaignInvestorsAsync(notyReq);
                         }
                         catch (Exception ex)
                         {

@@ -1,5 +1,4 @@
-﻿
-using InvestDapp.Infrastructure.Data.interfaces;
+﻿using InvestDapp.Infrastructure.Data.interfaces;
 using InvestDapp.Models;
 using InvestDapp.Shared.Enums;
 using InvestDapp.Shared.Models;

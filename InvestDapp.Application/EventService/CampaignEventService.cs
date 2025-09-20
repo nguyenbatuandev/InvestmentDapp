@@ -1,14 +1,15 @@
 ﻿
 using InvestDapp.Application.MessageService;
+using InvestDapp.Application.NotificationService;
+using InvestDapp.Application.UserService;
 using InvestDapp.Infrastructure.Data;
 using InvestDapp.Infrastructure.Data.Config;
 using InvestDapp.Infrastructure.Data.interfaces;
+using InvestDapp.Shared.Common.Request;
 using InvestDapp.Shared.Models.BlockchainModels;
-using InvestDapp.Shared.Models.Message;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NBitcoin.Secp256k1;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
@@ -25,14 +26,18 @@ namespace Invest.Application.EventService
         private readonly ICampaignEventRepository _eventRepository;
         private readonly ILogger<CampaignEventService> _logger;
         private readonly BlockchainConfig _config;
+        private readonly IUserService _userService;
         private readonly IConversationService _conversationService;
+        private readonly INotificationService _notificationService;
         public CampaignEventService(
             Web3 web3,
             InvestDbContext dbContext,
             ICampaignEventRepository eventRepository,
             ILogger<CampaignEventService> logger,
             IOptions<BlockchainConfig> config,
-            IConversationService conversationService) 
+            IConversationService conversationService,
+            IUserService userService,
+            INotificationService notificationService)
         {
             _web3 = web3;
             _dbContext = dbContext;
@@ -40,6 +45,8 @@ namespace Invest.Application.EventService
             _logger = logger;
             _config = config.Value;
             _conversationService = conversationService;
+            _userService = userService;
+            _notificationService = notificationService;
         }
 
         public async Task ProcessNewEventsAsync(CancellationToken cancellationToken)
@@ -104,6 +111,15 @@ namespace Invest.Application.EventService
                        
                         // Ghi log sự kiện đã xử lý
                         await _eventRepository.LogEventAsync("InvestmentReceived", log.Log.TransactionHash, (int)log.Log.BlockNumber.Value, (int)evt.CampaignId, JsonSerializer.Serialize(evt));
+                        var noti = new CreateNotificationRequest
+                        {
+                            UserId = user.ID,
+                            Type = "InvestmentReceived",
+                            Title = "Đầu tư thành công",
+                            Message = $"Bạn đã đầu tư {evt.Amount} vào chiến dịch ID {evt.CampaignId}. Cảm ơn bạn đã đồng hành cùng chúng tôi!",
+                        };
+                        var notifyResult = await _notificationService.CreateNotificationAsync(noti);
+
 
                     }, cancellationToken);
 

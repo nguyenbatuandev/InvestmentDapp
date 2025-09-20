@@ -1,5 +1,4 @@
 ﻿using InvestDapp.Application.Services.Trading;
-using InvestDapp.Infrastructure.Services.Binance;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InvestDapp.Controllers.Api

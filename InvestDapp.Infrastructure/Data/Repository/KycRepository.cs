@@ -3,10 +3,7 @@ using InvestDapp.Shared.Common.Request;
 using InvestDapp.Shared.Models.Kyc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Http; // Cần cho IFormFile
-using System;
-using System.IO; // Cần cho Path
-using System.Threading.Tasks; // Cần cho Task
+using Microsoft.AspNetCore.Http;
 
 namespace InvestDapp.Infrastructure.Data.Repository
 {

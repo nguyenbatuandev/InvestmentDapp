@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using System;
 
 namespace InvestDapp.Application.NotificationService
 {
@@ -18,23 +20,36 @@ namespace InvestDapp.Application.NotificationService
 
         public override async Task OnConnectedAsync()
         {
-            // Auto-join user to their personal notification group
-            var userIdClaim = Context.User?.FindFirst("UserId")?.Value;
-            if (!string.IsNullOrEmpty(userIdClaim))
+            try
             {
-                await Groups.AddToGroupAsync(Context.ConnectionId, $"User_{userIdClaim}");
+                var userIdClaim = Context.User?.FindFirst("UserId")?.Value
+                                  ?? Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                  ?? Context.User?.FindFirst("sub")?.Value;
+
+                if (!string.IsNullOrEmpty(userIdClaim))
+                {
+                    await Groups.AddToGroupAsync(Context.ConnectionId, $"User_{userIdClaim}");
+                }
+
+                var walletClaim = Context.User?.FindFirst("WalletAddress")?.Value;
+                if (!string.IsNullOrEmpty(walletClaim))
+                {
+                    await Groups.AddToGroupAsync(Context.ConnectionId, $"Wallet_{walletClaim.ToLowerInvariant()}");
+                }
             }
-            
+            catch (Exception)
+            {
+                // Swallow; do not prevent connection if group join fails.
+            }
+
             await base.OnConnectedAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            // Groups are automatically cleaned up when connection is removed
             await base.OnDisconnectedAsync(exception);
         }
 
-        // Method to send unread count update to specific user
         public async Task SendUnreadCountUpdate(string userId, int unreadCount)
         {
             await Clients.Group($"User_{userId}").SendAsync("UnreadNotificationCountChanged", unreadCount);

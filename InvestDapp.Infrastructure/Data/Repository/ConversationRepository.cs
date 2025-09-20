@@ -51,7 +51,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
                     .ThenInclude(p => p.User)
                 .Include(c => c.LastMessage)
                     .ThenInclude(m => m.Sender)
-                .Include(c => c.Messages) // <-- ĐẢM BẢO CÓ DÒNG NÀY
+                .Include(c => c.Messages) 
                 .OrderByDescending(c => c.LastMessage != null ? c.LastMessage.SentAt : c.CreatedAt)
                 .ToListAsync();
         }
@@ -89,7 +89,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
                     Content = m.Content,
                     SentAt = m.SentAt,
                     SenderId = m.SenderId,
-                    IsRead = m.isRead, // <-- có thể thêm trường này nếu cần
+                    IsRead = m.isRead, 
                     Sender = new UserDto
                     {
                         UserId = m.Sender.ID,
@@ -106,7 +106,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
         {
             // Tìm cuộc hội thoại riêng tư đã tồn tại giữa 2 người
             var existingConversation = await _context.Conversations
-                .Include(c => c.Participants) // QUAN TRỌNG: Tải danh sách thành viên
+                .Include(c => c.Participants) 
                 .ThenInclude(p => p.User)
                 .FirstOrDefaultAsync(c =>
                     c.Type == ConversationType.Private &&
@@ -136,7 +136,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
 
             // Tải lại cuộc hội thoại vừa tạo để đảm bảo có đủ dữ liệu Participants và User
             var createdConversation = await _context.Conversations
-                .Include(c => c.Participants) // QUAN TRỌNG: Tải danh sách thành viên
+                .Include(c => c.Participants)
                 .ThenInclude(p => p.User)
                 .FirstAsync(c => c.ConversationId == newConversation.ConversationId);
 
@@ -148,16 +148,6 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 .Where(p => p.ConversationId == conversationId)
                 .Select(p => p.User)
                 .ToListAsync();
-        }
-
-
-        private static List<Participant> NewMethod(int currentUserId, int partnerId)
-        {
-            return new List<Participant>
-                    {
-                        new Participant { UserId = currentUserId },
-                        new Participant { UserId = partnerId }
-                    };
         }
     }
 }

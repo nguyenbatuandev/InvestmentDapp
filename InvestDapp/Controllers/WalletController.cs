@@ -1,13 +1,9 @@
 ﻿using InvestDapp.Application.AuthService;
-using InvestDapp.Infrastructure.Data;
 using InvestDapp.Infrastructure.Data.interfaces;
-using InvestDapp.Shared.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+
 
 namespace InvestDapp.Controllers
 {

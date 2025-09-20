@@ -1,11 +1,9 @@
-﻿using InvestDapp.Application.UserService;
-using InvestDapp.Models;
+﻿using InvestDapp.Models;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace InvestDapp.Controllers
 {

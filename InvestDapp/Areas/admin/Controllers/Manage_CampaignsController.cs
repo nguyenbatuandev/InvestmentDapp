@@ -189,5 +189,46 @@ namespace InvestDapp.Areas.admin.Controllers
                 return RedirectToAction("Index");
             }
         }
+
+        [Route("notify-investors/{id}")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> NotifyInvestors(int id, string? title = null, string? message = null)
+        {
+            try
+            {
+                var campaign = await _campaignService.GetCampaignByIdAsync(id);
+                if (campaign == null)
+                {
+                    TempData["ErrorMessage"] = "Chiến dịch không tồn tại.";
+                    return RedirectToAction("Index");
+                }
+
+                var notiReq = new CreateNotificationToCampaignRequest
+                {
+                    CampaignId = id,
+                    Title = title ?? $"Cập nhật cho chiến dịch {campaign.Name}",
+                    Message = message ?? "Có cập nhật mới liên quan tới chiến dịch bạn đã đầu tư.",
+                    Type = "CampaignBroadcast"
+                };
+
+                var resp = await _notificationService.CreateNotificationForCampaignInvestorsAsync(notiReq);
+                if (resp == null || !resp.Success)
+                {
+                    TempData["ErrorMessage"] = "Không thể gửi thông báo tới nhà đầu tư: " + (resp?.Message ?? "Unknown");
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = $"Thông báo đã gửi tới {((dynamic)resp.Data).Sent} nhà đầu tư.";
+                }
+
+                return RedirectToAction("Details", new { id });
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Lỗi khi gửi thông báo: " + ex.Message;
+                return RedirectToAction("Details", new { id });
+            }
+        }
     }
 }

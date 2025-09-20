@@ -21,8 +21,8 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 var user = new User
                 {
                     WalletAddress = wallet,
-                    Email = email, // sửa đúng
-                    Name = name,   // sửa đúng
+                    Email = email,
+                    Name = name, 
                     Role = "User",
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now,
@@ -33,7 +33,6 @@ namespace InvestDapp.Infrastructure.Data.Repository
             }
             catch (Exception ex)
             {
-                // Bạn có thể log lỗi ở đây
                 return null;
             }
         }

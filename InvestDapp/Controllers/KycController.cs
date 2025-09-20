@@ -2,7 +2,6 @@
 using InvestDapp.Shared.Common.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace InvestDapp.Controllers
 {

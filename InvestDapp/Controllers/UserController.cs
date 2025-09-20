@@ -3,7 +3,6 @@ using InvestDapp.Application.UserService;
 using InvestDapp.Shared.Common.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq;
 
 namespace InvestDapp.Controllers
 {
