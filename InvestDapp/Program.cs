@@ -4,6 +4,7 @@ using InvestDapp.Application.AuthService;
 using InvestDapp.Application.CampaignService;
 using InvestDapp.Application.KycService;
 using InvestDapp.Application.MessageService;
+using InvestDapp.Application.NotificationService;
 using InvestDapp.Application.Services.Trading;
 using InvestDapp.Application.UserService;
 using InvestDapp.Infrastructure.Data;
@@ -11,12 +12,10 @@ using InvestDapp.Infrastructure.Data.Config;
 using InvestDapp.Infrastructure.Data.interfaces;
 using InvestDapp.Infrastructure.Data.Repository;
 using InvestDapp.Infrastructure.Services.Binance;
-using InvestDapp.Infrastructure.Services.Cache;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Nethereum.Web3;
-using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -78,6 +77,8 @@ builder.Services.AddHostedService<CampaignEventListener>();
 // =======================
 builder.Services.AddScoped<ICampaignEventRepository, CampaignEventRepository>();
 builder.Services.AddScoped<IUser, UserRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IKycService, KycService>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -163,6 +164,7 @@ app.UseAuthorization();
 // =======================
 app.MapHub<ChatHub>("/chathub");
 app.MapHub<TradingHub>("/tradingHub");
+app.MapHub<InvestDapp.Application.NotificationService.NotificationHub>("/notificationHub");
 
 // =======================
 // 17. MAP ROUTES

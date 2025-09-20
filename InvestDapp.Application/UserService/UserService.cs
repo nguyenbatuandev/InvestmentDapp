@@ -55,6 +55,32 @@ namespace InvestDapp.Application.UserService
             };
         }
 
+        public async Task<BaseResponse<ICollection<Notification>>> GetNotificationsAsync(int userId)
+        {
+            try
+            {
+                var data = await _userRepository.GetNotificationsAsync(userId);
+                return new BaseResponse<ICollection<Notification>> { Success = true, Data = data };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponse<ICollection<Notification>> { Success = false, Message = ex.Message };
+            }
+        }
+
+        public async Task<BaseResponse<bool>> MarkNotificationAsReadAsync(int userId, int notificationId)
+        {
+            try
+            {
+                    var ok = await _userRepository.MarkNotificationAsReadAsync(userId, notificationId);
+                return new BaseResponse<bool> { Success = ok, Data = ok };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponse<bool> { Success = false, Message = ex.Message };
+            }
+        }
+
         public async Task<BaseResponse<User>> GetUserByWalletAddressAsync(string walletAddress)
         {
             var rl =await _userRepository.GetUserByWalletAddressAsync(walletAddress);
@@ -100,6 +126,19 @@ namespace InvestDapp.Application.UserService
                 Message = "User updated successfully",
                 Data = updatedUser
             };
+        }
+
+        public async Task<BaseResponse<bool>> DeleteReadNotificationsAsync(int userId)
+        {
+            try
+            {
+                var success = await _userRepository.DeleteReadNotificationsAsync(userId);
+                return new BaseResponse<bool> { Success = success, Data = success };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponse<bool> { Success = false, Message = ex.Message };
+            }
         }
     }
 }

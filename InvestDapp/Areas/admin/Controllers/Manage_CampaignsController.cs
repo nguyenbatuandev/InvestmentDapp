@@ -1,5 +1,8 @@
 ﻿using InvestDapp.Application.CampaignService;
+using InvestDapp.Application.NotificationService;
+using InvestDapp.Application.UserService;
 using InvestDapp.Infrastructure.Data;
+using InvestDapp.Shared.Common.Request;
 using InvestDapp.Shared.Enums;
 using InvestDapp.Shared.Models.Message;
 using Microsoft.AspNetCore.Authorization;
@@ -14,13 +17,18 @@ namespace InvestDapp.Areas.admin.Controllers
     public class Manage_CampaignsController : Controller
     {
         private readonly ICampaignPostService _campaignService;
+        private readonly INotificationService _notificationService;
+        private readonly IUserService _userService;
         private readonly InvestDbContext _db;
 
-        public Manage_CampaignsController(ICampaignPostService campaignService, InvestDbContext db)
+        public Manage_CampaignsController(ICampaignPostService campaignService, INotificationService notificationService,IUserService userService, InvestDbContext db)
         {
             _campaignService = campaignService;
+            _notificationService = notificationService;
+            _userService = userService;
             _db = db;
         }
+
 
         [Route("")]
         [Route("index")]
@@ -48,6 +56,7 @@ namespace InvestDapp.Areas.admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveCampaign(int id, string? adminNotes = null)
         {
+
             try
             {
                 var adminWallet = User.FindFirst("WalletAddress")?.Value ?? "admin@system.com";
@@ -57,6 +66,30 @@ namespace InvestDapp.Areas.admin.Controllers
                     TempData["ErrorMessage"] = "Không thể phê duyệt chiến dịch.";
                     return RedirectToAction("Index");
                 }
+
+                // Prefer to notify the campaign owner. Fall back to current admin user if owner not found.
+                var camp = await _campaignService.GetCampaignByIdAsync(id);
+                var UserId = await _userService.GetUserByWalletAddressAsync(camp.OwnerAddress);
+
+                var noti = new CreateNotificationRequest
+                {
+                    UserId = UserId.Data.ID,
+                    Type = "CampaignApproved",
+                    Title = "Chiến dịch của bạn đã được phê duyệt",
+                    Message = $"Chiến dịch của bạn đã được phê duyệt bởi quản trị viên.",
+                    Data = $"{{\"campaignId\":{id}}}"
+                };
+
+                var resp = await _notificationService.CreateNotificationAsync(noti);
+                if (resp == null)
+                {
+                    TempData["ErrorMessage"] = "Không thể tạo thông báo (null response).";
+                }
+                else if (!resp.Success)
+                {
+                    TempData["ErrorMessage"] = "Không thể tạo thông báo: " + resp.Message;
+                }
+
 
                 // Tạo group chat cho campaign nếu chưa có
                 var campaign = await _campaignService.GetCampaignByIdAsync(id);
@@ -114,6 +147,20 @@ namespace InvestDapp.Areas.admin.Controllers
                 var adminWallet = User.FindFirst("WalletAddress")?.Value ?? "admin@system.com";
                 await _campaignService.RejectCampaignAsync(id, adminWallet, adminNotes);
                 TempData["SuccessMessage"] = "Chiến dịch đã bị từ chối.";
+                // Prefer to notify the campaign owner. Fall back to current admin user if owner not found.
+                var campR = await _campaignService.GetCampaignByIdAsync(id);
+                var UserId = await _userService.GetUserByWalletAddressAsync(campR.OwnerAddress);
+
+
+                var noti = new CreateNotificationRequest
+                {
+                    UserId = UserId.Data.ID,
+                    Type = "CampaignRejected",
+                    Title = "Chiến dịch của bạn đã bị từ chối",
+                    Message = $"Chiến dịch của bạn đã bị từ chối bởi quản trị viên. Lý do: {adminNotes}",
+                    Data = $"{{\"campaignId\":{id}}}"
+                };
+                var resp = await _notificationService.CreateNotificationAsync(noti);
                 return RedirectToAction("Index");
             }
             catch (Exception ex)

@@ -10,26 +10,25 @@ namespace InvestDapp.Shared.Models
 {
     public class Notification
     {
-        [Key]
-        public uint ID { get; set; }
+    [Key]
+    public int ID { get; set; }
 
         // Foreign key
         [ForeignKey("User")]
         public int UserID { get; set; }
 
         // Navigation property
-        public User User { get; set; }
+        public User? User { get; set; }
 
         [MaxLength(50)]
-        public string Type { get; set; }  // e.g. donation, withdrawal, etc.
+        public string? Type { get; set; }
 
         [MaxLength(255)]
-        public string Title { get; set; }
+        public string? Title { get; set; }
 
-        public string Message { get; set; }
+        public string? Message { get; set; }
 
-        // JSON data — lưu kiểu string
-        public string Data { get; set; }
+        public string? Data { get; set; }
 
         public bool IsRead { get; set; } = false;
 

@@ -188,7 +188,7 @@
         .wd-item { position: relative; }
 
         /* unread badge placement (dot) */
-        #unreadBadge, #unreadBadgeMenu {
+        #combinedBadge, #unreadBadgeMenu, #notificationBadgeMenu {
             position: absolute;
             display: inline-grid;
             place-items: center;
@@ -203,11 +203,11 @@
             line-height: 1;
         }
 
-        /* place the small dot on the wallet trigger (top-right) */
-        #unreadBadge { top: -6px; right: -6px; transform: translate(0, 0); }
+        /* place the combined badge on the wallet trigger (top-right) */
+        #combinedBadge { top: -6px; right: -6px; transform: translate(0, 0); }
 
-        /* place the menu badge to the right inside menu item */
-        #unreadBadgeMenu { top: 50%; right: 12px; transform: translateY(-50%); }
+        /* place the menu badges to the right inside menu items */
+        #unreadBadgeMenu, #notificationBadgeMenu { top: 50%; right: 12px; transform: translateY(-50%); }
 
         .avatar {
             width: 28px;
@@ -493,10 +493,10 @@
                     <button class="wd-trigger" id="walletTrigger" aria-haspopup="true" aria-expanded="false">
                         <img id="avatar" class="avatar" alt="avatar" />
                         <span id="shortAddr" class="addr">0x…0000</span>
-                        <span id="unreadBadge" class="badge hidden">0</span>
+                        <span id="combinedBadge" class="badge hidden">0</span>
                     </button>
                     <div id="walletMenu" class="wd-menu" role="menu" aria-label="Wallet Menu">
-                        <a class="wd-item" asp-controller="User" asp-action="Profile">Profile</a>
+                        <a class="wd-item" asp-controller="User" asp-action="Profile">Profile <span id="notificationBadgeMenu" class="badge hidden">0</span></a>
                         <a class="wd-item" asp-controller="Campaigns" asp-action="MyCampaigns">Quản lý chiến dịch</a>
                         <a class="wd-item" asp-controller="Campaigns" asp-action="TaskAnalysis">Thống kê</a>
                         <a class="wd-item" asp-controller="TradingView" asp-action="Chart">Trading</a>
@@ -641,16 +641,58 @@
           const avatarImg = document.getElementById('avatar');
           const adminLink = document.getElementById('adminLink');
           const logoutBtn = document.getElementById('logoutBtn');
-          const unread1 = document.getElementById('unreadBadge');
-          const unread2 = document.getElementById('unreadBadgeMenu');
+          const combinedBadge = document.getElementById('combinedBadge');
+          const unreadBadge = document.getElementById('unreadBadgeMenu');
+          const notificationBadge = document.getElementById('notificationBadgeMenu');
           const bell = document.getElementById('notifSound');
 
           function show(el, on){ if(!el) return; el.classList.toggle('hidden', !on); }
           function shorten(a){return a ? a.slice(0,6)+"…"+a.slice(-4) : '0x…'}
-          function setUnread(n){
-            const txt=(n>99?'99+':String(n));
-            [unread1,unread2].forEach(b=>{ if(!b) return; if(n>0){ b.textContent=txt; b.classList.remove('hidden'); } else { b.classList.add('hidden'); } });
-            if(n>0) try{ bell?.play?.(); }catch{}
+          
+          let unreadMessages = 0;
+          let unreadNotifications = 0;
+          
+          function setUnreadMessages(n){
+            unreadMessages = n;
+            updateBadges();
+          }
+          
+          function setUnreadNotifications(n){
+            unreadNotifications = n;
+            updateBadges();
+          }
+          
+          function updateBadges(){
+            const totalUnread = unreadMessages + unreadNotifications;
+            
+            // Update combined badge on wallet trigger
+            if(totalUnread > 0){
+              const txt = (totalUnread > 99 ? '99+' : String(totalUnread));
+              combinedBadge.textContent = txt;
+              combinedBadge.classList.remove('hidden');
+            } else {
+              combinedBadge.classList.add('hidden');
+            }
+            
+            // Update individual badges in menu
+            if(unreadMessages > 0){
+              const txt = (unreadMessages > 99 ? '99+' : String(unreadMessages));
+              unreadBadge.textContent = txt;
+              unreadBadge.classList.remove('hidden');
+            } else {
+              unreadBadge.classList.add('hidden');
+            }
+            
+            if(unreadNotifications > 0){
+              const txt = (unreadNotifications > 99 ? '99+' : String(unreadNotifications));
+              notificationBadge.textContent = txt;
+              notificationBadge.classList.remove('hidden');
+            } else {
+              notificationBadge.classList.add('hidden');
+            }
+            
+            // Play sound for any new notifications
+            if(totalUnread > 0) try{ bell?.play?.(); }catch{}
           }
 
                     // Fetch profile for a specific wallet if provided, otherwise fallback to server-side session profile
@@ -694,7 +736,8 @@
                             getUserProfile(address);
                         }else{
                             stopRealtime();
-                            setUnread(0);
+                            setUnreadMessages(0);
+                            setUnreadNotifications(0);
                         }
                     }
 
@@ -813,25 +856,59 @@
           window.addEventListener('pageshow', attemptAutoConnect);
 
           // ===== Realtime notifications =====
-          let hub=null, pollIv=null, unread=0;
-          async function fetchUnread(){
+          let hub=null, pollIv=null, notificationHub=null, notificationPollIv=null;
+          
+          async function fetchUnreadMessages(){
             try{
               const r=await fetch('/Conversations/GetTotalUnreadCount',{cache:'no-store'});
               if(!r.ok) return;
               const d=await r.json();
               const n=+d?.total || +d?.count || 0;
-              if(n!==unread){ unread=n; setUnread(n); }
+              if(n!==unreadMessages){ setUnreadMessages(n); }
             }catch{}
           }
+          
+          async function fetchUnreadNotifications(){
+            try{
+              const r=await fetch('/User/GetUnreadNotificationCount',{cache:'no-store'});
+              if(!r.ok) return;
+              const d=await r.json();
+              const n=+d?.count || 0;
+              if(n!==unreadNotifications){ setUnreadNotifications(n); }
+            }catch{}
+          }
+          
           async function setupRealtime(){
+            // Messages hub
             try{
               hub=new signalR.HubConnectionBuilder().withUrl('/chathub').withAutomaticReconnect().build();
-              hub.on('UnreadChanged',(n)=>{ unread=+n||0; setUnread(unread); });
+              hub.on('UnreadChanged',(n)=>{ setUnreadMessages(+n||0); });
               await hub.start().catch(()=>{});
             }catch{}
-            clearInterval(pollIv); pollIv=setInterval(fetchUnread,15000); fetchUnread();
+            
+            // Notifications hub
+            try{
+              notificationHub=new signalR.HubConnectionBuilder().withUrl('/notificationHub').withAutomaticReconnect().build();
+              notificationHub.on('UnreadNotificationCountChanged',(n)=>{ setUnreadNotifications(+n||0); });
+              await notificationHub.start().catch(()=>{});
+            }catch{}
+            
+            clearInterval(pollIv); 
+            clearInterval(notificationPollIv);
+            pollIv=setInterval(fetchUnreadMessages,15000); 
+            notificationPollIv=setInterval(fetchUnreadNotifications,15000);
+            fetchUnreadMessages();
+            fetchUnreadNotifications();
           }
-          function stopRealtime(){ try{ hub?.stop?.(); }catch{} clearInterval(pollIv); pollIv=null; }
+          
+          function stopRealtime(){ 
+            try{ hub?.stop?.(); }catch{} 
+            try{ notificationHub?.stop?.(); }catch{} 
+            clearInterval(pollIv); 
+            clearInterval(notificationPollIv);
+            pollIv=null; 
+            notificationPollIv=null;
+          }
           // If server-side user is authenticated, start realtime/polling immediately so unread badge updates
           try{ if(window.__isAuthenticated === 'true'){ setupRealtime(); } }catch{}
         })();

@@ -2,11 +2,7 @@
 using InvestDapp.Shared.Common.Request;
 using InvestDapp.Shared.Models;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace InvestDapp.Infrastructure.Data.Repository
 {
@@ -46,6 +42,15 @@ namespace InvestDapp.Infrastructure.Data.Repository
         {
             return await _context.Users
                 .FirstOrDefaultAsync(u => u.ID == id);
+        }
+
+        public async Task<ICollection<InvestDapp.Shared.Models.Notification>> GetNotificationsAsync(int userId)
+        {
+            var notis = await _context.Notifications
+                .Where(n => n.UserID == userId)
+                .OrderByDescending(n => n.CreatedAt)
+                .ToListAsync();
+            return notis;
         }
 
         public async Task<User?> GetUserByWalletAddressAsync(string wallet)
@@ -95,6 +100,39 @@ namespace InvestDapp.Infrastructure.Data.Repository
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
             return user;
+        }
+
+        public async Task<bool> MarkNotificationAsReadAsync(int userId, int notificationId)
+        {
+            var n = await _context.Notifications.FirstOrDefaultAsync(x => x.ID == notificationId && x.UserID == userId);
+            if (n == null) return false;
+            if (n.IsRead) return true;
+            n.IsRead = true;
+            _context.Notifications.Update(n);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> DeleteReadNotificationsAsync(int userId)
+        {
+            try
+            {
+                var readNotifications = await _context.Notifications
+                    .Where(n => n.UserID == userId && n.IsRead)
+                    .ToListAsync();
+
+                if (readNotifications.Any())
+                {
+                    _context.Notifications.RemoveRange(readNotifications);
+                    await _context.SaveChangesAsync();
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }
