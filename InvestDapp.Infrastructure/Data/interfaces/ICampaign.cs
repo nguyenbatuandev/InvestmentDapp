@@ -17,6 +17,7 @@ namespace InvestDapp.Infrastructure.Data.interfaces
         // Campaign Services with approval Administration
         Task<IEnumerable<Campaign>> GetCampaignsForAdminAsync(CampaignStatus? status = null, ApprovalStatus? approvalStatus = null, int page = 1, int pageSize = 10);
         Task<WithdrawalRequest> CreatRerequestWithdrawalAsync(WithdrawalRequestDto withdrawalRequestDto);
+        Task<(WithdrawalRequest, int)> UpdateWithdrawalRequestStatusAsync(UpdateWithdrawalStatusDto dto);
         Task<Refund> ClaimRefundAsync(ClaimRefundDto refundDto);
     }
 }

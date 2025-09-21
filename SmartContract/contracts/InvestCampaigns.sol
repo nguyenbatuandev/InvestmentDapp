@@ -9,7 +9,7 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
     bytes32 public constant ADMIN_ROLE   = keccak256("ADMIN_ROLE");
     bytes32 public constant CREATOR_ROLE = keccak256("CREATOR_ROLE");
 
-    // --- ERRORS (rẻ gas & rõ nghĩa) ---
+    // --- ERRORS ---
     error CampaignNotFound(uint256 id);
     error DirectETHNotAllowed();
 
@@ -28,8 +28,6 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         uint256 endTime;
         CampaignStatus status;
         uint256 investorCount;
-        // (không thêm bool exists ở đây để tránh xáo trộn layout;
-        // dùng mapping riêng campaignExists cho an toàn)
     }
 
     struct Investment {
@@ -39,13 +37,13 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
     }
 
     struct WithdrawalRequest {
-        uint256 id;
+        uint256 id;                // requestId (không phải index)
         address requester;
         uint256 amount;
         string  reason;
         WithdrawalStatus status;
-        uint256 agreeVotes;
-        uint256 disagreeVotes;
+        uint256 agreeVotes;        // tổng trọng số ủng hộ (theo BNB đã góp)
+        uint256 disagreeVotes;     // tổng trọng số phản đối
         uint256 voteEndTime;
     }
 
@@ -60,32 +58,50 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
     uint256 public requestWithdrawCounter;
     uint256 public constant MIN_INVESTMENT_AMOUNT = 0.01 ether;
     uint256 public constant VOTE_DURATION = 3 days;
-    uint16  public fees;
+    uint16  public fees;                 // 0..100 (%)
     address public feeReceiver;
     uint256 public campaignCounter;
 
     mapping(uint256 => Campaign) public campaigns;
-
-    //   cờ tồn tại chiến dịch
-    mapping(uint256 => bool) private campaignExists; // <<<<<<<<<<<<<<
+    mapping(uint256 => bool) private campaignExists;
 
     mapping(uint256 => mapping(address => uint256)) public campaignInvestorBalances;
     mapping(uint256 => Investment[]) public campaignInvestments;
+
+    // Mỗi campaign có một danh sách request (truy cập theo index)
     mapping(uint256 => WithdrawalRequest[]) public withdrawalRequests;
+    // Map: campaignId => (requestId => index trong array)
+    mapping(uint256 => mapping(uint256 => uint256)) private requestIndexById;
+
+    // campaignId => requestId => voter => voted?
     mapping(uint256 => mapping(uint256 => mapping(address => bool))) public withdrawalVotes;
+
     mapping(uint256 => Profit[]) public listProfits;
     mapping(uint256 => uint256) public totalProfits;
     mapping(uint256 => mapping(uint256 => mapping(address => bool))) public profitClaimed;
+
     mapping(uint256 => uint16) public getDenialsRequestedWithDrawCampaigns;
+
     mapping(address => mapping(uint256 => uint256)) public withdrawWithFees;
     mapping(address => uint256) public totalWithdrawFees;
+
     mapping(uint256 => address[]) public campaignInvestors;
 
     // --- EVENTS ---
     event CampaignCreated(uint256 indexed id, address indexed owner, string name, uint256 goalAmount, uint256 endTime);
     event InvestmentReceived(uint256 indexed campaignId, address indexed investor, uint256 amount, uint256 currentRaisedAmount);
-    event WithdrawalRequested(uint256 indexed campaignId, uint256 indexed requestId, address indexed requester, uint256 amount, string reason, uint256 voteEndTime);
+
+    event WithdrawalRequested(
+        uint256 indexed campaignId,
+        uint256 indexed requestId,     // đây là requestId (không phải index)
+        address indexed requester,
+        uint256 amount,
+        string reason,
+        uint256 voteEndTime
+    );
+
     event VoteCast(uint256 indexed campaignId, uint256 indexed requestId, address indexed voter, bool agree, uint256 voteWeight);
+
     event WithdrawalExecuted(WithdrawalStatus status, uint256 indexed campaignId, uint256 indexed requestId, address indexed recipient, uint256 amount);
     event RefundIssued(uint256 indexed campaignId, address indexed investor, uint256 amount);
     event CampaignStatusUpdated(uint256 indexed campaignId, uint8 newStatus);
@@ -104,14 +120,13 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         _;
     }
 
-    // bắt buộc campaign tồn tại trước khi chạy logic
     modifier campaignMustExist(uint256 _campaignId) {
         if (!campaignExists[_campaignId]) revert CampaignNotFound(_campaignId);
         _;
     }
 
     modifier onlyCampaignOwner(uint256 _campaignId) {
-        if (!campaignExists[_campaignId]) revert CampaignNotFound(_campaignId); //  thêm check tồn tại
+        if (!campaignExists[_campaignId]) revert CampaignNotFound(_campaignId);
         require(campaigns[_campaignId].owner == msg.sender, "Not campaign owner");
         _;
     }
@@ -155,6 +170,7 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         emit CampaignCanceledByAdmin(_campaignId, msg.sender);
     }
 
+    // --- CREATE CAMPAIGN ---
     function createCampaign(
         uint256 _id,
         string memory _name,
@@ -163,8 +179,8 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         address _creatorAddress
     ) external onlyAdmin {
         require(_id != 0, "Invalid id");
-        require(!campaignExists[_id], "ID already used");              //  dùng cờ tồn tại
-        require(_creatorAddress != address(0), "Invalid creator");     //  thêm check
+        require(!campaignExists[_id], "ID already used");
+        require(_creatorAddress != address(0), "Invalid creator");
         require(_goalAmount > 0, "Goal must be greater than 0");
         require(_durationInDays > 0, "Duration must be greater than 0");
 
@@ -183,19 +199,19 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
             investorCount: 0
         });
 
-        campaignExists[_id] = true;                                     //  ĐÁNH DẤU TỒN TẠI
+        campaignExists[_id] = true;
 
         emit CampaignCreated(_id, _creatorAddress, _name, _goalAmount, endTime);
     }
 
-    // --- CORE FUNCTIONS ---
+    // --- INVEST ---
     function invest(uint256 _campaignId)
         external
         payable
         nonReentrant
-        campaignMustExist(_campaignId)                                  //  chặn ID không tồn tại
+        campaignMustExist(_campaignId)
     {
-        require(_campaignId != 0, "Invalid campaign id");               //  thêm chặn id = 0
+        require(_campaignId != 0, "Invalid campaign id");
         Campaign storage c = campaigns[_campaignId];
 
         require(c.status == CampaignStatus.Active, "Campaign is not active");
@@ -219,6 +235,7 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         emit InvestmentReceived(_campaignId, msg.sender, msg.value, c.currentRaisedAmount);
     }
 
+    // --- PROFIT ---
     function addProfit(uint256 _campaignId)
         external
         payable
@@ -241,7 +258,7 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
     function claimProfit(uint256 _campaignId, uint256 _profitIndex)
         external
         nonReentrant
-        campaignMustExist(_campaignId)                                  // 
+        campaignMustExist(_campaignId)
     {
         Campaign storage campaign = campaigns[_campaignId];
         require(campaign.status == CampaignStatus.Completed, "Campaign not completed");
@@ -267,16 +284,21 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         emit ProfitClaimed(_campaignId, msg.sender, profitShare);
     }
 
+    // --- WITHDRAWAL VOTING ---
     function voteForWithdrawal(uint256 _campaignId, uint256 _requestId, bool _agree)
         external
-        campaignMustExist(_campaignId)                                  // 
+        campaignMustExist(_campaignId)
     {
         uint256 voteWeight = campaignInvestorBalances[_campaignId][msg.sender];
         require(voteWeight > 0, "Only investors can vote");
-        require(_requestId < withdrawalRequests[_campaignId].length, "Withdrawal request not found");
 
-        WithdrawalRequest storage request = withdrawalRequests[_campaignId][_requestId];
-        require(block.timestamp <= request.voteEndTime, "Voting period has ended");
+        // lấy index theo ID
+        uint256 idx = requestIndexById[_campaignId][_requestId];
+        require(idx < withdrawalRequests[_campaignId].length, "Withdrawal request not found");
+
+        WithdrawalRequest storage request = withdrawalRequests[_campaignId][idx];
+        require(request.id == _requestId, "Withdrawal request not found");
+        // require(block.timestamp <= request.voteEndTime, "Voting period has ended");
         require(request.status == WithdrawalStatus.Pending, "Request is not pending");
         require(!withdrawalVotes[_campaignId][_requestId][msg.sender], "You have already voted");
 
@@ -294,14 +316,17 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
     function checkAndExecuteWithdrawal(uint256 _campaignId, uint256 _requestId)
         external
         nonReentrant
-        campaignMustExist(_campaignId)                                  // 
+        campaignMustExist(_campaignId)
     {
         Campaign storage campaign = campaigns[_campaignId];
-        require(_requestId < withdrawalRequests[_campaignId].length, "Withdrawal request not found");
 
-        WithdrawalRequest storage request = withdrawalRequests[_campaignId][_requestId];
+        uint256 idx = requestIndexById[_campaignId][_requestId];
+        require(idx < withdrawalRequests[_campaignId].length, "Withdrawal request not found");
+
+        WithdrawalRequest storage request = withdrawalRequests[_campaignId][idx];
+        require(request.id == _requestId, "Withdrawal request not found");
         require(request.status == WithdrawalStatus.Pending, "Request not pending");
-        require(block.timestamp > request.voteEndTime, "Voting period not yet ended");
+        // require(block.timestamp > request.voteEndTime, "Voting period not yet ended");
 
         if (request.agreeVotes > campaign.totalRaisedAmount / 2) {
             uint256 feeAmount = (request.amount * fees) / 100;
@@ -334,6 +359,7 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         }
     }
 
+    // --- REFUND ---
     function refund(uint256 _campaignId)
         external
         nonReentrant
@@ -353,9 +379,10 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         emit RefundIssued(_campaignId, msg.sender, refundAmount);
     }
 
+    // --- STATUS UPDATE ---
     function updateCampaignStatus(uint256 _campaignId)
         public
-        campaignMustExist(_campaignId)                                  // 
+        campaignMustExist(_campaignId)
     {
         Campaign storage campaign = campaigns[_campaignId];
 
@@ -370,6 +397,12 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
                     emit CampaignStatusUpdated(_campaignId, uint8(CampaignStatus.Failed));
                 }
             }
+            //fixxx
+            else{
+                campaign.totalRaisedAmount = campaign.currentRaisedAmount;
+                campaign.status = CampaignStatus.Voting;
+                emit CampaignStatusUpdated(_campaignId, uint8(CampaignStatus.Voting));
+            }
         } else if (campaign.status == CampaignStatus.Voting) {
             if (getDenialsRequestedWithDrawCampaigns[_campaignId] >= 3) {
                 campaign.status = CampaignStatus.Failed;
@@ -378,6 +411,7 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         }
     }
 
+    // --- REQUEST WITHDRAWAL ---
     function requestFullWithdrawal(uint256 _campaignId, string memory _reason)
         external
         onlyCampaignOwner(_campaignId)
@@ -400,6 +434,10 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         uint256 id = requestWithdrawCounter++;
         uint256 voteEndTime = block.timestamp + VOTE_DURATION;
 
+        // ánh xạ ID -> index trước khi push
+        uint256 idx = withdrawalRequests[_campaignId].length;
+        requestIndexById[_campaignId][id] = idx;
+
         withdrawalRequests[_campaignId].push(WithdrawalRequest({
             id: id,
             requester: msg.sender,
@@ -414,6 +452,7 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         emit WithdrawalRequested(_campaignId, id, msg.sender, amountToWithdraw, _reason, voteEndTime);
     }
 
+    // --- MISC (Treasury) ---
     function depositBNBTrading() external payable {
         require(msg.value > 0, "Amount must be greater than zero");
         emit DepositBNBTrading(msg.sender, msg.value);
@@ -427,7 +466,57 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         emit WithdrawBNBTrading(msg.sender, _amount);
     }
 
-    //   chặn gửi ETH trực tiếp (tránh nhầm tưởng là invest)
+    function emergencyWithdrawAll(address to)
+        external
+        onlyAdmin
+        nonReentrant
+    {
+        require(to != address(0), "Invalid recipient");
+        uint256 bal = address(this).balance;
+        require(bal > 0, "No BNB to withdraw");
+
+        (bool ok, ) = to.call{value: bal}("");
+        require(ok, "Transfer failed");
+    }
+
+    // --- VIEWS / HELPERS ---
+    function getWithdrawalRequestIndex(uint256 _campaignId, uint256 _requestId)
+        external
+        view
+        returns (uint256)
+    {
+        uint256 idx = requestIndexById[_campaignId][_requestId];
+        require(idx < withdrawalRequests[_campaignId].length, "Withdrawal request not found");
+        // đảm bảo khớp ID
+        require(withdrawalRequests[_campaignId][idx].id == _requestId, "Withdrawal request not found");
+        return idx;
+    }
+
+    function getWithdrawalRequestsCount(uint256 _campaignId) external view returns (uint256) {
+        return withdrawalRequests[_campaignId].length;
+    }
+
+    function getWithdrawalRequestByIndex(uint256 _campaignId, uint256 _index)
+        external
+        view
+        returns (WithdrawalRequest memory)
+    {
+        require(_index < withdrawalRequests[_campaignId].length, "Index OOB");
+        return withdrawalRequests[_campaignId][_index];
+    }
+
+    function getWithdrawalRequestById(uint256 _campaignId, uint256 _requestId)
+        external
+        view
+        returns (WithdrawalRequest memory)
+    {
+        uint256 idx = requestIndexById[_campaignId][_requestId];
+        require(idx < withdrawalRequests[_campaignId].length, "Withdrawal request not found");
+        WithdrawalRequest memory r = withdrawalRequests[_campaignId][idx];
+        require(r.id == _requestId, "Withdrawal request not found");
+        return r;
+    }
+
     receive() external payable { revert DirectETHNotAllowed(); }
     fallback() external payable { revert DirectETHNotAllowed(); }
 }

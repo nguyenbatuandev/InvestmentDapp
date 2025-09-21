@@ -603,10 +603,12 @@
                                 Kết quả bỏ phiếu
                             </h4>
                             
-                            @{
-                                var totalVotes = (double)(request.AgreeVotes + request.DisagreeVotes);
-                                var agreePercentage = totalVotes > 0 ? (double)request.AgreeVotes / totalVotes * 100 : 0;
-                                var disagreePercentage = totalVotes > 0 ? (double)request.DisagreeVotes / totalVotes * 100 : 0;
+                            @{ 
+                                var campaignTotal = (Model.TotalInvestmentsOnCompletion > 0) ? Model.TotalInvestmentsOnCompletion : Model.CurrentRaisedAmount;
+                                var agreeBNB = Convert.ToDouble(request.AgreeVotes) / 1000000000000000000.0;
+                                var disagreeBNB = Convert.ToDouble(request.DisagreeVotes) / 1000000000000000000.0;
+                                var agreePercentage = (campaignTotal > 0) ? (agreeBNB / campaignTotal * 100.0) : 0.0;
+                                var disagreePercentage = (campaignTotal > 0) ? (disagreeBNB / campaignTotal * 100.0) : 0.0;
                             }
 
                             <div class="vote-progress">
@@ -730,16 +732,54 @@
     <script>
         function voteOnWithdrawal(requestId, agree) {
             const actionText = agree ? 'ủng hộ' : 'phản đối';
-            if (confirm(`Bạn có chắc chắn muốn ${actionText} yêu cầu rút vốn này không? Hành động này không thể hoàn tác.`)) {
-                voteOnWithdrawalRequest(requestId, agree);
-            }
+            if (!confirm(`Bạn có chắc chắn muốn ${actionText} yêu cầu rút vốn này không? Hành động này không thể hoàn tác.`)) return;
+
+            // Always request authoritative pending withdrawal id from server API before voting.
+            (async () => {
+                try {
+                    const apiRes = await fetch(`/api/campaigns/@Model.Id/pending-withdrawal`);
+                    if (!apiRes.ok) {
+                        const txt = await apiRes.text();
+                        throw new Error(txt || 'Không thể lấy thông tin yêu cầu rút vốn từ server.');
+                    }
+                    const payload = await apiRes.json();
+                    const resolved = Number(payload?.requestId ?? payload?.requestIdOnChain ?? requestId);
+                    if (!Number.isFinite(resolved)) throw new Error('Server không trả về requestId hợp lệ.');
+
+                    await voteOnWithdrawalRequest(resolved, agree);
+                } catch (err) {
+                    console.error('Failed to resolve pending withdrawal from API:', err);
+                    alert(err.message || 'Không thể xác định yêu cầu rút vốn. Vui lòng thử lại sau.');
+                    window.location.reload();
+                }
+            })();
         }
 
         async function voteOnWithdrawalRequest(requestId, agree) {
             try {
-                // Kiểm tra xem có MetaMask không
+                // Kiểm tra MetaMask và kết nối web3
                 if (typeof window.ethereum === 'undefined') {
                     alert('Vui lòng cài đặt MetaMask để thực hiện giao dịch!');
+                    return;
+                }
+
+                // ensure web3/contract initialized (Dashboard/Details pattern)
+                if (!web3 || !contract || !userAccount) {
+                    const ok = await initializeWeb3();
+                    if (!ok) return;
+                }
+
+                // Preflight: ensure caller is an on-chain investor and has non-zero balance
+                let onChainBalanceWei = ethers.constants.Zero;
+                try {
+                    onChainBalanceWei = await contract.campaignInvestorBalances(@Model.Id, userAccount);
+                    if (!onChainBalanceWei || onChainBalanceWei.eq(ethers.constants.Zero)) {
+                        alert('Chỉ nhà đầu tư mới có quyền bỏ phiếu (on-chain balance = 0).');
+                        return;
+                    }
+                } catch (readErr) {
+                    console.error('Không thể kiểm tra on-chain investor balance:', readErr);
+                    alert('Không thể kiểm tra trạng thái nhà đầu tư trên blockchain. Vui lòng thử lại.');
                     return;
                 }
 
@@ -750,21 +790,28 @@
                     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
                 });
 
-                // Placeholder cho việc gọi smart contract
-                // Ở đây sẽ tích hợp với Web3.js hoặc Ethers.js để call contract function
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate transaction
-                
-                const actionText = agree ? 'ủng hộ' : 'phản đối';
-                alert(`Bỏ phiếu ${actionText} thành công! Giao dịch đã được ghi nhận trên blockchain.`);
-                
-                // Reload trang để cập nhật trạng thái
-                window.location.reload();
-                
+                // Send the transaction (contract already weights votes by on-chain balances)
+                try {
+                    const tx = await contract.voteForWithdrawal(@Model.Id, requestId, agree, { gasLimit: 150000 });
+                    alert('Bỏ phiếu đã được gửi, chờ xác nhận...');
+                    const receipt = await tx.wait();
+                    if (receipt.status === 1) {
+                        alert('Bỏ phiếu thành công!');
+                        window.location.reload();
+                    } else {
+                        alert('Giao dịch bị thất bại trên blockchain.');
+                        window.location.reload();
+                    }
+                } catch (txErr) {
+                    console.error('Lỗi gửi giao dịch vote:', txErr);
+                    if (txErr && (txErr.code === 4001 || txErr.code === 'ACTION_REJECTED')) alert('Bạn đã huỷ giao dịch.');
+                    else alert('Có lỗi khi gửi giao dịch. Vui lòng thử lại.');
+                    window.location.reload();
+                }
+
             } catch (error) {
                 console.error('Lỗi khi bỏ phiếu:', error);
                 alert('Có lỗi xảy ra khi bỏ phiếu. Vui lòng thử lại!');
-                
-                // Reset buttons và reload page
                 window.location.reload();
             }
         }

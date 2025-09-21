@@ -178,6 +178,28 @@ namespace Invest.Application.EventService
 
                     }, cancellationToken);
 
+                    // 6. Xử lý VoteCast
+                    await ProcessEventsInRange<VoteCastEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "VoteCast", async (log) =>
+                    {
+                        var evt = log.Event;
+                        var txHash = log.Log.TransactionHash;
+
+                        // Lấy thông tin về transaction
+                        var transaction = await _web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(txHash);
+
+                        // Lấy thông tin block chứa transaction này
+                        var block = await _web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(transaction.BlockNumber);
+
+                        // Lấy timestamp của block
+                        var timestamp = block.Timestamp;  // Đơn vị là seconds từ Unix epoch
+                        DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds((long)timestamp.Value).UtcDateTime;
+
+                        await _eventRepository.HandleVoteCastAsync(evt.CampaignId, evt.RequestId, evt.Voter, evt.Agree, evt.VoteWeight, txHash, dateTime);
+
+                        await _eventRepository.LogEventAsync("VoteCast", txHash, (int)log.Log.BlockNumber.Value, (int)evt.CampaignId, JsonSerializer.Serialize(evt));
+
+                    }, cancellationToken);
+
                     // Cập nhật block cuối cùng đã xử lý
                     await UpdateLastProcessedBlockAsync(currentChunkEndBlock);
 
@@ -203,11 +225,30 @@ namespace Invest.Application.EventService
             var filter = eventHandler.CreateFilterInput(new BlockParameter((ulong)fromBlock), new BlockParameter((ulong)toBlock));
             var logs = await eventHandler.GetAllChangesAsync(filter);
 
+            _logger.LogInformation("Found {Count} '{EventName}' log(s) in range {From}-{To}", logs?.Count ?? 0, eventName, fromBlock, toBlock);
+
+            if (logs == null || logs.Count == 0)
+            {
+                _logger.LogInformation("No logs returned for event {EventName} in range {From}-{To}", eventName, fromBlock, toBlock);
+                return;
+            }
+
             foreach (var log in logs)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var txHash = log.Log.TransactionHash;
+
+                // Log compact payload for debugging
+                try
+                {
+                    var payload = JsonSerializer.Serialize(log.Event);
+                    _logger.LogDebug("Event payload for {EventName} tx={Tx}: {Payload}", eventName, txHash, payload);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Failed to serialize event payload for {EventName} tx={Tx}", eventName, txHash);
+                }
 
                 if (await _eventRepository.IsEventProcessedAsync(txHash, eventName))
                 {

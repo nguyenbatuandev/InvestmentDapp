@@ -26,4 +26,24 @@ namespace InvestDapp.Shared.DTOs
         public string TransactionHash { get; set; } = string.Empty;
         public string InvestorAddress { get; set; } = string.Empty;
     }
+
+    public class UpdateWithdrawalStatusDto
+    {
+        public int CampaignId { get; set; }
+        public int RequestId { get; set; }
+        public string TxHash { get; set; } = string.Empty;
+        public bool WasApproved { get; set; }
+    }
+
+    public class TransactionResultDto
+    {
+        public string TransactionHash { get; set; } = string.Empty;
+        public int RequestId { get; set; }
+    }
+
+    public class ProfitTransactionDto
+    {
+        public string TransactionHash { get; set; } = string.Empty;
+        public double ProfitAmount { get; set; }
+    }
 }

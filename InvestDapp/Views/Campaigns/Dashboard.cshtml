@@ -182,9 +182,127 @@
           <div class="h2" style="margin:0">@Model.Name</div>
           <div class="muted" style="font-size:var(--fs-1)">Bảng điều khiển</div>
         </div>
-      </div>
+    </div>
 
-      <div class="kit">
+    @* Compact voting summary (moved into aside) *@
+    @if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Voting)
+    {
+      var reqCount = Model.WithdrawalRequests?.Count() ?? 0;
+      var firstPending = Model.WithdrawalRequests?.Where(r => r.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending).OrderByDescending(r => r.CreatedAt).FirstOrDefault();
+      var currentUserWallet = User.FindFirst("WalletAddress")?.Value;
+      var userInvestment = Model.Investments?.FirstOrDefault(i => i.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase));
+      var userVoteWeight = userInvestment?.Amount ?? 0;
+      var hasVoted = firstPending?.Votes?.Any(v => v.VoterAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase)) ?? false;
+      <div class="card" style="padding:10px; border-radius:12px; background: rgba(255,255,255,.02);">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+          <div style="font-weight:800; color:var(--warn);">Bỏ phiếu</div>
+          <div style="font-size:0.85rem; color:var(--muted);">@reqCount yêu cầu</div>
+        </div>
+  @if (firstPending != null)
+  {
+    var pending = firstPending; // local copy for null-safety in Razor
+    var campaignTotal = (Model.TotalInvestmentsOnCompletion > 0) ? Model.TotalInvestmentsOnCompletion : Model.CurrentRaisedAmount;
+    // Prefer to compute agree/disagree totals from Vote rows (which are stored in BNB as double).
+    // If Vote rows are not loaded or empty, fall back to the stored AgreeVotes/DisagreeVotes (which are in wei) and convert to BNB.
+    var agreeBNB = 0.0;
+    var disagreeBNB = 0.0;
+    if (pending?.Votes != null && pending.Votes.Any())
+    {
+      try
+      {
+        agreeBNB = pending.Votes.Where(v => v.Agreed).Sum(v => v.VoteWeight);
+        disagreeBNB = pending.Votes.Where(v => !v.Agreed).Sum(v => v.VoteWeight);
+      }
+      catch
+      {
+        // defensive: if VoteWeight sums fail for some reason, fall back to stored tallies below
+        agreeBNB = 0.0;
+        disagreeBNB = 0.0;
+      }
+    }
+    if (agreeBNB == 0.0 && disagreeBNB == 0.0)
+    {
+      // fallback: WithdrawalRequest stores tallies in wei (decimal(38,0)). Convert to BNB for human display.
+  agreeBNB = (pending!.AgreeVotes != 0) ? Convert.ToDouble(pending!.AgreeVotes) / 1000000000000000000.0 : 0.0;
+  disagreeBNB = (pending!.DisagreeVotes != 0) ? Convert.ToDouble(pending!.DisagreeVotes) / 1000000000000000000.0 : 0.0;
+    }
+        var agreePct = (campaignTotal > 0) ? (agreeBNB / campaignTotal * 100.0) : 0.0;
+        var disagreePct = (campaignTotal > 0) ? (disagreeBNB / campaignTotal * 100.0) : 0.0;
+        // clamp
+        if (agreePct < 0) agreePct = 0; if (disagreePct < 0) disagreePct = 0;
+        // Normalize if totals exceed 100% due to rounding or stale data
+        var sumPct = agreePct + disagreePct;
+        if (sumPct > 100.0 && sumPct > 0)
+        {
+          agreePct = agreePct / sumPct * 100.0;
+          disagreePct = disagreePct / sumPct * 100.0;
+        }
+        // compute current user's weight as percent of campaign total (if investor)
+        var userPct = 0.0;
+        if (userInvestment != null && campaignTotal > 0)
+        {
+          userPct = (userVoteWeight / campaignTotal) * 100.0;
+          if (userPct < 0) userPct = 0; if (userPct > 100) userPct = 100;
+        }
+          <div style="margin-top:8px; text-align:left;">
+          <div style="display:flex; gap:12px; align-items:flex-start;">
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:700;">#@pending.Id</div>
+              @{ var req = pending.RequesterAddress ?? string.Empty; var rShort = req.Length > 10 ? req.Substring(0,6)+"..."+req.Substring(req.Length-4) : req; }
+              <div style="font-size:0.82rem; color:var(--muted);">@rShort</div>
+
+              <div style="margin-top:8px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.88rem; margin-bottom:6px;">
+                  <div style="color:var(--ok); font-weight:700;">@agreeBNB.ToString("F3") BNB</div>
+                  <div style="color:#ef4444; font-weight:700;">@disagreeBNB.ToString("F3") BNB</div>
+                </div>
+                <div class="vote-bar" style="margin-bottom:6px;">
+                  <div style="height:100%; width:@agreePct.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)% ; background:var(--ok);"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.78rem; color:var(--muted);">
+                  <div>@agreePct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%</div>
+                  <div>@disagreePct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="width:120px; display:flex; flex-direction:column; gap:8px; align-items:center;">
+              <div style="font-size:0.86rem; font-weight:700; color:var(--muted); text-align:center;">Trọng số</div>
+              <div style="font-weight:800; color:var(--ok);">@userVoteWeight.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)</div>
+              <div style="font-size:0.78rem; color:var(--muted);">@userPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%</div>
+
+              @if (userInvestment != null)
+              {
+                if (hasVoted)
+                {
+                  <div style="font-size:0.82rem; color:var(--muted);">Đã bỏ phiếu</div>
+                }
+                else
+                {
+                  <div style="display:flex; gap:6px; width:100%;">
+                    <button class="btn btn-ok" onclick="voteOnWithdrawal(@pending.Id, true)" style="flex:1; padding:6px 8px; font-size:0.82rem;">👍</button>
+                    <button class="btn btn-bad" onclick="voteOnWithdrawal(@pending.Id, false)" style="flex:1; padding:6px 8px; font-size:0.82rem;">👎</button>
+                  </div>
+                }
+              }
+              else
+              {
+                <div style="font-size:0.78rem; color:var(--muted); text-align:center;">Chỉ nhà đầu tư</div>
+              }
+            </div>
+          </div>
+
+          <div style="margin-top:8px; text-align:right;"><a href="@Url.Action("WithdrawalRequests", new { id = Model.Id })" class="btn">Chi tiết</a></div>
+          </div>
+        }
+        else
+        {
+          <div style="margin-top:8px; color:var(--muted);">Không có yêu cầu rút vốn nào đang chờ.</div>
+        }
+      </div>
+    }
+
+    <div class="kit">
         @* Investment / trạng thái *@
         @if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Active && Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
         {
@@ -202,15 +320,7 @@
             <button class="btn" id="invest-btn" onclick="investInCampaign(@Model.Id)"><i class="fas fa-rocket"></i> Đầu tư ngay</button>
           </div>
         }
-        else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Voting)
-        {
-          <div class="card glass" style="padding:var(--sp-4); text-align:center">
-            <i class="fa-solid fa-vote-yea" style="color:var(--warn)"></i>
-            <div class="h2" style="font-size:var(--fs-3); margin:6px 0 4px">Đang bỏ phiếu rút vốn</div>
-            <div class="muted" style="font-size:var(--fs-1); margin-bottom: var(--sp-2)">Yêu cầu rút vốn chờ bầu chọn.</div>
-            <div id="withdrawal-requests" style="text-align:left">Đang tải danh sách yêu cầu rút tiền...</div>
-          </div>
-        }
+        // Voting UI moved to the aside area (compact summary) - removed the larger glass card here
         else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Completed)
         {
           <div class="card glass" style="padding:var(--sp-4); text-align:center">
@@ -266,6 +376,8 @@
       <div class="aside-links">
         <a href="@Url.Action("Posts", new { campaignId = Model.Id })" class="@((ViewContext.RouteData.Values["action"]?.ToString() == "Posts") ? "active" : "")"><span class="icon"><i class="fas fa-newspaper"></i></span> Bài viết</a>
         @if (Model.WithdrawalRequests?.Any() == true){ <a href="@Url.Action("WithdrawalRequests", new { id = Model.Id })" class="@((ViewContext.RouteData.Values["action"]?.ToString() == "WithdrawalRequests") ? "active" : "")"><span class="icon"><i class="fas fa-hand-holding-usd"></i></span> Rút vốn</a> }
+        @* Vote button visible during Voting status with active request count *@
+    @* Vote link moved to compact summary in the aside header *@
         <a href="@Url.Action("Index")" class="@((ViewContext.RouteData.Values["controller"]?.ToString() == "Campaigns" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"><span class="icon"><i class="fas fa-th-list"></i></span> Tất cả dự án</a>
       </div>
     </aside>
@@ -450,90 +562,7 @@
         </section>
       </div>
 
-      <!-- Voting list (nếu có) full width -->
-      @if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Voting && Model.WithdrawalRequests?.Any() == true)
-      {
-        <section class="glass card" id="withdrawal-requests-list">
-          <div class="h2"><i class="fa-solid fa-vote-yea"></i> Yêu cầu rút vốn đang bỏ phiếu</div>
-          <div class="row">
-            @foreach (var request in Model.WithdrawalRequests.Where(r => r.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending).OrderByDescending(r => r.CreatedAt).Take(3))
-            {
-              <div class="glass card" style="padding:var(--sp-3)">
-                <div style="display:flex;justify-content:space-between;align-items:center; gap: var(--sp-3);">
-                  <div class="h2" style="font-size:var(--fs-3); margin:0"><i class="fas fa-money-bill-wave"></i> Yêu cầu #@request.Id</div>
-                  <span class="badge b-voting"><i class="fas fa-vote-yea"></i> Đang bỏ phiếu</span>
-                </div>
-                <div class="divider"></div>
-                @* <p style="margin:0 0 6px;"><b>Số tiền:</b> @request.Amount.ToString("F2") BNB</p> *@
-                <p style="margin:0 0 6px;"><b>Lý do:</b> @request.Reason.Substring(0, Math.Min(request.Reason.Length, 120))@(request.Reason.Length > 120 ? "..." : "")</p>
-                <p class="muted" style="margin:0 0 10px;"><b>Người yêu cầu:</b> @request.RequesterAddress.Substring(0, 6)...@request.RequesterAddress[^4..]</p>
-
-                @{
-                  var totalVotes = (double)(request.AgreeVotes + request.DisagreeVotes);
-                  var agreePercentage = totalVotes > 0 ? (double)request.AgreeVotes / totalVotes * 100 : 0;
-                  var disagreePercentage = totalVotes > 0 ? (double)request.DisagreeVotes / totalVotes * 100 : 0;
-                }
-                <div style="display:flex;justify-content:space-between; margin-bottom:6px;">
-                  <span style="color:var(--ok)"><i class="fas fa-thumbs-up"></i> Ủng hộ: @agreePercentage.ToString("F1")%</span>
-                  <span style="color:#ef4444"><i class="fas fa-thumbs-down"></i> Phản đối: @disagreePercentage.ToString("F1")%</span>
-                </div>
-                <div class="vote-bar">
-                  <div style="height:100%; width:@agreePercentage%; background:var(--ok); float:left"></div>
-                  <div style="height:100%; width:@disagreePercentage%; background:#ef4444; float:left"></div>
-                </div>
-
-                @{
-                  var currentUserWallet = User.FindFirst("WalletAddress")?.Value;
-                  var isInvestor = Model.Investments?.Any(i => i.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase)) ?? false;
-                  var hasVoted = request.Votes?.Any(v => v.VoterAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase)) ?? false;
-                }
-                <div style="display:flex; gap: var(--sp-3); margin-top: var(--sp-3)">
-                  @if (isInvestor && !hasVoted && DateTime.UtcNow < request.VoteEndTime)
-                  {
-                    <button class="btn btn-ok" onclick="voteOnWithdrawal(@request.Id, true)" style="flex:1"><i class="fas fa-thumbs-up"></i> Ủng hộ</button>
-                    <button class="btn btn-bad" onclick="voteOnWithdrawal(@request.Id, false)" style="flex:1"><i class="fas fa-thumbs-down"></i> Phản đối</button>
-                  }
-                  else if (hasVoted)
-                  {
-                    <div style="text-align:center; width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background: rgba(0,170,255,.10); color: var(--primary);">
-                      <i class="fas fa-check-circle"></i> Bạn đã bỏ phiếu
-                    </div>
-                  }
-                  else if (DateTime.UtcNow >= request.VoteEndTime)
-                  {
-                    <div style="text-align:center; width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background: rgba(255,107,107,.10); color:#ef4444;">
-                      <i class="fas fa-times-circle"></i> Đã hết hạn bỏ phiếu
-                    </div>
-                  }
-                  else
-                  {
-                    <div style="text-align:center; width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; background: rgba(255,184,0,.10); color:var(--warn);">
-                      <i class="fas fa-lock"></i> Chỉ nhà đầu tư mới có thể bỏ phiếu
-                    </div>
-                  }
-                </div>
-              </div>
-            }
-          </div>
-
-          @if (Model.WithdrawalRequests.Count() > 3)
-          {
-            <div style="text-align:center; margin-top: var(--sp-3);">
-              <a href="@Url.Action("WithdrawalRequests", new { id = Model.Id })" class="btn" style="width:auto; padding: 12px 18px">
-                <i class="fas fa-list"></i> Xem tất cả yêu cầu rút vốn (@Model.WithdrawalRequests.Count())
-              </a>
-            </div>
-          }
-          else if (Model.WithdrawalRequests?.Any() == true)
-          {
-            <div style="text-align:center; margin-top: var(--sp-3);">
-              <a href="@Url.Action("WithdrawalRequests", new { id = Model.Id })" class="btn" style="width:auto; padding: 12px 18px">
-                <i class="fas fa-eye"></i> Xem chi tiết đầy đủ
-              </a>
-            </div>
-          }
-        </section>
-      }
+      @* Voting list removed from main area — voting UI now lives in the aside compact summary *@
     </main>
   </div>
 </div>
@@ -684,7 +713,7 @@
                                 chainId: CONTRACT_CONFIG.EXPECTED_CHAIN_ID_HEX,
                                 chainName: 'BSC Testnet',
                                 nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
-                                rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/'],
+                                rpcUrls: ['https://data-seed-prebsc-1-s2.binance.org:8545/'],
                                 blockExplorerUrls: ['https://testnet.bscscan.com/']
                             }]
                         });
@@ -832,42 +861,101 @@
             }
         }
 
-        function voteOnWithdrawal(requestId, agree){
-            const actionText = agree?'ủng hộ':'phản đối';
-            if (confirm(`Bạn có chắc chắn muốn ${actionText} yêu cầu rút vốn này không?`)) voteOnWithdrawalRequest(requestId, agree);
+    function voteOnWithdrawal(requestId, agree){
+      const actionText = agree ? 'ủng hộ' : 'phản đối';
+      if (!confirm(`Bạn có chắc chắn muốn ${actionText} yêu cầu rút vốn này không?`)) return;
+
+      (async () => {
+        try {
+          // Always resolve the authoritative pending withdrawal id from server API
+          const res = await fetch(`/api/campaigns/@Model.Id/pending-withdrawal`);
+          if (!res.ok) {
+            const txt = await res.text();
+            throw new Error(txt || 'Không thể lấy thông tin yêu cầu rút vốn từ server.');
+          }
+          const payload = await res.json();
+          const resolved = Number(payload?.requestId ?? payload?.requestIdOnChain);
+          if (!Number.isFinite(resolved)) throw new Error('Server không trả về requestId hợp lệ.');
+
+          // Call the common vote flow with resolved id
+          return voteOnWithdrawalRequest(resolved, agree);
+        } catch (err) {
+          console.error('Pending withdrawal resolution error:', err);
+          showError(err.message || 'Không thể xác định yêu cầu rút vốn. Vui lòng thử lại sau.');
+        }
+      })();
+    }
+
+    async function voteOnWithdrawalRequest(requestId, agree){
+      try{
+        if (!web3 || !contract || !userAccount) { const ok = await initializeWeb3(); if (!ok) return; }
+        const network = await web3.getNetwork();
+        if (network.chainId !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC){ showError('Hãy chuyển BSC Testnet!'); return; }
+
+        // Preflight: ensure caller is investor on-chain and get their on-chain balance (vote weight)
+        let onChainVoteWeightWei = ethers.constants.Zero;
+        try{
+          onChainVoteWeightWei = await contract.campaignInvestorBalances(@Model.Id, userAccount);
+          if (!onChainVoteWeightWei || onChainVoteWeightWei.eq(ethers.constants.Zero)){
+            showError('Chỉ nhà đầu tư mới có quyền bỏ phiếu (on-chain balance = 0).');
+            return;
+          }
+        }catch(preErr){
+          console.warn('Could not read on-chain investor balance:', preErr);
+          showError('Không thể kiểm tra trạng thái nhà đầu tư trên chain. Hãy thử lại.');
+          return;
         }
 
-        async function voteOnWithdrawalRequest(requestId, agree){
-            try{
-                if (!web3 || !contract || !userAccount) { const ok = await initializeWeb3(); if (!ok) return; }
-                const network = await web3.getNetwork();
-                if (network.chainId !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC){ showError('Hãy chuyển BSC Testnet!'); return; }
-
-                const voteButtons = document.querySelectorAll(`[onclick*="voteOnWithdrawal(${requestId}"]`);
-                const originalTexts = [];
-                voteButtons.forEach((btn,i)=>{ originalTexts[i]=btn.innerHTML; btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Đang xử lý...'; });
-
-                const tx = await contract.voteForWithdrawal(@Model.Id, requestId, agree, { gasLimit: 150000 });
-                showSuccess(`Đã gửi bỏ phiếu ${agree?'ủng hộ':'phản đối'}...`);
-                const receipt = await tx.wait();
-                if (receipt.status === 1){ showSuccess('Bỏ phiếu thành công!'); setTimeout(()=>window.location.reload(), 3000); }
-                else showError('Giao dịch thất bại!');
-            }catch(error){
-                console.error(error);
-                if (error.code === 4001) showError('Bạn đã huỷ giao dịch.');
-                else showError(error.message || 'Có lỗi khi bỏ phiếu.');
-            }finally{
-                const voteButtons = document.querySelectorAll(`[onclick*="voteOnWithdrawal(${requestId}"]`);
-                voteButtons.forEach((btn)=>{ btn.disabled=false; btn.innerHTML = btn.innerHTML.includes('spinner') ? (btn.textContent.includes('Ủng hộ')?'<i class="fas fa-thumbs-up"></i> Ủng hộ':'<i class="fas fa-thumbs-down"></i> Phản đối') : btn.innerHTML; });
-            }
+        // Check if user already voted on-chain for this request
+        let alreadyVoted = false;
+        try {
+          alreadyVoted = await contract.hasVoted(@Model.Id, requestId, userAccount);
+        } catch (e) {
+          // If contract doesn't have hasVoted, fallback to try/catch on tx
         }
+        if (alreadyVoted) {
+          showError('Bạn đã bỏ phiếu cho yêu cầu này.');
+          return;
+        }
+
+        // Optionally: check if voting is still open (if contract exposes this)
+        // let votingOpen = await contract.isVotingOpen(@Model.Id, requestId);
+        // if (!votingOpen) { showError('Thời gian bỏ phiếu đã kết thúc.'); return; }
+
+        const voteButtons = document.querySelectorAll(`[onclick*="voteOnWithdrawal(${requestId}"]`);
+        const originalTexts = [];
+        voteButtons.forEach((btn,i)=>{ originalTexts[i]=btn.innerHTML; btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i>'; });
+
+        try {
+          const tx = await contract.voteForWithdrawal(@Model.Id, requestId, agree, { gasLimit: 150000 });
+          showSuccess(`Đã gửi bỏ phiếu ${agree?'ủng hộ':'phản đối'}...`);
+          const receipt = await tx.wait();
+          if (receipt.status === 1){ showSuccess('Bỏ phiếu thành công!'); setTimeout(()=>window.location.reload(), 3000); }
+          else showError('Giao dịch thất bại!');
+        } catch (error) {
+          if (error.code === 'CALL_EXCEPTION') {
+            showError('Bỏ phiếu thất bại. Có thể bạn đã bỏ phiếu hoặc thời gian bỏ phiếu đã kết thúc.');
+          } else if (error.code === 4001) {
+            showError('Bạn đã huỷ giao dịch.');
+          } else {
+            showError(error.message || 'Có lỗi khi bỏ phiếu.');
+          }
+        } finally {
+          voteButtons.forEach((btn)=>{ btn.disabled=false; btn.innerHTML = btn.innerHTML.includes('spinner') ? (btn.textContent.includes('Ủng hộ')?'<i class="fas fa-thumbs-up"></i> Ủng hộ':'<i class="fas fa-thumbs-down"></i> Phản đối') : btn.innerHTML; });
+        }
+      }catch(error){
+        console.error(error);
+        showError(error.message || 'Có lỗi khi bỏ phiếu.');
+      }
+    }
 
         // ===== Demo load list (giữ logic phía dưới nguyên gốc) =====
         async function loadWithdrawalRequests(campaignId) {
+            const requestsElement = document.getElementById('withdrawal-requests');
+            if (!requestsElement) return; // Not on the withdrawal requests page
             try {
                 await ensureWalletConnected();
                 const contract = await getContract();
-                const requestsElement = document.getElementById('withdrawal-requests');
                 requestsElement.innerHTML = `
                     <div class="withdrawal-request-card">
                         <div class="request-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -890,7 +978,9 @@
                     </div>`;
             } catch (error) {
                 console.error('Error loading withdrawal requests:', error);
-                document.getElementById('withdrawal-requests').innerHTML = '<p style="color: var(--danger);">Không thể tải danh sách yêu cầu rút tiền.</p>';
+                if (requestsElement) {
+                    requestsElement.innerHTML = '<p style="color: var(--danger);">Không thể tải danh sách yêu cầu rút tiền.</p>';
+                }
             }
         }
 
@@ -993,8 +1083,7 @@
         async function initializeStatusInterface() {
             const campaignId = @Model.Id;
             const status = @((int)Model.Status);
-            if (status === 4) { await loadWithdrawalRequests(campaignId); }
-            else if (status === 5) {
+            if (status === 5) {
                 try {
                     await ensureWalletConnected();
                     const currentUser = userAccount;

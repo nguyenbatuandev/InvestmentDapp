@@ -172,6 +172,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 .Include(c => c.Posts)
                 .Include(c => c.Investments)
                 .Include(c => c.WithdrawalRequests)
+                    .ThenInclude(wr => wr.Votes)
                 .Include(c => c.Refunds)
                 .FirstOrDefaultAsync(c => c.Id == id);
         }

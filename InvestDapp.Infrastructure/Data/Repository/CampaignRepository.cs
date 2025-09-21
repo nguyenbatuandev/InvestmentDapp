@@ -22,6 +22,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 .Include(c => c.category)
                 .Include(c => c.Investments)
                 .Include(c => c.WithdrawalRequests)
+                    .ThenInclude(wr => wr.Votes)
                 .Include(c => c.Profits)
                 .Include(c => c.Refunds) 
                 .ToListAsync();
@@ -34,6 +35,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 .Include(c => c.category)
                 .Include(c => c.Investments)
                 .Include(c => c.WithdrawalRequests)
+                    .ThenInclude(wr => wr.Votes)
                 .Include(c => c.Profits)
                 .Include(c => c.Refunds)
                 .FirstOrDefaultAsync(c => c.Id == id);
@@ -66,6 +68,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 .Include(c => c.category)
                 .Include(c => c.Investments)
                 .Include(c => c.WithdrawalRequests)
+                    .ThenInclude(wr => wr.Votes)
                 .Include(c => c.Profits)
                 .Include(c => c.Refunds)
                 .FirstOrDefaultAsync(c => c.Id == campaign.Id);
@@ -89,6 +92,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 .Include(c => c.Profits)
                 .Include(c => c.Refunds)
                 .Include(c => c.WithdrawalRequests)
+                    .ThenInclude(wr => wr.Votes)
                 .Where(c => c.OwnerAddress.ToLower() == ownerAddress.ToLower())
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
@@ -101,6 +105,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 .Include(c => c.Posts)
                 .Include(c => c.Investments)
                 .Include(c => c.WithdrawalRequests)
+                    .ThenInclude(wr => wr.Votes)
                 .AsQueryable();
 
             // Apply filters
@@ -136,8 +141,65 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 DisagreeVotes = 0,
             };
             _context.WithdrawalRequests.Add(qr);
+
+            // Update campaign status to Voting when withdrawal request is created
+            var campaign = await _context.Campaigns.FindAsync(withdrawalRequestDto.CampaignId);
+            if (campaign != null)
+            {
+                campaign.Status = InvestDapp.Shared.Enums.CampaignStatus.Voting;
+                _context.Campaigns.Update(campaign);
+            }
+
             await _context.SaveChangesAsync();
             return qr;
+        }
+
+        public async Task<(WithdrawalRequest, int)> UpdateWithdrawalRequestStatusAsync(UpdateWithdrawalStatusDto dto)
+        {
+            var withdrawalRequest = await _context.WithdrawalRequests
+                .FirstOrDefaultAsync(wr => wr.CampaignId == dto.CampaignId && wr.Id == dto.RequestId);
+
+            if (withdrawalRequest == null)
+                throw new Exception($"Withdrawal request not found for CampaignId: {dto.CampaignId}, RequestId: {dto.RequestId}");
+
+            // Update withdrawal request status
+            withdrawalRequest.Status = dto.WasApproved ? WithdrawalStatus.Executed : WithdrawalStatus.Rejected;
+            withdrawalRequest.txhash = dto.TxHash;
+
+            var campaign = await _context.Campaigns.FindAsync(dto.CampaignId);
+            if (campaign == null)
+                throw new Exception($"Campaign not found: {dto.CampaignId}");
+
+            int rejectionCount = 0;
+
+            if (dto.WasApproved)
+            {
+                // Withdrawal approved - set campaign to Completed
+                campaign.Status = CampaignStatus.Completed;
+            }
+            else
+            {
+                // Withdrawal rejected - count rejections
+                rejectionCount = await _context.WithdrawalRequests
+                    .CountAsync(wr => wr.CampaignId == dto.CampaignId && wr.Status == WithdrawalStatus.Rejected);
+
+                if (rejectionCount >= 3)
+                {
+                    // Too many rejections - set campaign to Failed
+                    campaign.Status = CampaignStatus.Failed;
+                }
+                else
+                {
+                    // Not enough rejections yet - set back to Active
+                    campaign.Status = CampaignStatus.Active;
+                }
+            }
+
+            _context.WithdrawalRequests.Update(withdrawalRequest);
+            _context.Campaigns.Update(campaign);
+            await _context.SaveChangesAsync();
+
+            return (withdrawalRequest, rejectionCount);
         }
 
         public async Task<Refund> ClaimRefundAsync(ClaimRefundDto refundDto)

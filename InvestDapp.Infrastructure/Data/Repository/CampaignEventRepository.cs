@@ -1,4 +1,5 @@
 ﻿using InvestDapp.Infrastructure.Data.interfaces;
+using Microsoft.Extensions.Logging;
 using InvestDapp.Models;
 using InvestDapp.Shared.Enums;
 using InvestDapp.Shared.Models;
@@ -7,15 +8,18 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Nethereum.Web3;
 using System.Numerics;
+using System.Globalization;
 namespace InvestDapp.Infrastructure.Data.Repository
 {
     public class CampaignEventRepository : ICampaignEventRepository
     {
         private readonly InvestDbContext _investDbContext;
+        private readonly ILogger<CampaignEventRepository>? _logger;
 
-        public CampaignEventRepository(InvestDbContext investDbContext)
+        public CampaignEventRepository(InvestDbContext investDbContext, ILogger<CampaignEventRepository>? logger = null)
         {
             _investDbContext = investDbContext;
+            _logger = logger;
         }
         public async Task HandleCampaignCreatedAsync(BigInteger campaignId, string owner, string name, BigInteger goalAmount, BigInteger endTime, DateTime time)
         {
@@ -116,22 +120,45 @@ namespace InvestDapp.Infrastructure.Data.Repository
         public async Task HandleCampaignStatusUpdatedAsync(BigInteger campaignId, byte newStatus)
         {
             var campaign = await _investDbContext.Campaigns.FindAsync((int)campaignId);
-            var b = newStatus;
-
-            var a = Enum.IsDefined(typeof(CampaignStatus), (int)newStatus);
-
             if (campaign == null) return;
 
-                var status = (CampaignStatus)newStatus;
-                campaign.Status = status;
+            // Solidity enum: enum CampaignStatus { Active, Voting, Completed, Failed }
+            // numeric values: 0 = Active, 1 = Voting, 2 = Completed, 3 = Failed
+            // App enum (InvestDapp.Shared.Enums.CampaignStatus) has a different ordering.
+            // Map Solidity values explicitly to the app's CampaignStatus values to avoid incorrect translations.
 
-                if (status == CampaignStatus.Completed)
+            CampaignStatus mappedStatus;
+            switch (newStatus)
+            {
+                case 0: // Active
+                    mappedStatus = CampaignStatus.Active;
+                    break;
+                case 1: // Voting
+                    mappedStatus = CampaignStatus.Voting;
+                    break;
+                case 2: // Completed
+                    mappedStatus = CampaignStatus.Completed;
+                    break;
+                case 3: // Failed
+                    mappedStatus = CampaignStatus.Failed;
+                    break;
+                default:
+                    // Unknown status received from chain; ignore
+                    return;
+            }
+
+            // Only update and save when status actually changes to avoid unintended overwrites
+            if (campaign.Status != mappedStatus)
+            {
+                campaign.Status = mappedStatus;
+
+                if (mappedStatus == CampaignStatus.Completed)
                 {
                     campaign.TotalInvestmentsOnCompletion = campaign.CurrentRaisedAmount;
                 }
 
                 await _investDbContext.SaveChangesAsync();
-            
+            }
         }
 
 
@@ -189,7 +216,121 @@ namespace InvestDapp.Infrastructure.Data.Repository
             };
             _investDbContext.WithdrawalRequests.Add(withdrawalRequest);
             await _investDbContext.SaveChangesAsync();
+            _logger?.LogInformation("WithdrawalRequested persisted: campaignId={CampaignId} requestId={RequestId} tx={Tx}", campaignId, requestId, txhash);
 
+        }
+
+        public async Task HandleVoteCastAsync(BigInteger campaignId, BigInteger requestId, string voter, bool agree, BigInteger voteWeight, string txHash, DateTime time)
+        {
+            try
+            {
+                _logger?.LogInformation("HandleVoteCastAsync called: campaignId={CampaignId} requestId={RequestId} voter={Voter} agree={Agree} weight={Weight} tx={Tx}", campaignId, requestId, voter, agree, voteWeight, txHash);
+
+                // Find the withdrawal request
+                var wr = await _investDbContext.WithdrawalRequests
+                    .Include(w => w.Votes)
+                    .FirstOrDefaultAsync(w => w.CampaignId == (int)campaignId && w.Id == (int)requestId);
+
+                if (wr == null)
+                {
+                    // If we don't have the withdrawal request yet, create a minimal placeholder so we can store the vote
+                    wr = new WithdrawalRequest
+                    {
+                        CampaignId = (int)campaignId,
+                        Id = (int)requestId,
+                        Reason = "(on-chain)",
+                        txhash = txHash,
+                        Status = WithdrawalStatus.Pending,
+                        VoteEndTime = DateTime.UtcNow,
+                        CreatedAt = time
+                    };
+                    _investDbContext.WithdrawalRequests.Add(wr);
+                    await _investDbContext.SaveChangesAsync();
+                    _logger?.LogInformation("Created placeholder WithdrawalRequest: campaignId={CampaignId} requestId={RequestId}", campaignId, requestId);
+                }
+
+                // Idempotency: ensure we haven't already recorded this tx for the same voter and request
+                // EF Core can't translate String.Equals with StringComparison overload into SQL. Normalize addresses to lower-case for comparison which EF can translate.
+                var normalizedVoter = (voter ?? string.Empty).ToLowerInvariant();
+                var already = await _investDbContext.Vote.AnyAsync(v => v.WithdrawalRequestId == wr.Id && (v.TransactionHash == txHash || (v.VoterAddress != null && v.VoterAddress.ToLower() == normalizedVoter)));
+                if (already)
+                {
+                    _logger?.LogInformation("Vote already exists or voter already recorded: campaignId={CampaignId} requestId={RequestId} voter={Voter} tx={Tx}", campaignId, requestId, voter, txHash);
+                    return;
+                }
+
+                var vote = new Vote
+                {
+                    TransactionHash = txHash,
+                    WithdrawalRequestId = wr.Id,
+                    VoterAddress = voter ?? string.Empty,
+                    Agreed = agree,
+                    VoteWeight = (double)Web3.Convert.FromWei(voteWeight),
+                    CreatedAt = time
+                };
+
+                _investDbContext.Vote.Add(vote);
+
+                // Update tallies on WithdrawalRequest
+                // voteWeight is a BigInteger (wei). Convert to decimal safely for DB column decimal(38,0).
+                decimal votesToAdd = 0m;
+                try
+                {
+                    // Parse via invariant string representation to avoid IConvertible cast issues
+                    votesToAdd = decimal.Parse(voteWeight.ToString(), NumberStyles.None, CultureInfo.InvariantCulture);
+                }
+                catch (Exception convEx)
+                {
+                    _logger?.LogError(convEx, "Failed to convert BigInteger voteWeight to decimal for tx={Tx} campaignId={CampaignId} requestId={RequestId}", txHash, campaignId, requestId);
+                    // If conversion fails, do not throw; default to 0 to avoid corrupting totals. This case should be extremely rare.
+                    votesToAdd = 0m;
+                }
+
+                if (agree)
+                {
+                    // store as decimal (wei) to match DB column type
+                    wr.AgreeVotes += votesToAdd;
+                }
+                else
+                {
+                    wr.DisagreeVotes += votesToAdd;
+                }
+
+                _logger?.LogInformation("Saving vote to DB: campaignId={CampaignId} requestId={RequestId} voteIdCandidateTx={Tx}", campaignId, requestId, txHash);
+                try
+                {
+                    // Log current WR tallies before saving for diagnostics
+                    _logger?.LogDebug("WithdrawalRequest before save: Id={WrId} AgreeVotes={Agree} DisagreeVotes={Disagree}", wr.Id, wr.AgreeVotes, wr.DisagreeVotes);
+                    await _investDbContext.SaveChangesAsync();
+                    _logger?.LogInformation("Vote persisted: campaignId={CampaignId} requestId={RequestId} tx={Tx}", campaignId, requestId, txHash);
+                }
+                catch (DbUpdateException dbEx)
+                {
+                    _logger?.LogError(dbEx, "DbUpdateException while saving Vote for tx={Tx}. WrId={WrId} voter={Voter} agree={Agree}", txHash, wr.Id, voter, agree);
+                    if (dbEx.Entries != null)
+                    {
+                        foreach (var entry in dbEx.Entries)
+                        {
+                            try
+                            {
+                                _logger?.LogError("Entity in error: {EntityType} State={State}", entry.Entity?.GetType().FullName, entry.State);
+                            }
+                            catch { }
+                        }
+                    }
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Unexpected error when saving vote for tx={Tx}", txHash);
+                    throw;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error while handling VoteCast: campaignId={CampaignId} requestId={RequestId} tx={Tx}", campaignId, requestId, txHash);
+                throw; // rethrow so outer transaction can catch and rollback and logs will capture it
+            }
         }
     }
 }

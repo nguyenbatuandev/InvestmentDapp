@@ -7,6 +7,10 @@ using InvestDapp.Shared.Common.Request;
 using InvestDapp.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
+using InvestDapp.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace InvestDapp.Controllers
@@ -547,6 +551,95 @@ namespace InvestDapp.Controllers
             }
         }
 
+        // GET: /api/campaigns/{id}/pending-withdrawal - returns the latest pending withdrawal request id for a campaign
+        [HttpGet("api/campaigns/{id}/pending-withdrawal")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPendingWithdrawal(int id)
+        {
+            try
+            {
+                var campaign = await _campaignPostService.GetCampaignByIdAsync(id);
+                if (campaign == null) return NotFound(new { error = "Không tìm thấy chiến dịch" });
+
+                var pending = campaign.WithdrawalRequests?
+                    .Where(w => w.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending)
+                    .OrderByDescending(w => w.CreatedAt)
+                    .FirstOrDefault();
+
+                // If we have a proper DB record with a valid Id (>0), return it immediately
+                if (pending != null && pending.Id > 0)
+                {
+                    return Ok(new
+                    {
+                        requestId = pending.Id,
+                        createdAt = pending.CreatedAt,
+                        source = "db"
+                    });
+                }
+
+                // Fallback: try to resolve requestId from on-chain events stored in EventLogBlockchain
+                using (var scope = _serviceScopeFactory.CreateScope())
+                {
+                    var db = scope.ServiceProvider.GetRequiredService<InvestDbContext>();
+
+                    var ev = await db.EventLogBlockchain
+                        .Where(e => e.CampaignId == id && e.EventType == "WithdrawalRequested")
+                        .OrderByDescending(e => e.BlockNumber)
+                        .FirstOrDefaultAsync();
+
+                    if (ev != null && !string.IsNullOrWhiteSpace(ev.EventData))
+                    {
+                        try
+                        {
+                            using var doc = JsonDocument.Parse(ev.EventData);
+                            var root = doc.RootElement;
+
+                            JsonElement prop;
+                            if (root.TryGetProperty("RequestId", out prop) || root.TryGetProperty("requestId", out prop))
+                            {
+                                int reqId;
+                                if (prop.ValueKind == JsonValueKind.Number && prop.TryGetInt32(out reqId))
+                                {
+                                    return Ok(new { requestId = reqId, createdAt = ev.ProcessedAt, source = "onchain-event" });
+                                }
+
+                                // sometimes numbers are serialized as strings
+                                var sval = prop.GetRawText().Trim('"');
+                                if (int.TryParse(sval, out reqId))
+                                {
+                                    return Ok(new { requestId = reqId, createdAt = ev.ProcessedAt, source = "onchain-event" });
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // ignore parse errors and continue to return DB pending or NotFound below
+                        }
+                    }
+                }
+
+                // If we got a DB pending record but its Id is 0, don't return 0 to the caller.
+                // Prefer returning NotFound so caller will try other fallbacks (frontend on-chain scan).
+                // If the DB pending record has no valid Id, we have already attempted to parse on-chain event above.
+                if (pending != null && pending.Id == 0)
+                {
+                    return NotFound(new { error = "Yêu cầu rút vốn đang chờ nhưng chưa có requestId hợp lệ (pending placeholder)." });
+                }
+
+                // If no pending found at all, return not found
+                if (pending == null)
+                {
+                    return NotFound(new { error = "Không tìm thấy yêu cầu rút vốn đang chờ xử lý" });
+                }
+
+                return NotFound(new { error = "Không tìm thấy yêu cầu rút vốn đang chờ xử lý" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
         // POST: /Campaigns/RequestFullWithdrawal - Record withdrawal request transaction
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -557,7 +650,7 @@ namespace InvestDapp.Controllers
                 // Validate input
                 if (request == null || request.CampaignId <= 0 || string.IsNullOrEmpty(request.TxHash) || string.IsNullOrEmpty(request.Reason))
                 {
-                    return BadRequest(new { error = "Dữ liệu không hợp lệ" });
+                    return BadRequest(new { error = "Dữ liệu không hợp lệ - thiếu thông tin bắt buộc" });
                 }
 
                 // Get current user wallet
@@ -565,6 +658,13 @@ namespace InvestDapp.Controllers
                 if (string.IsNullOrEmpty(userWallet))
                 {
                     return Unauthorized(new { error = "Không tìm thấy địa chỉ ví" });
+                }
+
+                // Override with provided address if available (for security, ensure it matches logged in user)
+                if (!string.IsNullOrEmpty(request.address) && 
+                    !string.Equals(userWallet, request.address, StringComparison.OrdinalIgnoreCase))
+                {
+                    return BadRequest(new { error = "Địa chỉ ví không khớp với tài khoản đăng nhập" });
                 }
 
                 // Verify campaign ownership
@@ -579,13 +679,106 @@ namespace InvestDapp.Controllers
                     return StatusCode(403, new { error = "Bạn không có quyền thực hiện hành động này" });
                 }
 
+                // Validate campaign status - should be in Voting status for withdrawal
+                if (campaign.Status != InvestDapp.Shared.Enums.CampaignStatus.Voting)
+                {
+                    return BadRequest(new { error = "Chiến dịch phải ở trạng thái 'Voting' để có thể yêu cầu rút vốn" });
+                }
+
+                // Check if there are existing pending withdrawal requests
+                var existingPendingRequests = campaign.WithdrawalRequests?.Count(w => w.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending) ?? 0;
+                if (existingPendingRequests > 0)
+                {
+                    return BadRequest(new { error = "Đã có yêu cầu rút vốn đang chờ xử lý. Vui lòng chờ hoàn tất trước khi tạo yêu cầu mới." });
+                }
+
+                // Check withdrawal denial count (should not exceed 2, as 3rd denial will fail the campaign)
+                var denialCount = campaign.WithdrawalRequests?.Count(w => w.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Rejected) ?? 0;
+                if (denialCount >= 3)
+                {
+                    // Update campaign status to Failed if not already
+                    if (campaign.Status != InvestDapp.Shared.Enums.CampaignStatus.Failed)
+                    {
+                        campaign.Status = InvestDapp.Shared.Enums.CampaignStatus.Failed;
+                        await _campaignPostService.UpdateCampaignAsync(campaign);
+                    }
+                    return BadRequest(new { error = "Chiến dịch đã thất bại do quá 3 lần yêu cầu rút vốn bị từ chối" });
+                }
+
+                // Create withdrawal request record (blockchain transaction already completed)
                 request.address = userWallet;
                 var withdrawal = await _campain.CreatRerequestWithdrawalAsync(request);
+                
                 return Ok(new
                 {
-                    message = "Yêu cầu rút vốn đã được ghi nhận",
+                    message = "Yêu cầu rút vốn đã được ghi nhận thành công",
                     campaignId = request.CampaignId,
-                    txHash = request.TxHash
+                    txHash = request.TxHash,
+                    requestId = withdrawal?.Id,
+                    denialCount = denialCount,
+                    warning = denialCount >= 2 ? "Cảnh báo: Đây là lần thử cuối. Nếu bị từ chối, chiến dịch sẽ chuyển sang trạng thái Failed." : null
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Lỗi server: " + ex.Message });
+            }
+        }
+
+        // POST: /Campaigns/UpdateWithdrawalStatus - Update withdrawal request status after blockchain execution
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateWithdrawalStatus([FromBody] UpdateWithdrawalStatusDto request)
+        {
+            try
+            {
+                // Require campaign and txHash. RequestId may be omitted or stale from the client.
+                if (request == null || request.CampaignId <= 0 || string.IsNullOrEmpty(request.TxHash))
+                {
+                    return BadRequest(new { error = "Dữ liệu không hợp lệ" });
+                }
+
+                var userWallet = User.FindFirst("WalletAddress")?.Value;
+                if (string.IsNullOrEmpty(userWallet))
+                {
+                    return Unauthorized(new { error = "Không tìm thấy địa chỉ ví" });
+                }
+
+                // Attempt to ensure RequestId is valid. If client didn't supply a correct RequestId,
+                // look up the latest pending withdrawal request for this campaign and use that id.
+                var campaign = await _campaignPostService.GetCampaignByIdAsync(request.CampaignId);
+                if (campaign == null)
+                {
+                    return NotFound(new { error = "Không tìm thấy chiến dịch" });
+                }
+
+                // If RequestId is not provided or doesn't match any request for this campaign, find the pending one.
+                var matching = campaign.WithdrawalRequests?.FirstOrDefault(w => w.Id == request.RequestId && w.CampaignId == request.CampaignId);
+                if (matching == null)
+                {
+                    // Find the most recent pending (status == Pending) request
+                    var pending = campaign.WithdrawalRequests?.Where(w => w.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending)
+                                        .OrderByDescending(w => w.CreatedAt)
+                                        .FirstOrDefault();
+                    if (pending != null)
+                    {
+                        request.RequestId = pending.Id;
+                    }
+                    else
+                    {
+                        return BadRequest(new { error = "Không tìm thấy yêu cầu rút vốn đang chờ cho chiến dịch này" });
+                    }
+                }
+
+                var (withdrawalRequest, rejectionCount) = await _campain.UpdateWithdrawalRequestStatusAsync(request);
+
+                return Ok(new
+                {
+                    message = "Trạng thái withdrawal request đã được cập nhật",
+                    campaignId = request.CampaignId,
+                    requestId = request.RequestId,
+                    newStatus = withdrawalRequest.Status.ToString(),
+                    rejectionCount = rejectionCount
                 });
             }
             catch (Exception ex)
