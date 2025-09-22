@@ -7,785 +7,462 @@
 @Html.AntiForgeryToken()
 
 @section Styles {
-    <style>
-        /* --- BIẾN MÀU SẮC --- */
-        :root {
-            --bg-dark: #0a0e1a;
-            --bg-light: #12182b;
-            --primary: #00aaff;
-            --primary-light: #00c6ff;
-            --secondary: #272c44;
-            --text-color: #e0e0e0;
-            --text-muted: #8a93b3;
-            --success: #00d4aa;
-            --warning: #ffb800;
-            --danger: #ff6b6b;
-            --gradient: linear-gradient(135deg, var(--primary), var(--primary-light));
-        }
+<style>
+  /* ====== RESET NHẸ & KHUNG TRANG ====== */
+  *{ box-sizing: border-box; }
+  html,body{ overflow-x:hidden; }
+  .campaign-page{ max-width:1200px; margin: calc(var(--header-h) + 28px) auto 60px; padding: 0 16px; }
 
-        .campaign-details-container {
-            max-width: 1200px;
-            margin: 120px auto 60px;
-            padding: 0 20px;
-        }
+  /* ====== HERO ====== */
+  .hero{
+    position:relative; overflow:hidden;
+    border:1px solid var(--border); border-radius: var(--radius);
+    background: linear-gradient(180deg, rgba(108,240,255,.10), rgba(155,107,255,.06));
+    padding: 28px 22px;
+  }
+  .hero::after{
+    content:""; position:absolute; inset:-40% -10% auto auto; width:420px; height:420px;
+    background: radial-gradient(closest-side, rgba(255,255,255,.08), rgba(255,255,255,0));
+    transform: translate(12%, -12%); pointer-events:none; filter: blur(2px);
+  }
+  .hero h1{ margin:0 0 8px; font: 800 clamp(22px, 2.4vw, 30px)/1.15 'Plus Jakarta Sans', ui-sans-serif; letter-spacing:.2px; }
+  .hero p{ margin:0; color: var(--muted); font-size: clamp(14px, 1.7vw, 16px); }
+  .chip{
+    display:inline-flex; align-items:center; gap:8px; margin-top:10px;
+    padding:8px 12px; border-radius:12px; font-weight:700; font-size:.9rem; border:1px solid var(--border);
+    background: rgba(255,255,255,.05);
+  }
+  .chip.pending{ color:#ffc107; border-color: rgba(255,193,7,.35); background: rgba(255,193,7,.12); }
+  .chip.approved{ color:#00d4aa; border-color: rgba(0,212,170,.35); background: rgba(0,212,170,.10); }
+  .chip.rejected{ color:#ff6b6b; border-color: rgba(255,107,107,.35); background: rgba(255,107,107,.10); }
+  .chip.completed{ color:#28a745; border-color: rgba(40,167,69,.35); background: rgba(40,167,69,.10); }
 
-        .campaign-hero {
-            background: var(--gradient);
-            border-radius: 20px;
-            padding: 40px;
-            text-align: center;
-            color: white;
-            margin-bottom: 40px;
-            position: relative;
-            overflow: hidden;
-        }
+  /* ====== LƯỚI NỘI DUNG ====== */
+  .grid{
+    display:grid; gap: 22px; margin-top: 18px;
+    grid-template-columns: 2fr 1fr;
+  }
+  @@media (max-width: 992px){ .grid{ grid-template-columns: 1fr; } }
 
-            .campaign-hero::before {
-                content: '';
-                position: absolute;
-                top: -50%;
-                left: -50%;
-                width: 200%;
-                height: 200%;
-                background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
-                background-size: 20px 20px;
-                animation: float 20s infinite linear;
-            }
+  /* ====== CARD CHUẨN ====== */
+  .card{
+    border:1px solid var(--border); border-radius: var(--radius);
+    background: var(--glass); box-shadow: var(--shadow); padding: 18px;
+  }
+  .card h3{
+    margin:0 0 12px; font-size: 1.05rem; font-weight:800; letter-spacing:.2px; color: var(--primary);
+    display:flex; align-items:center; gap:10px;
+  }
 
-        @@keyframes float {
-            0% {
-                transform: translate(-50%, -50%) rotate(0deg);
-            }
+  /* ====== STATS ====== */
+  .stats{
+    display:grid; gap: 14px; grid-template-columns: repeat(4, 1fr); margin-top: 16px;
+  }
+  @@media (max-width: 992px){ .stats{ grid-template-columns: repeat(2,1fr); } }
+  @@media (max-width: 520px){ .stats{ grid-template-columns: 1fr; } }
+  .stat{
+    border:1px solid var(--border); background: rgba(255,255,255,.04);
+    border-radius: 12px; padding: 16px; text-align:center; transition: transform .15s;
+  }
+  .stat:hover{ transform: translateY(-2px); }
+  .stat i{ font-size: 1.4rem; color: var(--primary); margin-bottom: 6px; display:block; }
+  .stat .val{ font: 800 1.3rem/1 'Fira Code', ui-monospace; }
+  .stat .lbl{ color: var(--muted); font-size: .85rem; }
 
-            100% {
-                transform: translate(-50%, -50%) rotate(360deg);
-            }
-        }
+  /* ====== PROGRESS ====== */
+  .progress-box{ margin-top: 6px; }
+  .progress-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom: 6px; }
+  .progress{ height: 12px; border-radius: 999px; background: rgba(255,255,255,.06); border:1px solid var(--border); overflow:hidden; }
+  .progress .fill{ height:100%; width:0; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width .6s ease; }
+  .progress-info{ display:flex; justify-content:space-between; color: var(--muted); font-size:.85rem; margin-top: 4px; }
 
-        .hero-content {
-            position: relative;
-            z-index: 2;
-        }
+  /* ====== MÔ TẢ ====== */
+  .desc{ color: var(--fg); line-height: 1.75; }
+  .desc p{ margin: 0 0 10px; }
+  .desc img{ max-width:100%; height:auto; border-radius:10px; border:1px solid var(--border); }
+  .desc a{ color: var(--primary); text-decoration: underline; }
 
-        .campaign-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-        }
+  /* ====== SIDEBAR ====== */
+  .owner{
+    display:flex; align-items:center; gap:12px; padding: 12px; border-radius: 12px;
+    background: rgba(255,255,255,.03); border:1px solid var(--border);
+  }
+  .owner .ava{
+    width:44px; height:44px; border-radius:50%; display:grid; place-items:center;
+    background: conic-gradient(from 160deg,#6cf0ff,#9b6bff,#6cf0ff); color:#04121c; font-weight:900;
+    border: 1px solid var(--border);
+  }
+  .owner .addr{ color: var(--muted); font-family: ui-monospace, 'Fira Code', monospace; font-size: .9rem; word-break: break-all; }
 
-        .campaign-short-desc {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            margin-bottom: 20px;
-        }
+  .media img{ width:100%; max-width:100%; display:block; border-radius: 12px; border:1px solid var(--border); }
 
-        .campaign-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 25px;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
+  .actions{ display:grid; gap:10px; }
+  .act{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 14px; border-radius:12px; border:1px solid var(--border); font-weight:800; text-decoration:none; }
+  .act.primary{ background: linear-gradient(135deg, rgba(108,240,255,.18), rgba(155,107,255,.18)); color: var(--fg); }
+  .act.secondary{ background: rgba(255,255,255,.04); color: var(--fg); }
+  .act:disabled, .act[disabled]{ opacity:.6; cursor:not-allowed; }
 
-        .status-pending {
-            background-color: rgba(255, 193, 7, 0.2);
-            color: #ffc107;
-            border: 1px solid rgba(255, 193, 7, 0.3);
-            cursor: not-allowed;
-        }
+  /* ====== CARDS NHỎ ====== */
+  .side-card + .side-card{ margin-top: 16px; }
+  .side-title{ margin:0 0 10px; font-weight:800; color: var(--primary); font-size: 1rem; }
 
-        .status-approved {
-            background: rgba(0, 212, 170, 0.2);
-            color: #00d4aa;
-            border: 1px solid rgba(0, 212, 170, 0.3);
-        }
-
-        .status-completed {
-            background-color: rgba(40, 167, 69, 0.2);
-            color: #28a745;
-            border: 1px solid rgba(40, 167, 69, 0.3);
-            cursor: not-allowed;
-        }
-
-        .status-rejected {
-            background-color: rgba(220, 53, 69, 0.2);
-            color: #dc3545;
-            border: 1px solid rgba(220, 53, 69, 0.3);
-            cursor: not-allowed;
-        }
-
-        .campaign-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
-        }
-
-        .stat-card {
-            background: var(--bg-light);
-            border: 1px solid var(--secondary);
-            border-radius: 16px;
-            padding: 25px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-            .stat-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 8px 25px rgba(0, 170, 255, 0.1);
-            }
-
-        .stat-icon {
-            font-size: 2rem;
-            color: var(--primary);
-            margin-bottom: 10px;
-        }
-
-        .stat-value {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--text-color);
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .campaign-content {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 40px;
-        }
-
-        .main-content {
-            background: var(--bg-light);
-            border: 1px solid var(--secondary);
-            border-radius: 16px;
-            padding: 30px;
-        }
-
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-        }
-
-        .sidebar-card {
-            background: var(--bg-light);
-            border: 1px solid var(--secondary);
-            border-radius: 16px;
-            padding: 25px;
-        }
-
-        .description-section h3 {
-            color: var(--primary);
-            font-size: 1.3rem;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .description-content {
-            color: var(--text-color);
-            line-height: 1.8;
-            font-size: 1rem;
-        }
-
-        .campaign-image {
-            width: 100%;
-            max-width: 400px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-        }
-
-        .owner-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px;
-            background: var(--bg-dark);
-            border-radius: 12px;
-            margin-bottom: 20px;
-        }
-
-        .owner-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 1.2rem;
-        }
-
-        .owner-details h4 {
-            color: var(--text-color);
-            margin-bottom: 5px;
-        }
-
-        .owner-actions-header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            padding: 15px 20px;
-            border-radius: 12px;
-            margin: 20px 0;
-            text-align: center;
-        }
-
-        .owner-actions-header h4 {
-            color: white;
-            margin: 0;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .owner-actions-header i {
-            margin-right: 8px;
-        }
-
-        .owner-address {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            font-family: monospace;
-        }
-
-        .action-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .btn-action {
-            padding: 15px 20px;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn-primary-action {
-            background: var(--gradient);
-            color: white;
-            box-shadow: 0 4px 15px rgba(0, 170, 255, 0.3);
-        }
-
-            .btn-primary-action:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 25px rgba(0, 170, 255, 0.4);
-            }
-
-        .btn-secondary-action {
-            background: var(--secondary);
-            color: var(--text-color);
-            border: 2px solid var(--secondary);
-        }
-
-            .btn-secondary-action:hover {
-                background: transparent;
-                border-color: var(--primary);
-                color: var(--primary);
-            }
-
-        .progress-section {
-            margin: 30px 0;
-        }
-
-        .progress-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .progress-bar {
-            height: 12px;
-            background: var(--secondary);
-            border-radius: 6px;
-            overflow: hidden;
-            margin-bottom: 10px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: var(--gradient);
-            border-radius: 6px;
-            transition: width 0.8s ease;
-        }
-
-        .progress-info {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-
-        .timeline {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .time-left {
-            color: var(--warning);
-            font-weight: 600;
-        }
-
-        /* Responsive */
-        @@media (max-width: 768px) {
-            .campaign-content {
-                grid-template-columns: 1fr;
-                gap: 25px;
-            }
-
-            .campaign-stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .campaign-title {
-                font-size: 2rem;
-            }
-
-            .campaign-hero {
-                padding: 25px;
-            }
-        }
-
-        /* Animation */
-        .campaign-details-container > * {
-            animation: slideInUp 0.6s ease-out;
-        }
-
-        @@keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
+  /* ====== MODAL SỬA LẠI (không tràn viền) ====== */
+  .modal{ position: fixed; z-index: 9999; inset:0; display:none; background: rgba(0,0,0,.6); }
+  .modal .modal-content{
+    width: min(520px, 92vw); max-height: 84vh; overflow:auto; margin: 6vh auto 0;
+    padding: 18px; border-radius: 14px; border:1px solid var(--border); background: rgba(8,10,14,.96);
+  }
+  .modal .row{ display:grid; gap:10px; }
+  .modal textarea, .modal input[type="number"]{
+    width:100%; padding: 10px 12px; background: rgba(255,255,255,.03); border:1px solid var(--border);
+    border-radius: 10px; color: var(--fg);
+  }
+  .modal .footer{ display:flex; gap:10px; justify-content:flex-end; margin-top: 12px; }
+  .btn-flat{ padding:10px 12px; border-radius: 10px; border:1px solid var(--border); background: rgba(255,255,255,.04); color: var(--fg); }
+  .btn-grad{ padding:10px 12px; border-radius: 10px; border:0; background: linear-gradient(135deg,#28a745,#20c997); color:#fff; font-weight:800; }
+</style>
 }
 
-<div class="campaign-details-container">
-    <!-- Campaign Hero Section -->
-    <div class="campaign-hero">
-        <div class="hero-content">
-            <h1 class="campaign-title">@Model.Name</h1>
-            <p class="campaign-short-desc">@Model.ShortDescription</p>
 
-            @switch (Model.ApprovalStatus)
-            {
-                case InvestDapp.Shared.Enums.ApprovalStatus.Pending:
-                    <span class="campaign-status status-pending">
-                        <i class="fas fa-clock"></i> Chờ Duyệt
-                    </span>
-                    break;
-                case InvestDapp.Shared.Enums.ApprovalStatus.Approved:
-                    <span class="campaign-status status-approved">
-                        <i class="fas fa-check-circle"></i> Đã Duyệt
-                    </span>
-                    break;
-                case InvestDapp.Shared.Enums.ApprovalStatus.Rejected:
-                    <span class="campaign-status status-rejected">
-                        <i class="fas fa-times-circle"></i> Đã Từ Chối
-                    </span>
-                    break;
-            }
-        </div>
+<div class="campaign-page">
+  <!-- HERO -->
+  <section class="hero">
+    <h1>@Model.Name</h1>
+    <p>@Model.ShortDescription</p>
+
+    @switch (Model.ApprovalStatus)
+    {
+      case InvestDapp.Shared.Enums.ApprovalStatus.Pending:
+        <span class="chip pending"><i class="fas fa-clock"></i> Chờ duyệt</span>; break;
+      case InvestDapp.Shared.Enums.ApprovalStatus.Approved:
+        <span class="chip approved"><i class="fas fa-check-circle"></i> Đã duyệt</span>; break;
+      case InvestDapp.Shared.Enums.ApprovalStatus.Rejected:
+        <span class="chip rejected"><i class="fas fa-times-circle"></i> Từ chối</span>; break;
+    }
+
+    <!-- STAT BLOCK ngay trong hero cho cân bố cục -->
+    <div class="stats">
+      <div class="stat">
+        <i class="fas fa-coins"></i>
+        <div class="val">@Model.GoalAmount BNB</div>
+        <div class="lbl">Mục tiêu</div>
+      </div>
+      <div class="stat">
+        <i class="fas fa-chart-line"></i>
+        <div class="val">@Model.CurrentRaisedAmount BNB</div>
+        <div class="lbl">Đã huy động</div>
+      </div>
+      <div class="stat">
+        <i class="fas fa-users"></i>
+        <div class="val">@Model.InvestorCount</div>
+        <div class="lbl">Nhà đầu tư</div>
+      </div>
+      <div class="stat">
+        <i class="fas fa-calendar-alt"></i>
+        <div class="val">@((Model.EndTime - DateTime.UtcNow).Days)</div>
+        <div class="lbl">Ngày còn lại</div>
+      </div>
     </div>
+  </section>
 
-    <!-- Campaign Statistics -->
-    <div class="campaign-stats">
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-coins"></i>
+  <!-- GRID -->
+  <section class="grid">
+    <!-- MAIN -->
+    <article class="card">
+      <h3><i class="fas fa-file-alt"></i> Mô tả chi tiết</h3>
+      <div class="desc">
+        @Html.Raw(Model.Description?.Replace("\n", "<br/>"))
+      </div>
+
+      @if (Model.Posts?.Any() == true)
+      {
+        <div style="margin-top:18px;">
+          <h3><i class="fas fa-newspaper"></i> Bài viết mới nhất</h3>
+          @foreach (var post in Model.Posts.Take(3).OrderByDescending(p => p.CreatedAt))
+          {
+            <div class="card" style="padding:12px; margin-bottom:10px;">
+              <h4 style="margin:0 0 6px; color: var(--fg); font-weight:800;">
+                <a href="@Url.Action("PostDetails", new { id = post.Id })" style="color:var(--primary); text-decoration:none;">@post.Title</a>
+              </h4>
+              <small style="color:var(--muted)">@post.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
             </div>
-            <div class="stat-value">@Model.GoalAmount BNB</div>
-            <div class="stat-label">Mục Tiêu</div>
+          }
         </div>
+      }
+    </article>
 
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-chart-line"></i>
-            </div>
-            <div class="stat-value">@Model.CurrentRaisedAmount BNB</div>
-            <div class="stat-label">Đã Huy Động</div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-users"></i>
-            </div>
-            <div class="stat-value">@Model.InvestorCount</div>
-            <div class="stat-label">Nhà Đầu Tư</div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-calendar-alt"></i>
-            </div>
-            <div class="stat-value">@((Model.EndTime - DateTime.UtcNow).Days)</div>
-            <div class="stat-label">Ngày Còn Lại</div>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="campaign-content">
-        <div class="main-content">
-            <div class="description-section">
-                <h3>
-                    <i class="fas fa-file-alt"></i>
-                    Mô Tả Chi Tiết
-                </h3>
-                <div class="description-content">
-                    @Html.Raw(Model.Description?.Replace("\n", "<br/>"))
-                </div>
-            </div>
-
-            @if (Model.Posts?.Any() == true)
-            {
-                <div class="progress-section">
-                    <h3>
-                        <i class="fas fa-newspaper"></i>
-                        Bài Viết Mới Nhất
-                    </h3>
-                    @foreach (var post in Model.Posts.Take(3).OrderByDescending(p => p.CreatedAt))
-                    {
-                        <div style="padding: 15px; margin-bottom: 15px; background: var(--bg-dark); border-radius: 8px;">
-                            <h4 style="color: var(--primary); margin-bottom: 8px;">
-                                <a href="@Url.Action("PostDetails", new { id = post.Id })" style="text-decoration: none; color: inherit;">
-                                    @post.Title
-                                </a>
-                            </h4>
-                            <p style="color: var(--text-muted); font-size: 0.9rem;">
-                                @post.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-                            </p>
-                        </div>
-                    }
-                </div>
+    <!-- SIDEBAR -->
+    <aside class="side">
+      <!-- PROGRESS -->
+      <div class="card side-card">
+        <h3><i class="fas fa-tasks"></i> Tiến độ</h3>
+        <div class="progress-box">
+          <div class="progress-head">
+            <span style="font-weight:700">Hoàn thành</span>
+            <span style="color:var(--primary); font-weight:800;">
+              @(Model.GoalAmount > 0 ? (Model.CurrentRaisedAmount / Model.GoalAmount * 100).ToString("F1") : "0")%
+            </span>
+          </div>
+          <div class="progress">
+            @{
+              var _pct = Model.GoalAmount > 0 ? (Model.CurrentRaisedAmount / Model.GoalAmount * 100) : 0;
+              var _pctStr = _pct.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
             }
+            <div class="fill" style="width:@_pctStr%"></div>
+          </div>
+          <div class="progress-info">
+            <span>@Model.CurrentRaisedAmount BNB</span>
+            <span>@Model.GoalAmount BNB</span>
+          </div>
+          <div class="progress-info" style="margin-top:4px">
+            <i class="fas fa-clock" aria-hidden="true"></i>
+            <span style="margin-left:6px">Kết thúc: <b>@Model.EndTime.ToString("dd/MM/yyyy HH:mm")</b></span>
+          </div>
         </div>
+      </div>
 
-        <div class="sidebar">
-            <!-- Progress Card -->
-            <div class="sidebar-card">
-                <div class="progress-section">
-                    <div class="progress-header">
-                        <span style="font-weight: 600; color: var(--text-color);">Tiến Độ</span>
-                        <span style="color: var(--primary); font-weight: 600;">
-                            @(Model.GoalAmount > 0 ? (Model.CurrentRaisedAmount / Model.GoalAmount * 100).ToString("F1") : "0")%
-                        </span>
-                    </div>
-                        <div class="progress-bar">
-                            @{ var _pct = Model.GoalAmount > 0 ? (Model.CurrentRaisedAmount / Model.GoalAmount * 100) : 0; var _pctStr = _pct.ToString("F2", System.Globalization.CultureInfo.InvariantCulture); }
-                            <div class="progress-fill" style="width: @_pctStr%"></div>
-                        </div>
-                    <div class="progress-info">
-                        <span>@Model.CurrentRaisedAmount BNB</span>
-                        <span>@Model.GoalAmount BNB</span>
-                    </div>
-                </div>
+      <!-- OWNER -->
+      <div class="card side-card">
+        <h3><i class="fas fa-user-circle"></i> Người tạo</h3>
+        <div class="owner">
+          <div class="ava">@Model.OwnerAddress?.Substring(0,2).ToUpper()</div>
+          <div>
+            <div style="font-weight:800">Chủ dự án</div>
+            <div class="addr">@Model.OwnerAddress</div>
+          </div>
+        </div>
+      </div>
 
-                <div class="timeline">
-                    <i class="fas fa-clock"></i>
-                    <span>Kết thúc:</span>
-                    <span class="time-left">@Model.EndTime.ToString("dd/MM/yyyy HH:mm")</span>
-                </div>
-            </div>
+      @if (!string.IsNullOrEmpty(Model.ImageUrl))
+      {
+        <div class="card side-card media">
+          <h3><i class="fas fa-image"></i> Hình ảnh</h3>
+          <img src="@Model.ImageUrl" alt="@Model.Name" />
+        </div>
+      }
 
-            <!-- Owner Info Card -->
-            <div class="sidebar-card">
-                <h4 style="color: var(--primary); margin-bottom: 15px;">
-                    <i class="fas fa-user-circle"></i> Người Tạo
-                </h4>
-                <div class="owner-info">
-                    <div class="owner-avatar">
-                        @Model.OwnerAddress?.Substring(0, 2).ToUpper()
-                    </div>
-                    <div class="owner-details">
-                        <h4>Chủ Dự Án</h4>
-                        <div class="owner-address">@Model.OwnerAddress</div>
-                    </div>
-                </div>
-            </div>
+      <!-- ACTIONS -->
+      <div class="card side-card">
+        <div class="actions">
+          @{
+            var currentUserWallet = User.FindFirst("WalletAddress")?.Value;
+            var isOwner = currentUserWallet == Model.OwnerAddress;
+            var isInvestor = Model.Investments?.Any(i => i.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase)) ?? false;
+          }
 
-            @if (!string.IsNullOrEmpty(Model.ImageUrl))
+          <a href="@Url.Action("Dashboard", new { id = Model.Id })" class="act primary">
+            <i class="fas fa-tachometer-alt"></i> Xem Dashboard
+          </a>
+
+          @if (isOwner)
+          {
+            <!-- Owner actions (UI only, giữ nguyên onclick/flow) -->
+            @if (Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
             {
-                <div class="sidebar-card">
-                    <h4 style="color: var(--primary); margin-bottom: 15px;">
-                        <i class="fas fa-image"></i> Hình Ảnh
-                    </h4>
-                    <img src="@Model.ImageUrl" alt="@Model.Name" class="campaign-image" />
-                </div>
+              @switch (Model.Status)
+              {
+                case InvestDapp.Shared.Enums.CampaignStatus.Active:
+                  <button class="act primary" onclick="requestWithdrawal(@Model.Id)">
+                    <i class="fas fa-hand-holding-usd"></i> Yêu cầu rút vốn
+                  </button>
+                  break;
+
+                case InvestDapp.Shared.Enums.CampaignStatus.Voting:
+                  var hasPending = Model.WithdrawalRequests?.Any(w => w.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending) == true;
+                  var rejectedCount = Model.WithdrawalRequests?.Count(w => w.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Rejected) ?? 0;
+                  var canCreateNewAttempt = !hasPending && rejectedCount < 2;
+
+                  @if (hasPending)
+                  {
+                    <button class="act secondary" onclick="checkWithdrawalExecution(@Model.Id)">
+                      <i class="fas fa-check-circle"></i> Kiểm tra kết quả vote
+                    </button>
+                  }
+                  else if (canCreateNewAttempt)
+                  {
+                    <button class="act primary" onclick="requestWithdrawal(@Model.Id)">
+                      <i class="fas fa-hand-holding-usd"></i> Yêu cầu rút vốn (Lần @((Model.WithdrawalRequests?.Count() ?? 0) + 1))
+                    </button>
+                  }
+                  else
+                  {
+                    <span class="act secondary" style="cursor:default; opacity:.85;">
+                      <i class="fas fa-vote-yea"></i> Đang trong quá trình vote
+                    </span>
+                  }
+                  break;
+
+                case InvestDapp.Shared.Enums.CampaignStatus.Completed:
+                  <button class="act primary" onclick="addProfitToCampaign(@Model.Id)">
+                    <i class="fas fa-plus-circle"></i> Thêm lợi nhuận
+                  </button>
+                  break;
+
+                case InvestDapp.Shared.Enums.CampaignStatus.Failed:
+                  <span class="act secondary" style="cursor:default; opacity:.85;">
+                    <i class="fas fa-times-circle"></i> Chiến dịch đã thất bại
+                  </span>
+                  break;
+
+                default:
+                  <span class="act secondary" style="cursor:default; opacity:.85;">
+                    <i class="fas fa-info-circle"></i> Không có hành động khả dụng
+                  </span>
+                  break;
+              }
             }
+          }
+          else if (Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Pending)
+          {
+            <span class="act secondary" style="cursor:default; opacity:.85;">
+              <i class="fas fa-clock"></i> Chờ duyệt chiến dịch
+            </span>
+          }
+          else if (Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Rejected)
+          {
+            <span class="act secondary" style="cursor:default; opacity:.85;">
+              <i class="fas fa-times-circle"></i> Chiến dịch bị từ chối
+            </span>
+          }
+          else if (Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
+          {
+            @switch (Model.Status)
+            {
+              case InvestDapp.Shared.Enums.CampaignStatus.Active:
+                <button class="act primary" onclick="investInCampaign(@Model.Id)">
+                  <i class="fas fa-dollar-sign"></i> Đầu tư ngay
+                </button>
+                break;
 
-            <!-- Action Buttons -->
-            <div class="sidebar-card">
-                <div class="action-buttons">
-                    @{
-                        var currentUserWallet = User.FindFirst("WalletAddress")?.Value;
-                        var isOwner = currentUserWallet == Model.OwnerAddress;
-                        var isInvestor = Model.Investments?.Any(i => i.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase)) ?? false;
-                    }
+              case InvestDapp.Shared.Enums.CampaignStatus.Voting:
+                @if (isInvestor)
+                {
+                  <button class="act primary" onclick="voteOnCampaign(@Model.Id)">
+                    <i class="fas fa-vote-yea"></i> Bỏ phiếu
+                  </button>
+                  @if (Model.WithdrawalRequests?.Any(w => w.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending) == true)
+                  {
+                    <button class="act secondary" onclick="checkWithdrawalExecution(@Model.Id)">
+                      <i class="fas fa-check-circle"></i> Kiểm tra kết quả vote
+                    </button>
+                  }
+                }
+                else
+                {
+                  <span class="act secondary" title="Chỉ nhà đầu tư mới có quyền bỏ phiếu" style="cursor:default; opacity:.85;">
+                    <i class="fas fa-lock"></i> Bỏ phiếu (Chỉ nhà đầu tư)
+                  </span>
+                }
+                break;
 
-                    <a href="@Url.Action("Dashboard", new { id = Model.Id })" class="btn-action btn-primary-action">
-                        <i class="fas fa-tachometer-alt"></i>
-                        Xem Dashboard
-                    </a>
+              case InvestDapp.Shared.Enums.CampaignStatus.Failed:
+                @if (isInvestor)
+                {
+                  <button class="act primary" onclick="claimRefund(@Model.Id)">
+                    <i class="fas fa-money-bill-wave"></i> Claim lại tiền
+                  </button>
+                }
+                else
+                {
+                  <span class="act secondary" title="Chỉ nhà đầu tư mới có thể claim" style="cursor:default; opacity:.85;">
+                    <i class="fas fa-lock"></i> Claim (Chỉ nhà đầu tư)
+                  </span>
+                }
+                break;
 
-                    @if (isOwner)
-                    {
-                        <!-- Chỉ hiển thị 3 chức năng chính cho Owner -->
-                        <div class="owner-actions-header">
-                            <h4><i class="fas fa-user-crown"></i> Hành Động Chủ Chiến Dịch</h4>
-                        </div>
+              case InvestDapp.Shared.Enums.CampaignStatus.Completed:
+                @if (isInvestor)
+                {
+                  <button class="act primary" onclick="claimProfits(@Model.Id)">
+                    <i class="fas fa-gift"></i> Nhận lợi nhuận
+                  </button>
+                }
+                <span class="act secondary" style="cursor:default; opacity:.85;">
+                  <i class="fas fa-check-circle"></i> Đã hoàn thành
+                </span>
+                break;
 
-                        <!-- Owner Specific Actions Based on Campaign Status -->
-                        @if (Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
-                        {
-                            @switch (Model.Status)
-                            {
-                                case InvestDapp.Shared.Enums.CampaignStatus.Active:
-                                    <!-- Chức năng 1: Tạo Request Full Withdrawal -->
-                                    <button class="btn-action btn-primary-action" onclick="requestWithdrawal(@Model.Id)">
-                                        <i class="fas fa-hand-holding-usd"></i>
-                                        Yêu Cầu Rút Vốn
-                                    </button>
-                                    break;
-                                
-                                case InvestDapp.Shared.Enums.CampaignStatus.Voting:
-                                    <!-- Chức năng 2: Check Request Full Withdrawal -->
-                                    @if (Model.WithdrawalRequests?.Any(w => w.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending) == true)
-                                    {
-                                        <button class="btn-action btn-secondary-action" onclick="checkWithdrawalExecution(@Model.Id)">
-                                            <i class="fas fa-check-circle"></i>
-                                            Kiểm Tra Kết Quả Vote
-                                        </button>
-                                    }
-                                    else
-                                    {
-                                        <span class="btn-action status-pending">
-                                            <i class="fas fa-vote-yea"></i>
-                                            Đang Trong Quá Trình Vote
-                                        </span>
-                                    }
-                                    break;
-                                
-                                case InvestDapp.Shared.Enums.CampaignStatus.Completed:
-                                    <!-- Chức năng 3: Add Profit -->
-                                    <button class="btn-action btn-primary-action" onclick="addProfitToCampaign(@Model.Id)">
-                                        <i class="fas fa-plus-circle"></i>
-                                        Thêm Lợi Nhuận
-                                    </button>
-                                    break;
-                                
-                                case InvestDapp.Shared.Enums.CampaignStatus.Failed:
-                                    <span class="btn-action status-danger">
-                                        <i class="fas fa-times-circle"></i>
-                                        Chiến Dịch Đã Thất Bại
-                                    </span>
-                                    break;
-                                
-                                default:
-                                    <span class="btn-action status-pending">
-                                        <i class="fas fa-info-circle"></i>
-                                        Không Có Hành Động Khả Dụng
-                                    </span>
-                                    break;
-                            }
-                        }
-                    }
-                    else if (Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Pending)
-                    {
-                        <span class="btn-action status-pending">
-                            <i class="fas fa-clock"></i>
-                            Chờ Duyệt Chiến Dịch
-                        </span>
-                    }
-                    else if (Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Rejected)
-                    {
-                        <span class="btn-action status-danger">
-                            <i class="fas fa-times-circle"></i>
-                            Chiến Dịch Bị Từ Chối
-                        </span>
-                    }
-                    else if (Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Approved)
-                    {
-                        @switch (Model.Status)
-                        {
-                            case InvestDapp.Shared.Enums.CampaignStatus.Active:
-                                <button class="btn-action btn-primary-action" onclick="investInCampaign(@Model.Id)">
-                                    <i class="fas fa-dollar-sign"></i>
-                                    Đầu Tư Ngay
-                                </button>
-                                break;
-                            
-                            case InvestDapp.Shared.Enums.CampaignStatus.Voting:
-                                @if (isInvestor)
-                                {
-                                    <button class="btn-action btn-primary-action" onclick="voteOnCampaign(@Model.Id)">
-                                        <i class="fas fa-vote-yea"></i>
-                                        Bỏ Phiếu
-                                    </button>
-                                    @if (Model.WithdrawalRequests?.Any(w => w.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending) == true)
-                                    {
-                                        <button class="btn-action btn-secondary-action" onclick="checkWithdrawalExecution(@Model.Id)">
-                                            <i class="fas fa-check-circle"></i>
-                                            Kiểm Tra Kết Quả Vote
-                                        </button>
-                                    }
-                                }
-                                else
-                                {
-                                    <span class="btn-action status-pending" title="Chỉ nhà đầu tư mới có quyền bỏ phiếu">
-                                        <i class="fas fa-lock"></i>
-                                        Bỏ Phiếu (Chỉ nhà đầu tư)
-                                    </span>
-                                }
-                                break;
-                            
-                            case InvestDapp.Shared.Enums.CampaignStatus.Failed:
-                                @if (isInvestor)
-                                {
-                                    <button class="btn-action btn-primary-action" onclick="claimRefund(@Model.Id)">
-                                        <i class="fas fa-money-bill-wave"></i>
-                                        Claim Lại Tiền
-                                    </button>
-                                }
-                                else
-                                {
-                                    <span class="btn-action status-pending" title="Chỉ nhà đầu tư mới có thể claim">
-                                        <i class="fas fa-lock"></i>
-                                        Claim (Chỉ nhà đầu tư)
-                                    </span>
-                                }
-                                break;
-                            
-                            case InvestDapp.Shared.Enums.CampaignStatus.Completed:
-                                @if (isInvestor)
-                                {
-                                    <button class="btn-action btn-primary-action" onclick="claimProfits(@Model.Id)">
-                                        <i class="fas fa-gift"></i>
-                                        Nhận Lợi Nhuận
-                                    </button>
-                                }
-                                <span class="btn-action status-completed">
-                                    <i class="fas fa-check-circle"></i>
-                                    Đã Hoàn Thành
-                                </span>
-                                break;
-                            
-                            default:
-                                <span class="btn-action status-pending">
-                                    <i class="fas fa-clock"></i>
-                                    Đang Chuẩn Bị
-                                </span>
-                                break;
-                        }
-                    }
-                    else if (Model.ApprovalStatus == InvestDapp.Shared.Enums.ApprovalStatus.Rejected)
-                    {
-                        <span class="btn-action status-rejected">
-                            <i class="fas fa-times-circle"></i>
-                            Đã Bị Từ Chối
-                        </span>
-                    }
-                </div>
-            </div>
+              default:
+                <span class="act secondary" style="cursor:default; opacity:.85;">
+                  <i class="fas fa-clock"></i> Đang chuẩn bị
+                </span>
+                break;
+            }
+          }
         </div>
-    </div>
+      </div>
+    </aside>
+  </section>
 </div>
 
-<!-- Withdrawal Request Modal -->
-<div id="withdrawalModal" class="modal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8);">
-    <div class="modal-content" style="background: var(--bg-light); margin: 5% auto; padding: 30px; border-radius: 16px; width: 90%; max-width: 500px; border: 1px solid var(--secondary);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 style="color: var(--primary); margin: 0;"><i class="fas fa-hand-holding-usd"></i> Yêu Cầu Rút Vốn</h3>
-            <span class="close" onclick="closeWithdrawalModal()" style="color: var(--text-muted); font-size: 28px; cursor: pointer;">&times;</span>
-        </div>
-        
-        <form id="withdrawalForm">
-            <div style="margin-bottom: 20px;">
-                <label for="withdrawalReason" style="display: block; margin-bottom: 8px; color: var(--text-color); font-weight: 600;">Lý do rút vốn:</label>
-                <textarea id="withdrawalReason" name="reason" rows="4" 
-                    style="width: 100%; padding: 12px; border: 1px solid var(--secondary); border-radius: 8px; background: var(--bg-dark); color: var(--text-color); resize: vertical;" 
-                    placeholder="Vui lòng mô tả lý do cần rút vốn (ví dụ: mua thiết bị, chi phí vận hành...)"></textarea>
-            </div>
-            
-            <div style="display: flex; gap: 15px; justify-content: flex-end;">
-                <button type="button" onclick="closeWithdrawalModal()" 
-                    style="padding: 12px 20px; background: var(--secondary); color: var(--text-color); border: none; border-radius: 8px; cursor: pointer;">
-                    Hủy
-                </button>
-                <button type="submit" id="submitWithdrawal"
-                    style="padding: 12px 20px; background: var(--gradient); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                    <i class="fas fa-paper-plane"></i> Gửi Yêu Cầu
-                </button>
-            </div>
-        </form>
-    </div>
+
+<!-- ====== MODALS: Withdrawal & Profit ====== -->
+<!-- Withdrawal Modal -->
+<div id="withdrawalModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h3>Yêu cầu rút vốn</h3>
+    <form id="withdrawalForm">
+      <div class="row">
+        <label for="withdrawalReason">Lý do</label>
+        <textarea id="withdrawalReason" name="reason" rows="5" placeholder="Nhập lý do rút vốn (ít nhất 10 ký tự)"></textarea>
+      </div>
+      <div class="footer">
+        <button type="button" class="btn-flat" onclick="closeWithdrawalModal()">Hủy</button>
+        <button id="submitWithdrawal" type="submit" class="btn-grad"><i class="fas fa-paper-plane"></i> Gửi Yêu Cầu</button>
+      </div>
+    </form>
+  </div>
 </div>
 
-<!-- Add Profit Modal -->
-<div id="profitModal" class="modal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8);">
-    <div class="modal-content" style="background: var(--bg-light); margin: 5% auto; padding: 30px; border-radius: 16px; width: 90%; max-width: 500px; border: 1px solid var(--secondary);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 style="color: var(--success); margin: 0;"><i class="fas fa-plus-circle"></i> Thêm Lợi Nhuận</h3>
-            <span class="close" onclick="closeProfitModal()" style="color: var(--text-muted); font-size: 28px; cursor: pointer;">&times;</span>
-        </div>
-        
-        <form id="profitForm">
-            <div style="margin-bottom: 20px;">
-                <label for="profitAmount" style="display: block; margin-bottom: 8px; color: var(--text-color); font-weight: 600;">Số tiền lợi nhuận (BNB):</label>
-                <input type="number" id="profitAmount" name="amount" step="0.001" min="0.001" 
-                    style="width: 100%; padding: 12px; border: 1px solid var(--secondary); border-radius: 8px; background: var(--bg-dark); color: var(--text-color);" 
-                    placeholder="0.0">
-                <small style="color: var(--text-muted);">Tối thiểu: 0.001 BNB</small>
-            </div>
-            
-            <div style="display: flex; gap: 15px; justify-content: flex-end;">
-                <button type="button" onclick="closeProfitModal()" 
-                    style="padding: 12px 20px; background: var(--secondary); color: var(--text-color); border: none; border-radius: 8px; cursor: pointer;">
-                    Hủy
-                </button>
-                <button type="submit" id="submitProfit"
-                    style="padding: 12px 20px; background: linear-gradient(135deg, #28a745, #20c997); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                    <i class="fas fa-plus"></i> Thêm Lợi Nhuận
-                </button>
-            </div>
-        </form>
-    </div>
+<!-- Profit Modal -->
+<div id="profitModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h3>Thêm lợi nhuận vào chiến dịch</h3>
+    <form id="profitForm">
+      <div class="row">
+        <label for="profitAmount">Số BNB</label>
+        <input id="profitAmount" name="amount" type="number" step="0.001" placeholder="0.001" />
+      </div>
+      <div class="footer">
+        <button type="button" class="btn-flat" onclick="closeProfitModal()">Hủy</button>
+        <button id="submitProfit" type="submit" class="btn-grad"><i class="fas fa-plus"></i> Thêm</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 @section Scripts {
-  <!-- Ethers v5 -->
+  <!-- Load ethers & contract config (once) -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script src="~/js/contract-config.js" asp-append-version="true"></script>
+
   <script>
-    // ========= Helpers tải ethers (phòng khi CDN đầu bị block) =========
+    /*********************** Toast helpers ************************/
+    function createToast(message, kind){
+      const el = document.createElement('div');
+      el.className = 'toast ' + (kind==='ok'?'ok':'bad');
+      el.style.cssText = `
+        position:fixed;top:20px;right:20px;z-index:99999;padding:12px 14px;border-radius:12px;
+        color:#fff;font-weight:800;background:${kind==='ok'?'linear-gradient(135deg,#28a745,#20c997)':'linear-gradient(135deg,#dc3545,#e74c3c)'};
+        box-shadow:0 6px 20px rgba(0,0,0,.25)
+      `;
+      el.innerHTML = `<i class="fas ${kind==='ok'?'fa-check-circle':'fa-exclamation-triangle'}"></i> ${message}`;
+      document.body.appendChild(el); setTimeout(()=>el.remove(), 4500);
+    }
+    const showSuccess = (m)=>createToast(m,'ok');
+    const showError   = (m)=>createToast(m,'bad');
+
+    /*********************** Global web3 vars ************************/
+    let web3, contract, userAccount;
+
+    /*********************** Load ethers fallback (optional) ************************/
     function ensureEthersLoaded() {
       return new Promise((resolve, reject) => {
         if (typeof ethers !== 'undefined') { resolve(); return; }
-        const cdns = (window.FALLBACK_ETHERS_CDNS || []);
+        const cdns = [
+          'https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js',
+          'https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js'
+        ];
         const tryLoad = (i) => {
           if (i >= cdns.length) { reject(new Error('Failed to load Ethers.js')); return; }
           const s = document.createElement('script');
@@ -798,72 +475,12 @@
       });
     }
 
-    // ========= Thông báo gọn =========
-    function showSuccess(msg){ createToast(msg,'ok'); }
-    function showError(msg){ createToast(msg,'bad'); }
-    function createToast(message, kind){
-      const el = document.createElement('div');
-      el.className = 'toast ' + (kind==='ok'?'ok':'bad');
-      el.style.cssText = `
-        position:fixed;top:20px;right:20px;z-index:99999;padding:12px 14px;border-radius:12px;
-        color:#fff;font-weight:800;background:${kind==='ok'?'linear-gradient(135deg,#28a745,#20c997)':'linear-gradient(135deg,#dc3545,#e74c3c)'}
-      `;
-      el.innerHTML = `<i class="fas ${kind==='ok'?'fa-check-circle':'fa-exclamation-triangle'}"></i> ${message}`;
-      document.body.appendChild(el); setTimeout(()=>el.remove(), 5000);
-    }
-
-    // ========= Biến global =========
-    let web3, contract, userAccount;
-
-    // ========= Khởi tạo Web3 + Contract với multi-RPC =========
-    async function initializeWeb3(){
-      try{
-        await ensureEthersLoaded();
-        if (typeof window.ethereum === 'undefined'){ showError('Vui lòng cài MetaMask để sử dụng!'); return false; }
-
-        web3 = new ethers.providers.Web3Provider(window.ethereum, 'any');
-
-        // yêu cầu account (timeout 15s)
-        const accounts = await Promise.race([
-          window.ethereum.request({ method:'eth_requestAccounts' }),
-          new Promise((_,rej)=>setTimeout(()=>rej(new Error('Connection timeout')),15000))
-        ]);
-        if (!accounts || accounts.length===0) throw new Error('No accounts found');
-
-        let signer = web3.getSigner();
-        userAccount = await signer.getAddress();
-
-        const net = await web3.getNetwork();
-        if (net.chainId !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC){
-          const ok = await switchToBSCTestnet();
-          if (!ok) throw new Error('Failed to switch network');
-          web3 = new ethers.providers.Web3Provider(window.ethereum, 'any');
-          signer = web3.getSigner();
-          userAccount = await signer.getAddress();
-        }
-
-        // Kết nối contract + ping hàm view
-        contract = new ethers.Contract(CONTRACT_CONFIG.CONTRACT_ADDRESS, CONTRACT_CONFIG.CONTRACT_ABI, signer);
-        await contract.campaignCounter();
-
-        return true;
-      }catch(err){
-        console.error('Web3 init error:', err);
-        if (err.code === 4001) showError('Bạn đã từ chối kết nối ví.');
-        else if (err.code === -32002) showError('Yêu cầu kết nối đang chờ trong MetaMask.');
-        else if (err.message === 'Connection timeout') showError('Kết nối ví bị timeout.');
-        else if (err.message === 'No accounts found') showError('Vui lòng unlock MetaMask.');
-        @* else showError(err.message || 'Không thể kết nối với ví.'); *@
-        return false;
-      }
-    }
-
+    /*********************** Network switch ************************/
     async function switchToBSCTestnet(){
       const rpcUrls = [
-        'https://data-seed-prebsc-1-s1.binance.org:8545/',
-        'https://data-seed-prebsc-2-s1.binance.org:8545/',
         'https://bsc-testnet.publicnode.com',
         'https://bsc-testnet-rpc.publicnode.com',
+        'https://data-seed-prebsc-1-s1.binance.org:8545/',
         'https://endpoints.omniatech.io/v1/bsc/testnet/public',
         'https://rpc.ankr.com/bsc_testnet'
       ];
@@ -906,26 +523,72 @@
       }
     }
 
-    // ========= Đảm bảo đã kết nối ví =========
+    /*********************** Init web3 + contract ************************/
+    async function initializeWeb3(){
+      try{
+        await ensureEthersLoaded();
+        if (typeof window.ethereum === 'undefined'){ showError('Vui lòng cài MetaMask để sử dụng!'); return false; }
+
+        web3 = new ethers.providers.Web3Provider(window.ethereum, 'any');
+
+        // yêu cầu account (timeout 15s)
+        const accounts = await Promise.race([
+          window.ethereum.request({ method:'eth_requestAccounts' }),
+          new Promise((_,rej)=>setTimeout(()=>rej(new Error('Connection timeout')),15000))
+        ]);
+        if (!accounts || accounts.length===0) throw new Error('No accounts found');
+
+        let signer = web3.getSigner();
+        userAccount = await signer.getAddress();
+
+        const net = await web3.getNetwork();
+        if (net.chainId !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC){
+          const ok = await switchToBSCTestnet();
+          if (!ok) throw new Error('Failed to switch network');
+          web3 = new ethers.providers.Web3Provider(window.ethereum, 'any');
+          signer = web3.getSigner();
+          userAccount = await signer.getAddress();
+        }
+
+        contract = new ethers.Contract(CONTRACT_CONFIG.CONTRACT_ADDRESS, CONTRACT_CONFIG.CONTRACT_ABI, signer);
+        await contract.campaignCounter(); // ping view để chắc kết nối ok
+
+        return true;
+      }catch(err){
+        console.error('Web3 init error:', err);
+        if (err.code === 4001) showError('Bạn đã từ chối kết nối ví.');
+        else if (err.code === -32002) showError('Yêu cầu kết nối đang chờ trong MetaMask.');
+        else if (err.message === 'Connection timeout') showError('Kết nối ví bị timeout.');
+        else if (err.message === 'No accounts found') showError('Vui lòng unlock MetaMask.');
+        else showError(err.message || 'Không thể kết nối với ví.');
+        return false;
+      }
+    }
+
     async function ensureWalletConnected(){
       if (!web3 || !contract || !userAccount) return await initializeWeb3();
       return true;
     }
 
-    // ========= VÁ CHÍNH: Gửi Withdrawal với ABI fallback =========
+    /*********************** Withdrawal flow (ABI fallback ready) ************************/
+    function requestWithdrawal(){ const m = document.getElementById('withdrawalModal'); if (m) m.style.display = 'block'; }
+    function closeWithdrawalModal(){
+      const m = document.getElementById('withdrawalModal'); if (m) m.style.display='none';
+      const f = document.getElementById('withdrawalForm'); if (f) f.reset();
+    }
+
     async function submitWithdrawalRequest(campaignId, reason){
       const btn = document.getElementById('submitWithdrawal');
-      const originalText = btn.innerHTML;
+      const originalText = btn?.innerHTML;
       try{
         if (!await ensureWalletConnected()) return;
 
         // validate
         if (!reason || reason.trim().length < 10){ showError('Lý do rút vốn phải có ít nhất 10 ký tự'); return; }
 
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang kiểm tra điều kiện...';
+        if (btn){ btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang kiểm tra điều kiện...'; }
 
-        // kiểm tra chủ campaign + trạng thái on-chain
+        // kiểm tra owner + trạng thái on-chain
         const c = await contract.campaigns(campaignId);
         const owner = (c.owner || c[1] || '').toString();
         const goal = ethers.BigNumber.from(c.goalAmount || c[3] || 0);
@@ -935,72 +598,74 @@
 
         if (owner.toLowerCase() !== userAccount.toLowerCase()) { showError('❌ Chỉ chủ chiến dịch mới yêu cầu rút vốn'); return; }
         const now = Math.floor(Date.now()/1000);
-        if (raised.lt(goal)) { showError('❌ Chưa đạt mục tiêu nên không thể yêu cầu rút.'); return; }
-        if (now < end) { showError('❌ Chưa đến thời điểm kết thúc chiến dịch.'); return; }
+        // Tuỳ logic của bạn, có thể mở comment để chặn sớm:
+        // if (raised.lt(goal)) { showError('❌ Chưa đạt mục tiêu.'); return; }
+        // if (now < end) { showError('❌ Chưa đến thời điểm kết thúc chiến dịch.'); return; }
         if (!(status === 0 || status === 1)) { showError('❌ Trạng thái hiện tại không cho phép rút vốn.'); return; }
 
-        // preflight: thử HÀM 2-THAM-SỐ trước (ABI mới)
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kiểm tra on-chain...';
-        let useLegacyOneArg = false;
+        // Check pending requests (best-effort)
+        try{
+          const limit = 20;
+          for (let i=0;i<limit;i++){
+            try{
+              const req = await contract.withdrawalRequests(campaignId, i);
+              const st = (req.status && req.status.toNumber) ? req.status.toNumber() : parseInt((req.status || 0).toString(),10);
+              if (st === 0){ showError('❌ Đã tồn tại yêu cầu rút vốn đang chờ xử lý.'); return; }
+            }catch{ break; }
+          }
+        }catch(e){ console.warn('Scan pending withdrawal failed (non-fatal):', e); }
 
+        if (btn){ btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kiểm tra on-chain...'; }
+
+        // Preflight 2-arg -> nếu revert silent => fallback 1-arg
+        let useLegacyOneArg = false;
         try{
           await contract.callStatic.requestFullWithdrawal(campaignId, reason.trim());
         }catch(preflightErr){
           const msg = (preflightErr?.message||'').toLowerCase();
           const data = preflightErr?.data || preflightErr?.error?.data || '0x';
-          // nếu RPC lỗi (missing trie node) => báo rõ ràng
-          if (msg.includes('missing trie node')){
-            showError('❌ RPC node BSC Testnet đang lỗi (missing trie node). Thử lại hoặc đổi RPC trong MetaMask.');
-            return;
-          }
-          // nếu revert không có reason/data=0x => có thể contract là bản cũ 1-arg
+          if (msg.includes('missing trie node')) { showError('❌ RPC node lỗi (missing trie node). Đổi RPC/ thử lại.'); return; }
           if (data === '0x' || msg.includes('without a reason string')){
             useLegacyOneArg = true;
           }else{
-            // cố gắng decode reason
             try{
               if (typeof data === 'string' && data.length > 138){
                 const str = ethers.utils.toUtf8String('0x' + data.slice(138));
-                showError('❌ Smart contract từ chối: ' + str);
+                showError('❌ Contract từ chối: ' + str);
               }else{
-                showError('❌ Smart contract từ chối yêu cầu.');
+                showError('❌ Contract từ chối yêu cầu.');
               }
-            }catch{ showError('❌ Smart contract từ chối yêu cầu.'); }
+            }catch{ showError('❌ Contract từ chối yêu cầu.'); }
             return;
           }
         }
 
-        // estimateGas
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ước lượng gas...';
+        // Estimate & send
+        if (btn){ btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ước lượng gas...'; }
         let tx;
+
         if (!useLegacyOneArg){
-          // ======== ABI mới (2 tham số) ========
           let gas;
           try{
             gas = await contract.estimateGas.requestFullWithdrawal(campaignId, reason.trim());
           }catch(estErr){
-            const msg = (estErr?.message||'').toLowerCase();
-            if (msg.includes('missing trie node')){ showError('❌ RPC node không đồng bộ. Hãy thử lại/đổi RPC.'); return; }
-            // nếu estimateGas fail kiểu call exception trống → fallback sang bản 1-arg
+            if ((estErr?.message||'').toLowerCase().includes('missing trie node')){ showError('❌ RPC node không đồng bộ.'); return; }
+            // fallback sang 1-arg nếu estimateGas fail kiểu call-exception trống
             useLegacyOneArg = true;
           }
 
           if (!useLegacyOneArg){
-            const gasLimit = gas.mul(12).div(10); // +20%
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gửi giao dịch...';
+            const gasLimit = gas.mul(12).div(10);
+            if (btn){ btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gửi giao dịch...'; }
             tx = await contract.requestFullWithdrawal(campaignId, reason.trim(), { gasLimit });
           }
         }
 
         if (useLegacyOneArg){
-          // ======== ABI cũ (1 tham số) – encode & send thủ công ========
-          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gửi giao dịch (legacy ABI)...';
+          if (btn){ btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gửi (legacy ABI)...'; }
           const signer = web3.getSigner();
-          const ifaceLegacy = new ethers.utils.Interface([
-            'function requestFullWithdrawal(uint256 _campaignId)'
-          ]);
+          const ifaceLegacy = new ethers.utils.Interface(['function requestFullWithdrawal(uint256 _campaignId)']);
           const data = ifaceLegacy.encodeFunctionData('requestFullWithdrawal', [campaignId]);
-          // ước lượng gas thủ công
           let gasLimit = ethers.BigNumber.from('300000');
           try{
             const gas = await web3.estimateGas({ to: CONTRACT_CONFIG.CONTRACT_ADDRESS, from: userAccount, data });
@@ -1013,20 +678,15 @@
         const receipt = await tx.wait();
         if (receipt.status !== 1){ showError('❌ Giao dịch blockchain thất bại'); return; }
 
-        // ghi DB sau khi chain ok
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lưu database...';
+        // Lưu DB
+        if (btn){ btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lưu database...'; }
         const res = await fetch('/Campaigns/RequestFullWithdrawal', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
           },
-          body: JSON.stringify({
-            campaignId,
-            txHash: tx.hash,
-            reason,
-            address: userAccount
-          })
+          body: JSON.stringify({ campaignId, txHash: tx.hash, reason, address: userAccount })
         });
 
         if (res.ok){
@@ -1047,765 +707,199 @@
         else if (msg.includes('insufficient funds')) showError('❌ Không đủ BNB để trả phí gas');
         else showError(err.reason || err.message || '❌ Lỗi không xác định khi yêu cầu rút vốn');
       }finally{
-        btn.disabled = false;
-        btn.innerHTML = originalText || '<i class="fas fa-paper-plane"></i> Gửi Yêu Cầu';
+        if (btn){ btn.disabled = false; btn.innerHTML = originalText || '<i class="fas fa-paper-plane"></i> Gửi Yêu Cầu'; }
       }
     }
 
-    // ========= Modal & sự kiện =========
-    function requestWithdrawal(){ document.getElementById('withdrawalModal').style.display = 'block'; }
-    function closeWithdrawalModal(){
-      document.getElementById('withdrawalModal').style.display='none';
-      document.getElementById('withdrawalForm')?.reset();
-    }
+    /*********************** Execute/Update withdrawal ************************/
+    async function checkWithdrawalExecution(campaignId) {
+      const btn = event?.target;
+      const originalText = btn?.innerHTML;
+      try {
+        if (!await ensureWalletConnected()) return;
+        if (btn){ btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang kiểm tra...'; }
 
-    async function ensureEvents(){
-      if (typeof window.ethereum !== 'undefined'){
-        window.ethereum.on('accountsChanged', async (accs)=>{
-          if (!accs || accs.length===0){ showError('MetaMask đã ngắt kết nối'); userAccount=null; web3=null; contract=null; }
-          else { await initializeWeb3(); }
+        // lấy requestId pending từ server
+        let requestId = null;
+        const apiRes = await fetch(`/api/campaigns/${campaignId}/pending-withdrawal`);
+        if (!apiRes.ok) throw new Error((await apiRes.text()) || 'Server không trả về pending withdrawal.');
+        const payload = await apiRes.json();
+        if (Number.isFinite(Number(payload?.requestId))) requestId = Number(payload.requestId);
+        else if (Number.isFinite(Number(payload?.requestIdOnChain))) requestId = Number(payload.requestIdOnChain);
+        if (!Number.isFinite(requestId)) throw new Error('requestId không hợp lệ.');
+
+        if (btn){ btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang thực thi on-chain...'; }
+        const tx = await contract.checkAndExecuteWithdrawal(campaignId, requestId, { gasLimit: 300000 });
+        showSuccess('Đang kiểm tra kết quả vote...');
+        const receipt = await tx.wait();
+        if (receipt.status !== 1) { showError('❌ Giao dịch blockchain thất bại!'); return; }
+
+        // Cập nhật DB
+        let wasApproved = false;
+        try {
+          const topic = ethers.utils.id("WithdrawalExecuted(uint8,uint256,uint256,address,uint256)");
+          const log = receipt.logs.find(l => l.topics[0] === topic);
+          if (log) {
+            const decoded = contract.interface.decodeEventLog("WithdrawalExecuted", log.data, log.topics);
+            wasApproved = (decoded.status === 1);
+          }
+        } catch (e) { console.warn('Parse logs failed:', e); }
+
+        if (btn){ btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cập nhật database...'; }
+        const resp = await fetch('/Campaigns/UpdateWithdrawalStatus', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+          },
+          body: JSON.stringify({ campaignId, requestId, txHash: tx.hash, wasApproved })
         });
-        window.ethereum.on('chainChanged', async (chainId)=>{
-          const dec = parseInt(chainId,16);
-          if (dec !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC) showError('Vui lòng chuyển về BSC Testnet!');
-          else await initializeWeb3();
-        });
-        window.ethereum.on('disconnect', ()=>{
-          showError('Kết nối MetaMask bị ngắt'); userAccount=null; web3=null; contract=null;
-        });
+
+        if (resp.ok){
+          const result = await resp.json().catch(()=>({}));
+          if (wasApproved) showSuccess('✅ Yêu cầu rút vốn đã được phê duyệt & thực thi!');
+          else {
+            showSuccess('❌ Yêu cầu rút vốn bị từ chối' + (result?.rejectionCount!=null?` (bị từ chối ${result.rejectionCount} lần)`:'') );
+            if ((result?.rejectionCount||0) >= 3) showError('⚠️ Chiến dịch có thể chuyển sang Failed do quá 3 lần bị từ chối.');
+          }
+        }else{
+          const e = await resp.json().catch(()=>({}));
+          showError('⚠️ Chain OK nhưng cập nhật DB lỗi: ' + (e.error || 'Unknown'));
+        }
+        setTimeout(()=>window.location.reload(), 2500);
+      } catch (error) {
+        console.error('Check withdrawal error:', error);
+        showError(error.message || 'Có lỗi khi thực thi kiểm tra withdrawal.');
+      } finally {
+        if (btn){ btn.disabled = false; btn.innerHTML = originalText || '<i class="fas fa-check-circle"></i> Kiểm Tra Kết Quả Vote'; }
       }
     }
 
-    // ========= Boot =========
+    /*********************** Profit flow ************************/
+    function addProfitToCampaign(){ const m = document.getElementById('profitModal'); if (m) m.style.display = 'block'; }
+    function closeProfitModal(){ const m = document.getElementById('profitModal'); if (m) m.style.display='none'; const f = document.getElementById('profitForm'); if (f) f.reset(); }
+
+    async function submitProfitAddition(campaignId, amount){
+      const btn = document.getElementById('submitProfit');
+      const originalText = btn?.innerHTML;
+      try{
+        if (!await ensureWalletConnected()) return;
+        const val = Number(amount);
+        if (!val || val < 0.001){ showError('Nhập số tiền hợp lệ (tối thiểu 0.001 BNB)'); return; }
+        if (btn){ btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang thêm...'; }
+
+        const wei = ethers.utils.parseEther(val.toString());
+        const tx = await contract.addProfit(campaignId, { value: wei, gasLimit: 250000 });
+        showSuccess('Đang thêm lợi nhuận...');
+        const receipt = await tx.wait();
+        if (receipt.status !== 1){ showError('Giao dịch thất bại!'); return; }
+        showSuccess('Thêm lợi nhuận thành công!');
+        closeProfitModal();
+        setTimeout(()=>window.location.reload(), 1600);
+      }catch(err){
+        console.error('Add profit error:', err);
+        showError(err.message || 'Lỗi khi thêm lợi nhuận');
+      }finally{
+        if (btn){ btn.disabled = false; btn.innerHTML = originalText || '<i class="fas fa-plus"></i> Thêm Lợi Nhuận'; }
+      }
+    }
+
+    /*********************** Other actions ************************/
+    function investInCampaign(id){ window.location.href = `/Campaigns/Dashboard/${id}`; }
+    function voteOnCampaign(id){ window.location.href = `/Campaigns/Dashboard/${id}`; }
+    function claimProfits(id){ window.location.href = `/Campaigns/Dashboard/${id}`; }
+
+    function claimRefund(id){
+      if (confirm('Bạn có chắc chắn muốn claim lại tiền đầu tư không? Hành động này không thể hoàn tác.')) {
+        claimRefundFromContract(id);
+      }
+    }
+
+    async function claimRefundFromContract(campaignId){
+      const btn = event?.target; const originalText = btn?.innerHTML;
+      try{
+        if (!await ensureWalletConnected()) return;
+        if (btn){ btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...'; btn.disabled = true; }
+
+        const tx = await contract.refund(campaignId, { gasLimit: 150000 });
+        showSuccess('Đã gửi giao dịch claim refund...');
+        const receipt = await tx.wait();
+        if (receipt.status !== 1){ showError('Giao dịch thất bại!'); return; }
+        showSuccess('Claim refund thành công!');
+
+        const formData = new FormData();
+        formData.append('CampaignId', campaignId);
+        formData.append('TransactionHash', tx.hash);
+        formData.append('InvestorAddress', userAccount || '');
+        formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]')?.value || '');
+
+        const response = await fetch('/Campaigns/ClaimRefund', { method:'POST', body: formData, credentials: 'same-origin' });
+        if (!response.ok){
+          const err = await response.json().catch(()=>({}));
+          showError(err.error || 'Có lỗi khi cập nhật refund trên server.');
+        }
+        setTimeout(()=>window.location.reload(), 2200);
+      }catch(error){
+        console.error('Claim refund error:', error);
+        showError(error.message || 'Có lỗi khi claim refund.');
+      }finally{
+        if (btn){ btn.disabled = false; btn.innerHTML = originalText || '<i class="fas fa-money-bill-wave"></i> Claim Lại Tiền'; }
+      }
+    }
+
+    /*********************** MetaMask events ************************/
+    async function bindWalletEvents(){
+      if (typeof window.ethereum === 'undefined') return;
+      window.ethereum.on('accountsChanged', async (accs)=>{
+        if (!accs || accs.length===0){ showError('MetaMask đã ngắt kết nối'); userAccount=null; web3=null; contract=null; }
+        else { await initializeWeb3(); }
+      });
+      window.ethereum.on('chainChanged', async (chainId)=>{
+        const dec = parseInt(chainId,16);
+        if (dec !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC) showError('Vui lòng chuyển về BSC Testnet!');
+        else await initializeWeb3();
+      });
+      window.ethereum.on('disconnect', ()=>{ showError('Kết nối MetaMask bị ngắt'); userAccount=null; web3=null; contract=null; });
+    }
+
+    /*********************** DOM Ready ************************/
     document.addEventListener('DOMContentLoaded', async ()=>{
       await initializeWeb3();
-      await ensureEvents();
+      await bindWalletEvents();
 
-      // submit form
-      document.getElementById('withdrawalForm')?.addEventListener('submit', async (e)=>{
-        e.preventDefault();
-        const reason = document.getElementById('withdrawalReason').value.trim();
-        if (!reason){ showError('Vui lòng nhập lý do rút vốn!'); return; }
-        await submitWithdrawalRequest(@Model.Id, reason);
+      // Gắn form Withdrawal
+      const withdrawalForm = document.getElementById('withdrawalForm');
+      if (withdrawalForm){
+        withdrawalForm.addEventListener('submit', async (e)=>{
+          e.preventDefault();
+          const reason = document.getElementById('withdrawalReason')?.value?.trim() || '';
+          if (!reason){ showError('Vui lòng nhập lý do rút vốn!'); return; }
+          await submitWithdrawalRequest(@Model.Id, reason);
+        });
+      }
+
+      // Gắn form Profit
+      const profitForm = document.getElementById('profitForm');
+      if (profitForm){
+        profitForm.addEventListener('submit', async (e)=>{
+          e.preventDefault();
+          const amount = parseFloat(document.getElementById('profitAmount')?.value || '0');
+          if (!amount || amount < 0.001){ showError('Vui lòng nhập số tiền hợp lệ (tối thiểu 0.001 BNB)!'); return; }
+          await submitProfitAddition(@Model.Id, amount);
+        });
+      }
+
+      // Click outside to close modals
+      window.addEventListener('click', (evt)=>{
+        const wm = document.getElementById('withdrawalModal');
+        const pm = document.getElementById('profitModal');
+        if (evt.target === wm) closeWithdrawalModal();
+        if (evt.target === pm) closeProfitModal();
       });
 
-      // click outside để đóng modal
-      window.onclick = function(evt){
-        const m = document.getElementById('withdrawalModal');
-        if (evt.target === m) closeWithdrawalModal();
-      };
+      // Nhẹ: hiệu ứng xuất hiện
+      const elements = document.querySelectorAll('.campaign-details-container > *');
+      elements.forEach((el, i)=>{ el.style.animationDelay = `${i*0.1}s`; });
     });
   </script>
-}
-    <!-- Include ethers.js and contract config -->
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-    <script src="~/js/contract-config.js" asp-append-version="true"></script>
-    <script>
-        // Ensure ethers loaded helper (copied from Dashboard)
-        function ensureEthersLoaded() {
-            return new Promise((resolve, reject) => {
-                if (typeof ethers !== 'undefined') { resolve(); return; }
-                const fallbackScript = document.createElement('script');
-                fallbackScript.src = 'https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js';
-                fallbackScript.onload = () => resolve();
-                fallbackScript.onerror = () => reject(new Error('Failed to load Ethers.js'));
-                document.head.appendChild(fallbackScript);
-            });
-        }
-
-        // Global variables (use same names as Dashboard)
-        let web3;
-        let contract;
-        let userAccount;
-
-        // Initialize web3 and contract (robust pattern copied from Dashboard)
-        async function initializeWeb3() {
-            try {
-                if (typeof ethers === 'undefined') { showError('Thư viện blockchain chưa được tải. Vui lòng refresh!'); return false; }
-                if (typeof window.ethereum === 'undefined') { showError('Vui lòng cài MetaMask để sử dụng!'); return false; }
-
-                web3 = new ethers.providers.Web3Provider(window.ethereum);
-                const accounts = await Promise.race([
-                    window.ethereum.request({ method: 'eth_requestAccounts' }),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 15000))
-                ]);
-                if (!accounts || accounts.length === 0) throw new Error('No accounts found');
-
-                const signer = web3.getSigner();
-                userAccount = await signer.getAddress();
-
-                const network = await web3.getNetwork();
-                if (network.chainId !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC) {
-                    const switched = await switchToBSCTestnet();
-                    if (!switched) throw new Error('Failed to switch network');
-                    web3 = new ethers.providers.Web3Provider(window.ethereum);
-                }
-
-                try {
-                    contract = new ethers.Contract(CONTRACT_CONFIG.CONTRACT_ADDRESS, CONTRACT_CONFIG.CONTRACT_ABI, signer);
-                    await contract.campaignCounter();
-                } catch {
-                    throw new Error('Không thể kết nối với smart contract');
-                }
-
-                return true;
-            } catch (error) {
-                console.error('Web3 init error:', error);
-                if (error.code === 4001) showError('Bạn đã từ chối kết nối ví.');
-                else if (error.code === -32002) showError('Yêu cầu kết nối đang chờ trong MetaMask.');
-                else if (error.message === 'Connection timeout') showError('Kết nối ví bị timeout.');
-                else if (error.message === 'No accounts found') showError('Vui lòng unlock MetaMask.');
-                else showError(error.message || 'Không thể kết nối với ví.');
-                return false;
-            }
-        }
-
-        async function switchToBSCTestnet() {
-            try {
-                await window.ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: CONTRACT_CONFIG.EXPECTED_CHAIN_ID_HEX }],
-                });
-                return true;
-            } catch (switchError) {
-                if (switchError.code === 4902) {
-                    try {
-                        await window.ethereum.request({
-                            method: 'wallet_addEthereumChain',
-                            params: [{
-                                chainId: CONTRACT_CONFIG.EXPECTED_CHAIN_ID_HEX,
-                                chainName: 'BSC Testnet',
-                                nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
-                                rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/'],
-                                blockExplorerUrls: ['https://testnet.bscscan.com/']
-                            }]
-                        });
-                        return await switchToBSCTestnet();
-                    } catch (addError) {
-                        showError('Không thể thêm BSC Testnet.');
-                        return false;
-                    }
-                } else {
-                    showError('Không thể chuyển sang BSC Testnet.');
-                    return false;
-                }
-            }
-        }
-
-    // Campaign status management functions
-        async function updateCampaignStatus(campaignId) {
-            try {
-                if (!await ensureWalletConnected()) return;
-                
-                const btn = event.target;
-                const originalText = btn.innerHTML;
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang cập nhật...';
-
-                const tx = await contract.updateCampaignStatus(campaignId, { gasLimit: 200000 });
-                showSuccess('Đang cập nhật trạng thái campaign...');
-                
-                const receipt = await tx.wait();
-                if (receipt.status === 1) {
-                    showSuccess('Cập nhật trạng thái thành công!');
-                    setTimeout(() => window.location.reload(), 2000);
-                } else {
-                    showError('Giao dịch thất bại!');
-                }
-            } catch (error) {
-                console.error('Update status error:', error);
-                handleTransactionError(error);
-            } finally {
-                const btn = event.target;
-                btn.disabled = false;
-                btn.innerHTML = originalText || '<i class="fas fa-sync-alt"></i> Cập Nhật Trạng Thái';
-            }
-        }
-
-        // Withdrawal request functions
-        function requestWithdrawal(campaignId) {
-            document.getElementById('withdrawalModal').style.display = 'block';
-        }
-
-        function closeWithdrawalModal() {
-            document.getElementById('withdrawalModal').style.display = 'none';
-            document.getElementById('withdrawalForm').reset();
-        }
-
-        async function submitWithdrawalRequest(campaignId, reason) {
-            const btn = document.getElementById('submitWithdrawal');
-            const originalText = btn.innerHTML;
-            try {
-                if (!await ensureWalletConnected()) return;
-
-                // Validate reason
-                if (!reason || reason.trim().length < 10) {
-                    showError('Lý do rút vốn phải có ít nhất 10 ký tự');
-                    return;
-                }
-
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang kiểm tra điều kiện...';
-
-                // Check if user is campaign owner
-                const campaignOnChain = await contract.campaigns(campaignId);
-                // Safely read fields (supports both array-like and named properties)
-                const ownerAddress = (campaignOnChain.owner || campaignOnChain[1] || '').toString();
-                const goalAmount = ethers.BigNumber.from(campaignOnChain.goalAmount || campaignOnChain[3] || 0);
-                const currentRaised = ethers.BigNumber.from(campaignOnChain.currentRaisedAmount || campaignOnChain[4] || 0);
-                const endTime = parseInt((campaignOnChain.endTime || campaignOnChain[6] || 0).toString(), 10);
-                const status = parseInt((campaignOnChain.status || campaignOnChain[7] || 0).toString(), 10);
-
-                if (ownerAddress.toLowerCase() !== userAccount.toLowerCase()) {
-                    showError('❌ Chỉ chủ sở hữu chiến dịch mới có thể yêu cầu rút vốn');
-                    return;
-                }
-
-                // Basic eligibility checks to avoid sending txs that will revert on-chain
-                const nowSec = Math.floor(Date.now() / 1000);
-                @* if (currentRaised.lt(goalAmount)) {
-                    showError('❌ Không thể yêu cầu rút vốn: chiến dịch chưa đạt mục tiêu (pool chưa đầy).');
-                    return;
-                }
-                if (nowSec < endTime) {
-                    showError('❌ Không thể yêu cầu rút vốn: chiến dịch chưa đến thời điểm kết thúc.');
-                    return;
-                } *@
-                // status: 0=Active, 1=Voting, 2=Completed, 3=Failed (depends on enum) - allow Active/Voting
-                if (!(status === 0 || status === 1)) {
-                    showError('❌ Không thể yêu cầu rút vốn ở trạng thái hiện tại của chiến dịch.');
-                    return;
-                }
-
-                // Check for any existing pending withdrawal requests on-chain (scan a reasonable window)
-                try {
-                    const pendingLimit = 20; // safety upper bound
-                    for (let i = 0; i < pendingLimit; i++) {
-                        try {
-                            const req = await contract.withdrawalRequests(campaignId, i);
-                            // req.status may be BigNumber or number
-                            const reqStatus = (req.status && req.status.toNumber) ? req.status.toNumber() : parseInt((req.status || 0).toString(), 10);
-                            if (reqStatus === 0) { // Pending
-                                showError('❌ Đã tồn tại withdrawal request đang chờ xử lý trên blockchain.');
-                                return;
-                            }
-                        } catch (innerErr) {
-                            // no more requests available or read error - break the loop
-                            break;
-                        }
-                    }
-                } catch (scanErr) {
-                    console.warn('Không thể kiểm tra danh sách withdrawal requests trên chain:', scanErr);
-                    // Non-fatal - continue. But don't abort here because some RPCs may not support iterating.
-                }
-
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kiểm tra on-chain trước khi gửi...';
-
-                // Preflight: try a callStatic to surface revert reasons without sending a real tx
-                try {
-                    await contract.callStatic.requestFullWithdrawal(campaignId, reason.trim());
-                } catch (preflightErr) {
-                    console.warn('callStatic preflight failed:', preflightErr);
-
-                    // Try to decode revert reason when available
-                    let preReason = preflightErr.reason || (preflightErr.error && preflightErr.error.message) || preflightErr.message || '';
-                    try {
-                        const data = preflightErr.data || (preflightErr.error && preflightErr.error.data) || '';
-                        if (data && data.length > 138) {
-                            const decoded = ethers.utils.toUtf8String('0x' + data.slice(138));
-                            preReason = preReason || decoded;
-                        }
-                    } catch (decodeErr) {
-                        console.warn('Could not decode revert reason from preflight error:', decodeErr);
-                    }
-
-                    showError('❌ Smart contract từ chối: ' + (preReason || 'Không có lý do chi tiết.'));
-                    return;
-                }
-
-                // Estimate gas (fail early if RPC refuses/tx will revert)
-                let gasLimitToUse;
-                try {
-                    const estimated = await contract.estimateGas.requestFullWithdrawal(campaignId, reason.trim());
-                    // add a safety multiplier of 1.2x
-                    gasLimitToUse = estimated.mul(12).div(10);
-                } catch (estErr) {
-                    console.warn('estimateGas failed:', estErr);
-                    if (estErr && estErr.message && estErr.message.includes('missing trie node')) {
-                        showError('❌ RPC node không đồng bộ: không thể estimate gas. Hãy đổi RPC endpoint hoặc thử lại sau.');
-                        return;
-                    }
-                    // If estimateGas fails due to call exception, show reason if available
-                    const estReason = estErr.reason || (estErr.error && estErr.error.message) || estErr.message || '';
-                    showError('❌ Không thể ước lượng gas cho giao dịch: ' + (estReason || 'Có thể giao dịch sẽ revert.'));
-                    return;
-                }
-
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang gửi lên blockchain...';
-
-                // Step 1: send transaction using estimated gas limit (or fallback)
-                try {
-                    const tx = await contract.requestFullWithdrawal(campaignId, reason.trim(), { 
-                        gasLimit: gasLimitToUse
-                    });
-                    showSuccess('Đang gửi yêu cầu rút vốn lên blockchain...');
-
-                    const receipt = await tx.wait();
-                    if (receipt.status === 1) {
-                        // Step 2: Only save to database if blockchain transaction succeeds
-                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu vào database...';
-
-                        const response = await fetch('/Campaigns/RequestFullWithdrawal', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
-                            },
-                            body: JSON.stringify({
-                                campaignId: campaignId,
-                                txHash: tx.hash,
-                                reason: reason,
-                                address: userAccount
-                            })
-                        });
-
-                        if (response.ok) {
-                            showSuccess('✅ Yêu cầu rút vốn đã được ghi nhận thành công!');
-                            closeWithdrawalModal();
-                            setTimeout(() => window.location.reload(), 2000);
-                        } else {
-                            const errorData = await response.json();
-                            showError('⚠️ Blockchain thành công nhưng có lỗi khi lưu vào database: ' + (errorData.error || 'Unknown error'));
-                            // Still close modal since blockchain transaction succeeded
-                            closeWithdrawalModal();
-                            setTimeout(() => window.location.reload(), 3000);
-                        }
-                    } else {
-                        showError('❌ Giao dịch blockchain thất bại!');
-                    }
-                    // done - return early to avoid double-finally.
-                    return;
-                } catch (txSendErr) {
-                    // Fall through to outer catch to decode errors below
-                    throw txSendErr;
-                }
-
-                const receipt = await tx.wait();
-                if (receipt.status === 1) {
-                    // Step 2: Only save to database if blockchain transaction succeeds
-                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu vào database...';
-
-                    const response = await fetch('/Campaigns/RequestFullWithdrawal', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
-                        },
-                        body: JSON.stringify({
-                            campaignId: campaignId,
-                            txHash: tx.hash,
-                            reason: reason,
-                            address: userAccount
-                        })
-                    });
-
-                    if (response.ok) {
-                        showSuccess('✅ Yêu cầu rút vốn đã được ghi nhận thành công!');
-                        closeWithdrawalModal();
-                        setTimeout(() => window.location.reload(), 2000);
-                    } else {
-                        const errorData = await response.json();
-                        showError('⚠️ Blockchain thành công nhưng có lỗi khi lưu vào database: ' + (errorData.error || 'Unknown error'));
-                        // Still close modal since blockchain transaction succeeded
-                        closeWithdrawalModal();
-                        setTimeout(() => window.location.reload(), 3000);
-                    }
-                } else {
-                    showError('❌ Giao dịch blockchain thất bại!');
-                }
-            } catch (error) {
-                console.error('Withdrawal request error:', error);
-
-                // If it's a CALL_EXCEPTION from provider, try to extract reason/data
-                if (error && (error.code === 'CALL_EXCEPTION' || (error.error && error.error.code === 'CALL_EXCEPTION'))) {
-                    let errReason = error.reason || (error.error && error.error.reason) || '';
-                    const data = error.data || (error.error && error.error.data) || '';
-                    try {
-                        if (data && data !== '0x') {
-                            // data typically is: 0x08c379a0 + offset + string
-                            // try to decode utf8 string from returned data
-                            const reasonStr = ethers.utils.toUtf8String('0x' + data.slice(138));
-                            if (reasonStr) errReason = errReason || reasonStr;
-                        }
-                    } catch (decodeErr) {
-                        console.warn('Could not decode revert reason:', decodeErr);
-                    }
-                    return;
-                }
-
-                if (error && (error.code === 'INSUFFICIENT_FUNDS' || (error.error && error.error.code === 'INSUFFICIENT_FUNDS'))) {
-                    showError('❌ Không đủ BNB để trả phí gas');
-                    return;
-                }
-
-                if (error && (error.code === 4001 || error.code === 'ACTION_REJECTED' || (error.error && error.error.code === 4001))) {
-                    showError('❌ Giao dịch bị từ chối bởi người dùng');
-                    return;
-                }
-
-                // Fallback
-                handleTransactionError(error);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalText || '<i class="fas fa-paper-plane"></i> Gửi Yêu Cầu';
-            }
-        }
-
-        async function checkWithdrawalExecution(campaignId) {
-            try {
-                if (!await ensureWalletConnected()) return;
-                
-                const btn = event.target;
-                const originalText = btn.innerHTML;
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang kiểm tra...';
-
-                // Resolve authoritative pending withdrawal requestId from server API
-                let requestId = null;
-                try {
-                    const apiRes = await fetch(`/api/campaigns/${campaignId}/pending-withdrawal`);
-                    if (!apiRes.ok) {
-                        const txt = await apiRes.text();
-                        throw new Error(txt || 'Server không trả về pending withdrawal.');
-                    }
-                    const payload = await apiRes.json();
-                    if (payload && Number.isFinite(Number(payload.requestId))) {
-                        requestId = Number(payload.requestId);
-                    } else if (payload && Number.isFinite(Number(payload.requestIdOnChain))) {
-                        requestId = Number(payload.requestIdOnChain);
-                    }
-                } catch (apiErr) {
-                    console.error('Pending withdrawal API failed:', apiErr);
-                    showError('Không thể lấy requestId pending từ server. Vui lòng thử lại sau.');
-                    return;
-                }
-
-                if (requestId === null || !Number.isFinite(requestId)) {
-                    showError('Server không trả về requestId hợp lệ cho yêu cầu pending.');
-                    return;
-                }
-                
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang thực thi trên blockchain...';
-                const tx = await contract.checkAndExecuteWithdrawal(campaignId, requestId, { gasLimit: 300000 });
-                showSuccess('Đang kiểm tra kết quả vote...');
-                
-                const receipt = await tx.wait();
-                if (receipt.status === 1) {
-                    // Parse transaction logs to determine if withdrawal was approved or rejected
-                    let wasApproved = false;
-                    
-                    // Look for WithdrawalExecuted event in logs
-                    try {
-                        const withdrawalExecutedTopic = ethers.utils.id("WithdrawalExecuted(uint8,uint256,uint256,address,uint256)");
-                        const withdrawalLog = receipt.logs.find(log => log.topics[0] === withdrawalExecutedTopic);
-                        
-                        if (withdrawalLog) {
-                            // Decode the status from the log (first parameter)
-                            const decodedLog = contract.interface.decodeEventLog("WithdrawalExecuted", withdrawalLog.data, withdrawalLog.topics);
-                            const status = decodedLog.status; // 0 = Pending, 1 = Executed, 2 = Canceled
-                            wasApproved = (status === 1); // Executed = 1
-                        }
-                    } catch (parseError) {
-                        console.warn('Could not parse withdrawal execution result from logs:', parseError);
-                        // Default to false if we can't determine the result
-                        wasApproved = false;
-                    }
-
-                    // Update database with execution result
-                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang cập nhật database...';
-                    
-                    const response = await fetch('/Campaigns/UpdateWithdrawalStatus', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
-                        },
-                        body: JSON.stringify({
-                            campaignId: campaignId,
-                            requestId: requestId,
-                            txHash: tx.hash,
-                            wasApproved: wasApproved
-                        })
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (wasApproved) {
-                            showSuccess('✅ Withdrawal request đã được chấp thuận và thực thi thành công!');
-                        } else {
-                            showSuccess('❌ Withdrawal request đã bị từ chối. Số lần từ chối: ' + result.rejectionCount);
-                            if (result.rejectionCount >= 3) {
-                                showError('⚠️ Chiến dịch đã chuyển sang trạng thái Failed do quá 3 lần bị từ chối.');
-                            }
-                        }
-                    } else {
-                        const errorData = await response.json();
-                        showError('⚠️ Blockchain thành công nhưng có lỗi khi cập nhật database: ' + (errorData.error || 'Unknown error'));
-                    }
-                    
-                    setTimeout(() => window.location.reload(), 3000);
-                } else {
-                    showError('❌ Giao dịch blockchain thất bại!');
-                }
-            } catch (error) {
-                console.error('Check withdrawal error:', error);
-                handleTransactionError(error);
-            } finally {
-                const btn = event.target;
-                btn.disabled = false;
-                btn.innerHTML = originalText || '<i class="fas fa-check-circle"></i> Kiểm Tra Kết Quả Vote';
-            }
-        }
-
-        // Add profit functions
-        function addProfitToCampaign(campaignId) {
-            document.getElementById('profitModal').style.display = 'block';
-        }
-
-        function closeProfitModal() {
-            document.getElementById('profitModal').style.display = 'none';
-            document.getElementById('profitForm').reset();
-        }
-
-        async function submitProfitAddition(campaignId, amount) {
-            try {
-                if (!await ensureWalletConnected()) return;
-                
-                const btn = document.getElementById('submitProfit');
-                const originalText = btn.innerHTML;
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang thêm...';
-
-                const amountWei = ethers.utils.parseEther(amount.toString());
-                const tx = await contract.addProfit(campaignId, { value: amountWei, gasLimit: 250000 });
-                showSuccess('Đang thêm lợi nhuận...');
-                
-                const receipt = await tx.wait();
-                if (receipt.status === 1) {
-                    showSuccess('Thêm lợi nhuận thành công!');
-                    closeProfitModal();
-                    setTimeout(() => window.location.reload(), 2000);
-                } else {
-                    showError('Giao dịch thất bại!');
-                }
-            } catch (error) {
-                console.error('Add profit error:', error);
-                handleTransactionError(error);
-            } finally {
-                const btn = document.getElementById('submitProfit');
-                btn.disabled = false;
-                btn.innerHTML = originalText || '<i class="fas fa-plus"></i> Thêm Lợi Nhuận';
-            }
-        }
-
-        // Existing functions (updated)
-        function investInCampaign(campaignId) {
-            window.location.href = `/Campaigns/Dashboard/${campaignId}`;
-        }
-
-        function voteOnCampaign(campaignId) {
-            window.location.href = `/Campaigns/Dashboard/${campaignId}`;
-        }
-
-        function claimRefund(campaignId) {
-            if (confirm('Bạn có chắc chắn muốn claim lại tiền đầu tư không? Hành động này không thể hoàn tác.')) {
-                claimRefundFromContract(campaignId);
-            }
-        }
-
-        function claimProfits(campaignId) {
-            window.location.href = `/Campaigns/Dashboard/${campaignId}`;
-        }
-
-        async function claimRefundFromContract(campaignId) {
-            try {
-                if (!await ensureWalletConnected()) return;
-
-                const claimBtn = event.target;
-                const originalText = claimBtn.innerHTML;
-                claimBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-                claimBtn.disabled = true;
-
-                const tx = await contract.refund(campaignId, { gasLimit: 150000 });
-                showSuccess('Đã gửi giao dịch claim refund...');
-                
-                const receipt = await tx.wait();
-                if (receipt.status === 1) { 
-                    showSuccess('Claim refund thành công!');
-                    
-                    // Send result to backend
-                    const formData = new FormData();
-                    formData.append('CampaignId', campaignId);
-                    formData.append('TransactionHash', tx.hash);
-                    formData.append('InvestorAddress', userAccount || '');
-                    formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]')?.value || '');
-                    
-                    const response = await fetch('/Campaigns/ClaimRefund', {
-                        method: 'POST',
-                        body: formData,
-                        credentials: 'same-origin'
-                    });
-                    
-                    if (response.ok) {
-                        showSuccess('Hoàn tiền đã được ghi nhận trong hệ thống!');
-                    } else {
-                        const errorData = await response.json();
-                        showError(errorData.error || 'Có lỗi khi cập nhật refund trên server.');
-                    }
-                    
-                    setTimeout(() => window.location.reload(), 3000);
-                } else {
-                    showError('Giao dịch thất bại!');
-                }
-            } catch (error) {
-                console.error('Claim refund error:', error);
-                handleTransactionError(error);
-            } finally {
-                const claimBtn = event.target;
-                if (claimBtn) {
-                    claimBtn.disabled = false;
-                    claimBtn.innerHTML = originalText || '<i class="fas fa-money-bill-wave"></i> Claim Lại Tiền';
-                }
-            }
-        }
-
-        // Helper functions
-        async function ensureWalletConnected() {
-            if (!web3 || !contract || !userAccount) {
-                return await initializeWeb3();
-            }
-            return true;
-        }
-
-        // Auto-initialize Web3 when DOM ready (copy pattern from Dashboard)
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                await ensureEthersLoaded();
-
-                if (typeof window.ethereum !== 'undefined') {
-                    window.ethereum.on('accountsChanged', async (accounts) => {
-                        if (accounts.length === 0) {
-                            showError('MetaMask đã ngắt kết nối. Vui lòng kết nối lại!');
-                            userAccount = null; web3 = null; contract = null;
-                        } else { await initializeWeb3(); }
-                    });
-                    window.ethereum.on('chainChanged', async (chainId) => {
-                        const chainIdDec = parseInt(chainId, 16);
-                        if (chainIdDec !== CONTRACT_CONFIG.EXPECTED_CHAIN_ID_DEC) {
-                            showError('Vui lòng chuyển về BSC Testnet để sử dụng ứng dụng!');
-                        } else {
-                            await initializeWeb3();
-                        }
-                    });
-                    window.ethereum.on('disconnect', () => {
-                        showError('Kết nối MetaMask bị ngắt. Vui lòng kết nối lại!');
-                        userAccount = null; web3 = null; contract = null;
-                    });
-                }
-            } catch (error) {
-                console.error('Error initializing web3 on Details page:', error);
-            }
-
-            // Existing DOMContentLoaded handlers (withdrawal/profit forms and modal behavior)
-            // ...existing code...
-        });
-
-        function handleTransactionError(error) {
-            if (error.code === 4001) {
-                showError('Bạn đã hủy giao dịch.');
-            } else if (error.code === 'CALL_EXCEPTION') {
-                showError('Smart contract từ chối: ' + (error.reason || 'Lý do không xác định'));
-            } else if (error.message && error.message.includes('insufficient funds')) {
-                showError('Không đủ gas fee để thực hiện giao dịch.');
-            } else {
-                showError(error.message || 'Có lỗi xảy ra khi thực hiện giao dịch.');
-            }
-        }
-
-        function showSuccess(message) {
-            createNotification(message, 'success');
-        }
-
-        function showError(message) {
-            createNotification(message, 'error');
-        }
-
-        function createNotification(message, type) {
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.style.cssText = `
-                position: fixed; top: 20px; right: 20px; z-index: 10000;
-                padding: 15px 20px; border-radius: 8px; color: white; font-weight: 600;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3); max-width: 400px;
-                background: ${type === 'success' ? 'linear-gradient(135deg,#28a745,#20c997)' : 'linear-gradient(135deg,#dc3545,#e74c3c)'};
-            `;
-            notification.innerHTML = `
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
-                    <span>${message}</span>
-                </div>
-            `;
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 5000);
-        }
-
-        // Event listeners
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Auto-initialize Web3 if MetaMask is available
-            if (typeof window.ethereum !== 'undefined') {
-                await initializeWeb3();
-            }
-
-            // Handle form submissions
-            document.getElementById('withdrawalForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const reason = document.getElementById('withdrawalReason').value.trim();
-                if (!reason) {
-                    showError('Vui lòng nhập lý do rút vốn!');
-                    return;
-                }
-                await submitWithdrawalRequest(@Model.Id, reason);
-            });
-
-            document.getElementById('profitForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const amount = parseFloat(document.getElementById('profitAmount').value);
-                if (!amount || amount < 0.001) {
-                    showError('Vui lòng nhập số tiền hợp lệ (tối thiểu 0.001 BNB)!');
-                    return;
-                }
-                await submitProfitAddition(@Model.Id, amount);
-            });
-
-            // Close modals when clicking outside
-            window.onclick = function(event) {
-                const withdrawalModal = document.getElementById('withdrawalModal');
-                const profitModal = document.getElementById('profitModal');
-                if (event.target === withdrawalModal) {
-                    closeWithdrawalModal();
-                }
-                if (event.target === profitModal) {
-                    closeProfitModal();
-                }
-            };
-        });
-
-        // Add animation delays for staggered effect
-        document.addEventListener('DOMContentLoaded', function() {
-            const elements = document.querySelectorAll('.campaign-details-container > *');
-            elements.forEach((element, index) => {
-                element.style.animationDelay = `${index * 0.1}s`;
-            });
-        });
-    </script>
 }

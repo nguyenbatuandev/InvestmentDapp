@@ -356,6 +356,12 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
             request.status = WithdrawalStatus.Canceled;
             getDenialsRequestedWithDrawCampaigns[_campaignId]++;
             emit WithdrawalExecuted(WithdrawalStatus.Canceled, _campaignId, _requestId, request.requester, 0);
+            
+             // Nếu có 2 yêu cầu bị từ chối, chiến dịch sẽ bị hủy
+            if (getDenialsRequestedWithDrawCampaigns[_campaignId] >= 2) {
+                campaign.status = CampaignStatus.Failed;
+                emit CampaignStatusUpdated(_campaignId, uint8(CampaignStatus.Failed));
+            }
         }
     }
 
@@ -420,7 +426,7 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         Campaign storage campaign = campaigns[_campaignId];
 
         require(campaign.currentRaisedAmount > 0, "No funds to withdraw");
-        require(getDenialsRequestedWithDrawCampaigns[_campaignId] < 3, "Too many withdrawal requests denied");
+        require(getDenialsRequestedWithDrawCampaigns[_campaignId] < 2, "Too many withdrawal requests denied");
         require(campaign.status == CampaignStatus.Voting, "Campaign is not in voting status");
         require(campaign.currentRaisedAmount >= campaign.goalAmount, "Insufficient funds in campaign");
 
@@ -451,6 +457,7 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
 
         emit WithdrawalRequested(_campaignId, id, msg.sender, amountToWithdraw, _reason, voteEndTime);
     }
+
 
     // --- MISC (Treasury) ---
     function depositBNBTrading() external payable {

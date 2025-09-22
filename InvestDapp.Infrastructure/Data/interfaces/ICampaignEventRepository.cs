@@ -11,7 +11,7 @@ namespace InvestDapp.Infrastructure.Data.interfaces
         Task HandleCampaignStatusUpdatedAsync(BigInteger campaignId, byte newStatus);
         Task HandleWithdrawalExecutedAsync(string status, BigInteger campaignId, BigInteger requestId, string recipient, BigInteger amount);
         Task HandleWithdrawalRequestedAsync(BigInteger campaignId, BigInteger requestId, string requester,string txhash, BigInteger amount, string reason, DateTime voteEndTime , DateTime timeCreate);
-    Task HandleVoteCastAsync(BigInteger campaignId, BigInteger requestId, string voter, bool agree, BigInteger voteWeight, string txHash, DateTime time);
+        Task HandleVoteCastAsync(BigInteger campaignId, BigInteger requestId, string voter, bool agree, BigInteger voteWeight, string txHash, DateTime time);
         Task<bool> IsEventProcessedAsync(string transactionHash, string eventType);
         Task LogEventAsync(string eventType, string transactionHash, int blockNumber, int campaignId, string eventData);
     }

@@ -566,8 +566,7 @@ namespace InvestDapp.Controllers
                     .OrderByDescending(w => w.CreatedAt)
                     .FirstOrDefault();
 
-                // If we have a proper DB record with a valid Id (>0), return it immediately
-                if (pending != null && pending.Id > 0)
+                if (pending != null)
                 {
                     return Ok(new
                     {
@@ -616,14 +615,6 @@ namespace InvestDapp.Controllers
                             // ignore parse errors and continue to return DB pending or NotFound below
                         }
                     }
-                }
-
-                // If we got a DB pending record but its Id is 0, don't return 0 to the caller.
-                // Prefer returning NotFound so caller will try other fallbacks (frontend on-chain scan).
-                // If the DB pending record has no valid Id, we have already attempted to parse on-chain event above.
-                if (pending != null && pending.Id == 0)
-                {
-                    return NotFound(new { error = "Yêu cầu rút vốn đang chờ nhưng chưa có requestId hợp lệ (pending placeholder)." });
                 }
 
                 // If no pending found at all, return not found
@@ -692,9 +683,9 @@ namespace InvestDapp.Controllers
                     return BadRequest(new { error = "Đã có yêu cầu rút vốn đang chờ xử lý. Vui lòng chờ hoàn tất trước khi tạo yêu cầu mới." });
                 }
 
-                // Check withdrawal denial count (should not exceed 2, as 3rd denial will fail the campaign)
+                // Check past denial count: if already 2 rejections the campaign is failed and no new request allowed
                 var denialCount = campaign.WithdrawalRequests?.Count(w => w.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Rejected) ?? 0;
-                if (denialCount >= 3)
+                if (denialCount >= 2)
                 {
                     // Update campaign status to Failed if not already
                     if (campaign.Status != InvestDapp.Shared.Enums.CampaignStatus.Failed)
@@ -702,7 +693,7 @@ namespace InvestDapp.Controllers
                         campaign.Status = InvestDapp.Shared.Enums.CampaignStatus.Failed;
                         await _campaignPostService.UpdateCampaignAsync(campaign);
                     }
-                    return BadRequest(new { error = "Chiến dịch đã thất bại do quá 3 lần yêu cầu rút vốn bị từ chối" });
+                    return BadRequest(new { error = "Chiến dịch đã thất bại do 2 lần yêu cầu rút vốn bị từ chối" });
                 }
 
                 // Create withdrawal request record (blockchain transaction already completed)
@@ -716,7 +707,7 @@ namespace InvestDapp.Controllers
                     txHash = request.TxHash,
                     requestId = withdrawal?.Id,
                     denialCount = denialCount,
-                    warning = denialCount >= 2 ? "Cảnh báo: Đây là lần thử cuối. Nếu bị từ chối, chiến dịch sẽ chuyển sang trạng thái Failed." : null
+                    warning = denialCount == 1 ? "Lưu ý: Đây là lần thử thứ 2. Nếu bị từ chối lần nữa, chiến dịch sẽ chuyển sang trạng thái Failed." : null
                 });
             }
             catch (Exception ex)

@@ -5,838 +5,410 @@
 }
 
 @section Styles {
-    <style>
-        :root {
-            --bg-dark: #0a0e1a;
-            --bg-light: #12182b;
-            --primary: #00aaff;
-            --primary-light: #00c6ff;
-            --secondary: #272c44;
-            --text-color: #e0e0e0;
-            --text-muted: #8a93b3;
-            --success: #00e676;
-            --warning: #ffb800;
-            --danger: #ff6b6b;
-            --gradient: linear-gradient(135deg, var(--primary), var(--primary-light));
-            --font-body: 'Poppins', sans-serif;
-            --font-data: 'Fira Code', monospace;
-        }
-
-        body {
-            font-family: var(--font-body);
-            background-color: var(--bg-dark);
-            color: var(--text-color);
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-        }
-
-        .withdrawal-container {
-            max-width: 1400px;
-            margin: 120px auto 60px;
-            padding: 0 20px;
-        }
-
-        .page-header {
-            background: var(--gradient);
-            border-radius: 20px;
-            padding: 40px;
-            text-align: center;
-            color: white;
-            margin-bottom: 40px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .page-header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
-            background-size: 20px 20px;
-            animation: float 20s infinite linear;
-        }
-
-        @@keyframes float {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-
-        .header-content {
-            position: relative;
-            z-index: 2;
-        }
-
-        .page-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-        }
-
-        .page-subtitle {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            margin-bottom: 20px;
-        }
-
-        .breadcrumb-nav {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 20px;
-        }
-
-        .breadcrumb-nav a {
-            color: rgba(255,255,255,0.8);
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-
-        .breadcrumb-nav a:hover {
-            color: white;
-        }
-
-        .summary-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
-        }
-
-        .stat-card {
-            background: var(--bg-light);
-            border: 1px solid var(--secondary);
-            border-radius: 16px;
-            padding: 25px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0, 170, 255, 0.1);
-        }
-
-        .stat-icon {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-        }
-
-        .stat-icon.pending { color: var(--warning); }
-        .stat-icon.approved { color: var(--success); }
-        .stat-icon.rejected { color: var(--danger); }
-        .stat-icon.executed { color: var(--primary); }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--text-color);
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .withdrawal-grid {
-            display: grid;
-            gap: 30px;
-        }
-
-        .withdrawal-request-card {
-            background: var(--bg-light);
-            border: 1px solid var(--secondary);
-            border-radius: 20px;
-            padding: 30px;
-            transition: all 0.3s ease;
-        }
-
-        .withdrawal-request-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 35px rgba(0, 170, 255, 0.15);
-        }
-
-        .request-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--secondary);
-        }
-
-        .request-title {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .request-title h3 {
-            color: var(--primary);
-            margin: 0;
-            font-size: 1.3rem;
-        }
-
-        .request-amount {
-            font-family: var(--font-data);
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--success);
-        }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            border-radius: 25px;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .status-pending {
-            background: rgba(255, 184, 0, 0.2);
-            color: var(--warning);
-            border: 1px solid rgba(255, 184, 0, 0.3);
-        }
-
-        .status-approved {
-            background: rgba(0, 230, 118, 0.2);
-            color: var(--success);
-            border: 1px solid rgba(0, 230, 118, 0.3);
-        }
-
-        .status-rejected {
-            background: rgba(255, 107, 107, 0.2);
-            color: var(--danger);
-            border: 1px solid rgba(255, 107, 107, 0.3);
-        }
-
-        .status-executed {
-            background: rgba(0, 170, 255, 0.2);
-            color: var(--primary);
-            border: 1px solid rgba(0, 170, 255, 0.3);
-        }
-
-        .request-details {
-            display: grid;
-            grid-template-columns: 1fr 300px;
-            gap: 30px;
-            margin-bottom: 25px;
-        }
-
-        .request-info p {
-            margin-bottom: 15px;
-            font-size: 1rem;
-        }
-
-        .request-info strong {
-            color: var(--primary);
-        }
-
-        .requester-address {
-            font-family: var(--font-data);
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .voting-summary {
-            background: var(--bg-dark);
-            border-radius: 12px;
-            padding: 20px;
-        }
-
-        .voting-summary h4 {
-            color: var(--primary);
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .vote-progress {
-            margin-bottom: 15px;
-        }
-
-        .vote-stats {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-        }
-
-        .vote-agree { color: var(--success); }
-        .vote-disagree { color: var(--danger); }
-
-        .progress-bar {
-            height: 12px;
-            background: var(--secondary);
-            border-radius: 6px;
-            overflow: hidden;
-            margin-bottom: 15px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            transition: width 0.8s ease;
-        }
-
-        .progress-agree { background: var(--success); }
-        .progress-disagree { background: var(--danger); }
-
-        .vote-deadline {
-            text-align: center;
-            padding: 10px;
-            background: rgba(255, 184, 0, 0.1);
-            border-radius: 8px;
-            color: var(--warning);
-            font-size: 0.9rem;
-        }
-
-        .voters-section {
-            margin-top: 25px;
-        }
-
-        .voters-header {
-            display: flex;
-            justify-content: between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .voters-header h4 {
-            color: var(--primary);
-            margin: 0;
-        }
-
-        .voters-count {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .voters-list {
-            display: grid;
-            gap: 10px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .voter-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 15px;
-            background: var(--bg-dark);
-            border-radius: 8px;
-            border-left: 4px solid transparent;
-        }
-
-        .voter-item.agreed {
-            border-left-color: var(--success);
-        }
-
-        .voter-item.disagreed {
-            border-left-color: var(--danger);
-        }
-
-        .voter-address {
-            font-family: var(--font-data);
-            color: var(--text-color);
-            font-size: 0.9rem;
-        }
-
-        .voter-details {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .vote-weight {
-            font-family: var(--font-data);
-            color: var(--text-muted);
-            font-size: 0.8rem;
-        }
-
-        .vote-decision {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .vote-decision.agreed { color: var(--success); }
-        .vote-decision.disagreed { color: var(--danger); }
-
-        .vote-actions {
-            display: flex;
-            gap: 15px;
-            margin-top: 25px;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #dc3545, #e74c3c);
-            color: white;
-        }
-
-        .btn-primary {
-            background: var(--gradient);
-            color: white;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        .back-button {
-            background: var(--secondary);
-            color: var(--text-color);
-            margin-bottom: 20px;
-        }
-
-        .back-button:hover {
-            background: var(--primary);
-            color: white;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
-        }
-
-        .empty-state i {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-
-        .transaction-hash {
-            font-family: var(--font-data);
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            word-break: break-all;
-        }
-
-        /* Responsive */
-        @@media (max-width: 768px) {
-            .request-details {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-            
-            .summary-stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .page-title {
-                font-size: 2rem;
-            }
-        }
-    </style>
+<style>
+  /* ===== Reset viền & chống tràn ngang ===== */
+  *{box-sizing:border-box}
+  html,body{overflow-x:hidden}
+
+  /* ===== Tokens (giữ palette cũ) ===== */
+  :root{
+    --shell-w:1200px;
+    --pad:16px;
+    --radius:14px;
+    --muted:#8a93b3;
+    --pri:#00aaff; --pri2:#00c6ff;
+    --ok:#22c55e; --warn:#ffb800; --bad:#ff6b6b;
+    --card-bg:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    --card-br:1px solid rgba(255,255,255,.10);
+  }
+
+  /* ===== Khung trang ===== */
+  .wd-shell{
+    max-width:var(--shell-w);
+    margin:calc(var(--header-h) + 26px) auto 64px;
+    padding:0 var(--pad);
+  }
+
+  /* ===== Hero gọn, cân lề ===== */
+  .wd-hero{
+    border:var(--card-br); border-radius:var(--radius);
+    background:var(--card-bg); box-shadow:var(--shadow);
+    padding:20px;
+  }
+  .wd-hero-row{
+    display:flex; gap:14px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap;
+  }
+  .wd-title{margin:0; font:800 clamp(22px,2.5vw,30px)/1.15 'Plus Jakarta Sans',ui-sans-serif}
+  .wd-sub{margin:6px 0 0; color:var(--muted)}
+  .chip{
+    display:inline-flex; gap:8px; align-items:center; padding:8px 12px; border-radius:999px;
+    border:1px solid rgba(255,255,255,.14); font-weight:800; font-size:.9rem; white-space:nowrap;
+    background:rgba(255,255,255,.05)
+  }
+  .chip.pending{color:var(--warn); border-color:rgba(255,184,0,.35); background:rgba(255,184,0,.12)}
+  .chip.approved{color:var(--ok); border-color:rgba(34,197,94,.35); background:rgba(34,197,94,.10)}
+  .chip.rejected{color:var(--bad); border-color:rgba(255,107,107,.35); background:rgba(255,107,107,.10)}
+
+  /* ===== Nút quay lại ===== */
+  .wd-back{
+    display:inline-flex; gap:8px; align-items:center; font-weight:700; text-decoration:none;
+    border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:10px 12px; margin:14px 0 10px;
+    background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03)); color:var(--fg);
+  }
+  .wd-back:hover{transform:translateY(-1px)}
+
+  /* ===== Thống kê tóm tắt ===== */
+  .wd-stats{
+    display:grid; gap:12px; margin:14px 0 22px;
+    grid-template-columns:repeat(4,1fr);
+  }
+  @@media (max-width:992px){ .wd-stats{grid-template-columns:repeat(2,1fr)} }
+  @@media (max-width:520px){ .wd-stats{grid-template-columns:1fr} }
+  .wd-stat{
+    border:var(--card-br); border-radius:12px; background:rgba(255,255,255,.04); padding:14px; text-align:center
+  }
+  .wd-stat i{font-size:1.25rem; display:block; margin-bottom:6px; color:var(--pri)}
+  .wd-stat .v{font:800 1.25rem/1 ui-monospace,'Fira Code',monospace}
+  .wd-stat .l{color:var(--muted); font-size:.86rem}
+
+  /* ===== Danh sách requests ===== */
+  .wd-list{display:grid; gap:16px}
+  .wd-card{
+    border:var(--card-br); border-radius:var(--radius); background:var(--card-bg); box-shadow:var(--shadow);
+    padding:16px; opacity:0; transform:translateY(16px); animation:rise .5s ease forwards;
+  }
+
+  /* Header trong card */
+  .wd-card-h{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:12px;
+    border-bottom:1px solid rgba(255,255,255,.10); margin-bottom:12px;
+  }
+  .wd-card-h h3{margin:0; font-weight:800; font-size:1.05rem; display:flex; align-items:center; gap:10px; color:var(--pri)}
+  .badge{
+    display:inline-flex; gap:8px; align-items:center; padding:8px 12px; border-radius:999px; font-weight:800; font-size:.85rem;
+    border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.05);
+  }
+  .badge.pending{color:var(--warn); background:rgba(255,184,0,.12); border-color:rgba(255,184,0,.3)}
+  .badge.approved{color:var(--ok); background:rgba(34,197,94,.12); border-color:rgba(34,197,94,.28)}
+  .badge.rejected{color:var(--bad); background:rgba(255,107,107,.12); border-color:rgba(255,107,107,.3)}
+  .badge.executed{color:var(--pri); background:rgba(0,170,255,.12); border-color:rgba(0,170,255,.28)}
+
+  /* Nội dung 2 cột trong card (mô tả | tóm tắt vote) */
+  .wd-grid{display:grid; gap:16px; grid-template-columns:1fr 320px}
+  @@media (max-width:900px){ .wd-grid{grid-template-columns:1fr} }
+
+  .info p{margin:0 0 10px}
+  .info strong{color:var(--pri)}
+  .addr{font-family:'Fira Code',monospace; font-size:.9rem; color:var(--muted); word-break:break-all}
+  .tx{font-family:'Fira Code',monospace; font-size:.8rem; color:var(--muted); word-break:break-all}
+
+  .vote-box{border:1px solid rgba(255,255,255,.10); border-radius:12px; background:rgba(255,255,255,.03); padding:14px}
+  .vote-box h4{margin:0 0 8px; color:var(--pri); text-align:center; font-weight:800; font-size:1rem}
+  .vote-stats{display:flex; justify-content:space-between; font-size:.9rem; margin-bottom:6px}
+  .agree{color:var(--ok)} .disagree{color:var(--bad)}
+  .bar{height:12px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); overflow:hidden}
+  .fill-agree{height:100%; float:left; background:linear-gradient(90deg, #28a745, #20c997)}
+  .fill-disagree{height:100%; float:left; background:linear-gradient(90deg, #dc3545, #e74c3c)}
+  .deadline{
+    margin-top:8px; text-align:center; color:var(--warn); font-size:.88rem; background:rgba(255,184,0,.10);
+    border-radius:8px; padding:8px
+  }
+
+  /* Danh sách voter */
+  .voters{margin-top:12px}
+  .v-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px}
+  .v-head h4{margin:0; color:var(--pri); font-size:1rem}
+  .v-list{display:grid; gap:8px; max-height:300px; overflow:auto}
+  .v-item{
+    display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-radius:10px;
+    background:rgba(255,255,255,.03); border-left:4px solid transparent;
+  }
+  .v-item.agreed{border-left-color:var(--ok)} .v-item.disagreed{border-left-color:var(--bad)}
+  .v-addr{font-family:'Fira Code',monospace; font-size:.9rem}
+  .v-meta{display:flex; gap:12px; align-items:center; color:var(--muted); font-size:.82rem}
+
+  /* Vùng actions */
+  .actions{display:flex; gap:10px; margin-top:10px; flex-wrap:wrap}
+  .btn{
+    display:inline-flex; gap:8px; align-items:center; padding:12px 16px; border-radius:10px; border:0; font-weight:800; cursor:pointer;
+    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); color:var(--fg);
+  }
+  .btn-success{background:linear-gradient(135deg,#28a745,#20c997); color:#fff}
+  .btn-danger{background:linear-gradient(135deg,#dc3545,#e74c3c); color:#fff}
+  .btn[disabled]{opacity:.6; cursor:not-allowed}
+
+  /* Empty */
+  .empty{
+    border:var(--card-br); border-radius:var(--radius); background:var(--card-bg); box-shadow:var(--shadow);
+    text-align:center; padding:48px 16px; color:var(--muted)
+  }
+  .empty i{font-size:3rem; opacity:.6; display:block; margin-bottom:10px}
+
+  /* Hiệu ứng vào */
+  @@keyframes rise{to{opacity:1; transform:translateY(0)}}
+</style>
 }
 
-<div class="withdrawal-container">
-    <!-- Page Header -->
-    <div class="page-header">
-        <div class="header-content">
-            <h1 class="page-title">
-                <i class="fas fa-vote-yea"></i>
-                Yêu cầu rút vốn
-            </h1>
-            <p class="page-subtitle">@Model.Name</p>
-            <div class="breadcrumb-nav">
-                <a href="@Url.Action("Index")">Tất cả dự án</a>
-                <i class="fas fa-chevron-right"></i>
-                <a href="@Url.Action("Details", new { id = Model.Id })">@Model.Name</a>
-                <i class="fas fa-chevron-right"></i>
-                <span>Yêu cầu rút vốn</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Back Button -->
-    <a href="@Url.Action("Dashboard", new { id = Model.Id })" class="btn back-button">
-        <i class="fas fa-arrow-left"></i>
-        Quay lại Dashboard
-    </a>
-
-    <!-- Summary Statistics -->
-    <div class="summary-stats">
-        @{
-            var pendingCount = Model.WithdrawalRequests?.Count(r => r.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending) ?? 0;
-            var approvedCount = Model.WithdrawalRequests?.Count(r => r.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Approved) ?? 0;
-            var rejectedCount = Model.WithdrawalRequests?.Count(r => r.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Rejected) ?? 0;
-            var executedCount = Model.WithdrawalRequests?.Count(r => r.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Executed) ?? 0;
-        }
-
-        <div class="stat-card">
-            <div class="stat-icon pending">
-                <i class="fas fa-clock"></i>
-            </div>
-            <div class="stat-value">@pendingCount</div>
-            <div class="stat-label">Đang chờ bỏ phiếu</div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon approved">
-                <i class="fas fa-thumbs-up"></i>
-            </div>
-            <div class="stat-value">@approvedCount</div>
-            <div class="stat-label">Đã được phê duyệt</div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon rejected">
-                <i class="fas fa-thumbs-down"></i>
-            </div>
-            <div class="stat-value">@rejectedCount</div>
-            <div class="stat-label">Đã bị từ chối</div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon executed">
-                <i class="fas fa-check-circle"></i>
-            </div>
-            <div class="stat-value">@executedCount</div>
-            <div class="stat-label">Đã thực thi</div>
-        </div>
-    </div>
-
-    <!-- Withdrawal Requests -->
-    <div class="withdrawal-grid">
-        @if (Model.WithdrawalRequests?.Any() == true)
+<div class="wd-shell">
+  <!-- HERO -->
+  <section class="wd-hero">
+    <div class="wd-hero-row">
+      <div>
+        <h1 class="wd-title"><i class="fas fa-vote-yea"></i> Yêu cầu rút vốn</h1>
+        <p class="wd-sub">@Model.Name</p>
+      </div>
+      <div>
+        @switch (Model.ApprovalStatus)
         {
-            @foreach (var request in Model.WithdrawalRequests.OrderByDescending(r => r.CreatedAt))
-            {
-                <div class="withdrawal-request-card">
-                    <!-- Request Header -->
-                    <div class="request-header">
-                        <div class="request-title">
-                            <h3>
-                                <i class="fas fa-money-bill-wave"></i>
-                                Yêu cầu rút vốn #@request.Id
-                            </h3>
-                            @* <div class="request-amount">@request.Amount.ToString("F2") BNB</div> *@
-                        </div>
-                        <div>
-                            @{
-                                string statusClass = "";
-                                string statusText = "";
-                                string statusIcon = "";
-                                
-                                switch (request.Status)
-                                {
-                                    case InvestDapp.Shared.Enums.WithdrawalStatus.Pending:
-                                        statusClass = "status-pending";
-                                        statusText = "Đang bỏ phiếu";
-                                        statusIcon = "fa-clock";
-                                        break;
-                                    case InvestDapp.Shared.Enums.WithdrawalStatus.Approved:
-                                        statusClass = "status-approved";
-                                        statusText = "Đã phê duyệt";
-                                        statusIcon = "fa-thumbs-up";
-                                        break;
-                                    case InvestDapp.Shared.Enums.WithdrawalStatus.Rejected:
-                                        statusClass = "status-rejected";
-                                        statusText = "Đã từ chối";
-                                        statusIcon = "fa-thumbs-down";
-                                        break;
-                                    case InvestDapp.Shared.Enums.WithdrawalStatus.Executed:
-                                        statusClass = "status-executed";
-                                        statusText = "Đã thực thi";
-                                        statusIcon = "fa-check-circle";
-                                        break;
-                                }
-                            }
-                            <span class="status-badge @statusClass">
-                                <i class="fas @statusIcon"></i>
-                                @statusText
-                            </span>
-                        </div>
-                    </div>
+          case InvestDapp.Shared.Enums.ApprovalStatus.Pending:
+            <span class="chip pending"><i class="fas fa-clock"></i> Chờ duyệt</span>; break;
+          case InvestDapp.Shared.Enums.ApprovalStatus.Approved:
+            <span class="chip approved"><i class="fas fa-check-circle"></i> Đã duyệt</span>; break;
+          case InvestDapp.Shared.Enums.ApprovalStatus.Rejected:
+            <span class="chip rejected"><i class="fas fa-times-circle"></i> Từ chối</span>; break;
+        }
+      </div>
+    </div>
+  </section>
 
-                    <!-- Request Details -->
-                    <div class="request-details">
-                        <div class="request-info">
-                            <p><strong>Lý do rút vốn:</strong></p>
-                            <p>@request.Reason</p>
-                            
-                            <p><strong>Người yêu cầu:</strong></p>
-                            <p class="requester-address">@request.RequesterAddress</p>
-                            
-                            <p><strong>Thời gian tạo:</strong> @request.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
-                            
-                            @if (!string.IsNullOrEmpty(request.txhash))
-                            {
-                                <p><strong>Transaction Hash:</strong></p>
-                                <p class="transaction-hash">@request.txhash</p>
-                            }
-                        </div>
+  <!-- Back -->
+  <a href="@Url.Action("Dashboard", new { id = Model.Id })" class="wd-back">
+    <i class="fas fa-arrow-left"></i> Quay lại Dashboard
+  </a>
 
-                        <div class="voting-summary">
-                            <h4>
-                                <i class="fas fa-chart-pie"></i>
-                                Kết quả bỏ phiếu
-                            </h4>
-                            
-                            @{ 
-                                var campaignTotal = (Model.TotalInvestmentsOnCompletion > 0) ? Model.TotalInvestmentsOnCompletion : Model.CurrentRaisedAmount;
-                                var agreeBNB = Convert.ToDouble(request.AgreeVotes) / 1000000000000000000.0;
-                                var disagreeBNB = Convert.ToDouble(request.DisagreeVotes) / 1000000000000000000.0;
-                                var agreePercentage = (campaignTotal > 0) ? (agreeBNB / campaignTotal * 100.0) : 0.0;
-                                var disagreePercentage = (campaignTotal > 0) ? (disagreeBNB / campaignTotal * 100.0) : 0.0;
-                            }
+  <!-- Summary Statistics -->
+  <section class="wd-stats">
+    @{
+      var pendingCount = Model.WithdrawalRequests?.Count(r => r.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending) ?? 0;
+      var approvedCount = Model.WithdrawalRequests?.Count(r => r.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Approved) ?? 0;
+      var rejectedCount = Model.WithdrawalRequests?.Count(r => r.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Rejected) ?? 0;
+      var executedCount = Model.WithdrawalRequests?.Count(r => r.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Executed) ?? 0;
+    }
+    <div class="wd-stat">
+      <i class="fas fa-clock"></i>
+      <div class="v">@pendingCount</div>
+      <div class="l">Đang chờ bỏ phiếu</div>
+    </div>
+    <div class="wd-stat">
+      <i class="fas fa-thumbs-up"></i>
+      <div class="v">@approvedCount</div>
+      <div class="l">Đã được phê duyệt</div>
+    </div>
+    <div class="wd-stat">
+      <i class="fas fa-thumbs-down"></i>
+      <div class="v">@rejectedCount</div>
+      <div class="l">Đã bị từ chối</div>
+    </div>
+    <div class="wd-stat">
+      <i class="fas fa-check-circle"></i>
+      <div class="v">@executedCount</div>
+      <div class="l">Đã thực thi</div>
+    </div>
+  </section>
 
-                            <div class="vote-progress">
-                                <div class="vote-stats">
-                                    <span class="vote-agree">
-                                        <i class="fas fa-thumbs-up"></i>
-                                        Ủng hộ: @agreePercentage.ToString("F1")%
-                                    </span>
-                                    <span class="vote-disagree">
-                                        <i class="fas fa-thumbs-down"></i>
-                                        Phản đối: @disagreePercentage.ToString("F1")%
-                                    </span>
-                                </div>
-                                
-                                <div class="progress-bar">
-                                    @{ var _agree = agreePercentage; var _disagree = disagreePercentage; var _agreeStr = _agree.ToString("F2", System.Globalization.CultureInfo.InvariantCulture); var _disagreeStr = _disagree.ToString("F2", System.Globalization.CultureInfo.InvariantCulture); }
-                                    <div class="progress-fill progress-agree" style="width: @_agreeStr%; float: left;"></div>
-                                    <div class="progress-fill progress-disagree" style="width: @_disagreeStr%; float: left;"></div>
-                                </div>
-                            </div>
-
-                            @if (request.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending)
-                            {
-                                <div class="vote-deadline">
-                                    <i class="fas fa-hourglass-half"></i>
-                                    Hết hạn: @request.VoteEndTime.ToString("dd/MM/yyyy HH:mm")
-                                </div>
-                            }
-                        </div>
-                    </div>
-
-                    <!-- Voters List -->
-                    @if (request.Votes?.Any() == true)
-                    {
-                        <div class="voters-section">
-                            <div class="voters-header">
-                                <h4>
-                                    <i class="fas fa-users"></i>
-                                    Danh sách người bỏ phiếu
-                                </h4>
-                                <span class="voters-count">(@request.Votes.Count người đã vote)</span>
-                            </div>
-                            
-                            <div class="voters-list">
-                                @foreach (var vote in request.Votes.OrderByDescending(v => v.CreatedAt))
-                                {
-                                    <div class="voter-item @(vote.Agreed ? "agreed" : "disagreed")">
-                                        <span class="voter-address">
-                                            @vote.VoterAddress.Substring(0, 6)...@vote.VoterAddress.Substring(vote.VoterAddress.Length - 4)
-                                        </span>
-                                        <div class="voter-details">
-                                            <span class="vote-weight">@vote.VoteWeight.ToString("F2") BNB</span>
-                                            <span class="vote-decision @(vote.Agreed ? "agreed" : "disagreed")">
-                                                <i class="fas @(vote.Agreed ? "fa-thumbs-up" : "fa-thumbs-down")"></i>
-                                                @(vote.Agreed ? "Ủng hộ" : "Phản đối")
-                                            </span>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    }
-
-                    <!-- Vote Actions -->
-                    @if (request.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending)
-                    {
-                        var currentUserWallet = User.FindFirst("WalletAddress")?.Value;
-                        var isInvestor = Model.Investments?.Any(i => i.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase)) ?? false;
-                        var hasVoted = request.Votes?.Any(v => v.VoterAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase)) ?? false;
-
-                        <div class="vote-actions">
-                            @if (isInvestor && !hasVoted && DateTime.UtcNow < request.VoteEndTime)
-                            {
-                                <button class="btn btn-success" onclick="voteOnWithdrawal(@request.Id, true)">
-                                    <i class="fas fa-thumbs-up"></i>
-                                    Ủng hộ yêu cầu
-                                </button>
-                                <button class="btn btn-danger" onclick="voteOnWithdrawal(@request.Id, false)">
-                                    <i class="fas fa-thumbs-down"></i>
-                                    Phản đối yêu cầu
-                                </button>
-                            }
-                            else if (hasVoted)
-                            {
-                                <div style="padding: 12px 24px; background: rgba(0, 170, 255, 0.1); border-radius: 8px; color: var(--primary);">
-                                    <i class="fas fa-check-circle"></i>
-                                    Bạn đã bỏ phiếu cho yêu cầu này
-                                </div>
-                            }
-                            else if (DateTime.UtcNow >= request.VoteEndTime)
-                            {
-                                <div style="padding: 12px 24px; background: rgba(255, 107, 107, 0.1); border-radius: 8px; color: var(--danger);">
-                                    <i class="fas fa-times-circle"></i>
-                                    Đã hết hạn bỏ phiếu
-                                </div>
-                            }
-                            else
-                            {
-                                <div style="padding: 12px 24px; background: rgba(255, 184, 0, 0.1); border-radius: 8px; color: var(--warning);">
-                                    <i class="fas fa-lock"></i>
-                                    Chỉ nhà đầu tư mới có thể bỏ phiếu
-                                </div>
-                            }
-                        </div>
-                    }
-                </div>
+  <!-- Withdrawal Requests -->
+  <section class="wd-list">
+    @if (Model.WithdrawalRequests?.Any() == true)
+    {
+      @foreach (var request in Model.WithdrawalRequests.OrderByDescending(r => r.CreatedAt))
+      {
+        <article class="wd-card">
+          <!-- Header -->
+          <div class="wd-card-h">
+            <h3><i class="fas fa-money-bill-wave"></i> Yêu cầu rút vốn #@request.Id</h3>
+            @{
+              string sClass = "", sIcon = "", sText = "";
+              switch (request.Status)
+              {
+                case InvestDapp.Shared.Enums.WithdrawalStatus.Pending:   sClass="pending";  sIcon="fa-clock";        sText="Đang bỏ phiếu"; break;
+                case InvestDapp.Shared.Enums.WithdrawalStatus.Approved:  sClass="approved"; sIcon="fa-thumbs-up";    sText="Đã phê duyệt";  break;
+                case InvestDapp.Shared.Enums.WithdrawalStatus.Rejected:  sClass="rejected"; sIcon="fa-thumbs-down";  sText="Đã từ chối";    break;
+                case InvestDapp.Shared.Enums.WithdrawalStatus.Executed:  sClass="executed"; sIcon="fa-check-circle"; sText="Đã thực thi";   break;
+              }
             }
-        }
-        else
-        {
-            <div class="empty-state">
-                <i class="fas fa-inbox"></i>
-                <h3>Chưa có yêu cầu rút vốn nào</h3>
-                <p>Dự án này chưa có yêu cầu rút vốn nào được tạo.</p>
+            <span class="badge @sClass"><i class="fas @sIcon"></i> @sText</span>
+          </div>
+
+          <!-- Body -->
+          <div class="wd-grid">
+            <!-- Info -->
+            <div class="info">
+              <p><strong>Lý do rút vốn:</strong></p>
+              <p>@request.Reason</p>
+
+              <p><strong>Người yêu cầu:</strong></p>
+              <p class="addr">@request.RequesterAddress</p>
+
+              <p><strong>Thời gian tạo:</strong> @request.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+
+              @if (!string.IsNullOrEmpty(request.txhash))
+              {
+                <p><strong>Transaction Hash:</strong></p>
+                <p class="tx">@request.txhash</p>
+              }
             </div>
-        }
-    </div>
+
+            <!-- Vote summary -->
+            <div class="vote-box">
+              <h4><i class="fas fa-chart-pie"></i> Kết quả bỏ phiếu</h4>
+              @{
+                var campaignTotal = (Model.TotalInvestmentsOnCompletion > 0) ? Model.TotalInvestmentsOnCompletion : Model.CurrentRaisedAmount;
+                var agreeBNB = Convert.ToDouble(request.AgreeVotes) / 1000000000000000000.0;
+                var disagreeBNB = Convert.ToDouble(request.DisagreeVotes) / 1000000000000000000.0;
+                var agreePct = (campaignTotal > 0) ? (agreeBNB / campaignTotal * 100.0) : 0.0;
+                var disagreePct = (campaignTotal > 0) ? (disagreeBNB / campaignTotal * 100.0) : 0.0;
+                var _agreeStr = agreePct.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                var _disagreeStr = disagreePct.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+              }
+              <div class="vote-stats">
+                <span class="agree"><i class="fas fa-thumbs-up"></i> Ủng hộ: @agreePct.ToString("F1")%</span>
+                <span class="disagree"><i class="fas fa-thumbs-down"></i> Phản đối: @disagreePct.ToString("F1")%</span>
+              </div>
+              <div class="bar">
+                <div class="fill-agree" style="width:@_agreeStr%"></div>
+                <div class="fill-disagree" style="width:@_disagreeStr%"></div>
+              </div>
+
+              @if (request.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending)
+              {
+                <div class="deadline">
+                  <i class="fas fa-hourglass-half"></i> Hết hạn: @request.VoteEndTime.ToString("dd/MM/yyyy HH:mm")
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Voters -->
+          @if (request.Votes?.Any() == true)
+          {
+            <div class="voters">
+              <div class="v-head">
+                <h4><i class="fas fa-users"></i> Danh sách người bỏ phiếu</h4>
+                <span class="muted">@request.Votes.Count người đã vote</span>
+              </div>
+              <div class="v-list">
+                @foreach (var vote in request.Votes.OrderByDescending(v => v.CreatedAt))
+                {
+                  <div class="v-item @(vote.Agreed ? "agreed" : "disagreed")">
+                    <span class="v-addr">@vote.VoterAddress.Substring(0, 6)...@vote.VoterAddress.Substring(vote.VoterAddress.Length - 4)</span>
+                    <div class="v-meta">
+                      <span>@vote.VoteWeight.ToString("F2") BNB</span>
+                      <span class="@(vote.Agreed ? "agree" : "disagree")">
+                        <i class="fas @(vote.Agreed ? "fa-thumbs-up" : "fa-thumbs-down")"></i>
+                        @(vote.Agreed ? "Ủng hộ" : "Phản đối")
+                      </span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </article>
+      }
+    }
+    else
+    {
+      <div class="empty">
+        <i class="fas fa-inbox"></i>
+        <h3>Chưa có yêu cầu rút vốn nào</h3>
+        <p>Dự án này chưa có yêu cầu rút vốn nào được tạo.</p>
+      </div>
+    }
+  </section>
 </div>
 
 @section Scripts {
-    <script>
-        function voteOnWithdrawal(requestId, agree) {
-            const actionText = agree ? 'ủng hộ' : 'phản đối';
-            if (!confirm(`Bạn có chắc chắn muốn ${actionText} yêu cầu rút vốn này không? Hành động này không thể hoàn tác.`)) return;
+<script>
+  function voteOnWithdrawal(requestId, agree) {
+      const actionText = agree ? 'ủng hộ' : 'phản đối';
+      if (!confirm(`Bạn có chắc chắn muốn ${actionText} yêu cầu rút vốn này không? Hành động này không thể hoàn tác.`)) return;
 
-            // Always request authoritative pending withdrawal id from server API before voting.
-            (async () => {
-                try {
-                    const apiRes = await fetch(`/api/campaigns/@Model.Id/pending-withdrawal`);
-                    if (!apiRes.ok) {
-                        const txt = await apiRes.text();
-                        throw new Error(txt || 'Không thể lấy thông tin yêu cầu rút vốn từ server.');
-                    }
-                    const payload = await apiRes.json();
-                    const resolved = Number(payload?.requestId ?? payload?.requestIdOnChain ?? requestId);
-                    if (!Number.isFinite(resolved)) throw new Error('Server không trả về requestId hợp lệ.');
+      // Always request authoritative pending withdrawal id from server API before voting.
+      (async () => {
+          try {
+              const apiRes = await fetch(`/api/campaigns/@Model.Id/pending-withdrawal`);
+              if (!apiRes.ok) {
+                  const txt = await apiRes.text();
+                  throw new Error(txt || 'Không thể lấy thông tin yêu cầu rút vốn từ server.');
+              }
+              const payload = await apiRes.json();
+              const resolved = Number(payload?.requestId ?? payload?.requestIdOnChain ?? requestId);
+              if (!Number.isFinite(resolved)) throw new Error('Server không trả về requestId hợp lệ.');
 
-                    await voteOnWithdrawalRequest(resolved, agree);
-                } catch (err) {
-                    console.error('Failed to resolve pending withdrawal from API:', err);
-                    alert(err.message || 'Không thể xác định yêu cầu rút vốn. Vui lòng thử lại sau.');
-                    window.location.reload();
-                }
-            })();
-        }
+              await voteOnWithdrawalRequest(resolved, agree);
+          } catch (err) {
+              console.error('Failed to resolve pending withdrawal from API:', err);
+              alert(err.message || 'Không thể xác định yêu cầu rút vốn. Vui lòng thử lại sau.');
+              window.location.reload();
+          }
+      })();
+  }
 
-        async function voteOnWithdrawalRequest(requestId, agree) {
-            try {
-                // Kiểm tra MetaMask và kết nối web3
-                if (typeof window.ethereum === 'undefined') {
-                    alert('Vui lòng cài đặt MetaMask để thực hiện giao dịch!');
-                    return;
-                }
+  async function voteOnWithdrawalRequest(requestId, agree) {
+      try {
+          // Kiểm tra MetaMask và kết nối web3
+          if (typeof window.ethereum === 'undefined') {
+              alert('Vui lòng cài đặt MetaMask để thực hiện giao dịch!');
+              return;
+          }
 
-                // ensure web3/contract initialized (Dashboard/Details pattern)
-                if (!web3 || !contract || !userAccount) {
-                    const ok = await initializeWeb3();
-                    if (!ok) return;
-                }
+          // ensure web3/contract initialized (Dashboard/Details pattern)
+          if (!window.web3 || !window.contract || !window.userAccount) {
+              const ok = (typeof initializeWeb3 === 'function') ? await initializeWeb3() : false;
+              if (!ok) return;
+          }
 
-                // Preflight: ensure caller is an on-chain investor and has non-zero balance
-                let onChainBalanceWei = ethers.constants.Zero;
-                try {
-                    onChainBalanceWei = await contract.campaignInvestorBalances(@Model.Id, userAccount);
-                    if (!onChainBalanceWei || onChainBalanceWei.eq(ethers.constants.Zero)) {
-                        alert('Chỉ nhà đầu tư mới có quyền bỏ phiếu (on-chain balance = 0).');
-                        return;
-                    }
-                } catch (readErr) {
-                    console.error('Không thể kiểm tra on-chain investor balance:', readErr);
-                    alert('Không thể kiểm tra trạng thái nhà đầu tư trên blockchain. Vui lòng thử lại.');
-                    return;
-                }
+          // Preflight: ensure caller is an on-chain investor and has non-zero balance
+          let onChainBalanceWei = ethers.constants.Zero;
+          try {
+              onChainBalanceWei = await contract.campaignInvestorBalances(@Model.Id, userAccount);
+              if (!onChainBalanceWei || onChainBalanceWei.eq(ethers.constants.Zero)) {
+                  alert('Chỉ nhà đầu tư mới có quyền bỏ phiếu (on-chain balance = 0).');
+                  return;
+              }
+          } catch (readErr) {
+              console.error('Không thể kiểm tra on-chain investor balance:', readErr);
+              alert('Không thể kiểm tra trạng thái nhà đầu tư trên blockchain. Vui lòng thử lại.');
+              return;
+          }
 
-                // Hiển thị loading state
-                const voteButtons = document.querySelectorAll(`[onclick*="voteOnWithdrawal(${requestId}"]`);
-                voteButtons.forEach(btn => {
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-                });
+          // Hiển thị loading state
+          const voteButtons = document.querySelectorAll(`[onclick*="voteOnWithdrawal(${requestId}"]`);
+          voteButtons.forEach(btn => {
+              btn.disabled = true;
+              btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+          });
 
-                // Send the transaction (contract already weights votes by on-chain balances)
-                try {
-                    const tx = await contract.voteForWithdrawal(@Model.Id, requestId, agree, { gasLimit: 150000 });
-                    alert('Bỏ phiếu đã được gửi, chờ xác nhận...');
-                    const receipt = await tx.wait();
-                    if (receipt.status === 1) {
-                        alert('Bỏ phiếu thành công!');
-                        window.location.reload();
-                    } else {
-                        alert('Giao dịch bị thất bại trên blockchain.');
-                        window.location.reload();
-                    }
-                } catch (txErr) {
-                    console.error('Lỗi gửi giao dịch vote:', txErr);
-                    if (txErr && (txErr.code === 4001 || txErr.code === 'ACTION_REJECTED')) alert('Bạn đã huỷ giao dịch.');
-                    else alert('Có lỗi khi gửi giao dịch. Vui lòng thử lại.');
-                    window.location.reload();
-                }
+          // Send the transaction (contract already weights votes by on-chain balances)
+          try {
+              const tx = await contract.voteForWithdrawal(@Model.Id, requestId, agree, { gasLimit: 150000 });
+              alert('Bỏ phiếu đã được gửi, chờ xác nhận...');
+              const receipt = await tx.wait();
+              if (receipt.status === 1) {
+                  alert('Bỏ phiếu thành công!');
+                  window.location.reload();
+              } else {
+                  alert('Giao dịch bị thất bại trên blockchain.');
+                  window.location.reload();
+              }
+          } catch (txErr) {
+              console.error('Lỗi gửi giao dịch vote:', txErr);
+              if (txErr && (txErr.code === 4001 || txErr.code === 'ACTION_REJECTED')) alert('Bạn đã huỷ giao dịch.');
+              else alert('Có lỗi khi gửi giao dịch. Vui lòng thử lại.');
+              window.location.reload();
+          }
 
-            } catch (error) {
-                console.error('Lỗi khi bỏ phiếu:', error);
-                alert('Có lỗi xảy ra khi bỏ phiếu. Vui lòng thử lại!');
-                window.location.reload();
-            }
-        }
+      } catch (error) {
+          console.error('Lỗi khi bỏ phiếu:', error);
+          alert('Có lỗi xảy ra khi bỏ phiếu. Vui lòng thử lại!');
+          window.location.reload();
+      }
+  }
 
-        // Animation cho các cards
-        document.addEventListener('DOMContentLoaded', function() {
-            const cards = document.querySelectorAll('.withdrawal-request-card');
-            cards.forEach((card, index) => {
-                card.style.animationDelay = `${index * 0.1}s`;
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                card.style.animation = 'slideInUp 0.6s ease-out forwards';
-            });
-        });
-
-        // CSS animation keyframes
-        const style = document.createElement('style');
-        style.textContent = `
-            @@keyframes slideInUp {
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-        `;
-        document.head.appendChild(style);
-    </script>
+  // Nhẹ hiệu ứng vào theo thứ tự
+  document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.wd-card');
+    cards.forEach((card, i)=> card.style.animationDelay = `${i*0.06}s`);
+  });
+</script>
 }

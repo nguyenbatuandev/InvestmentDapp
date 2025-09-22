@@ -189,9 +189,10 @@
     {
       var reqCount = Model.WithdrawalRequests?.Count() ?? 0;
       var firstPending = Model.WithdrawalRequests?.Where(r => r.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending).OrderByDescending(r => r.CreatedAt).FirstOrDefault();
-      var currentUserWallet = User.FindFirst("WalletAddress")?.Value;
-      var userInvestment = Model.Investments?.FirstOrDefault(i => i.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase));
-      var userVoteWeight = userInvestment?.Amount ?? 0;
+  var currentUserWallet = User.FindFirst("WalletAddress")?.Value;
+  // Sum all investments by this wallet so multiple investments contribute to voting weight
+  var userInvestments = Model.Investments?.Where(i => i.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase));
+  var userVoteWeight = (userInvestments != null && userInvestments.Any()) ? userInvestments.Sum(i => i.Amount) : 0.0;
       var hasVoted = firstPending?.Votes?.Any(v => v.VoterAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase)) ?? false;
       <div class="card" style="padding:10px; border-radius:12px; background: rgba(255,255,255,.02);">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
@@ -202,8 +203,6 @@
   {
     var pending = firstPending; // local copy for null-safety in Razor
     var campaignTotal = (Model.TotalInvestmentsOnCompletion > 0) ? Model.TotalInvestmentsOnCompletion : Model.CurrentRaisedAmount;
-    // Prefer to compute agree/disagree totals from Vote rows (which are stored in BNB as double).
-    // If Vote rows are not loaded or empty, fall back to the stored AgreeVotes/DisagreeVotes (which are in wei) and convert to BNB.
     var agreeBNB = 0.0;
     var disagreeBNB = 0.0;
     if (pending?.Votes != null && pending.Votes.Any())
@@ -215,14 +214,12 @@
       }
       catch
       {
-        // defensive: if VoteWeight sums fail for some reason, fall back to stored tallies below
         agreeBNB = 0.0;
         disagreeBNB = 0.0;
       }
     }
     if (agreeBNB == 0.0 && disagreeBNB == 0.0)
     {
-      // fallback: WithdrawalRequest stores tallies in wei (decimal(38,0)). Convert to BNB for human display.
   agreeBNB = (pending!.AgreeVotes != 0) ? Convert.ToDouble(pending!.AgreeVotes) / 1000000000000000000.0 : 0.0;
   disagreeBNB = (pending!.DisagreeVotes != 0) ? Convert.ToDouble(pending!.DisagreeVotes) / 1000000000000000000.0 : 0.0;
     }
@@ -239,7 +236,7 @@
         }
         // compute current user's weight as percent of campaign total (if investor)
         var userPct = 0.0;
-        if (userInvestment != null && campaignTotal > 0)
+        if (userInvestments != null && userInvestments.Any() && campaignTotal > 0)
         {
           userPct = (userVoteWeight / campaignTotal) * 100.0;
           if (userPct < 0) userPct = 0; if (userPct > 100) userPct = 100;
@@ -247,8 +244,8 @@
           <div style="margin-top:8px; text-align:left;">
           <div style="display:flex; gap:12px; align-items:flex-start;">
             <div style="flex:1; min-width:0;">
-              <div style="font-weight:700;">#@pending.Id</div>
-              @{ var req = pending.RequesterAddress ?? string.Empty; var rShort = req.Length > 10 ? req.Substring(0,6)+"..."+req.Substring(req.Length-4) : req; }
+              <div style="font-weight:700;">#@(pending?.Id ?? 0)</div>
+              @{ var req = (pending?.RequesterAddress) ?? string.Empty; var rShort = req.Length > 10 ? req.Substring(0,6)+"..."+req.Substring(req.Length-4) : req; }
               <div style="font-size:0.82rem; color:var(--muted);">@rShort</div>
 
               <div style="margin-top:8px;">
@@ -271,7 +268,7 @@
               <div style="font-weight:800; color:var(--ok);">@userVoteWeight.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)</div>
               <div style="font-size:0.78rem; color:var(--muted);">@userPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%</div>
 
-              @if (userInvestment != null)
+              @if (userInvestments != null && userInvestments.Any())
               {
                 if (hasVoted)
                 {
@@ -280,8 +277,8 @@
                 else
                 {
                   <div style="display:flex; gap:6px; width:100%;">
-                    <button class="btn btn-ok" onclick="voteOnWithdrawal(@pending.Id, true)" style="flex:1; padding:6px 8px; font-size:0.82rem;">👍</button>
-                    <button class="btn btn-bad" onclick="voteOnWithdrawal(@pending.Id, false)" style="flex:1; padding:6px 8px; font-size:0.82rem;">👎</button>
+                    <button class="btn btn-ok" onclick="voteOnWithdrawal(@(pending?.Id ?? 0), true)" style="flex:1; padding:6px 8px; font-size:0.82rem;">👍</button>
+                    <button class="btn btn-bad" onclick="voteOnWithdrawal(@(pending?.Id ?? 0), false)" style="flex:1; padding:6px 8px; font-size:0.82rem;">👎</button>
                   </div>
                 }
               }
@@ -410,6 +407,42 @@
           <div class="stat">
             <small>Thời gian còn lại</small>
             <div id="countdown" class="val">--:--:--:--</div>
+            @* If campaign is in Voting and there's a pending withdrawal, display voting countdown (VoteEndTime or CreatedAt+2d). Otherwise display campaign end countdown (existing behavior below). *@
+            @{
+                long voteEndMs = 0;
+                if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Voting)
+                {
+                    var pending = Model.WithdrawalRequests?.Where(r => r.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending)
+                                    .OrderByDescending(r => r.CreatedAt).FirstOrDefault();
+          if (pending != null)
+          {
+            var end = (pending.VoteEndTime != default(DateTime) && pending.VoteEndTime > pending.CreatedAt) ? pending.VoteEndTime : pending.CreatedAt.AddDays(2);
+            voteEndMs = ((DateTimeOffset)end).ToUnixTimeMilliseconds();
+          }
+                }
+            }
+            <script>
+              (function(){
+                try{
+                  var countdownEl = document.getElementById('countdown');
+                  if (!countdownEl) return;
+                  var showVote = @((Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Voting && (Model.WithdrawalRequests?.Any(r => r.Status == InvestDapp.Shared.Enums.WithdrawalStatus.Pending) ?? false)) ? "true" : "false");
+                  if (showVote === 'true'){
+                    var endTs = @voteEndMs;
+                    function pad(n){ return String(n).padStart(2,'0'); }
+                    function updateVote(){
+                      var now = Date.now(); var diff = endTs - now;
+                      if (diff <= 0){ countdownEl.textContent = 'ĐÃ KẾT THÚC'; clearInterval(iv); return; }
+                      var d = Math.floor(diff/86400000); var h = Math.floor((diff%86400000)/3600000); var m = Math.floor((diff%3600000)/60000); var s = Math.floor((diff%60000)/1000);
+                      countdownEl.textContent = d + 'd ' + pad(h) + ':' + pad(m) + ':' + pad(s);
+                    }
+                    updateVote(); var iv = setInterval(updateVote, 1000);
+                    return;
+                  }
+                  // fallback: existing campaign end countdown (server-side rendered value is used elsewhere in the page)
+                }catch(e){ console.warn('Countdown init error', e); }
+              })();
+            </script>
           </div>
           <div class="stat">
             <small>Trạng thái</small>
@@ -561,8 +594,6 @@
           }
         </section>
       </div>
-
-      @* Voting list removed from main area — voting UI now lives in the aside compact summary *@
     </main>
   </div>
 </div>
@@ -583,7 +614,7 @@
             });
         }
     </script>
-    <script src="~/js/contract-config.js"></script>
+    <script src="~/js/contract-config.js?v=@DateTime.UtcNow.Ticks"></script>
     <script>
         /* ==== Giữ nguyên toàn bộ logic/ID như bản cũ ==== */
 
@@ -621,22 +652,65 @@
                 showError('Không thể tải thư viện blockchain. Vui lòng kiểm tra kết nối internet!');
             }
 
-            // Countdown
-            const countdownElement = document.getElementById('countdown');
-            const campaignEndDate = @(((DateTimeOffset)Model.EndTime).ToUnixTimeMilliseconds());
-            const updateCountdown = () => {
-                const now = Date.now();
-                const distance = campaignEndDate - now;
-                if (distance < 0) { clearInterval(countdownInterval); countdownElement.textContent = "ĐÃ KẾT THÚC"; return; }
-                const d = Math.floor(distance / 86400000);
-                const h = Math.floor((distance % 86400000) / 3600000);
-                const m = Math.floor((distance % 3600000) / 60000);
-                const s = Math.floor((distance % 60000) / 1000);
-                const pad = n => n.toString().padStart(2,'0');
-                countdownElement.textContent = `${pad(d)}d ${pad(h)}h ${pad(m)}m ${pad(s)}s`;
-            };
-            updateCountdown();
-            const countdownInterval = setInterval(updateCountdown, 1000);
+          // Countdown: prefer pending withdrawal's vote window (RequestedAt + 2 days) when a pending request exists
+          @{
+            // Find latest pending withdrawal request (explicit numeric status == 0 per requirement)
+            var latestPendingForCountdown = Model.WithdrawalRequests?
+              .Where(r => (int)r.Status == 0)
+              .OrderByDescending(r => r.CreatedAt)
+              .FirstOrDefault();
+
+            long voteEndMs = 0;
+        var pendingIdForDebug = latestPendingForCountdown != null ? latestPendingForCountdown.Id : 0;
+        var pendingCreatedUtcMs = 0L;
+        if (latestPendingForCountdown != null)
+        {
+          var created = latestPendingForCountdown.CreatedAt;
+          DateTime createdUtc;
+          if (created.Kind == DateTimeKind.Utc)
+          {
+            createdUtc = created;
+          }
+          else if (created.Kind == DateTimeKind.Local)
+          {
+            createdUtc = created.ToUniversalTime();
+          }
+          else
+          {
+            createdUtc = DateTime.SpecifyKind(created, DateTimeKind.Utc);
+          }
+          var endUtc = createdUtc.AddHours(48);
+          voteEndMs = ((DateTimeOffset)endUtc).ToUnixTimeMilliseconds();
+          pendingCreatedUtcMs = ((DateTimeOffset)createdUtc).ToUnixTimeMilliseconds();
+        }
+            else
+            {
+                      var endUtc = Model.EndTime.Kind == DateTimeKind.Utc ? Model.EndTime : Model.EndTime.ToUniversalTime();
+                      voteEndMs = ((DateTimeOffset)endUtc).ToUnixTimeMilliseconds();
+            }
+          }
+
+      const countdownElement = document.getElementById('countdown');
+      const voteEndDate = @voteEndMs;
+  // Debug: print server-calculated vote end and client now (ms) and which pending request was used
+  try {
+    console.log('[DEBUG] pendingId:', @pendingIdForDebug, ' pendingCreatedUtcMs:', @pendingCreatedUtcMs, ' voteEndDate (ms):', voteEndDate, ' clientNow (ms):', Date.now());
+    try { console.log('[DEBUG] pendingCreatedUtc ISO:', new Date(@pendingCreatedUtcMs).toISOString()); } catch(e){}
+  } catch(e){}
+      const updateCountdown = () => {
+        if (!countdownElement) return;
+        const now = Date.now();
+        const distance = voteEndDate - now;
+        if (distance <= 0) { clearInterval(countdownInterval); countdownElement.textContent = "ĐÃ KẾT THÚC"; return; }
+        const d = Math.floor(distance / 86400000);
+        const h = Math.floor((distance % 86400000) / 3600000);
+        const m = Math.floor((distance % 3600000) / 60000);
+        const s = Math.floor((distance % 60000) / 1000);
+        const pad = n => n.toString().padStart(2,'0');
+        countdownElement.textContent = `${pad(d)}d ${pad(h)}h ${pad(m)}m ${pad(s)}s`;
+      };
+      updateCountdown();
+      const countdownInterval = setInterval(updateCountdown, 1000);
 
             // Investment calc
             const investmentAmountInput = document.getElementById('investment-amount');
@@ -756,24 +830,49 @@
 
                 // verify campaign on chain
                 const c = await contract.campaigns(campaignId);
-                if (c.id.toString() === '0') throw new Error('Campaign not found on blockchain');
-                const now = Math.floor(Date.now()/1000);
-                if (c.endTime.toNumber() < now) throw new Error('Campaign has ended');
+                console.log('Investing', {campaignId, amount});
 
-                const amountWei = ethers.utils.parseEther(amount.toString());
-                const tx = await contract.invest(campaignId, { value: amountWei, gasLimit: 300000 });
+
+                const now = Math.floor(Date.now()/1000);
+        const amountWei = ethers.utils.parseEther(amount.toString());
+
+        // Preflight simulate the invest call to get revert reasons early (prevents sending a tx that will fail)
+        try {
+          await contract.callStatic.invest(campaignId, { value: amountWei, gasLimit: 300000 });
+        } catch (simError) {
+          console.error('Simulated invest failed:', simError);
+          const reason = simError?.reason || simError?.data?.message || simError?.message || String(simError);
+          // map common solidity require messages to friendly VN messages
+          if (String(reason).toLowerCase().includes('campaign is not active')) showError('Chiến dịch hiện không ở trạng thái hoạt động (Active). Không thể đầu tư.');
+          else if (String(reason).toLowerCase().includes('campaign has ended')) showError('Chiến dịch đã kết thúc (endTime đã quá hạn).');
+          else if (String(reason).toLowerCase().includes('investment too small') || String(reason).toLowerCase().includes('min_investment')) showError('Số tiền đầu tư nhỏ hơn mức tối thiểu cho phép.');
+          else showError('Giao dịch mô phỏng thất bại: ' + (reason || 'Lý do không xác định'));
+          return;
+        }
+
+        const tx = await contract.invest(campaignId, { value: amountWei, gasLimit: 300000 });
                 showSuccess('Giao dịch đã gửi! Đang chờ xác nhận...');
                 const receipt = await tx.wait();
                 if (receipt.status === 1){
                     showSuccess('Đầu tư thành công!');
                     amountInput.value = ''; document.getElementById('ownership-percentage').textContent = '0';
                 }else{ showError('Giao dịch thất bại!'); }
-            } catch (error) {
-                console.error(error);
-                if (error.code === 4001) showError('Bạn đã huỷ giao dịch.');
-                else if (String(error.message).includes('insufficient')) showError('Không đủ BNB.');
-                else showError(error.message || 'Có lỗi xảy ra khi đầu tư.');
-            } finally {
+      } catch (error) {
+        console.error('Invest error:', error);
+        // Special-case: campaign not initialized on-chain
+        const msg = String(error && (error.message || error)).toLowerCase();
+        if (error && error.code === 4001) {
+          showError('Bạn đã huỷ giao dịch.');
+        } else if (msg.includes('insufficient')) {
+          showError('Không đủ BNB.');
+        } else if (msg.includes('campaign not found on blockchain') || msg.includes('campaignnotfound') || msg.includes('withdrawal request not found')) {
+          // Friendly guidance for users when the on-chain campaign is missing
+          showError('Chiến dịch chưa được khởi tạo trên blockchain. Vui lòng liên hệ quản trị viên để triển khai campaign trên chain (createCampaign) để bật chức năng đầu tư.');
+        } else {
+          showError(error.message || 'Có lỗi xảy ra khi đầu tư.');
+        }
+      } 
+      finally {
                 const investBtn = document.getElementById('invest-btn');
                 if (investBtn){ investBtn.disabled = false; investBtn.innerHTML = originalText || 'Đầu tư ngay'; }
             }
@@ -788,8 +887,8 @@
             return el;
         }
 
-        function voteOnCampaign(campaignId){ if (confirm('Bạn có muốn tham gia bỏ phiếu cho dự án này không?')) window.location.href = `/Campaigns/Vote/${campaignId}`; }
-        function claimRefund(campaignId){ if (confirm('Bạn chắc claim lại tiền?')) claimRefundFromContract(campaignId); }
+        function voteOnCampaign(campaignId){window.location.href = `/Campaigns/Vote/${campaignId}`; }
+        function claimRefund(campaignId){claimRefundFromContract(campaignId); }
 
         async function claimRefundFromContract(campaignId){
             let originalText='';
@@ -863,8 +962,6 @@
 
     function voteOnWithdrawal(requestId, agree){
       const actionText = agree ? 'ủng hộ' : 'phản đối';
-      if (!confirm(`Bạn có chắc chắn muốn ${actionText} yêu cầu rút vốn này không?`)) return;
-
       (async () => {
         try {
           // Always resolve the authoritative pending withdrawal id from server API
@@ -1208,65 +1305,116 @@
             }, 15000);
         }
 
-        function updateTransactionDisplay(newInvestments) {
-            if (!newInvestments || newInvestments.length === 0) return;
-            
-            const container = document.querySelector('#recent-transactions .row');
-            if (!container) return;
-            
-            // Create HTML for new transactions
-            let newHtml = '';
-            newInvestments.forEach(investment => {
-                const avatarText = investment.investorAddress.substring(2, 4).toUpperCase();
-                const shortAddr = investment.investorAddress.substring(0, 6) + '...' + investment.investorAddress.slice(-4);
-                const timestamp = new Date(investment.timestamp).toLocaleString('vi-VN');
-                const txHash = investment.transactionHash;
-                const bscLink = txHash ? `<a href="https://testnet.bscscan.com/tx/${txHash}" target="_blank" 
-                                            style="color: var(--primary); text-decoration:none; font-weight:600; transition: opacity .2s;"
-                                            onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-                                            <i class="fas fa-external-link-alt"></i> BSCScan
-                                         </a>` : '';
-                
-                newHtml += `
-                    <div class="transaction-item new-transaction" style="display:flex; align-items:center; gap: var(--sp-3); padding: var(--sp-2); border:1px solid var(--primary); border-radius: 10px; margin-bottom: var(--sp-2); background: rgba(108,240,255,.1); animation: newTransactionGlow 2s ease-out;">
-                        <div class="avatar" style="width:40px; height:40px; border-radius:50%; background: conic-gradient(from 180deg,#6cf0ff,#9b6bff,#6cf0ff); display:grid; place-items:center; color:#04121c; font-weight:900; font-size: var(--fs-1);">
-                            ${avatarText}
-                        </div>
-                        <div style="flex:1; min-width:0;">
-                            <div style="display:flex; align-items:center; gap: var(--sp-2); margin-bottom:4px;">
-                                <span style="font-weight:700; font-size: var(--fs-2);">${shortAddr}</span>
-                                <span style="color:var(--ok); font-weight:800; font-family: 'Fira Code', monospace;">+${parseFloat(investment.amount).toFixed(3)} BNB</span>
-                                <span style="background: var(--primary); color: var(--dark); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700;">MỚI</span>
-                            </div>
-                            <div style="color: var(--muted); font-size: var(--fs-1); display:flex; align-items:center; gap: var(--sp-2);">
-                                <span><i class="fas fa-clock"></i> ${timestamp}</span>
-                                ${bscLink}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            // Add new transactions to the top
-            container.insertAdjacentHTML('afterbegin', newHtml);
-            
-            // Remove "MỚI" badge and animation after 5 seconds
-            setTimeout(() => {
-                const newTransactions = container.querySelectorAll('.new-transaction');
-                newTransactions.forEach(item => {
-                    item.classList.remove('new-transaction');
-                    item.style.border = '1px solid var(--border)';
-                    item.style.background = 'rgba(255,255,255,.02)';
-                    item.style.animation = 'none';
-                    const newBadge = item.querySelector('span:last-child');
-                    if (newBadge && newBadge.textContent === 'MỚI') {
-                        newBadge.remove();
-                    }
-                });
-            }, 10000);
-            
-            console.log(`Added ${newInvestments.length} new transaction(s)`);
+    function updateTransactionDisplay(newInvestments) {
+      if (!newInvestments || newInvestments.length === 0) return;
+
+      // Try to find existing container (.row). If it doesn't exist (page initially had no transactions),
+      // create it and replace the placeholder content so first realtime item shows up without reload.
+      let container = document.querySelector('#recent-transactions .row');
+      const hostSection = document.getElementById('recent-transactions');
+      if (!container) {
+        if (!hostSection) return;
+        // Robust placeholder removal: find any descendant nodes that contain the placeholder text and remove them
+        try {
+                    const placeholderText = 'Chưa có giao dịch';
+          const allDesc = Array.from(hostSection.querySelectorAll('*'));
+          let removedAny = false;
+          allDesc.forEach(node => {
+            try {
+              if (!node || !node.textContent) return;
+              const txt = node.textContent.trim();
+              if (txt && txt.includes(placeholderText)) {
+                // remove the nearest block wrapper (div or section) to avoid leaving empty fragments
+                const wrapper = node.closest('div') || node;
+                if (wrapper && wrapper.parentNode) {
+                  wrapper.parentNode.removeChild(wrapper);
+                  removedAny = true;
+                  console.debug('[DEBUG] Removed placeholder node for transactions:', wrapper);
+                }
+              }
+            } catch (_) { /* ignore per-node errors */ }
+          });
+          if (!removedAny) {
+            console.debug('[DEBUG] No placeholder found to remove in #recent-transactions');
+            // Fallback: hide any immediate centered wrapper that contains an icon + muted paragraph
+            try {
+              const candidates = Array.from(hostSection.children || []).filter(n => n.nodeType === 1);
+              candidates.forEach(c => {
+                const p = c.querySelector && c.querySelector('p.muted');
+                if (p && p.textContent && p.textContent.trim().includes('Chưa có giao dịch')) {
+                  c.style.display = 'none';
+                  removedAny = true;
+                  console.debug('[DEBUG] Hid fallback placeholder wrapper', c);
+                }
+              });
+            } catch (e) { /* ignore */ }
+          }
+        } catch (remErr) {
+          console.warn('Placeholder removal failed', remErr);
         }
+        container = document.createElement('div');
+        container.className = 'row';
+        // insert the container after the section header (.h2) if present, otherwise at top
+        const header = hostSection.querySelector('.h2');
+        if (header && header.parentNode === hostSection) {
+          if (header.nextSibling) hostSection.insertBefore(container, header.nextSibling);
+          else hostSection.appendChild(container);
+        } else {
+          hostSection.insertBefore(container, hostSection.firstChild);
+        }
+      }
+
+      // Create HTML for new transactions
+      let newHtml = '';
+      newInvestments.forEach(investment => {
+        const avatarText = investment.investorAddress.substring(2, 4).toUpperCase();
+        const shortAddr = investment.investorAddress.substring(0, 6) + '...' + investment.investorAddress.slice(-4);
+        const timestamp = new Date(investment.timestamp).toLocaleString('vi-VN');
+        const txHash = investment.transactionHash;
+        const bscLink = txHash ? `<a href="https://testnet.bscscan.com/tx/${txHash}" target="_blank" 
+                      style="color: var(--primary); text-decoration:none; font-weight:600; transition: opacity .2s;"
+                      onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                      <i class="fas fa-external-link-alt"></i> BSCScan
+                     </a>` : '';
+
+        newHtml += `
+          <div class="transaction-item new-transaction" style="display:flex; align-items:center; gap: var(--sp-3); padding: var(--sp-2); border:1px solid var(--primary); border-radius: 10px; margin-bottom: var(--sp-2); background: rgba(108,240,255,.1); animation: newTransactionGlow 2s ease-out;">
+            <div class="avatar" style="width:40px; height:40px; border-radius:50%; background: conic-gradient(from 180deg,#6cf0ff,#9b6bff,#6cf0ff); display:grid; place-items:center; color:#04121c; font-weight:900; font-size: var(--fs-1);">
+              ${avatarText}
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; align-items:center; gap: var(--sp-2); margin-bottom:4px;">
+                <span style="font-weight:700; font-size: var(--fs-2);">${shortAddr}</span>
+                <span style="color:var(--ok); font-weight:800; font-family: 'Fira Code', monospace;">+${parseFloat(investment.amount).toFixed(3)} BNB</span>
+                <span class="new-badge" style="background: var(--primary); color: var(--dark); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-left:8px;">MỚI</span>
+              </div>
+              <div style="color: var(--muted); font-size: var(--fs-1); display:flex; align-items:center; gap: var(--sp-2);">
+                <span><i class="fas fa-clock"></i> ${timestamp}</span>
+                ${bscLink}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      // Add new transactions to the top
+      container.insertAdjacentHTML('afterbegin', newHtml);
+
+      // Remove "MỚI" badge and animation after 10 seconds
+      setTimeout(() => {
+        const newTransactions = container.querySelectorAll('.new-transaction');
+        newTransactions.forEach(item => {
+          item.classList.remove('new-transaction');
+          item.style.border = '1px solid var(--border)';
+          item.style.background = 'rgba(255,255,255,.02)';
+          item.style.animation = 'none';
+          const newBadge = item.querySelector('.new-badge');
+          if (newBadge) newBadge.remove();
+        });
+      }, 10000);
+
+      console.log(`Added ${newInvestments.length} new transaction(s)`);
+    }
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {

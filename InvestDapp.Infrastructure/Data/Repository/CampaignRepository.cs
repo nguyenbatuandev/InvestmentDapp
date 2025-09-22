@@ -174,25 +174,23 @@ namespace InvestDapp.Infrastructure.Data.Repository
 
             if (dto.WasApproved)
             {
-                // Withdrawal approved - set campaign to Completed
                 campaign.Status = CampaignStatus.Completed;
+                campaign.TotalInvestmentsOnCompletion = campaign.CurrentRaisedAmount;
             }
             else
             {
-                // Withdrawal rejected - count rejections
                 rejectionCount = await _context.WithdrawalRequests
-                    .CountAsync(wr => wr.CampaignId == dto.CampaignId && wr.Status == WithdrawalStatus.Rejected);
+                    .CountAsync(wr => wr.CampaignId == dto.CampaignId && (wr.Status == WithdrawalStatus.Rejected || wr.Id == withdrawalRequest.Id));
 
-                if (rejectionCount >= 3)
+                if (rejectionCount >= 2)
                 {
-                    // Too many rejections - set campaign to Failed
                     campaign.Status = CampaignStatus.Failed;
                 }
                 else
                 {
-                    // Not enough rejections yet - set back to Active
-                    campaign.Status = CampaignStatus.Active;
+                    campaign.Status = CampaignStatus.Voting;
                 }
+                campaign.DeniedWithdrawalRequestCount = rejectionCount;
             }
 
             _context.WithdrawalRequests.Update(withdrawalRequest);
