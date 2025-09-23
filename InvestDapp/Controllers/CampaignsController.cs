@@ -890,7 +890,7 @@ namespace InvestDapp.Controllers
                     return Unauthorized(new { error = "Wallet address not found" });
                 }
 
-                var userCampaigns = await _campaignPostService.GetUserCampaignsAsync(wallet);
+                var userCampaigns = await _campaignPostService.GetInvestedCampaignsAsync(wallet);
 
                 var transactions = new List<object>();
                 double totalInvestedWei = 0;

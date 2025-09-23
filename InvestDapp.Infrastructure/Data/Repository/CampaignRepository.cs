@@ -98,6 +98,24 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<Campaign>> GetCampaignsByInvestorAsync(string investorAddress)
+        {
+            var investorLower = investorAddress.ToLower();
+            var campaigns = await _context.Campaigns
+                .Include(c => c.category)
+                .Include(c => c.Posts)
+                .Include(c => c.Investments)
+                .Include(c => c.Profits)
+                .Include(c => c.Refunds)
+                .Include(c => c.WithdrawalRequests)
+                    .ThenInclude(wr => wr.Votes)
+                .Where(c => c.Investments.Any(i => i.InvestorAddress.ToLower() == investorLower))
+                .OrderByDescending(c => c.CreatedAt)
+                .ToListAsync();
+
+            return campaigns;
+        }
+
         public async Task<IEnumerable<Campaign>> GetCampaignsForAdminAsync(CampaignStatus? status = null, ApprovalStatus? approvalStatus = null, int page = 1, int pageSize = 10)
         {
             var query = _context.Campaigns

@@ -227,6 +227,11 @@ namespace InvestDapp.Application.CampaignService
             return await _campaignRepository.GetCampaignsByOwnerAsync(ownerAddress);
         }
 
+        public async Task<IEnumerable<Campaign>> GetInvestedCampaignsAsync(string investorAddress)
+        {
+            return await _campaignRepository.GetCampaignsByInvestorAsync(investorAddress);
+        }
+
         public async Task<bool> UpdateCampaignAsync(Campaign campaign)
         {
             return await _repository.UpdateCampaignAsync(campaign);
