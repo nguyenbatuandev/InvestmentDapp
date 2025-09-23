@@ -77,9 +77,10 @@ namespace Invest.Application.EventService
                     long currentChunkEndBlock = Math.Min(toBlock, currentChunkStartBlock + _config.MaxBlockRange - 1);
 
                     _logger.LogInformation("--> Processing chunk from block {Start} to {End}", currentChunkStartBlock, currentChunkEndBlock);
+                    var chunkSucceeded = true;
 
                     // 2. THÊM ĐOẠN CODE LẮNG NGHE INVESTMENT TẠI ĐÂY
-                    await ProcessEventsInRange<InvestmentReceivedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "InvestmentReceived", async (log) =>
+                    var okInvestment = await ProcessEventsInRange<InvestmentReceivedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "InvestmentReceived", async (log) =>
                     {
                         var evt = log.Event;
                         var txHash = log.Log.TransactionHash;
@@ -98,34 +99,42 @@ namespace Invest.Application.EventService
                         var user = await _dbContext.Users
                             .FirstOrDefaultAsync(x => x.WalletAddress == evt.Investor.ToString());
 
-                        var alreadyJoined = await _dbContext.Participants
-                            .AnyAsync(p => p.ConversationId == condersationID.ConversationId && p.UserId == user.ID);
-
-                        if (!alreadyJoined)
+                        if (condersationID == null || user == null)
                         {
-                            await _conversationService.AddMemberToGroupAsync(condersationID.ConversationId, user.ID, user.ID);
+                            _logger.LogWarning("InvestmentReceived handler: missing conversation or user for campaign {CampaignId} investor={Investor} tx={Tx}", evt.CampaignId, evt.Investor, txHash);
+                        }
+                        else
+                        {
+                            var alreadyJoined = await _dbContext.Participants
+                                .AnyAsync(p => p.ConversationId == condersationID.ConversationId && p.UserId == user.ID);
+
+                            if (!alreadyJoined)
+                            {
+                                await _conversationService.AddMemberToGroupAsync(condersationID.ConversationId, user.ID, user.ID);
+                            }
+
+                            // Ghi log sự kiện đã xử lý
+                            await _eventRepository.LogEventAsync("InvestmentReceived", log.Log.TransactionHash, (int)log.Log.BlockNumber.Value, (int)evt.CampaignId, JsonSerializer.Serialize(evt));
+                            var noti = new CreateNotificationRequest
+                            {
+                                UserId = user.ID,
+                                Type = "InvestmentReceived",
+                                Title = "Đầu tư thành công",
+                                Message = $"Bạn đã đầu tư {evt.Amount} vào chiến dịch ID {evt.CampaignId}. Cảm ơn bạn đã đồng hành cùng chúng tôi!",
+                            };
+                            var notifyResult = await _notificationService.CreateNotificationAsync(noti);
                         }
 
                         // Gọi repository để cập nhật DB
                         await _eventRepository.HandleInvestmentReceivedAsync(evt.CampaignId, evt.Investor, evt.Amount, evt.CurrentRaisedAmount,txHash, dateTime);
-                       
-                        // Ghi log sự kiện đã xử lý
-                        await _eventRepository.LogEventAsync("InvestmentReceived", log.Log.TransactionHash, (int)log.Log.BlockNumber.Value, (int)evt.CampaignId, JsonSerializer.Serialize(evt));
-                        var noti = new CreateNotificationRequest
-                        {
-                            UserId = user.ID,
-                            Type = "InvestmentReceived",
-                            Title = "Đầu tư thành công",
-                            Message = $"Bạn đã đầu tư {evt.Amount} vào chiến dịch ID {evt.CampaignId}. Cảm ơn bạn đã đồng hành cùng chúng tôi!",
-                        };
-                        var notifyResult = await _notificationService.CreateNotificationAsync(noti);
 
 
                     }, cancellationToken);
+                    if (!okInvestment) chunkSucceeded = false;
 
 
                     // 3. Xử lý WithdrawalRequestCreated
-                    await ProcessEventsInRange<ProfitAddedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "ProfitAdded", async (log) =>
+                    var okProfit = await ProcessEventsInRange<ProfitAddedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "ProfitAdded", async (log) =>
                     {
                         var evt = log.Event;
                         var txHash = log.Log.TransactionHash;
@@ -147,19 +156,21 @@ namespace Invest.Application.EventService
 
                         await _eventRepository.LogEventAsync("ProfitAdded", txHash, (int)log.Log.BlockNumber.Value, (int)evt.CampaignId, JsonSerializer.Serialize(evt));
                     }, cancellationToken);
+                    if (!okProfit) chunkSucceeded = false;
 
 
                     // 4. Xử lý WithdrawalRequestCreated
-                    await ProcessEventsInRange<CampaignStatusUpdatedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "CampaignStatusUpdated", async (log) =>
+                    var okStatus = await ProcessEventsInRange<CampaignStatusUpdatedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "CampaignStatusUpdated", async (log) =>
                     {
                         var evt = log.Event;
                         
                         await _eventRepository.HandleCampaignStatusUpdatedAsync(evt.CampaignId, evt.NewStatus);
 
                     }, cancellationToken);
+                    if (!okStatus) chunkSucceeded = false;
 
                     // 5. Xử lý WithdrawalRequestCreated
-                    await ProcessEventsInRange<WithdrawalRequestedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "WithdrawalRequested", async (log) =>
+                    var okWithdrawalReq = await ProcessEventsInRange<WithdrawalRequestedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "WithdrawalRequested", async (log) =>
                     {
                         var evt = log.Event;
                         var txHash = log.Log.TransactionHash;
@@ -175,11 +186,41 @@ namespace Invest.Application.EventService
                         DateTime voteEntime = DateTimeOffset.FromUnixTimeSeconds((long)evt.VoteEndTime).UtcDateTime;
                         await _eventRepository.HandleWithdrawalRequestedAsync(evt.CampaignId, evt.RequestId, evt.Requester, txHash, evt.Amount, evt.Reason, voteEntime, dateTime);
 
+                        // Log event and notify campaign owner / participants if possible
+                        try
+                        {
+                            await _eventRepository.LogEventAsync("WithdrawalRequested", txHash, (int)log.Log.BlockNumber.Value, (int)evt.CampaignId, JsonSerializer.Serialize(evt));
+
+                            // Try to find campaign owner and create notification
+                            var campaign = await _dbContext.Campaigns.FindAsync((int)evt.CampaignId);
+                            if (campaign != null)
+                            {
+                                // Notify campaign owner if user exists
+                                var owner = await _dbContext.Users.FirstOrDefaultAsync(u => u.WalletAddress == campaign.OwnerAddress);
+                                if (owner != null)
+                                {
+                                    var noti = new CreateNotificationRequest
+                                    {
+                                        UserId = owner.ID,
+                                        Type = "WithdrawalRequested",
+                                        Title = "Yêu cầu rút vốn",
+                                        Message = $"Chiến dịch {campaign.Name} có yêu cầu rút vốn (request #{evt.RequestId}).",
+                                    };
+                                    await _notificationService.CreateNotificationAsync(noti);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error while logging or notifying for WithdrawalRequested tx={Tx}", txHash);
+                        }
+
 
                     }, cancellationToken);
+                    if (!okWithdrawalReq) chunkSucceeded = false;
 
                     // 6. Xử lý VoteCast
-                    await ProcessEventsInRange<VoteCastEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "VoteCast", async (log) =>
+                    var okVoteCast = await ProcessEventsInRange<VoteCastEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "VoteCast", async (log) =>
                     {
                         var evt = log.Event;
                         var txHash = log.Log.TransactionHash;
@@ -199,15 +240,60 @@ namespace Invest.Application.EventService
                         await _eventRepository.LogEventAsync("VoteCast", txHash, (int)log.Log.BlockNumber.Value, (int)evt.CampaignId, JsonSerializer.Serialize(evt));
 
                     }, cancellationToken);
+                    if (!okVoteCast) chunkSucceeded = false;
+                    
+                    // 7 Xử lý add profit
+                    var okAddProfit = await ProcessEventsInRange<ProfitAddedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "ProfitAdded", async (log) =>
+                    {
+                        var evt = log.Event;
+                        var txHash = log.Log.TransactionHash;
+                        // Lấy thông tin về transaction
+                        var transaction = await _web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(txHash);
 
-                    // Cập nhật block cuối cùng đã xử lý
-                    await UpdateLastProcessedBlockAsync(currentChunkEndBlock);
+                        // Lấy thông tin block chứa transaction này
+                        var block = await _web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(transaction.BlockNumber);
 
+                        // Lấy timestamp của block
+                        var timestamp = block.Timestamp;  // Đơn vị là seconds từ Unix epoch
+                        DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds((long)timestamp.Value).UtcDateTime;
 
-                    // 5. Cập nhật block cuối cùng đã xử lý
-                    await UpdateLastProcessedBlockAsync(currentChunkEndBlock);
+                        await _eventRepository.HandleAddProfitAsync(evt.Id, evt.CampaignId, evt.Amount, txHash, dateTime);
 
-                    _logger.LogInformation("--> Finished chunk. Last processed block is now {Block}", currentChunkEndBlock);
+                        await _eventRepository.LogEventAsync("AddProfit", txHash, (int)log.Log.BlockNumber.Value, (int)evt.CampaignId, JsonSerializer.Serialize(evt));
+                    }, cancellationToken);
+                    if (!okAddProfit) chunkSucceeded = false;
+
+                    // 8 Xử lý claim profit
+                    var okClaimProfit = await ProcessEventsInRange<ProfitClaimedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "ClaimProfit", async (log) =>
+                    {
+                        var evt = log.Event;
+                        var txHash = log.Log.TransactionHash;
+                        // Lấy thông tin về transaction
+                        var transaction = await _web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(txHash);
+
+                        // Lấy thông tin block chứa transaction này
+                        var block = await _web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(transaction.BlockNumber);
+
+                        // Lấy timestamp của block
+                        var timestamp = block.Timestamp;  
+                        DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds((long)timestamp.Value).UtcDateTime;
+
+                        await _eventRepository.HandleClaimProfitAsync(evt.ProfitId, evt.Investor, txHash, dateTime);
+
+                        await _eventRepository.LogEventAsync("ClaimProfit", txHash, (int)log.Log.BlockNumber.Value, 0, JsonSerializer.Serialize(evt));
+                    }, cancellationToken);
+                    if (!okClaimProfit) chunkSucceeded = false;
+
+                    // Cập nhật block cuối cùng đã xử lý chỉ khi toàn bộ handlers trong chunk thành công
+                    if (chunkSucceeded)
+                    {
+                        await UpdateLastProcessedBlockAsync(currentChunkEndBlock);
+                        _logger.LogInformation("--> Finished chunk. Last processed block is now {Block}", currentChunkEndBlock);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("--> Chunk processing had errors. LastProcessedBlock will NOT be advanced past {Block}. Investigate logs.", currentChunkEndBlock);
+                    }
 
                     currentChunkStartBlock = currentChunkEndBlock + 1;
                 }
@@ -218,20 +304,31 @@ namespace Invest.Application.EventService
                 _logger.LogError(ex, "An error occurred during event processing loop.");
             }
         }
-        private async Task ProcessEventsInRange<TEventDTO>(long fromBlock, long toBlock, string eventName, Func<EventLog<TEventDTO>, Task> handler, CancellationToken cancellationToken
+        private async Task<bool> ProcessEventsInRange<TEventDTO>(long fromBlock, long toBlock, string eventName, Func<EventLog<TEventDTO>, Task> handler, CancellationToken cancellationToken
         ) where TEventDTO : class, IEventDTO, new()
         {
             var eventHandler = _web3.Eth.GetEvent<TEventDTO>(_config.ContractAddress);
             var filter = eventHandler.CreateFilterInput(new BlockParameter((ulong)fromBlock), new BlockParameter((ulong)toBlock));
-            var logs = await eventHandler.GetAllChangesAsync(filter);
+            List<EventLog<TEventDTO>> logs;
+            try
+            {
+                var raw = await eventHandler.GetAllChangesAsync(filter);
+                logs = raw?.ToList() ?? new List<EventLog<TEventDTO>>();
+                _logger.LogInformation("Found {Count} '{EventName}' log(s) in range {From}-{To}", logs.Count, eventName, fromBlock, toBlock);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch logs for event {EventName} in range {From}-{To}", eventName, fromBlock, toBlock);
+                return false; // failure fetching logs
+            }
 
-            _logger.LogInformation("Found {Count} '{EventName}' log(s) in range {From}-{To}", logs?.Count ?? 0, eventName, fromBlock, toBlock);
-
-            if (logs == null || logs.Count == 0)
+            if (logs.Count == 0)
             {
                 _logger.LogInformation("No logs returned for event {EventName} in range {From}-{To}", eventName, fromBlock, toBlock);
-                return;
+                return true; // nothing to do, not a failure
             }
+
+            var anyFailure = false;
 
             foreach (var log in logs)
             {
@@ -271,9 +368,13 @@ namespace Invest.Application.EventService
                     await dbTransaction.RollbackAsync(cancellationToken);
                     // Thay vì InvalidCastException, giờ bạn sẽ thấy lỗi gốc nếu có (ví dụ lỗi DB)
                     _logger.LogError(ex, "Failed to process event {EventName} from TxHash {TxHash}. Rolled back.", eventName, txHash);
-                    // Không ném lại lỗi để vòng lặp có thể tiếp tục với các sự kiện khác
+                    // mark that this range had a failure so caller won't advance checkpoint
+                    anyFailure = true;
+                    // Continue processing other logs so we can attempt to persist as many as possible
                 }
             }
+
+            return !anyFailure;
         }
 
         private async Task<long> GetLastProcessedBlockAsync()

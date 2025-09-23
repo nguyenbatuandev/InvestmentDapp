@@ -99,21 +99,64 @@ namespace InvestDapp.Infrastructure.Data.Repository
             await _investDbContext.SaveChangesAsync();
         }
 
-        public async Task HandleProfitAddedAsync(BigInteger id ,BigInteger campaignId, BigInteger amount, string txhash, DateTime time)
+        public async Task HandleProfitAddedAsync(BigInteger id, BigInteger campaignId, BigInteger amount, string txhash, DateTime time)
         {
             var campaign = await _investDbContext.Campaigns.FindAsync((int)campaignId);
-            if (campaign == null) return;
+            if (campaign == null)
+            {
+                _logger?.LogWarning("HandleProfitAddedAsync: campaign not found for campaignId={CampaignId}", campaignId);
+                return;
+            }
+
+            int profitIdInt;
+            try
+            {
+                profitIdInt = (int)id;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Failed to convert profit id to int: {ProfitId}", id);
+                throw;
+            }
+
+            // Idempotency: skip if profit already exists by id or transaction
+            var exists = await _investDbContext.Profits.AnyAsync(p => p.Id == profitIdInt || p.TransactionHash == txhash);
+            if (exists)
+            {
+                _logger?.LogWarning("Profit already exists (id={Id} or tx={Tx}). Skipping.", profitIdInt, txhash);
+                return;
+            }
 
             var newProfit = new Profit
             {
-                Id = (int)id,
+                Id = profitIdInt,
                 CampaignId = (int)campaignId,
                 Amount = (double)Web3.Convert.FromWei(amount),
-                TransactionHash = txhash,
+                TransactionHash = txhash ?? string.Empty,
                 CreatedAt = time
             };
-            campaign.TotalProfitAdded += (double)amount;
-            await _investDbContext.SaveChangesAsync();
+
+            // Persist the Profit record
+            _investDbContext.Profits.Add(newProfit);
+
+            // Update campaign total (convert wei to ether)
+            campaign.TotalProfitAdded += (double)Web3.Convert.FromWei(amount);
+
+            try
+            {
+                _logger?.LogInformation("Saving Profit (id={Id}) for campaign {CampaignId} tx={Tx}", profitIdInt, campaignId, txhash);
+                await _investDbContext.SaveChangesAsync();
+            }
+            catch (DbUpdateException dbEx)
+            {
+                _logger?.LogError(dbEx, "DbUpdateException while saving Profit id={Id} tx={Tx}", profitIdInt, txhash);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Unexpected error saving Profit id={Id} tx={Tx}", profitIdInt, txhash);
+                throw;
+            }
         }
 
 
@@ -330,6 +373,144 @@ namespace InvestDapp.Infrastructure.Data.Repository
             {
                 _logger?.LogError(ex, "Error while handling VoteCast: campaignId={CampaignId} requestId={RequestId} tx={Tx}", campaignId, requestId, txHash);
                 throw; // rethrow so outer transaction can catch and rollback and logs will capture it
+            }
+        }
+
+        public Task HandleAddProfitAsync(BigInteger profitId, BigInteger campaignId, BigInteger amount, string txHash, DateTime time)
+        {
+            try
+            {
+                _logger?.LogInformation("HandleAddProfitAsync called: campaignId={CampaignId} amount={Amount} tx={Tx}", campaignId, amount, txHash);
+                // Idempotency: skip if already present by Id or transaction
+                var idAsInt = 0;
+                try
+                {
+                    idAsInt = (int)profitId;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "ProfitId conversion failed: {ProfitId}", profitId);
+                    throw;
+                }
+
+                var exists = _investDbContext.Profits.Any(p => p.Id == idAsInt || p.TransactionHash == txHash);
+                if (exists)
+                {
+                    _logger?.LogWarning("Profit already exists (id={Id} or tx={Tx}). Skipping.", idAsInt, txHash);
+                    return Task.CompletedTask;
+                }
+
+                var profit = new Profit
+                {
+                    Id = idAsInt,
+                    CampaignId = (int)campaignId,
+                    Amount = (double)Web3.Convert.FromWei(amount),
+                    TransactionHash = txHash ?? string.Empty,
+                    CreatedAt = time
+                };
+
+                _investDbContext.Profits.Add(profit);
+
+                _logger?.LogInformation("Saving profit to DB: campaignId={CampaignId} amount={Amount} tx={Tx}", campaignId, amount, txHash);
+                try
+                {
+                    return _investDbContext.SaveChangesAsync();
+                }
+                catch (DbUpdateException dbEx)
+                {
+                    _logger?.LogError(dbEx, "DbUpdateException while saving Profit for tx={Tx}. campaignId={CampaignId}", txHash, campaignId);
+                    if (dbEx.Entries != null)
+                    {
+                        foreach (var entry in dbEx.Entries)
+                        {
+                            try
+                            {
+                                _logger?.LogError("Entity in error: {EntityType} State={State}", entry.Entity?.GetType().FullName, entry.State);
+                            }
+                            catch { }
+                        }
+                    }
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Unexpected error when saving profit for tx={Tx}", txHash);
+                    throw;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error while handling AddProfit: campaignId={CampaignId} tx={Tx}", campaignId, txHash);
+                throw;
+            }
+        }
+
+        public Task HandleClaimProfitAsync(BigInteger profitId, string claimerWallet, string? transactionHash, DateTime claimedAt)
+        {
+            try
+            {
+                _logger?.LogInformation("HandleClaimProfitAsync called: profitId={ProfitId} claimer={Claimer} tx={Tx}", profitId, claimerWallet, transactionHash);
+
+                int profitIdInt;
+                try
+                {
+                    profitIdInt = (int)profitId;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Failed to convert profit id to int: {ProfitId}", profitId);
+                    throw;
+                }
+
+                // Idempotency: skip if claim already exists by profitId or transaction
+                var exists = _investDbContext.ProfitClaims.Any(pc => pc.ProfitId == profitIdInt || (transactionHash != null && pc.TransactionHash == transactionHash));
+                if (exists)
+                {
+                    _logger?.LogWarning("ProfitClaim already exists (profitId={ProfitId} or tx={Tx}). Skipping.", profitIdInt, transactionHash);
+                    return Task.CompletedTask;
+                }
+
+                var claim = new ProfitClaim
+                {
+                    ProfitId = profitIdInt,
+                    ClaimerWallet = claimerWallet,
+                    TransactionHash = transactionHash ?? string.Empty,
+                    ClaimedAt = claimedAt
+                };
+
+                _investDbContext.ProfitClaims.Add(claim);
+
+                _logger?.LogInformation("Saving ProfitClaim to DB: profitId={ProfitId} claimer={Claimer} tx={Tx}", profitIdInt, claimerWallet, transactionHash);
+                try
+                {
+                    return _investDbContext.SaveChangesAsync();
+                }
+                catch (DbUpdateException dbEx)
+                {
+                    _logger?.LogError(dbEx, "DbUpdateException while saving ProfitClaim for tx={Tx}. profitId={ProfitId}", transactionHash, profitIdInt);
+                    if (dbEx.Entries != null)
+                    {
+                        foreach (var entry in dbEx.Entries)
+                        {
+                            try
+                            {
+                                _logger?.LogError("Entity in error: {EntityType} State={State}", entry.Entity?.GetType().FullName, entry.State);
+                            }
+                            catch { }
+                        }
+                    }
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Unexpected error when saving ProfitClaim for tx={Tx}", transactionHash);
+                    throw;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error while handling ClaimProfit: profitId={ProfitId} tx={Tx}", profitId, transactionHash);
+                throw;
             }
         }
     }

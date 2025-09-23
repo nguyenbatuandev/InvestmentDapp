@@ -89,6 +89,15 @@ namespace InvestDapp.Infrastructure.Data
                 entity.HasIndex(e => e.UserWallet);
                 entity.HasIndex(e => e.Status);
             });
+
+            modelBuilder.Entity<ProfitClaim>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.ClaimerWallet).IsRequired().HasMaxLength(42);
+                entity.HasIndex(e => e.ClaimerWallet);
+                entity.HasIndex(e => e.ProfitId);
+                entity.Property(e => e.TransactionHash).HasMaxLength(100);
+            });
         }
 
         public DbSet<Campaign> Campaigns { get; set; }
@@ -102,6 +111,7 @@ namespace InvestDapp.Infrastructure.Data
 
         public DbSet<EventProcessingState> EventProcessingStates { get; set; }
         public DbSet<Profit> Profits { get; set; }
+    public DbSet<ProfitClaim> ProfitClaims { get; set; }
         public DbSet<Refund> Refunds { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Notification> Notifications { get; set; }

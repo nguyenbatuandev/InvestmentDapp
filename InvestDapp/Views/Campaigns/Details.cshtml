@@ -1,4 +1,5 @@
 ﻿@model InvestDapp.Models.Campaign
+@inject InvestDapp.Infrastructure.Data.InvestDbContext _db
 @{
     ViewData["Title"] = Model.Name;
     Layout = "~/Pages/_Layout.cshtml";
@@ -109,8 +110,8 @@
   /* ====== MODAL SỬA LẠI (không tràn viền) ====== */
   .modal{ position: fixed; z-index: 9999; inset:0; display:none; background: rgba(0,0,0,.6); }
   .modal .modal-content{
-    width: min(520px, 92vw); max-height: 84vh; overflow:auto; margin: 6vh auto 0;
-    padding: 18px; border-radius: 14px; border:1px solid var(--border); background: rgba(8,10,14,.96);
+    width: min(1100px, 96vw); max-height: 88vh; overflow: visible; margin: 4vh auto 0;
+    padding: 20px; border-radius: 14px; border:1px solid var(--border); background: rgba(8,10,14,.98);
   }
   .modal .row{ display:grid; gap:10px; }
   .modal textarea, .modal input[type="number"]{
@@ -120,6 +121,22 @@
   .modal .footer{ display:flex; gap:10px; justify-content:flex-end; margin-top: 12px; }
   .btn-flat{ padding:10px 12px; border-radius: 10px; border:1px solid var(--border); background: rgba(255,255,255,.04); color: var(--fg); }
   .btn-grad{ padding:10px 12px; border-radius: 10px; border:0; background: linear-gradient(135deg,#28a745,#20c997); color:#fff; font-weight:800; }
+
+  /* Claims table inside modal: show up to 5 rows, scroll if more. Prevent row wrapping so height stays consistent */
+  :root { --claims-row-h: 48px; }
+  #claimsListHost { max-height: calc(var(--claims-row-h) * 5 + 64px); overflow:auto; }
+  #claimsListHost table { width:100%; border-collapse:collapse; table-layout: fixed; }
+  #claimsListHost thead th { padding:8px; vertical-align:middle; }
+  #claimsListHost th, #claimsListHost td { padding:8px; vertical-align:middle; }
+  #claimsListHost tbody tr { height: var(--claims-row-h); max-height: var(--claims-row-h); }
+  #claimsListHost td { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #claimsListHost .claims-tx a { display:inline-block; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--primary); }
+  @@media (max-width: 600px) {
+    .modal .modal-content { width: 96vw; margin: 3vh auto 0; padding: 14px; }
+    #claimsListHost .claims-tx a { max-width:120px; }
+    #claimsListHost td { white-space:normal; }
+    #claimsListHost tbody tr { height: auto; }
+  }
 </style>
 }
 
@@ -167,26 +184,182 @@
 
   <!-- GRID -->
   <section class="grid">
+    @{
+      var currentUserWallet = User.FindFirst("WalletAddress")?.Value;
+      var isOwner = currentUserWallet == Model.OwnerAddress;
+      var isInvestor = Model.Investments?.Any(i => i.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase)) ?? false;
+    }
     <!-- MAIN -->
     <article class="card">
-      <h3><i class="fas fa-file-alt"></i> Mô tả chi tiết</h3>
-      <div class="desc">
-        @Html.Raw(Model.Description?.Replace("\n", "<br/>"))
-      </div>
 
-      @if (Model.Posts?.Any() == true)
+      @* Replace posts with admin-added profits list. Only owners see the add form; only investors (and owner) see the profit list and claim buttons. *@
+      @if (isOwner || isInvestor)
       {
         <div style="margin-top:18px;">
-          <h3><i class="fas fa-newspaper"></i> Bài viết mới nhất</h3>
-          @foreach (var post in Model.Posts.Take(3).OrderByDescending(p => p.CreatedAt))
-          {
-            <div class="card" style="padding:12px; margin-bottom:10px;">
-              <h4 style="margin:0 0 6px; color: var(--fg); font-weight:800;">
-                <a href="@Url.Action("PostDetails", new { id = post.Id })" style="color:var(--primary); text-decoration:none;">@post.Title</a>
-              </h4>
-              <small style="color:var(--muted)">@post.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
-            </div>
-          }
+          <h3><i class="fas fa-gift"></i> Lợi nhuận</h3>
+
+          @* Owner uses the sidebar "Thêm lợi nhuận" popup button; no inline add form here to avoid duplicates *@
+
+          <div id="profit-list">
+            @if (Model.Profits?.Any() == true)
+            {
+              // Display profits newest-first, but compute on-chain profit index from ascending Id order
+              var profits = Model.Profits.OrderByDescending(pr => pr.CreatedAt).ToList();
+              var profitsForIndex = Model.Profits.OrderBy(pr => pr.Id).ToList();
+              var profitIndexMap = profitsForIndex.Select((p, idx) => new { p.Id, idx }).ToDictionary(x => x.Id, x => x.idx);
+              <style>
+                /* Table-like list with card rows */
+                .table-profits { width:100%; border-collapse:separate; border-spacing:0 12px; }
+                .table-profits thead th { padding:10px 16px; text-align:left; color:var(--muted); font-weight:700; }
+                /* Make tbody rows look like cards (more prominent) */
+                .table-profits tbody tr {
+                  background: linear-gradient(180deg, rgba(30,36,43,0.95), rgba(18,20,24,0.95));
+                  border: 1px solid rgba(255,255,255,0.06);
+                  border-radius:16px;
+                  box-shadow: 0 10px 30px rgba(6,10,14,0.18);
+                  transition: transform .14s cubic-bezier(.2,.9,.2,1), box-shadow .14s ease;
+                  position:relative; overflow:hidden;
+                }
+                /* subtle accent bar on the left */
+                .table-profits tbody tr::before{
+                  content:""; position:absolute; left:0; top:8px; bottom:8px; width:6px; border-radius:8px; background: linear-gradient(180deg, var(--primary), var(--accent)); box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+                }
+                /* reserve space so the accent bar doesn't overlap content */
+                .table-profits thead th:first-child,
+                .table-profits tbody td:first-child { padding-left: 40px; }
+                .table-profits tbody tr:hover{ transform: translateY(-8px); box-shadow: 0 18px 44px rgba(6,10,14,0.24); }
+                .table-profits tbody td { padding:14px 24px; vertical-align:middle; color: rgba(255,255,255,0.92); }
+                .table-profits .col-action { width:1%; white-space:nowrap; }
+                /* compact amount styling */
+                .table-profits td strong{ color: #e6fffb; font-weight:900; font-size:1.02rem; }
+                .table-profits td small, .table-profits td .muted{ color: rgba(255,255,255,0.6); }
+                /* compact amount styling */
+                .table-profits td strong{ color: var(--success); font-weight:800; }
+                /* responsive fallback: stack cells on small screens */
+                @@media (max-width:600px){ 
+                  .table-profits thead{ display:none; }
+                  .table-profits tbody tr{ display:block; padding:12px; }
+                  .table-profits tbody td{ display:block; width:100%; padding:6px 0; }
+                  .table-profits tbody td.col-action{ margin-top:8px; }
+                }
+              </style>
+
+              @* compute investor percent once (read-only display) *@
+              double investorPercent = 0.0;
+              try {
+                if (isInvestor) {
+                  var myInv = Model.Investments?.Where(i => i.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase)).Sum(i => (double)i.Amount) ?? 0.0;
+                  var total = (double)(Model.CurrentRaisedAmount);
+                  if (total > 0) investorPercent = Math.Round(myInv / total * 100.0, 2);
+                }
+              } catch {
+                investorPercent = 0.0;
+              }
+
+              // Which profits the current user already claimed (server-side check via DB)
+              var claimedSet = new HashSet<int>();
+              try {
+                if (!string.IsNullOrEmpty(currentUserWallet)) {
+                  var list = _db.ProfitClaims
+                    .Where(pc => pc.ClaimerWallet.ToLower() == currentUserWallet.ToLower())
+                    .Select(pc => pc.ProfitId)
+                    .ToList();
+                  claimedSet = new HashSet<int>(list);
+                }
+              } catch {
+                claimedSet = new HashSet<int>();
+              }
+                // Prepare claims data (serialize to JS) for the current campaign profits
+                var profitIds = profits.Select(p => p.Id).ToList();
+                var profitAmountMap = profits.ToDictionary(p => p.Id, p => (double)p.Amount);
+                var totalRaised = (double)(Model.CurrentRaisedAmount);
+                // Build a map of invested amounts per wallet (use correct shared model namespace)
+                var investList = Model.Investments ?? new List<InvestDapp.Shared.Models.Investment>();
+                var investMap = investList
+                  .GroupBy(i => (i.InvestorAddress ?? "").ToLower())
+                  .ToDictionary(g => g.Key, g => (double)g.Sum(i => i.Amount));
+
+                var rawClaims = _db.ProfitClaims
+                  .Where(pc => profitIds.Contains(pc.ProfitId))
+                  .Select(pc => new { pc.ProfitId, pc.ClaimerWallet, pc.TransactionHash, pc.ClaimedAt })
+                  .ToList();
+
+                var claimsDict = rawClaims.GroupBy(x => x.ProfitId)
+                  .ToDictionary(g => g.Key, g => g.Select(y => new {
+                    wallet = y.ClaimerWallet,
+                    tx = y.TransactionHash,
+                    at = y.ClaimedAt,
+                    invested = investMap.ContainsKey((y.ClaimerWallet ?? "").ToLower()) ? investMap[(y.ClaimerWallet ?? "").ToLower()] : 0.0,
+                    profitAmount = profitAmountMap.ContainsKey(y.ProfitId) ? profitAmountMap[y.ProfitId] : 0.0,
+                    totalRaised = totalRaised
+                  }).ToList());
+
+                <script>
+                  window.__CLAIMS_DATA = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(claimsDict));
+                </script>
+
+              <div class="table-responsive">
+                <table class="table table-profits mb-0">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th style="width:48px">STT</th>
+                      <th>Lợi nhuận</th>
+                      <th style="width:120px">Phần trăm</th>
+                      <th>Thời gian</th>
+                      <th class="col-action">Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  @for (int i = 0; i < profits.Count; i++)
+                  {
+                    var p = profits[i];
+                    // Determine the on-chain profit index (position inside the contract's list)
+                    var onChainIndex = profitIndexMap.ContainsKey(p.Id) ? profitIndexMap[p.Id] : i;
+                    <tr>
+                      <td>@(i + 1)</td>
+                      <td><strong>@p.Amount</strong> BNB</td>
+                      <td>
+                        @if (isInvestor)
+                        {
+                          <span style="font-weight:800">@investorPercent%</span>
+                        }
+                        else
+                        {
+                          <span class="muted">-</span>
+                        }
+                      </td>
+                      <td>@p.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                      <td class="col-action" style="display:flex; gap:8px; align-items:center;">
+                        @if (isInvestor)
+                        {
+                          if (claimedSet.Contains(p.Id))
+                          {
+                            <span class="btn btn-secondary" style="cursor:default; opacity:0.9;">Đã nhận</span>
+                            <button class="btn btn-flat" onclick="openClaimsModal(@p.Id)">Danh sách</button>
+                          }
+                          else
+                          {
+                            <button class="btn btn-success" onclick="claimProfit(@Model.Id, @p.Id, this)"><i class="fas fa-money-bill-wave"></i> Nhận</button>
+                            <button class="btn btn-flat" onclick="openClaimsModal(@p.Id)">Danh sách</button>
+                          }
+                        }
+                        else
+                        {
+                          <button class="btn btn-flat" onclick="openClaimsModal(@p.Id)">Danh sách</button>
+                        }
+                      </td>
+                    </tr>
+                  }
+                  </tbody>
+                </table>
+              </div>
+            }
+            else
+            {
+              <p class="muted">Chưa có lợi nhuận nào được thêm.</p>
+            }
+          </div>
         </div>
       }
     </article>
@@ -244,11 +417,6 @@
       <!-- ACTIONS -->
       <div class="card side-card">
         <div class="actions">
-          @{
-            var currentUserWallet = User.FindFirst("WalletAddress")?.Value;
-            var isOwner = currentUserWallet == Model.OwnerAddress;
-            var isInvestor = Model.Investments?.Any(i => i.InvestorAddress.Equals(currentUserWallet, StringComparison.OrdinalIgnoreCase)) ?? false;
-          }
 
           <a href="@Url.Action("Dashboard", new { id = Model.Id })" class="act primary">
             <i class="fas fa-tachometer-alt"></i> Xem Dashboard
@@ -431,12 +599,90 @@
   </div>
 </div>
 
+<!-- Claims List Modal -->
+<div id="claimsListModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h3>Danh sách đã nhận</h3>
+    <div id="claimsListHost" style="max-height:40vh; overflow:auto;">
+      <!-- Filled dynamically -->
+    </div>
+    <div class="footer">
+      <button type="button" class="btn-flat" onclick="closeClaimsModal()">Đóng</button>
+    </div>
+  </div>
+</div>
+
 @section Scripts {
   <!-- Load ethers & contract config (once) -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script src="~/js/contract-config.js" asp-append-version="true"></script>
 
   <script>
+  // Claims data prepared server-side (populated earlier into window.__CLAIMS_DATA)
+  const CLAIMS_DATA = window.__CLAIMS_DATA || {};
+
+    function openClaimsModal(profitId){
+      const host = document.getElementById('claimsListHost');
+      host.innerHTML = '';
+      const list = CLAIMS_DATA[profitId] || [];
+      if (list.length === 0){
+        host.innerHTML = '<p class="muted">Chưa có ai nhận.</p>';
+      } else {
+        // Compute how many times each wallet appears (số lượng claim)
+        const counts = {};
+        list.forEach(it => { const w = (it.wallet||'').toLowerCase(); counts[w] = (counts[w]||0) + 1; });
+
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.innerHTML = `
+          <thead>
+            <tr style="text-align:left; border-bottom:1px solid rgba(255,255,255,0.06);">
+              <th style="padding:8px">STT</th>
+              <th style="padding:8px">Wallet</th>
+              <th style="padding:8px">TxHash</th>
+              <th style="padding:8px">Số BNB</th>
+              <th style="padding:8px">Thời gian</th>
+            </tr>
+          </thead>
+        `;
+
+        const tbody = document.createElement('tbody');
+        list.forEach((item, idx) => {
+          const tr = document.createElement('tr');
+          tr.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
+          tr.style.padding = '6px 0';
+
+          const wallet = item.wallet || '';
+          const tx = item.tx || item.transactionHash || '';
+          const at = item.at ? new Date(item.at).toLocaleString() : '-';
+          const shortTx = tx ? (tx.length > 14 ? tx.substr(0,10) + '...' + tx.substr(tx.length-4) : tx) : '-';
+          // Compute claimed BNB: (invested / totalRaised) * profitAmount
+          const invested = Number(item.invested || 0);
+          const profitAmount = Number(item.profitAmount || 0);
+          const totalRaised = Number(item.totalRaised || 0) || 1; // avoid div0
+          let claimed = 0;
+          if (totalRaised > 0) claimed = (invested / totalRaised) * profitAmount;
+          // Round to 3 decimals
+          claimed = Math.round(claimed * 1000) / 1000;
+
+          tr.innerHTML = `
+            <td style="padding:8px; vertical-align:middle">${idx + 1}</td>
+            <td style="padding:8px; vertical-align:middle; font-family:ui-monospace, 'Fira Code'">${wallet}</td>
+            <td style="padding:8px; vertical-align:middle; font-family:ui-monospace, 'Fira Code'"><a href="https://testnet.bscscan.com/tx/${tx}" target="_blank" style="color:var(--primary); text-decoration:underline">${shortTx}</a></td>
+            <td style="padding:8px; vertical-align:middle">${claimed} BNB</td>
+            <td style="padding:8px; vertical-align:middle; color:var(--muted)">${at}</td>
+          `;
+
+          tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        host.appendChild(table);
+      }
+      const m = document.getElementById('claimsListModal'); if (m) m.style.display='block';
+    }
+    function closeClaimsModal(){ const m = document.getElementById('claimsListModal'); if (m) m.style.display='none'; }
     /*********************** Toast helpers ************************/
     function createToast(message, kind){
       const el = document.createElement('div');
@@ -900,6 +1146,116 @@
       // Nhẹ: hiệu ứng xuất hiện
       const elements = document.querySelectorAll('.campaign-details-container > *');
       elements.forEach((el, i)=>{ el.style.animationDelay = `${i*0.1}s`; });
+
+        // Load profit list if visible
+        const profitHost = document.getElementById('profit-list');
+        if (profitHost) {
+          try { await loadProfitList(@Model.Id); } catch(e){ console.warn('loadProfitList failed:', e); }
+        }
     });
+
+      // Expose whether current user is investor to client-side JS
+      const IS_INVESTOR = @(isInvestor ? "true" : "false");
+
+      // Helper to return contract instance (ensure initializeWeb3 has set global `contract`)
+    async function getContract(){ if (!contract) await ensureWalletConnected(); return contract; }
+
+      async function addProfit(campaignId) {
+        try {
+          await ensureWalletConnected();
+          const contract = await getContract();
+          const input = document.getElementById('profit-amount');
+          const amount = parseFloat(input.value);
+          if (isNaN(amount) || amount <= 0) { showError('Nhập số tiền hợp lệ!'); return; }
+          if (amount < 0.01) { showError('Tối thiểu 0.01 BNB!'); return; }
+          const wei = ethers.utils.parseEther(amount.toString());
+          const btn = document.getElementById('add-profit-btn');
+          const t = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+          const tx = await contract.addProfit(campaignId, { value: wei, gasLimit: 200000 });
+          showSuccess('Đã gửi giao dịch thêm lợi nhuận...');
+          const r = await tx.wait();
+          if (r.status === 1){ showSuccess(`Thêm lợi nhuận ${amount} BNB thành công!`); input.value=''; setTimeout(()=>loadProfitList(campaignId), 2000); }
+          else showError('Giao dịch thất bại!');
+          btn.disabled=false; btn.innerHTML = t;
+        } catch (e) {
+          console.error(e); showError(e.message || 'Có lỗi khi thêm lợi nhuận.');
+          const btn = document.getElementById('add-profit-btn'); if (btn){ btn.disabled=false; btn.innerHTML='<i class="fas fa-plus"></i> Thêm lợi nhuận'; }
+        }
+      }
+
+      async function loadProfitList(campaignId) {
+        try {
+          await ensureWalletConnected();
+          const contract = await getContract();
+          const host = document.getElementById('profit-list');
+          if (!host) return;
+
+          // Read number of profits from contract (assumes contract has profitCounter or profits mapping)
+          let count = 0;
+          try{ count = (await contract.profitCounter()).toNumber(); }catch(e){ /* fallback to server-rendered list */ }
+
+          if (count > 0){
+            // Build list by querying contract profits
+            let html = '';
+            for (let i = count-1; i >= 0; i--){
+              try{
+                const p = await contract.profits(i);
+                const amount = ethers.utils.formatEther(p.amount || p[2] || 0);
+                const ts = (p.createdAt && p.createdAt.toNumber) ? p.createdAt.toNumber() : parseInt((p.createdAt||0).toString(),10);
+                const date = new Date(ts * 1000).toLocaleString();
+                html += `
+                  <div class="card" style="padding:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                      <div style="font-weight:800; color:var(--success);">${amount} BNB</div>
+                      <small style="color:var(--muted)">${date}</small>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                      ${ IS_INVESTOR ? `<button class=\"btn btn-success\" onclick=\"claimProfit(${campaignId}, ${i}, this)\"><i class=\"fas fa-money-bill-wave\"></i> Nhận lợi nhuận</button>` : '<span class="muted">Chỉ nhà đầu tư mới có thể nhận</span>' }
+                    </div>
+                  </div>`;
+              }catch(e){ console.warn('read profit failed', e); }
+            }
+            host.innerHTML = html;
+          } else {
+            // No on-chain profits; keep server-rendered content
+          }
+        } catch (error) {
+          console.error('Error loading profits:', error);
+          const host = document.getElementById('profit-list'); if (host) host.innerHTML = '<p style="color:var(--danger);">Không thể tải danh sách lợi nhuận.</p>';
+        }
+      }
+
+      async function claimProfit(campaignId, profitIndex, btnElem) {
+        try{
+          await ensureWalletConnected();
+          const contract = await getContract();
+
+          // Prefer the button element passed in via `this` from onclick. Fallback to a safer selector if not provided.
+          let btn = btnElem;
+          if (!btn) {
+            // Look for an element whose onclick attribute contains the exact call including closing parenthesis
+            const selector = `[onclick*="claimProfit(${campaignId}, ${profitIndex})"]`;
+            btn = document.querySelector(selector);
+          }
+
+          const t = btn?.innerHTML || '';
+          if (btn){ btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...'; }
+          const tx = await contract.claimProfit(campaignId, profitIndex, { gasLimit: 200000 });
+          showSuccess('Đã gửi giao dịch nhận lợi nhuận...');
+          const r = await tx.wait();
+          if (r.status === 1) { showSuccess('Nhận lợi nhuận thành công!'); setTimeout(()=>loadProfitList(campaignId), 2000); }
+          else showError('Giao dịch thất bại!');
+          if (btn){ btn.disabled=false; btn.innerHTML = t; }
+        }catch(e){
+          console.error(e); showError(e.message || 'Có lỗi khi nhận lợi nhuận.');
+          // restore button on error
+          let btn = btnElem;
+          if (!btn) {
+            const selector = `[onclick*="claimProfit(${campaignId}, ${profitIndex})"]`;
+            btn = document.querySelector(selector);
+          }
+          if (btn){ btn.disabled=false; btn.innerHTML='<i class="fas fa-money-bill-wave"></i> Nhận lợi nhuận'; }
+        }
+      }
   </script>
 }

@@ -652,7 +652,7 @@ namespace InvestDapp.Controllers
                 }
 
                 // Override with provided address if available (for security, ensure it matches logged in user)
-                if (!string.IsNullOrEmpty(request.address) && 
+                if (!string.IsNullOrEmpty(request.address) &&
                     !string.Equals(userWallet, request.address, StringComparison.OrdinalIgnoreCase))
                 {
                     return BadRequest(new { error = "Địa chỉ ví không khớp với tài khoản đăng nhập" });
@@ -699,7 +699,7 @@ namespace InvestDapp.Controllers
                 // Create withdrawal request record (blockchain transaction already completed)
                 request.address = userWallet;
                 var withdrawal = await _campain.CreatRerequestWithdrawalAsync(request);
-                
+
                 return Ok(new
                 {
                     message = "Yêu cầu rút vốn đã được ghi nhận thành công",
@@ -891,7 +891,7 @@ namespace InvestDapp.Controllers
                 }
 
                 var userCampaigns = await _campaignPostService.GetUserCampaignsAsync(wallet);
-                
+
                 var transactions = new List<object>();
                 double totalInvestedWei = 0;
                 double totalRefundedWei = 0;
@@ -904,7 +904,7 @@ namespace InvestDapp.Controllers
                     foreach (var investment in userInvestments)
                     {
                         totalInvestedWei += investment.Amount;
-                        
+
                         var hasRefund = campaign.Refunds?.Any() ?? false;
 
                         transactions.Add(new
@@ -915,7 +915,7 @@ namespace InvestDapp.Controllers
                             campaignTitle = campaign.Name,
                             method = "INVEST",
                             amountInWei = investment.Amount,
-                            amount = investment.Amount, 
+                            amount = investment.Amount,
                             time = investment.Timestamp,
                             status = hasRefund ? "refunded" : "success",
                             isRefunded = hasRefund,
@@ -987,7 +987,6 @@ namespace InvestDapp.Controllers
                 return StatusCode(500, new { error = "Server error: " + ex.Message });
             }
         }
-
         #endregion
     }
 }

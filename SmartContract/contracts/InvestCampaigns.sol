@@ -84,6 +84,7 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
 
     mapping(address => mapping(uint256 => uint256)) public withdrawWithFees;
     mapping(address => uint256) public totalWithdrawFees;
+    mapping(uint256 => mapping(uint256 => uint256)) private profitIndexById;
 
     mapping(uint256 => address[]) public campaignInvestors;
 
@@ -106,7 +107,7 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
     event RefundIssued(uint256 indexed campaignId, address indexed investor, uint256 amount);
     event CampaignStatusUpdated(uint256 indexed campaignId, uint8 newStatus);
     event ProfitAdded(uint256 indexed id, uint256 indexed campaignId, uint256 amount);
-    event ProfitClaimed(uint256 indexed campaignId, address indexed investor, uint256 amount);
+    event ProfitClaimed(uint256 indexed profitId, address indexed investor, uint256 amount);
     event CampaignCanceledByAdmin(uint256 indexed campaignId, address indexed admin);
     event WithdrawalRequestCanceled(uint256 indexed campaignId, uint256 indexed requestId);
     event SetFees(address indexed receiver, uint16 fees);
@@ -237,14 +238,19 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
 
     // --- PROFIT ---
     function addProfit(uint256 _campaignId)
-        external
-        payable
-        onlyCampaignOwner(_campaignId)
+    external
+    payable
+    onlyCampaignOwner(_campaignId)
     {
         require(campaigns[_campaignId].status == CampaignStatus.Completed, "Campaign not completed");
         require(msg.value > 0, "Profit must be greater than zero");
 
         uint256 newProfitId = addProfitCounter++;
+        uint256 idx = listProfits[_campaignId].length;
+
+        // ánh xạ profitId -> index
+        profitIndexById[_campaignId][newProfitId] = idx;
+
         listProfits[_campaignId].push(Profit({
             id: newProfitId,
             campaignId: _campaignId,
@@ -255,10 +261,11 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         emit ProfitAdded(newProfitId, _campaignId, msg.value);
     }
 
-    function claimProfit(uint256 _campaignId, uint256 _profitIndex)
-        external
-        nonReentrant
-        campaignMustExist(_campaignId)
+
+    function claimProfit(uint256 _campaignId, uint256 _profitId)
+    external
+    nonReentrant
+    campaignMustExist(_campaignId)
     {
         Campaign storage campaign = campaigns[_campaignId];
         require(campaign.status == CampaignStatus.Completed, "Campaign not completed");
@@ -267,22 +274,26 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         uint256 userInvestment = campaignInvestorBalances[_campaignId][msg.sender];
         require(userInvestment > 0, "No investments found for this user");
 
-        require(_profitIndex < listProfits[_campaignId].length, "Profit index out of bounds");
-        Profit storage profit = listProfits[_campaignId][_profitIndex];
+        // lookup index từ profitId
+        uint256 idx = profitIndexById[_campaignId][_profitId];
+        require(idx < listProfits[_campaignId].length, "Profit not found");
 
+        Profit storage profit = listProfits[_campaignId][idx];
+        require(profit.id == _profitId, "Profit not found");
         require(profit.amount > 0, "No profit to claim");
-        require(!profitClaimed[_campaignId][_profitIndex][msg.sender], "Profit already claimed");
+        require(!profitClaimed[_campaignId][_profitId][msg.sender], "Profit already claimed");
 
         uint256 profitShare = (profit.amount * userInvestment) / campaign.totalRaisedAmount;
         require(profitShare > 0, "Profit share is too small to claim");
 
-        profitClaimed[_campaignId][_profitIndex][msg.sender] = true;
+        profitClaimed[_campaignId][_profitId][msg.sender] = true;
 
         (bool sent, ) = msg.sender.call{value: profitShare}("");
         require(sent, "Profit transfer failed");
 
-        emit ProfitClaimed(_campaignId, msg.sender, profitShare);
+        emit ProfitClaimed(_profitId, msg.sender, profitShare);
     }
+
 
     // --- WITHDRAWAL VOTING ---
     function voteForWithdrawal(uint256 _campaignId, uint256 _requestId, bool _agree)

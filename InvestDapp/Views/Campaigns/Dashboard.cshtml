@@ -321,12 +321,10 @@
         else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Completed)
         {
           <div class="card glass" style="padding:var(--sp-4); text-align:center">
-            <i class="fa-solid fa-check-circle" style="color:var(--ok)"></i>
-            <div class="h2" style="font-size:var(--fs-3); margin:6px 0 4px">Chiến dịch hoàn thành</div>
-            <div class="muted" style="font-size:var(--fs-1); margin-bottom: var(--sp-2)">Chủ dự án thêm lợi nhuận, nhà đầu tư nhận.</div>
-            <div id="owner-section" style="display:none; margin-bottom:8px"></div>
-            <div id="investor-section"></div>
+          <i class="fa-solid fa-check-circle" style="color:var(--ok)"></i>
+          <div class="h2" style="font-size:var(--fs-3); margin:6px 0 4px">Chiến dịch hoàn thành</div>
           </div>
+
         }
         else if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Failed)
         {
@@ -887,7 +885,6 @@
             return el;
         }
 
-        function voteOnCampaign(campaignId){window.location.href = `/Campaigns/Vote/${campaignId}`; }
         function claimRefund(campaignId){claimRefundFromContract(campaignId); }
 
         async function claimRefundFromContract(campaignId){
@@ -1046,87 +1043,6 @@
       }
     }
 
-        // ===== Demo load list (giữ logic phía dưới nguyên gốc) =====
-        async function loadWithdrawalRequests(campaignId) {
-            const requestsElement = document.getElementById('withdrawal-requests');
-            if (!requestsElement) return; // Not on the withdrawal requests page
-            try {
-                await ensureWalletConnected();
-                const contract = await getContract();
-                requestsElement.innerHTML = `
-                    <div class="withdrawal-request-card">
-                        <div class="request-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                            <span class="request-amount" style="font-weight:800; color:var(--primary);">Yêu cầu rút: 10 BNB</span>
-                            <span class="status-badge status-pending">Đang bỏ phiếu</span>
-                        </div>
-                        <p style="margin:0 0 10px; color: var(--text-color)">Lý do: Mua thiết bị và nguyên liệu cho dự án</p>
-                        <div class="vote-stats" style="display:grid; gap:8px; margin: 8px 0 10px;">
-                            <div class="vote-stat" style="display:flex;justify-content:space-between; background: rgba(255,255,255,.04); border:1px solid var(--secondary); border-radius:8px; padding:8px;">
-                                <div>Phiếu ủng hộ</div><div style="color: var(--success);">45 BNB (65%)</div>
-                            </div>
-                            <div class="vote-stat" style="display:flex;justify-content:space-between; background: rgba(255,255,255,.04); border:1px solid var(--secondary); border-radius:8px; padding:8px;">
-                                <div>Phiếu phản đối</div><div style="color: #ef4444;">24 BNB (35%)</div>
-                            </div>
-                        </div>
-                        <div class="vote-buttons" style="display:flex; gap:10px;">
-                            <button class="btn btn-success" onclick="voteForWithdrawal(${campaignId}, 0, true)"><i class="fas fa-thumbs-up"></i> Ủng hộ</button>
-                            <button class="btn btn-danger" onclick="voteForWithdrawal(${campaignId}, 0, false)"><i class="fas fa-thumbs-down"></i> Phản đối</button>
-                        </div>
-                    </div>`;
-            } catch (error) {
-                console.error('Error loading withdrawal requests:', error);
-                if (requestsElement) {
-                    requestsElement.innerHTML = '<p style="color: var(--danger);">Không thể tải danh sách yêu cầu rút tiền.</p>';
-                }
-            }
-        }
-
-        async function voteForWithdrawal(campaignId, requestId, agree) {
-            try{
-                await ensureWalletConnected();
-                const contract = await getContract();
-                const voteButtons = document.querySelectorAll(`[onclick*="voteForWithdrawal(${campaignId}, ${requestId}"]`);
-                const originals = [];
-                voteButtons.forEach((b,i)=>{ originals[i]=b.innerHTML; b.disabled=true; b.innerHTML='<i class="fas fa-spinner fa-spin"></i> Đang xử lý...'; });
-
-                const tx = await contract.voteForWithdrawal(campaignId, requestId, agree, { gasLimit: 150000 });
-                showSuccess(`Đã gửi bỏ phiếu ${agree?'ủng hộ':'phản đối'}...`);
-                const receipt = await tx.wait();
-                if (receipt.status === 1) { showSuccess('Bỏ phiếu thành công!'); setTimeout(()=>loadWithdrawalRequests(campaignId), 2000); }
-                else showError('Giao dịch bỏ phiếu thất bại!');
-
-                voteButtons.forEach((b,i)=>{ b.disabled=false; b.innerHTML = originals[i]; });
-            }catch(error){
-                console.error('Voting error:', error);
-                showError(error.message || 'Có lỗi khi bỏ phiếu.');
-                const voteButtons = document.querySelectorAll(`[onclick*="voteForWithdrawal(${campaignId}, ${requestId}"]`);
-                voteButtons.forEach((b)=>{ b.disabled=false; });
-            }
-        }
-
-        async function addProfit(campaignId) {
-            try {
-                await ensureWalletConnected();
-                const contract = await getContract();
-                const input = document.getElementById('profit-amount');
-                const amount = parseFloat(input.value);
-                if (isNaN(amount) || amount <= 0) { showError('Nhập số tiền hợp lệ!'); return; }
-                if (amount < 0.01) { showError('Tối thiểu 0.01 BNB!'); return; }
-                const wei = ethers.utils.parseEther(amount.toString());
-                const btn = document.getElementById('add-profit-btn');
-                const t = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-                const tx = await contract.addProfit(campaignId, { value: wei, gasLimit: 200000 });
-                showSuccess('Đã gửi giao dịch thêm lợi nhuận...');
-                const r = await tx.wait();
-                if (r.status === 1){ showSuccess(`Thêm lợi nhuận ${amount} BNB thành công!`); input.value=''; setTimeout(()=>loadProfitList(campaignId), 2000); }
-                else showError('Giao dịch thất bại!');
-                btn.disabled=false; btn.innerHTML = t;
-            } catch (e) {
-                console.error(e); showError(e.message || 'Có lỗi khi thêm lợi nhuận.');
-                const btn = document.getElementById('add-profit-btn'); if (btn){ btn.disabled=false; btn.innerHTML='<i class="fas fa-plus"></i> Thêm lợi nhuận'; }
-            }
-        }
-
         async function loadProfitList(campaignId) {
             try {
                 await ensureWalletConnected();
@@ -1151,25 +1067,6 @@
             } catch (error) {
                 console.error('Error loading profits:', error);
                 document.getElementById('profit-list').innerHTML = '<p style="color:var(--danger);">Không thể tải danh sách lợi nhuận.</p>';
-            }
-        }
-
-        async function claimProfit(campaignId, profitIndex) {
-            try{
-                await ensureWalletConnected();
-                const contract = await getContract();
-                const btn = document.querySelector(`[onclick*="claimProfit(${campaignId}, ${profitIndex}"]`);
-                const t = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-                const tx = await contract.claimProfit(campaignId, profitIndex, { gasLimit: 200000 });
-                showSuccess('Đã gửi giao dịch nhận lợi nhuận...');
-                const r = await tx.wait();
-                if (r.status === 1) { showSuccess('Nhận lợi nhuận thành công!'); setTimeout(()=>loadProfitList(campaignId), 2000); }
-                else showError('Giao dịch thất bại!');
-                btn.disabled=false; btn.innerHTML = t;
-            }catch(e){
-                console.error(e); showError(e.message || 'Có lỗi khi nhận lợi nhuận.');
-                const btn = document.querySelector(`[onclick*="claimProfit(${campaignId}, ${profitIndex}"]`);
-                if (btn){ btn.disabled=false; btn.innerHTML='<i class="fas fa-money-bill-wave"></i> Nhận lợi nhuận'; }
             }
         }
 

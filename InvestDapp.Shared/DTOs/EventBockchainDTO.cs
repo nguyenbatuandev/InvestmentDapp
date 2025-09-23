@@ -92,13 +92,14 @@ namespace InvestDapp.Shared.DTOs
 
         public class ProfitAddedEventDTO : IEventDTO
         {
-            [Parameter("uint256", "id", 0, true)]       // indexed id (first indexed)
+            // Solidity event parameters are 1-based in Nethereum's Parameter attribute
+            [Parameter("uint256", "id", 1, true)]       // indexed id (first indexed)
             public BigInteger Id { get; set; }
 
-            [Parameter("uint256", "campaignId", 1, true)]  // indexed campaignId (second indexed)
+            [Parameter("uint256", "campaignId", 2, true)]  // indexed campaignId (second indexed)
             public BigInteger CampaignId { get; set; }
 
-            [Parameter("uint256", "amount", 2, false)]     // non-indexed amount (third parameter)
+            [Parameter("uint256", "amount", 3, false)]     // non-indexed amount (third parameter)
             public BigInteger Amount { get; set; }
         }
 
@@ -106,8 +107,8 @@ namespace InvestDapp.Shared.DTOs
         [Nethereum.ABI.FunctionEncoding.Attributes.Event("ProfitClaimed")]
         public class ProfitClaimedEventDTO : IEventDTO
         {
-            [Parameter("uint256", "campaignId", 1, true)]
-            public BigInteger CampaignId { get; set; }
+            [Parameter("uint256", "profitId", 1, true)]
+            public BigInteger ProfitId { get; set; }
 
             [Parameter("address", "investor", 2, true)]
             public string Investor { get; set; }

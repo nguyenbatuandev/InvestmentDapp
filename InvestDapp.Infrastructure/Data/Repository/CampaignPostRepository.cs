@@ -160,6 +160,8 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 .Include(c => c.category)
                 .Include(c => c.Posts)
                 .Include(c => c.Investments)
+                .Include(c => c.Profits)
+                .Include(c => c.Refunds)
                 .Where(c => c.ApprovalStatus == ApprovalStatus.Approved)
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
@@ -173,6 +175,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 .Include(c => c.Investments)
                 .Include(c => c.WithdrawalRequests)
                 .ThenInclude(wr => wr.Votes)
+                .Include(c => c.Profits)
                 .Include(c => c.Refunds)
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
