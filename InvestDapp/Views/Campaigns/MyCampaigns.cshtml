@@ -152,7 +152,7 @@
         <div class="mc-qacts">
             <a href="@Url.Action("Create")" class="mc-qbtn"><span>Tạo chiến dịch mới</span></a>
             <a href="@Url.Action("Index","Campaigns")" class="mc-qbtn"><i class="fa-solid fa-compass"></i><span>Khám phá dự án</span></a>
-            <a href="/Admin" class="mc-qbtn"><i class="fa-solid fa-chart-line"></i><span>Thống kê</span></a>
+            <a asp-controller="Campaigns" asp-action="OwnerAnalytics" class="mc-qbtn"><i class="fa-solid fa-chart-line"></i><span>Thống kê</span></a>
         </div>
 
         @if (TempData["SuccessMessage"] != null)
@@ -252,7 +252,7 @@
 								
                             }
 
-                            @if (canRequestWithdrawal)
+                            @* @if (canRequestWithdrawal)
                             {
                                 if(count < 3)
                                 {
@@ -272,7 +272,7 @@
                                 <button class="btn" onclick="Refund(@c.Id)" style="background: linear-gradient(135deg,#28a745,#20c997); border:0; color:#fff;" title="Campaign ID: @c.Id">
                                     <i class="fa-solid fa-hand-holding-dollar"></i>&nbsp;Refund
                                 </button>
-                            }
+                            } *@
                         </div>
                     </div>
                 </article>

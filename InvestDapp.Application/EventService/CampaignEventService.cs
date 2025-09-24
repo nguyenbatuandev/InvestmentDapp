@@ -16,6 +16,8 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Web3;
 using System.Text.Json;
 using static InvestDapp.Shared.DTOs.EvenBockchainDTO;
+using Microsoft.Extensions.DependencyInjection;
+
 
 namespace Invest.Application.EventService
 {
@@ -29,6 +31,8 @@ namespace Invest.Application.EventService
         private readonly IUserService _userService;
         private readonly IConversationService _conversationService;
         private readonly INotificationService _notificationService;
+        private readonly IServiceProvider _serviceProvider;         // dùng để tạo scope trong Task.Run
+
         public CampaignEventService(
             Web3 web3,
             InvestDbContext dbContext,
@@ -37,7 +41,8 @@ namespace Invest.Application.EventService
             IOptions<BlockchainConfig> config,
             IConversationService conversationService,
             IUserService userService,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            IServiceProvider serviceProvider)
         {
             _web3 = web3;
             _dbContext = dbContext;
@@ -47,6 +52,7 @@ namespace Invest.Application.EventService
             _conversationService = conversationService;
             _userService = userService;
             _notificationService = notificationService;
+            _serviceProvider = serviceProvider;
         }
 
         public async Task ProcessNewEventsAsync(CancellationToken cancellationToken)
@@ -126,7 +132,7 @@ namespace Invest.Application.EventService
                         }
 
                         // Gọi repository để cập nhật DB
-                        await _eventRepository.HandleInvestmentReceivedAsync(evt.CampaignId, evt.Investor, evt.Amount, evt.CurrentRaisedAmount,txHash, dateTime);
+                        await _eventRepository.HandleInvestmentReceivedAsync(evt.CampaignId, evt.Investor, evt.Amount, evt.CurrentRaisedAmount, txHash, dateTime);
 
 
                     }, cancellationToken);
@@ -152,9 +158,26 @@ namespace Invest.Application.EventService
                         var timestamp = block.Timestamp;  // Đơn vị là seconds từ Unix epoch
                         DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds((long)timestamp.Value).UtcDateTime;
 
-                        await _eventRepository.HandleProfitAddedAsync(evt.Id ,evt.CampaignId, evt.Amount , txHash , dateTime);
+                        await _eventRepository.HandleProfitAddedAsync(evt.Id, evt.CampaignId, evt.Amount, txHash, dateTime);
 
                         await _eventRepository.LogEventAsync("ProfitAdded", txHash, (int)log.Log.BlockNumber.Value, (int)evt.CampaignId, JsonSerializer.Serialize(evt));
+                        _ = Task.Run(async () =>
+                        {
+                            using (var scope = _serviceProvider.CreateScope())
+                            {
+                                var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+
+                                var noti = new CreateNotificationToCampaignRequest
+                                {
+                                    CampaignId = (int)evt.CampaignId,
+                                    Type = "ProfitAdded",
+                                    Title = "Lợi nhuận đã được thêm vào chiến dịch",
+                                    Message = $"Chiến dịch ID {evt.CampaignId} vừa được thêm lợi nhuận: {(int)evt.Amount/Math.Pow(10, 18)}. Vui lòng kiểm tra để biết thêm chi tiết.",
+                                };
+
+                                await notificationService.CreateNotificationForCampaignInvestorsAsync(noti);
+                            }
+                        });
                     }, cancellationToken);
                     if (!okProfit) chunkSucceeded = false;
 
@@ -163,8 +186,43 @@ namespace Invest.Application.EventService
                     var okStatus = await ProcessEventsInRange<CampaignStatusUpdatedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "CampaignStatusUpdated", async (log) =>
                     {
                         var evt = log.Event;
-                        
                         await _eventRepository.HandleCampaignStatusUpdatedAsync(evt.CampaignId, evt.NewStatus);
+
+                        _ = Task.Run(async () =>
+                        {
+                            using (var scope = _serviceProvider.CreateScope())
+                            {
+                                var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+
+                                var status = "";
+
+                                switch ((int)evt.NewStatus)
+                                {
+                                    case 0:
+                                        status = "Active";
+                                        break;
+                                    case 1:
+                                        status = "Voting";
+                                        break;
+                                    case 2:
+                                        status = "Complete";
+                                        break;
+                                    case 3:
+                                        status = "Failed";
+                                        break;
+                                }
+
+                                var noti = new CreateNotificationToCampaignRequest
+                                {
+                                    CampaignId = (int)evt.CampaignId,
+                                    Type = "UpdateCampaignStatus",
+                                    Title = "Trạng thái chiến dịch đã được cập nhật",
+                                    Message = $"Chiến dịch ID {evt.CampaignId} vừa được cập nhật trạng thái: {status}. Vui lòng kiểm tra để biết thêm chi tiết.",
+                                };
+
+                                await notificationService.CreateNotificationForCampaignInvestorsAsync(noti);
+                            }
+                        });
 
                     }, cancellationToken);
                     if (!okStatus) chunkSucceeded = false;
@@ -209,6 +267,24 @@ namespace Invest.Application.EventService
                                     await _notificationService.CreateNotificationAsync(noti);
                                 }
                             }
+                            // Notify all campaign investors
+                            _ = Task.Run(async () =>
+                                {
+                                    using (var scope = _serviceProvider.CreateScope())
+                                    {
+                                        var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+
+                                        var noti = new CreateNotificationToCampaignRequest
+                                        {
+                                            CampaignId = (int)evt.CampaignId,
+                                            Type = "WithdrawalRequest",
+                                            Title = "Yêu cầu rút tiền đã được chủ chiến dịch tạo",
+                                            Message = $"Chiến dịch ID {evt.CampaignId} vừa có yêu cầu rút tiền: {evt.Amount}. Vui lòng kiểm tra để biết thêm chi tiết.",
+                                        };
+
+                                        await notificationService.CreateNotificationForCampaignInvestorsAsync(noti);
+                                    }
+                                });
                         }
                         catch (Exception ex)
                         {
@@ -241,27 +317,8 @@ namespace Invest.Application.EventService
 
                     }, cancellationToken);
                     if (!okVoteCast) chunkSucceeded = false;
-                    
-                    // 7 Xử lý add profit
-                    var okAddProfit = await ProcessEventsInRange<ProfitAddedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "ProfitAdded", async (log) =>
-                    {
-                        var evt = log.Event;
-                        var txHash = log.Log.TransactionHash;
-                        // Lấy thông tin về transaction
-                        var transaction = await _web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(txHash);
 
-                        // Lấy thông tin block chứa transaction này
-                        var block = await _web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(transaction.BlockNumber);
 
-                        // Lấy timestamp của block
-                        var timestamp = block.Timestamp;  // Đơn vị là seconds từ Unix epoch
-                        DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds((long)timestamp.Value).UtcDateTime;
-
-                        await _eventRepository.HandleAddProfitAsync(evt.Id, evt.CampaignId, evt.Amount, txHash, dateTime);
-
-                        await _eventRepository.LogEventAsync("AddProfit", txHash, (int)log.Log.BlockNumber.Value, (int)evt.CampaignId, JsonSerializer.Serialize(evt));
-                    }, cancellationToken);
-                    if (!okAddProfit) chunkSucceeded = false;
 
                     // 8 Xử lý claim profit
                     var okClaimProfit = await ProcessEventsInRange<ProfitClaimedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "ClaimProfit", async (log) =>
@@ -275,7 +332,7 @@ namespace Invest.Application.EventService
                         var block = await _web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(transaction.BlockNumber);
 
                         // Lấy timestamp của block
-                        var timestamp = block.Timestamp;  
+                        var timestamp = block.Timestamp;
                         DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds((long)timestamp.Value).UtcDateTime;
 
                         await _eventRepository.HandleClaimProfitAsync(evt.ProfitId, evt.Investor, txHash, dateTime);

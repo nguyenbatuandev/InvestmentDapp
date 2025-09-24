@@ -371,8 +371,14 @@
       <div class="aside-links">
         <a href="@Url.Action("Posts", new { campaignId = Model.Id })" class="@((ViewContext.RouteData.Values["action"]?.ToString() == "Posts") ? "active" : "")"><span class="icon"><i class="fas fa-newspaper"></i></span> Bài viết</a>
         @if (Model.WithdrawalRequests?.Any() == true){ <a href="@Url.Action("WithdrawalRequests", new { id = Model.Id })" class="@((ViewContext.RouteData.Values["action"]?.ToString() == "WithdrawalRequests") ? "active" : "")"><span class="icon"><i class="fas fa-hand-holding-usd"></i></span> Rút vốn</a> }
+        @if (Model.Status == InvestDapp.Shared.Enums.CampaignStatus.Completed)
+        {
+            <a href="@Url.Action("Details", new { id = Model.Id })" class="@((ViewContext.RouteData.Values["action"]?.ToString() == "Profits") ? "active" : "")">
+                <span class="icon"><i class="fas fa-coins"></i></span> Lợi nhuận
+            </a>
+        }
         @* Vote button visible during Voting status with active request count *@
-    @* Vote link moved to compact summary in the aside header *@
+        @* Vote link moved to compact summary in the aside header *@
         <a href="@Url.Action("Index")" class="@((ViewContext.RouteData.Values["controller"]?.ToString() == "Campaigns" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"><span class="icon"><i class="fas fa-th-list"></i></span> Tất cả dự án</a>
       </div>
     </aside>

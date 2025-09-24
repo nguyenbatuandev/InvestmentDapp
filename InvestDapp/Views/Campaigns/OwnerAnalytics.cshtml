@@ -1,0 +1,243 @@
+﻿@{
+    ViewData["Title"] = "Owner Analytics";
+    Layout = "~/Pages/_Layout.cshtml";
+}
+
+<div class="wrapper owner-analytics" style="padding-top:calc(var(--header-h) + 28px);">
+    <style>
+        .owner-analytics .head h1 { margin:0; font-size:22px; }
+        .owner-analytics .sub { color:var(--muted,#9aa3ba); }
+    /* summary cards for campaigns (replaces previous KPI cards) */
+    .owner-analytics .summary-card { padding:12px; border-radius:10px; background:var(--card,#0e1526); border:1px solid var(--border,#2b3752); }
+    .owner-analytics .summary-card .label { color:var(--muted,#9aa3ba); font-weight:700; font-size:13px }
+    .owner-analytics .summary-card .value { font-weight:700; font-size:14px; margin-top:6px }
+        .owner-analytics .card { padding:14px; border-radius:12px; background:var(--card,#0e1526); border:1px solid var(--border,#2b3752); }
+    .owner-analytics .table-wrap { overflow:auto; border-radius:10px; border:1px solid var(--border,#2b3752); max-height: calc(15 * 46px); }
+    /* Keep table header visible while scrolling the body */
+    .owner-analytics table thead th { position: sticky; top: 0; background: var(--card); backdrop-filter: blur(6px); z-index: 3; }
+        .owner-analytics table { width:100%; border-collapse:collapse; min-width:720px }
+        .owner-analytics th, .owner-analytics td { padding:10px; border-bottom:1px solid var(--border,#2b3752); text-align:left }
+        .owner-analytics .filters { display:flex; gap:10px; align-items:center }
+        .owner-analytics .select { background:var(--card,#121826); border:1px solid var(--border,#2b3752); padding:8px 12px; border-radius:8px; color:var(--fg,#e6e9ef); min-width:200px }
+    .owner-analytics .num { font-variant-numeric: tabular-nums }
+    /* Keep charts a consistent size to avoid ugly resizing on filter change */
+    .owner-analytics .card canvas { height:200px !important; max-height:240px !important; width:100% !important; }
+    /* Make transaction hash links more visible */
+    .owner-analytics .table-wrap a { color: var(--primary); font-weight:700; text-decoration: none; }
+    .owner-analytics .table-wrap a:hover { color: #9befff; text-decoration: underline; }
+    .owner-analytics td.hash { font-weight:700; }
+    @@media (max-width:800px){ .owner-analytics .summary-card{grid-column:span 2} }
+    </style>
+
+    <div class="head owner-analytics" style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;gap:12px;align-items:center">
+            <div class="filters">
+                <label for="campaign-filter" style="color:var(--muted,#9aa3ba);font-weight:700;margin-right:6px">Lọc dự án:</label>
+                <select id="campaign-filter" class="select"><option value="all">-- Tất cả dự án --</option></select>
+                <label for="metric-filter" style="color:var(--muted,#9aa3ba);font-weight:700;margin-left:8px;margin-right:6px">Hiển thị:</label>
+                <select id="metric-filter" class="select"><option value="both">Cả hai</option><option value="invest">Đầu tư</option><option value="profit">Lợi nhuận</option></select>
+                <button class="btn" id="btn-refresh">Làm mới</button>
+            </div>
+            <a class="btn primary" href="/Campaigns">Quay lại chiến dịch</a>
+        </div>
+    </div>
+
+    
+
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:16px">
+        <div class="card">
+            <canvas id="chartInvestments" height="200"></canvas>
+        </div>
+        <div class="card">
+            <canvas id="chartProfitShare" height="200"></canvas>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+        <h3>Giao dịch gần đây</h3>
+        <div class="table-wrap">
+            <table style="width:100%">
+                <thead>
+                    <tr><th>Chiến dịch</th><th>Hash</th><th>Loại</th><th>Số tiền</th><th>Thời gian</th></tr>
+                </thead>
+                <tbody id="tx-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        async function loadOwnerAnalytics(){
+            try{
+                const res = await fetch('/api/owner/transactions', {credentials:'include'});
+                if (!res.ok) throw new Error('Không thể tải dữ liệu chủ dự án');
+                const payload = await res.json();
+
+                // Transactions
+                const txs = payload.transactions || [];
+
+                // Owner-only transactions: exclude PROFIT/REWARD (those are investor claim entries)
+                const ownerTxs = txs.filter(t => !(t.method === 'PROFIT' || t.method === 'REWARD'));
+
+                // Build a profit map from payload.transactions (these represent profits added to campaigns)
+                const profitMap = {};
+                txs.forEach(t=>{
+                    if (t.method === 'PROFIT' || t.method === 'REWARD'){
+                        const cid = t.campaignId;
+                        profitMap[cid] = (profitMap[cid] || 0) + (parseFloat(t.amount) || 0);
+                    }
+                });
+
+                // KPIs: total invested (from ownerTxs) and total profit added to campaigns (from profitMap)
+                const totalInvestLocal = ownerTxs.filter(x=>x.method==='INVEST').reduce((s,x)=>s+parseFloat(x.amount||0),0);
+                const totalProfitFromPayload = Object.values(profitMap).reduce((s,v)=>s+(parseFloat(v)||0),0);
+                const txCountLocal = ownerTxs.length;
+
+                const elKpiTotalInvest = document.getElementById('kpi-total-invest');
+                if (elKpiTotalInvest) elKpiTotalInvest.textContent = totalInvestLocal.toLocaleString('en-US',{maximumFractionDigits:3}) + ' BNB';
+                const elKpiTotalProfit = document.getElementById('kpi-total-profit');
+                if (elKpiTotalProfit) elKpiTotalProfit.textContent = totalProfitFromPayload.toLocaleString('en-US',{maximumFractionDigits:3}) + ' BNB';
+                const elKpiTxCount = document.getElementById('kpi-tx-count');
+                if (elKpiTxCount) elKpiTxCount.textContent = String(txCountLocal);
+                const elKpiProfitRate = document.getElementById('kpi-profit-rate');
+                if (elKpiProfitRate) elKpiProfitRate.textContent = (totalInvestLocal>0? Math.round((totalProfitFromPayload/totalInvestLocal)*100):0) + '%';
+
+                // Populate campaign filter list (safe)
+                const campaignFilter = document.getElementById('campaign-filter');
+                const metricFilter = document.getElementById('metric-filter');
+                if (campaignFilter){
+                    const campaignsMap = {};
+                    ownerTxs.forEach(t=>{ if (t.campaignId) campaignsMap[t.campaignId] = t.campaignTitle; });
+                    // fallback: payload may include distinct campaigns list
+                    if (Object.keys(campaignsMap).length === 0 && payload.campaigns){
+                        payload.campaigns.forEach(c=>{ campaignsMap[c.id] = c.title; });
+                    }
+                    const options = Object.keys(campaignsMap).length ? Object.keys(campaignsMap).map(id=>`<option value="${id}">${campaignsMap[id]}</option>`).join('') : '<option value="all">(Không có dự án)</option>';
+                    campaignFilter.innerHTML = '<option value="all">-- Tất cả dự án --</option>' + options;
+                }
+
+                // simple campaign summary UI (invest/profit totals per campaign)
+                const summaryWrapId = 'campaign-summary-wrap';
+                let summaryWrap = document.getElementById(summaryWrapId);
+                if(!summaryWrap){
+                    summaryWrap = document.createElement('div'); summaryWrap.id = summaryWrapId; summaryWrap.style.marginTop='12px';
+                    document.querySelector('.head.owner-analytics').after(summaryWrap);
+                }
+
+                // build a per-campaign summary (use both ownerTxs and profitMap)
+                const campaignSummary = {};
+                ownerTxs.forEach(i=>{
+                    const id = i.campaignId;
+                    campaignSummary[id] = campaignSummary[id] || { title: i.campaignTitle, invested:0, profit:0 };
+                    if(i.method === 'INVEST') campaignSummary[id].invested += parseFloat(i.amount||0);
+                });
+                // add profits from profitMap
+                Object.keys(profitMap).forEach(id=>{
+                    campaignSummary[id] = campaignSummary[id] || { title: campaignSummary[id]?.title || (payload.campaigns?.find(c=>String(c.id)===String(id))?.title||('Dự án '+id)), invested:0, profit:0 };
+                    campaignSummary[id].profit = (campaignSummary[id].profit||0) + profitMap[id];
+                });
+
+                function buildSeries(list){
+                    const byDay = {};
+                    list.forEach(t=>{
+                        const d = new Date(t.time).toISOString().slice(0,10);
+                        byDay[d] = byDay[d] || 0;
+                        byDay[d] += parseFloat(t.amount) || 0;
+                    });
+                    const labels = Object.keys(byDay).sort();
+                    const data = labels.map(l=>byDay[l]);
+                    return { labels, data };
+                }
+                const series = buildSeries(ownerTxs, metricFilter ? metricFilter.value : 'both');
+
+                const tb = document.getElementById('tx-tbody');
+                function renderRows(list){
+                    tb.innerHTML = '';
+                    list.slice(0,200).forEach(t=>{
+                        const tr = document.createElement('tr');
+                        let hashHtml = '';
+                        if (t.hash){
+                            const shortHash = t.hash.substring(0,8) + '…' + t.hash.slice(-6);
+                            const href = 'https://testnet.bscscan.com/tx/' + encodeURIComponent(t.hash);
+                            hashHtml = `<a href="${href}" target="_blank" rel="noopener noreferrer">${shortHash}</a>`;
+                        }
+                        tr.innerHTML = `<td>${t.campaignTitle}</td><td class="hash">${hashHtml}</td><td>${t.method}</td><td class="num">${Number(t.amount).toLocaleString('en-US',{maximumFractionDigits:4})} BNB</td><td>${new Date(t.time).toLocaleString()}</td>`;
+                        tb.appendChild(tr);
+                    });
+                }
+
+                // initial render uses filter logic so profit rows are shown when metric includes them
+                // declare chart instances early to avoid TDZ when drawCharts runs during initial render
+                let investChart, profitChart;
+                function initialRender(){ applyFilters(); }
+                initialRender();
+                function drawCharts(list){
+                    const metric = metricFilter ? metricFilter.value : 'both';
+                    const s = buildSeries(list, metric);
+                    const ctx = document.getElementById('chartInvestments');
+                    // Safely destroy any Chart instance already attached to this canvas
+                    try{
+                        const existing = Chart.getChart(ctx);
+                        if (existing) existing.destroy();
+                    }catch(e){ /* ignore if Chart.getChart unavailable */ }
+                    if (investChart) try{ investChart.destroy(); }catch(e){}
+                    investChart = new Chart(ctx, {
+                        type: 'line',
+                        data: { labels: s.labels, datasets: [{ label: 'Tổng giao dịch (BNB)', data: s.data, borderColor:'#00aaff', backgroundColor:'rgba(0,170,255,0.08)'}] },
+                        options: {responsive:true, maintainAspectRatio:false}
+                    });
+
+                    const ctx2 = document.getElementById('chartProfitShare');
+                    try{
+                        const existing2 = Chart.getChart(ctx2);
+                        if (existing2) existing2.destroy();
+                    }catch(e){ }
+                    if (profitChart) try{ profitChart.destroy(); }catch(e){}
+                    const totalInvestLocal = list.filter(x=>x.method==='INVEST').reduce((s,x)=>s+parseFloat(x.amount||0),0);
+                    // compute profit for the campaigns present in `list` using profitMap (sums of added profit)
+                    const campaignIds = Array.from(new Set(list.map(x=>x.campaignId)));
+                    const totalProfitLocal = campaignIds.reduce((s,id)=>s + (profitMap[id] || 0), 0);
+                    profitChart = new Chart(ctx2, {
+                        type: 'doughnut',
+                        data: { labels:['Invested','Profit'], datasets:[{data:[totalInvestLocal||0,totalProfitLocal||0], backgroundColor:['#00aaff','#00e676']}]},
+                        options:{responsive:true, maintainAspectRatio:false}
+                    });
+                }
+
+                drawCharts(ownerTxs);
+
+                // filter handler
+                function applyFilters(){
+                    const v = campaignFilter ? campaignFilter.value : 'all';
+                    const metric = metricFilter ? metricFilter.value : 'both';
+
+                    // base list depends on metric: include INVEST and/or PROFIT/REWARD
+                    let baseList;
+                    if (metric === 'profit'){
+                        baseList = txs.filter(t=> t.method === 'PROFIT' || t.method === 'REWARD');
+                    } else if (metric === 'invest'){
+                        baseList = txs.filter(t=> t.method === 'INVEST');
+                    } else {
+                        // both: include INVEST and PROFIT/REWARD (ignore other types)
+                        baseList = txs.filter(t=> t.method === 'INVEST' || t.method === 'PROFIT' || t.method === 'REWARD');
+                    }
+
+                    const filtered = (v === 'all') ? baseList : baseList.filter(t=>String(t.campaignId)===String(v));
+                    renderRows(filtered);
+                    drawCharts(filtered);
+                }
+
+                if (campaignFilter){ campaignFilter.addEventListener('change', applyFilters); }
+                if (metricFilter){ metricFilter.addEventListener('change', applyFilters); }
+
+            }catch(e){
+                console.error(e); alert(e.message||e);
+            }
+        }
+
+        document.getElementById('btn-refresh').addEventListener('click', loadOwnerAnalytics);
+        document.addEventListener('DOMContentLoaded', loadOwnerAnalytics);
+    </script>
+}

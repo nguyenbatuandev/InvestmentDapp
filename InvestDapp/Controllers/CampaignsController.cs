@@ -878,6 +878,12 @@ namespace InvestDapp.Controllers
             return View();
         }
 
+        // Owner analytics view for campaign owners
+        public IActionResult OwnerAnalytics()
+        {
+            return View();
+        }
+
         // API: Get user's transaction analysis data
         [HttpGet("api/user/transactions")]
         public async Task<IActionResult> GetUserTransactions()
@@ -977,6 +983,85 @@ namespace InvestDapp.Controllers
                     totalTx = transactions.Count,
                     totalRefundedWei = totalRefundedWei.ToString("F4"),
                     totalRefunds = totalRefunds,
+                    transactions = transactions.OrderByDescending(t => ((DateTime?)t.GetType().GetProperty("time")?.GetValue(t)) ?? DateTime.MinValue)
+                };
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Server error: " + ex.Message });
+            }
+        }
+
+        // API: Get owner's transaction analysis data (for campaign owners)
+        [HttpGet("api/owner/transactions")]
+        public async Task<IActionResult> GetOwnerTransactions()
+        {
+            try
+            {
+                var wallet = User.FindFirst("WalletAddress")?.Value;
+                if (string.IsNullOrEmpty(wallet))
+                {
+                    return Unauthorized(new { error = "Wallet address not found" });
+                }
+
+                var ownerCampaigns = await _campaignPostService.GetUserCampaignsAsync(wallet);
+
+                var transactions = new List<object>();
+                double totalInvested = 0;
+                double totalProfit = 0;
+                int txCount = 0;
+
+                foreach (var campaign in ownerCampaigns)
+                {
+                    var investments = campaign.Investments ?? Enumerable.Empty<InvestDapp.Shared.Models.Investment>();
+                    foreach (var inv in investments)
+                    {
+                        transactions.Add(new
+                        {
+                            id = inv.TransactionHash ?? $"inv_{inv.Id}",
+                            hash = inv.TransactionHash ?? "",
+                            campaignId = campaign.Id,
+                            campaignTitle = campaign.Name,
+                            method = "INVEST",
+                            amountInWei = inv.Amount,
+                            amount = inv.Amount,
+                            time = inv.Timestamp,
+                            status = "success",
+                            createdAt = inv.Timestamp
+                        });
+                        totalInvested += inv.Amount;
+                        txCount++;
+                    }
+
+                    var profits = campaign.Profits ?? Enumerable.Empty<InvestDapp.Shared.Models.Profit>();
+                    foreach (var p in profits)
+                    {
+                        transactions.Add(new
+                        {
+                            id = p.TransactionHash ?? $"profit_{p.Id}",
+                            hash = p.TransactionHash ?? "",
+                            campaignId = campaign.Id,
+                            campaignTitle = campaign.Name,
+                            method = "PROFIT",
+                            amountInWei = p.Amount.ToString(),
+                            amount = p.Amount,
+                            time = p.CreatedAt,
+                            status = "success",
+                            createdAt = p.CreatedAt
+                        });
+                        totalProfit += p.Amount;
+                        txCount++;
+                    }
+                }
+
+                var result = new
+                {
+                    walletAddress = wallet,
+                    totalInvested = totalInvested,
+                    totalProfit = totalProfit,
+                    totalTx = txCount,
                     transactions = transactions.OrderByDescending(t => ((DateTime?)t.GetType().GetProperty("time")?.GetValue(t)) ?? DateTime.MinValue)
                 };
 
