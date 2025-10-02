@@ -1,9 +1,10 @@
 ﻿using InvestDapp.Infrastructure.Data.interfaces;
 using InvestDapp.Shared.Common.Request;
 using InvestDapp.Shared.Models.Kyc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Http;
+using System.Linq;
 
 namespace InvestDapp.Infrastructure.Data.Repository
 {
@@ -25,6 +26,104 @@ namespace InvestDapp.Infrastructure.Data.Repository
                 .OrderByDescending(f => f.SubmittedAt) 
                 .FirstOrDefaultAsync();
             return latestFundraiserKyc;
+        }
+
+        public async Task<(IReadOnlyList<FundraiserKyc> Items, int TotalCount)> QueryKycsAsync(string? status, string? accountType, string? searchTerm, int page, int pageSize)
+        {
+            if (page < 1)
+            {
+                page = 1;
+            }
+
+            if (pageSize <= 0)
+            {
+                pageSize = 10;
+            }
+
+            var query = _context.FundraiserKyc
+                .Include(x => x.User)
+                .Include(x => x.IndividualInfo)
+                .Include(x => x.CompanyInfo)
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                var normalizedStatus = status.Trim().ToLower();
+                query = normalizedStatus switch
+                {
+                    "pending" => query.Where(x => x.IsApproved == null),
+                    "approved" => query.Where(x => x.IsApproved == true),
+                    "rejected" => query.Where(x => x.IsApproved == false),
+                    _ => query
+                };
+            }
+
+            if (!string.IsNullOrWhiteSpace(accountType))
+            {
+                var normalizedAccountType = accountType.Trim().ToLower();
+                query = query.Where(x => x.AccountType.ToLower() == normalizedAccountType);
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var trimmed = searchTerm.Trim();
+                var likePattern = $"%{trimmed}%";
+
+                query = query.Where(x =>
+                    (x.User != null && (
+                        (x.User.Name != null && EF.Functions.Like(x.User.Name, likePattern)) ||
+                        (x.User.Email != null && EF.Functions.Like(x.User.Email, likePattern)) ||
+                        (x.User.WalletAddress != null && EF.Functions.Like(x.User.WalletAddress, likePattern))
+                    )) ||
+                    (x.ContactEmail != null && EF.Functions.Like(x.ContactEmail, likePattern)) ||
+                    (x.IndividualInfo != null && (
+                        (x.IndividualInfo.FullName != null && EF.Functions.Like(x.IndividualInfo.FullName, likePattern)) ||
+                        (x.IndividualInfo.IdNumber != null && EF.Functions.Like(x.IndividualInfo.IdNumber, likePattern)) ||
+                        (x.IndividualInfo.Nationality != null && EF.Functions.Like(x.IndividualInfo.Nationality, likePattern))
+                    )) ||
+                    (x.CompanyInfo != null && (
+                        (x.CompanyInfo.CompanyName != null && EF.Functions.Like(x.CompanyInfo.CompanyName, likePattern)) ||
+                        (x.CompanyInfo.RegistrationNumber != null && EF.Functions.Like(x.CompanyInfo.RegistrationNumber, likePattern)) ||
+                        (x.CompanyInfo.RegisteredCountry != null && EF.Functions.Like(x.CompanyInfo.RegisteredCountry, likePattern))
+                    ))
+                );
+            }
+
+            var totalCount = await query.CountAsync();
+            var skip = (page - 1) * pageSize;
+
+            var items = await query
+                .OrderBy(x => x.IsApproved == null ? 0 : x.IsApproved == true ? 1 : 2)
+                .ThenByDescending(x => x.SubmittedAt)
+                .Skip(skip)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
+        public async Task<FundraiserKyc?> GetKycByIdAsync(int id)
+        {
+            return await _context.FundraiserKyc
+                .Include(x => x.User)
+                .Include(x => x.IndividualInfo)
+                .Include(x => x.CompanyInfo)
+                .FirstOrDefaultAsync(x => x.Id == id);
+        }
+
+        public async Task<bool> UpdateKycStatusAsync(int id, bool? isApproved)
+        {
+            var kyc = await _context.FundraiserKyc.FirstOrDefaultAsync(x => x.Id == id);
+            if (kyc == null)
+            {
+                return false;
+            }
+
+            kyc.IsApproved = isApproved;
+            _context.FundraiserKyc.Update(kyc);
+            await _context.SaveChangesAsync();
+            return true;
         }
 
         public async Task<FundraiserKyc> SubmitKycAsync(FundraiserKycRequest model, int id)
