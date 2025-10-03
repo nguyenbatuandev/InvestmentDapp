@@ -1,14 +1,29 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using InvestDapp.Application.AdminDashboard;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
 namespace InvestDapp.Areas.admin.Controllers
 {
     [Area("Admin")]
-    [Route("admin/[controller]/[action]")]  
+    [Authorize(Roles = "Admin")]
+    [Route("admin/[controller]/[action]")]
     public class DashboardController : Controller
     {
-        public IActionResult Index()
+        private readonly IAdminDashboardService _dashboardService;
+
+        public DashboardController(IAdminDashboardService dashboardService)
         {
-            return View();
+            _dashboardService = dashboardService;
+        }
+
+        [HttpGet("")]
+        [HttpGet("index")]
+        public async Task<IActionResult> Index()
+        {
+            var data = await _dashboardService.GetDashboardAsync();
+            ViewData["Title"] = "Dashboard";
+            return View(data);
         }
     }
 }

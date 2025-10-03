@@ -58,7 +58,8 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
     uint256 public requestWithdrawCounter;
     uint256 public constant MIN_INVESTMENT_AMOUNT = 0.01 ether;
     uint256 public constant VOTE_DURATION = 3 days;
-    uint16  public fees;                 // 0..100 (%)
+    uint16  public constant SUCCESS_PROFIT_RATE = 4;          // fixed 4% profit
+    uint16  public fees = SUCCESS_PROFIT_RATE;                // 0..100 (%)
     address public feeReceiver;
     uint256 public campaignCounter;
 
@@ -79,6 +80,8 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
     mapping(uint256 => Profit[]) public listProfits;
     mapping(uint256 => uint256) public totalProfits;
     mapping(uint256 => mapping(uint256 => mapping(address => bool))) public profitClaimed;
+
+    mapping(uint256 => uint256) public campaignSuccessProfit; // auto-generated 4% profit amount per campaign
 
     mapping(uint256 => uint16) public getDenialsRequestedWithDrawCampaigns;
 
@@ -114,6 +117,7 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
     event SetAddressReceiver(address indexed receiver, address indexed admin);
     event DepositBNBTrading(address indexed sender, uint256 amount);
     event WithdrawBNBTrading(address indexed receiver, uint256 amount);
+    event CampaignProfitCalculated(uint256 indexed campaignId, uint256 profitAmount);
 
     // --- MODIFIERS ---
     modifier onlyAdmin() {
@@ -138,6 +142,8 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
         _grantRole(ADMIN_ROLE, msg.sender);
         _grantRole(CREATOR_ROLE, msg.sender);
         _setRoleAdmin(ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
+        feeReceiver = msg.sender;
+        fees = SUCCESS_PROFIT_RATE;
     }
 
     // --- ADMIN ROLES ---
@@ -158,9 +164,9 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
     }
 
     function setFees(uint16 _fees) external onlyAdmin {
-        require(_fees <= 100, "Fees cannot exceed 100%");
-        fees = _fees;
-        emit SetFees(feeReceiver, _fees);
+        require(_fees == SUCCESS_PROFIT_RATE, "Profit rate fixed at 4%");
+        fees = SUCCESS_PROFIT_RATE;
+        emit SetFees(feeReceiver, SUCCESS_PROFIT_RATE);
     }
 
     // --- ADMIN ACTIONS ---
@@ -343,6 +349,16 @@ contract InvestCampaigns is AccessControl, ReentrancyGuard {
             uint256 feeAmount = (request.amount * fees) / 100;
             uint256 amountToTransfer = request.amount - feeAmount;
             require(campaign.currentRaisedAmount >= request.amount, "Insufficient funds in campaign");
+
+            uint256 raisedBeforeWithdrawal = campaign.currentRaisedAmount;
+            if (campaign.totalRaisedAmount == 0) {
+                campaign.totalRaisedAmount = raisedBeforeWithdrawal;
+            }
+            uint256 profitAmount = (campaign.totalRaisedAmount * SUCCESS_PROFIT_RATE) / 100;
+            if (profitAmount > 0 && campaignSuccessProfit[_campaignId] == 0) {
+                campaignSuccessProfit[_campaignId] = profitAmount;
+                emit CampaignProfitCalculated(_campaignId, profitAmount);
+            }
 
             request.status = WithdrawalStatus.Executed;
             campaign.currentRaisedAmount -= request.amount;
