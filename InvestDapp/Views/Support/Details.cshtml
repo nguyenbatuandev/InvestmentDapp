@@ -1,0 +1,370 @@
+@model InvestDapp.ViewModels.Support.UserSupportTicketDetailViewModel
+@using System.Linq
+@using InvestDapp.Shared.Enums
+@{
+    Layout = "~/Pages/_Layout.cshtml";
+    ViewData["Title"] = $"Ticket {Model.Ticket.TicketCode}";
+
+    string GetStatusLabel(SupportTicketStatus status) => status switch
+    {
+        SupportTicketStatus.New => "Mới",
+        SupportTicketStatus.InProgress => "Đang xử lý",
+        SupportTicketStatus.WaitingForCustomer => "Chờ bạn",
+        SupportTicketStatus.Resolved => "Đã xử lý",
+        SupportTicketStatus.Closed => "Đã đóng",
+        SupportTicketStatus.Escalated => "Chuyển cấp",
+        _ => status.ToString()
+    };
+
+    string GetStatusClass(SupportTicketStatus status) => status switch
+    {
+        SupportTicketStatus.New => "badge status-new",
+        SupportTicketStatus.InProgress => "badge status-progress",
+        SupportTicketStatus.WaitingForCustomer => "badge status-wait",
+        SupportTicketStatus.Resolved => "badge status-resolved",
+        SupportTicketStatus.Closed => "badge status-closed",
+        SupportTicketStatus.Escalated => "badge status-escalated",
+        _ => "badge"
+    };
+
+    string GetPriorityLabel(SupportTicketPriority priority) => priority switch
+    {
+        SupportTicketPriority.Low => "Thấp",
+        SupportTicketPriority.Normal => "Bình thường",
+        SupportTicketPriority.High => "Cao",
+        SupportTicketPriority.Critical => "Khẩn cấp",
+        _ => priority.ToString()
+    };
+
+    string GetPriorityClass(SupportTicketPriority priority) => priority switch
+    {
+        SupportTicketPriority.Low => "priority low",
+        SupportTicketPriority.Normal => "priority normal",
+        SupportTicketPriority.High => "priority high",
+        SupportTicketPriority.Critical => "priority critical",
+        _ => "priority"
+    };
+}
+
+@section Styles {
+    <style>
+        .ticket-detail {
+            max-width: 1000px;
+            margin: 120px auto 60px;
+            padding: 0 16px;
+        }
+
+        .detail-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .support-intro {
+            color: var(--muted);
+            margin: 0;
+        }
+
+        .detail-header h1 {
+            margin: 0;
+            font-size: clamp(26px,4vw,36px);
+        }
+
+        .detail-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
+            margin-bottom: 26px;
+        }
+
+        .meta-card {
+            background: rgba(255,255,255,.04);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 14px;
+            padding: 16px;
+        }
+
+        .meta-label {
+            color: var(--muted);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .meta-value {
+            margin-top: 6px;
+            font-weight: 700;
+            font-size: 17px;
+        }
+
+        .conversation {
+            background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            display: flex;
+            gap: 14px;
+            padding: 16px;
+            border-radius: 14px;
+            background: rgba(255,255,255,.04);
+            border: 1px solid rgba(255,255,255,.06);
+        }
+
+        .message.staff {
+            background: rgba(108,240,255,.06);
+            border-color: rgba(108,240,255,.18);
+        }
+
+        .avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: rgba(255,255,255,.04);
+            display: grid;
+            place-items: center;
+            font-weight: 700;
+        }
+
+        .message-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .message-head {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: baseline;
+        }
+
+        .message-sender {
+            font-weight: 700;
+        }
+
+        .message-date {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .attachments {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .attachment-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 10px;
+            background: rgba(255,255,255,.05);
+            border: 1px solid rgba(255,255,255,.08);
+            text-decoration: none;
+            font-size: 13px;
+            color: var(--fg);
+        }
+
+        .reply-box {
+            margin-top: 30px;
+            background: rgba(255,255,255,.04);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .reply-box h3 {
+            margin-bottom: 12px;
+            font-size: 20px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .form-control, .form-select, textarea {
+            background: rgba(7,10,18,.5);
+            border: 1px solid rgba(255,255,255,.12);
+            color: var(--fg);
+        }
+
+        .form-control:focus, textarea:focus {
+            border-color: rgba(108,240,255,.4);
+            box-shadow: 0 0 0 2px rgba(108,240,255,.2);
+        }
+
+        .message-counter {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .alert {
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 18px;
+            font-weight: 600;
+        }
+
+        .alert-success {
+            background: rgba(34,197,94,.16);
+            border: 1px solid rgba(34,197,94,.4);
+            color: #86f7b7;
+        }
+
+        .alert-danger {
+            background: rgba(255,107,107,.16);
+            border: 1px solid rgba(255,107,107,.4);
+            color: #ffb7b7;
+        }
+
+        .reply-disabled {
+            text-align: center;
+            padding: 18px;
+            border-radius: 12px;
+            background: rgba(255,255,255,.04);
+            border: 1px solid rgba(255,255,255,.08);
+            color: var(--muted);
+            font-weight: 600;
+        }
+    </style>
+}
+
+<div class="ticket-detail">
+    <div class="detail-header">
+        <div>
+            <h1>@Model.Ticket.Subject</h1>
+            <p class="support-intro">Mã ticket: <strong>#@Model.Ticket.TicketCode</strong></p>
+        </div>
+        <a class="btn secondary" asp-controller="Support" asp-action="Index">Quay lại danh sách</a>
+    </div>
+
+    @if (TempData["SupportSuccess"] is string successMsg && !string.IsNullOrWhiteSpace(successMsg))
+    {
+        <div class="alert alert-success">@successMsg</div>
+    }
+
+    @if (TempData["SupportError"] is string errorMsg && !string.IsNullOrWhiteSpace(errorMsg))
+    {
+        <div class="alert alert-danger">@errorMsg</div>
+    }
+
+    <div class="detail-meta">
+        <div class="meta-card">
+            <span class="meta-label">Trạng thái</span>
+            <span class="meta-value"><span class="@GetStatusClass(Model.Ticket.Status)">@GetStatusLabel(Model.Ticket.Status)</span></span>
+        </div>
+        <div class="meta-card">
+            <span class="meta-label">Ưu tiên</span>
+            <span class="meta-value"><span class="@GetPriorityClass(Model.Ticket.Priority)">@GetPriorityLabel(Model.Ticket.Priority)</span></span>
+        </div>
+        <div class="meta-card">
+            <span class="meta-label">Người phụ trách</span>
+            <span class="meta-value">@(Model.Ticket.AssignedToName ?? "Chưa có")</span>
+        </div>
+        <div class="meta-card">
+            <span class="meta-label">Tạo lúc</span>
+            <span class="meta-value">@Model.Ticket.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+        </div>
+    </div>
+
+    <div class="conversation">
+        @foreach (var message in Model.Ticket.Messages.OrderBy(m => m.CreatedAt))
+        {
+            var isStaff = message.IsFromStaff;
+            <div class="message @(isStaff ? "staff" : string.Empty)">
+                <div class="avatar">@(isStaff ? "CS" : "ME")</div>
+                <div class="message-content">
+                    <div class="message-head">
+                        <span class="message-sender">@(string.IsNullOrWhiteSpace(message.SenderName) ? (isStaff ? "Hỗ trợ" : "Bạn") : message.SenderName)</span>
+                        <span class="message-date">@message.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                    </div>
+                    <div>@Html.Raw(message.Content.Replace("\n", "<br />"))</div>
+
+                    @if (message.Attachments != null && message.Attachments.Count > 0)
+                    {
+                        <div class="attachments">
+                            @foreach (var attachment in message.Attachments)
+                            {
+                                <a class="attachment-link" href="@attachment.FilePath" target="_blank" rel="noopener">
+                                    <i class="fa-solid fa-paperclip"></i> @attachment.FileName
+                                </a>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="reply-box">
+        <h3>Phản hồi hỗ trợ</h3>
+        <p class="support-intro">Chia sẻ thêm thông tin để đội ngũ xử lý nhanh hơn.</p>
+
+        @if (!Model.CanReply)
+        {
+            <div class="reply-disabled">Ticket đã được đóng. Nếu vẫn cần hỗ trợ, hãy tạo ticket mới.</div>
+        }
+        else
+        {
+            <form asp-action="Reply" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="ReplyForm.TicketId" />
+
+                <div class="mb-3">
+                    <label asp-for="ReplyForm.Message" class="form-label">Nội dung phản hồi <span class="text-danger">*</span></label>
+                    <textarea asp-for="ReplyForm.Message" class="form-control" rows="6" maxlength="4000" placeholder="Mô tả chi tiết tình huống hoặc câu hỏi của bạn..."></textarea>
+                    <div class="d-flex justify-content-between align-items-center mt-1 message-counter">
+                        <span>Tránh cung cấp thông tin nhạy cảm (mật khẩu, seed phrase,...)</span>
+                        <span id="reply-counter">0/4000</span>
+                    </div>
+                    <span asp-validation-for="ReplyForm.Message" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Đính kèm (tùy chọn)</label>
+                    <input type="file" name="attachments" multiple accept="@string.Join(',', Model.AllowedExtensions)" class="form-control" />
+                    <div class="form-text">Cho phép @string.Join(", ", Model.AllowedExtensions) (tối đa @Model.MaxAttachmentSizeMb MB mỗi tệp).</div>
+                </div>
+
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="d-flex gap-2">
+                    <a class="btn secondary" asp-controller="Support" asp-action="Index">Hủy</a>
+                    <button type="submit" class="btn">Gửi phản hồi</button>
+                </div>
+            </form>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const textarea = document.getElementById('@Html.IdFor(m => m.ReplyForm.Message)');
+            const counter = document.getElementById('reply-counter');
+            if (!textarea || !counter) return;
+
+            const updateCounter = () => {
+                counter.textContent = `${textarea.value.length}/4000`;
+            };
+
+            textarea.addEventListener('input', updateCounter);
+            updateCounter();
+        })();
+    </script>
+}

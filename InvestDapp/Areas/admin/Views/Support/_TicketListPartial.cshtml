@@ -1,0 +1,262 @@
+@using System
+@using System.Linq
+@using InvestDapp.Shared.Enums
+@model InvestDapp.Areas.admin.ViewModels.Support.SupportTicketListViewModel
+@{
+    var statusValues = Enum.GetValues(typeof(SupportTicketStatus)).Cast<SupportTicketStatus>().ToList();
+    var priorityValues = Enum.GetValues(typeof(SupportTicketPriority)).Cast<SupportTicketPriority>().ToList();
+    var slaValues = Enum.GetValues(typeof(SupportTicketSlaStatus)).Cast<SupportTicketSlaStatus>().ToList();
+
+    string BuildScopeUrl(string scope) => Url.Action("Index", new
+    {
+        area = "admin",
+        scope,
+        status = Model.Filter.Status,
+        priority = Model.Filter.Priority,
+        slaStatus = Model.Filter.SlaStatus,
+        keyword = Model.Filter.Keyword,
+        page = 1,
+        pageSize = Model.Filter.PageSize
+    }) ?? "#";
+
+    string BuildPageUrl(int page) => Url.Action("Index", new
+    {
+        area = "admin",
+        scope = Model.Scope,
+        status = Model.Filter.Status,
+        priority = Model.Filter.Priority,
+        slaStatus = Model.Filter.SlaStatus,
+        keyword = Model.Filter.Keyword,
+        page,
+        pageSize = Model.Filter.PageSize
+    }) ?? "#";
+
+    string StatusClass(SupportTicketStatus status) => status switch
+    {
+        SupportTicketStatus.New => "status-chip status-new",
+        SupportTicketStatus.InProgress => "status-chip status-progress",
+        SupportTicketStatus.WaitingForCustomer => "status-chip status-waiting",
+        SupportTicketStatus.Resolved => "status-chip status-resolved",
+        SupportTicketStatus.Closed => "status-chip status-closed",
+        SupportTicketStatus.Escalated => "status-chip status-escalated",
+        _ => "status-chip"
+    };
+
+    string PriorityClass(SupportTicketPriority priority) => priority switch
+    {
+        SupportTicketPriority.Critical => "priority-chip priority-critical",
+        SupportTicketPriority.High => "priority-chip priority-high",
+        SupportTicketPriority.Normal => "priority-chip priority-normal",
+        SupportTicketPriority.Low => "priority-chip priority-low",
+        _ => "priority-chip"
+    };
+
+    string SlaClass(SupportTicketSlaStatus sla) => sla switch
+    {
+        SupportTicketSlaStatus.OnTrack => "sla-chip sla-ontrack",
+        SupportTicketSlaStatus.AtRisk => "sla-chip sla-risk",
+        SupportTicketSlaStatus.Breached => "sla-chip sla-breached",
+        _ => "sla-chip"
+    };
+
+    string FormatDate(DateTime? value) => value.HasValue
+        ? value.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+        : "--";
+}
+
+<div class="support-dashboard-content" data-ticket-content-root>
+    <div class="support-metrics-grid">
+        <div class="metric-card">
+            <div class="metric-icon sky"><ion-icon name="chatbubbles-outline"></ion-icon></div>
+            <div class="metric-body">
+                <div class="metric-label">Ticket mở</div>
+                <div class="metric-value">@Model.Metrics.TotalOpen</div>
+                <div class="metric-caption">Đang chờ xử lý</div>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon amber"><ion-icon name="people-circle-outline"></ion-icon></div>
+            <div class="metric-body">
+                <div class="metric-label">Chưa giao</div>
+                <div class="metric-value">@Model.Metrics.Unassigned</div>
+                <div class="metric-caption">Cần phân phối</div>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon violet"><ion-icon name="time-outline"></ion-icon></div>
+            <div class="metric-body">
+                <div class="metric-label">Chờ khách</div>
+                <div class="metric-value">@Model.Metrics.WaitingForCustomer</div>
+                <div class="metric-caption">Khách hàng cần phản hồi</div>
+            </div>
+        </div>
+        <div class="metric-card warning">
+            <div class="metric-icon rose"><ion-icon name="warning-outline"></ion-icon></div>
+            <div class="metric-body">
+                <div class="metric-label">SLA cảnh báo</div>
+                <div class="metric-value">@Model.Metrics.SlaAtRisk</div>
+                <div class="metric-caption">At risk &amp; breached</div>
+            </div>
+        </div>
+        <div class="metric-card info">
+            <div class="metric-icon mint"><ion-icon name="sparkles-outline"></ion-icon></div>
+            <div class="metric-body">
+                <div class="metric-label">Ticket mới hôm nay</div>
+                <div class="metric-value">@Model.Metrics.NewToday</div>
+                <div class="metric-caption">Trong 24h qua</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="support-list-card">
+        <div class="support-list-header">
+            <div class="scope-pill-group" role="tablist">
+                <a class="scope-pill js-scope-link @(Model.Scope == "inbox" ? "active" : string.Empty)" href="@BuildScopeUrl("inbox")" data-scope="inbox">Hộp thư</a>
+                <a class="scope-pill js-scope-link @(Model.Scope == "all" ? "active" : string.Empty)" href="@BuildScopeUrl("all")" data-scope="all">Tất cả</a>
+                <a class="scope-pill js-scope-link @(Model.Scope == "unassigned" ? "active" : string.Empty)" href="@BuildScopeUrl("unassigned")" data-scope="unassigned">Chưa giao</a>
+                <a class="scope-pill js-scope-link @(Model.Scope == "mine" ? "active" : string.Empty)" href="@BuildScopeUrl("mine")" data-scope="mine">Ticket của tôi</a>
+                <a class="scope-pill js-scope-link @(Model.Scope == "sla-risk" ? "active" : string.Empty)" href="@BuildScopeUrl("sla-risk")" data-scope="sla-risk">Cảnh báo SLA</a>
+            </div>
+            <div class="support-list-actions">
+                <div class="view-hint">Lọc theo nhu cầu và xem ngay lập tức</div>
+            </div>
+        </div>
+
+        <form method="get" class="ticket-filter js-ticket-filter-form">
+            <input type="hidden" name="scope" value="@Model.Scope" />
+            <input type="hidden" name="page" value="@Model.Filter.Page" />
+            <input type="hidden" name="pageSize" value="@Model.Filter.PageSize" />
+            <div class="filter-grid">
+                <div class="filter-field">
+                    <label for="status">Trạng thái</label>
+                    <select id="status" name="status" class="form-control">
+                        <option value="">Tất cả</option>
+                        @foreach (var status in statusValues)
+                        {
+                            <option value="@status" @(Model.Filter.Status == status ? "selected" : string.Empty)>@status</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="priority">Độ ưu tiên</label>
+                    <select id="priority" name="priority" class="form-control">
+                        <option value="">Tất cả</option>
+                        @foreach (var priority in priorityValues)
+                        {
+                            <option value="@priority" @(Model.Filter.Priority == priority ? "selected" : string.Empty)>@priority</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="slaStatus">SLA</label>
+                    <select id="slaStatus" name="slaStatus" class="form-control">
+                        <option value="">Tất cả</option>
+                        @foreach (var sla in slaValues)
+                        {
+                            <option value="@sla" @(Model.Filter.SlaStatus == sla ? "selected" : string.Empty)>@sla</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-field grow">
+                    <label for="keyword">Từ khóa</label>
+                    <div class="search-box">
+                        <input id="keyword" name="keyword" value="@Model.Filter.Keyword" type="text" placeholder="Mã ticket, tiêu đề, danh mục..." class="form-control" />
+                        <ion-icon name="search-outline"></ion-icon>
+                    </div>
+                </div>
+                <div class="filter-field compact">
+                    <label for="pageSize">Hiển thị</label>
+                    <select id="pageSize" name="pageSize" class="form-control">
+                        @foreach (var size in new[] { 10, 20, 30, 50, 100 })
+                        {
+                            <option value="@size" @(Model.Filter.PageSize == size ? "selected" : string.Empty)>@size</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="filter-footer">
+                <div class="filter-buttons">
+                    <button type="submit" class="btn btn-primary">Áp dụng</button>
+                    <a class="btn btn-clear js-clear-filter" href="@Url.Action("Index", new { area = "admin" })">Xóa lọc</a>
+                </div>
+                <div class="filter-hint">Các bộ lọc áp dụng ngay lập tức, không cần tải lại trang.</div>
+            </div>
+        </form>
+
+        <div class="ticket-collection">
+            @if (!Model.Tickets.Any())
+            {
+                <div class="empty-state">
+                    <div class="empty-icon"><ion-icon name="leaf-outline"></ion-icon></div>
+                    <h3>Không có ticket nào phù hợp</h3>
+                    <p>Hãy điều chỉnh bộ lọc hoặc phạm vi hiển thị để xem thêm ticket khác.</p>
+                </div>
+            }
+            else
+            {
+                foreach (var ticket in Model.Tickets)
+                {
+                    <div class="ticket-card">
+                        <div class="ticket-card-header">
+                            <div class="ticket-meta">
+                                <a class="ticket-code" href="@Url.Action("Details", new { area = "admin", id = ticket.Id })">@ticket.TicketCode</a>
+                                <div class="ticket-tags">
+                                    <span class="@StatusClass(ticket.Status)">@ticket.Status</span>
+                                    <span class="@PriorityClass(ticket.Priority)">@ticket.Priority</span>
+                                    <span class="@SlaClass(ticket.SlaStatus)">@ticket.SlaStatus</span>
+                                </div>
+                            </div>
+                            <div class="ticket-assignee">
+                                <ion-icon name="person-circle-outline"></ion-icon>
+                                <span>@(string.IsNullOrWhiteSpace(ticket.AssignedToName) ? "Chưa giao" : ticket.AssignedToName)</span>
+                            </div>
+                        </div>
+                        <div class="ticket-card-body">
+                            <h3>@ticket.Subject</h3>
+                            <p class="ticket-category">@(!string.IsNullOrWhiteSpace(ticket.Category) ? ticket.Category : "(Không phân loại)")</p>
+                        </div>
+                        <div class="ticket-card-footer">
+                            <div class="footer-item">
+                                <ion-icon name="calendar-outline"></ion-icon>
+                                <div>
+                                    <span>Khởi tạo</span>
+                                    <strong>@ticket.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong>
+                                </div>
+                            </div>
+                            <div class="footer-item">
+                                <ion-icon name="hourglass-outline"></ion-icon>
+                                <div>
+                                    <span>Hạn SLA</span>
+                                    <strong>@FormatDate(ticket.DueAt)</strong>
+                                </div>
+                            </div>
+                            <div class="footer-item">
+                                <ion-icon name="person-outline"></ion-icon>
+                                <div>
+                                    <span>Người gửi</span>
+                                    <strong>@ticket.RequesterName</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="pagination modern" aria-label="Pagination">
+                <a class="page-link js-page-link @(Model.HasPreviousPage ? string.Empty : "disabled")" href="@(Model.HasPreviousPage ? BuildPageUrl(Model.Filter.Page - 1) : "#")" data-page="@(Model.Filter.Page - 1)">
+                    <ion-icon name="chevron-back-outline"></ion-icon>
+                </a>
+                @foreach (var pageNumber in Enumerable.Range(1, Model.TotalPages))
+                {
+                    <a class="page-link js-page-link @(pageNumber == Model.Filter.Page ? "active" : string.Empty)" href="@BuildPageUrl(pageNumber)" data-page="@pageNumber">@pageNumber</a>
+                }
+                <a class="page-link js-page-link @(Model.HasNextPage ? string.Empty : "disabled")" href="@(Model.HasNextPage ? BuildPageUrl(Model.Filter.Page + 1) : "#")" data-page="@(Model.Filter.Page + 1)">
+                    <ion-icon name="chevron-forward-outline"></ion-icon>
+                </a>
+            </nav>
+        }
+    </div>
+</div>

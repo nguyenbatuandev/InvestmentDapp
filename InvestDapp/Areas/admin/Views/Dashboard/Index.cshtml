@@ -9,6 +9,21 @@
 
 <!-- ========================= Main ==================== -->
 <div class="main">
+    <div class="topbar">
+        <div class="toggle">
+            <ion-icon name="menu-outline"></ion-icon>
+        </div>
+        <div class="search">
+            <label>
+                <input type="text" placeholder="Tìm kiếm nhanh...">
+                <ion-icon name="search-outline"></ion-icon>
+            </label>
+        </div>
+        <div class="user">
+            <ion-icon name="person-circle-outline"></ion-icon>
+        </div>
+    </div>
+
     <!-- ======================= Header ================== -->
     <div class="dashboard-header">
         <div class="header-content">
@@ -123,6 +138,13 @@
             <div class="stat-label">Tin nhắn mới</div>
             <div class="stat-action">
                 <a href="@Url.Action("Index", "Dashboard", new { area = "admin" })">Xem</a>
+            </div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">@Model.QuickStats.UnresolvedSupportTickets</div>
+            <div class="stat-label">Ticket hỗ trợ mở</div>
+            <div class="stat-action">
+                <a href="@Url.Action("Index", "Support", new { area = "admin", scope = "inbox" })">Xử lý</a>
             </div>
         </div>
         <div class="stat-item">
@@ -307,6 +329,164 @@
                             </div>
                             rank++;
                         }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-card risk-section risk-full-width">
+        <div class="cardHeader">
+            <div class="header-info">
+                <h2>Giám sát rủi ro &amp; tuân thủ</h2>
+                <p>Phát hiện bất thường và theo dõi backlog KYC</p>
+            </div>
+        </div>
+
+        <div class="risk-panels">
+            <div class="risk-panel">
+                <div class="panel-title">Giao dịch tăng đột biến</div>
+                @if (!Model.RiskInsights.TransactionSpikes.Any())
+                {
+                    <div class="empty-state">Không có cảnh báo.</div>
+                }
+                else
+                {
+                    <ul class="risk-list">
+                        @foreach (var alert in Model.RiskInsights.TransactionSpikes)
+                        {
+                            <li>
+                                <div class="risk-primary">@alert.CampaignName</div>
+                                <div class="risk-meta">24h: @alert.Last24hAmount.ToString("N2") BNB • TB 6 ngày: @alert.AverageDailyAmount.ToString("N2") BNB</div>
+                                <div class="risk-meta">Tăng @(double.IsInfinity(alert.SpikeRatio) ? "∞" : alert.SpikeRatio.ToString("N1")) lần • Cập nhật @alert.LastInvestmentAt.ToLocalTime().ToString("dd/MM HH:mm")</div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+
+            <div class="risk-panel">
+                <div class="panel-title">Ví trùng lặp</div>
+                @if (!Model.RiskInsights.DuplicateWallets.Any())
+                {
+                    <div class="empty-state">Không có ví bất thường.</div>
+                }
+                else
+                {
+                    <ul class="risk-list">
+                        @foreach (var wallet in Model.RiskInsights.DuplicateWallets)
+                        {
+                            <li>
+                                <div class="risk-primary">@wallet.WalletAddress</div>
+                                <div class="risk-meta">Tham gia @wallet.CampaignCount chiến dịch • Tổng: @wallet.TotalAmount.ToString("N2") BNB</div>
+                                <div class="risk-meta">Chiến dịch gần đây: @string.Join(", ", wallet.SampleCampaigns)</div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+
+        <div class="risk-panels">
+            <div class="risk-panel">
+                <div class="panel-title">Yêu cầu rút bất thường</div>
+                @if (!Model.RiskInsights.WithdrawalAlerts.Any())
+                {
+                    <div class="empty-state">Không có chiến dịch nào đáng chú ý.</div>
+                }
+                else
+                {
+                    <ul class="risk-list">
+                        @foreach (var alert in Model.RiskInsights.WithdrawalAlerts)
+                        {
+                            <li>
+                                <div class="risk-primary">@alert.CampaignName</div>
+                                <div class="risk-meta">Đang chờ: @alert.PendingCount • Tổng 7 ngày: @alert.TotalLast7Days</div>
+                                <div class="risk-meta">Mới nhất: @alert.LastRequestAt.ToLocalTime().ToString("dd/MM HH:mm")</div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+
+            <div class="risk-panel kyc-panel">
+                <div class="panel-title">Tồn đọng KYC</div>
+                <div class="kyc-overview">
+                    <div>
+                        <span class="label">Đang chờ</span>
+                        <strong>@Model.RiskInsights?.KycBacklog?.PendingCount</strong>
+                    </div>
+                    <div>
+                        <span class="label">TB ngày chờ</span>
+                        <strong>@Model.RiskInsights?.KycBacklog?.AveragePendingDays.ToString("N1")</strong>
+                    </div>
+                    <div>
+                        <span class="label">Tỉ lệ duyệt</span>
+                        <strong>@Model.RiskInsights?.KycBacklog?.ApprovalRate.ToString("N1")%</strong>
+                    </div>
+                    <div>
+                        <span class="label">Tỉ lệ từ chối</span>
+                        <strong>@Model.RiskInsights?.KycBacklog?.RejectionRate.ToString("N1")%</strong>
+                    </div>
+                </div>
+
+                <div class="kyc-breakdown">
+                    <div class="sub-title">Theo loại tài khoản</div>
+                    @if (Model.RiskInsights?.KycBacklog?.PendingByAccountType == null || !Model.RiskInsights.KycBacklog.PendingByAccountType.Any())
+                    {
+                        <div class="empty-state">Không có hồ sơ chờ.</div>
+                    }
+                    else
+                    {
+                        <ul class="risk-list compact">
+                            @foreach (var stat in Model.RiskInsights.KycBacklog.PendingByAccountType)
+                            {
+                                <li>
+                                    <div class="risk-primary">@stat.AccountType</div>
+                                    <div class="risk-meta">@stat.PendingCount hồ sơ • TB @stat.AveragePendingDays.ToString("N1") ngày</div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <div class="kyc-breakdown">
+                    <div class="sub-title">Hồ sơ chờ lâu nhất</div>
+                    @if (Model.RiskInsights?.KycBacklog?.OldestPending == null || !Model.RiskInsights.KycBacklog.OldestPending.Any())
+                    {
+                        <div class="empty-state">Không có hồ sơ tồn.</div>
+                    }
+                    else
+                    {
+                        <ul class="risk-list compact">
+                            @foreach (var pending in Model.RiskInsights.KycBacklog.OldestPending)
+                            {
+                                <li>
+                                    <div class="risk-primary">@pending.WalletAddress</div>
+                                    <div class="risk-meta">@pending.AccountType • @pending.PendingDays.ToString("N1") ngày • Gợi ý: @pending.SuggestedReviewer</div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <div class="kyc-breakdown">
+                    <div class="sub-title">Lý do bị trả nhiều nhất</div>
+                    @if (Model.RiskInsights?.KycBacklog?.RejectionReasons == null || !Model.RiskInsights.KycBacklog.RejectionReasons.Any())
+                    {
+                        <div class="empty-state">Chưa có dữ liệu từ chối.</div>
+                    }
+                    else
+                    {
+                        <ul class="risk-list compact">
+                            @foreach (var reason in Model.RiskInsights.KycBacklog.RejectionReasons)
+                            {
+                                <li>
+                                    <div class="risk-primary">@reason.Reason</div>
+                                    <div class="risk-meta">@reason.Count hồ sơ</div>
+                                </li>
+                            }
+                        </ul>
                     }
                 </div>
             </div>
@@ -783,6 +963,111 @@
 
     .legend-box.refund {
         background: #f87171;
+    }
+
+    .risk-full-width {
+        margin-top: 2rem;
+    }
+
+    .risk-section .risk-panels {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .risk-section .risk-panels:last-child {
+        margin-bottom: 0;
+    }
+
+    .risk-panel {
+        background: var(--gray-light);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        min-height: 150px;
+    }
+
+    .panel-title {
+        font-weight: 700;
+        color: var(--dark);
+    }
+
+    .risk-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .risk-list.compact {
+        gap: 0.5rem;
+    }
+
+    .risk-list li {
+        background: white;
+        border-radius: 10px;
+        padding: 0.75rem;
+        box-shadow: 0 1px 6px rgba(15, 23, 42, 0.08);
+    }
+
+    .risk-primary {
+        font-weight: 600;
+        color: var(--dark);
+        margin-bottom: 0.25rem;
+        word-break: break-word;
+    }
+
+    .risk-meta {
+        font-size: 0.85rem;
+        color: var(--gray-dark);
+        font-weight: 500;
+        word-break: break-word;
+    }
+
+    .kyc-panel .kyc-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.75rem;
+        background: white;
+        border-radius: 10px;
+        padding: 0.75rem;
+        box-shadow: 0 1px 6px rgba(15, 23, 42, 0.08);
+    }
+
+    .kyc-overview .label {
+        display: block;
+        font-size: 0.75rem;
+        color: var(--gray-dark);
+        margin-bottom: 0.25rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .kyc-overview strong {
+        font-size: 1.1rem;
+        color: var(--blue);
+    }
+
+    .kyc-breakdown {
+        background: white;
+        border-radius: 10px;
+        padding: 0.75rem;
+        box-shadow: 0 1px 6px rgba(15, 23, 42, 0.08);
+    }
+
+    .kyc-breakdown + .kyc-breakdown {
+        margin-top: 0.75rem;
+    }
+
+    .kyc-breakdown .sub-title {
+        font-weight: 600;
+        color: var(--gray-dark);
+        margin-bottom: 0.5rem;
     }
 
     /* Activities */

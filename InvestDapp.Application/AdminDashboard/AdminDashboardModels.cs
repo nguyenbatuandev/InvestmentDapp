@@ -11,6 +11,7 @@ namespace InvestDapp.Application.AdminDashboard
         public IReadOnlyList<DashboardActivityItem> RecentActivities { get; set; } = Array.Empty<DashboardActivityItem>();
         public IReadOnlyList<TopInvestorItem> TopInvestors { get; set; } = Array.Empty<TopInvestorItem>();
         public InvestmentTrendData InvestmentTrend { get; set; } = new();
+        public RiskAndComplianceData RiskInsights { get; set; } = new();
     }
 
     public class DashboardSummary
@@ -33,6 +34,7 @@ namespace InvestDapp.Application.AdminDashboard
         public decimal PendingWithdrawalAmount { get; set; }
         public int NewMessages { get; set; }
         public int NewUsers { get; set; }
+        public int UnresolvedSupportTickets { get; set; }
     }
 
     public class DashboardCampaignListItem
@@ -77,5 +79,75 @@ namespace InvestDapp.Application.AdminDashboard
         public DateTime Period { get; set; }
         public decimal InvestmentTotal { get; set; }
         public decimal RefundTotal { get; set; }
+    }
+
+    public class RiskAndComplianceData
+    {
+        public IReadOnlyList<TransactionSpikeAlert> TransactionSpikes { get; set; } = Array.Empty<TransactionSpikeAlert>();
+        public IReadOnlyList<DuplicateWalletAlert> DuplicateWallets { get; set; } = Array.Empty<DuplicateWalletAlert>();
+        public IReadOnlyList<WithdrawalAlertItem> WithdrawalAlerts { get; set; } = Array.Empty<WithdrawalAlertItem>();
+        public KycBacklogData KycBacklog { get; set; } = new();
+    }
+
+    public class TransactionSpikeAlert
+    {
+        public int CampaignId { get; set; }
+        public string CampaignName { get; set; } = string.Empty;
+        public double Last24hAmount { get; set; }
+        public double AverageDailyAmount { get; set; }
+        public double SpikeRatio { get; set; }
+        public DateTime LastInvestmentAt { get; set; }
+    }
+
+    public class DuplicateWalletAlert
+    {
+        public string WalletAddress { get; set; } = string.Empty;
+        public int CampaignCount { get; set; }
+        public double TotalAmount { get; set; }
+        public DateTime LastInvestmentAt { get; set; }
+        public IReadOnlyList<string> SampleCampaigns { get; set; } = Array.Empty<string>();
+    }
+
+    public class WithdrawalAlertItem
+    {
+        public int CampaignId { get; set; }
+        public string CampaignName { get; set; } = string.Empty;
+        public int PendingCount { get; set; }
+        public int TotalLast7Days { get; set; }
+        public DateTime LastRequestAt { get; set; }
+    }
+
+    public class KycBacklogData
+    {
+        public int PendingCount { get; set; }
+        public double AveragePendingDays { get; set; }
+        public IReadOnlyList<KycPendingItem> OldestPending { get; set; } = Array.Empty<KycPendingItem>();
+        public double ApprovalRate { get; set; }
+        public double RejectionRate { get; set; }
+        public IReadOnlyList<KycAccountTypeStat> PendingByAccountType { get; set; } = Array.Empty<KycAccountTypeStat>();
+        public IReadOnlyList<KycRejectionReasonStat> RejectionReasons { get; set; } = Array.Empty<KycRejectionReasonStat>();
+    }
+
+    public class KycPendingItem
+    {
+        public int Id { get; set; }
+        public string WalletAddress { get; set; } = string.Empty;
+        public string AccountType { get; set; } = string.Empty;
+        public DateTime SubmittedAt { get; set; }
+        public double PendingDays { get; set; }
+        public string SuggestedReviewer { get; set; } = string.Empty;
+    }
+
+    public class KycAccountTypeStat
+    {
+        public string AccountType { get; set; } = string.Empty;
+        public int PendingCount { get; set; }
+        public double AveragePendingDays { get; set; }
+    }
+
+    public class KycRejectionReasonStat
+    {
+        public string Reason { get; set; } = string.Empty;
+        public int Count { get; set; }
     }
 }

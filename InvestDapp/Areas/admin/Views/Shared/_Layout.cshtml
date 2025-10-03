@@ -1,4 +1,13 @@
-﻿<!DOCTYPE html>
+﻿@using System.Security.Claims
+@{
+    var currentUserId = User?.FindFirst("UserId")?.Value
+        ?? User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+        ?? User?.FindFirst("sub")?.Value
+        ?? string.Empty;
+    var currentUserName = User?.Identity?.Name ?? string.Empty;
+    var currentUserWallet = User?.FindFirst("WalletAddress")?.Value ?? string.Empty;
+}
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -286,13 +295,14 @@
         width: 100%;
         height: 60px;
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-start;
         align-items: center;
         padding: 0 10px;
         background: var(--white);
         border-radius: 12px;
         box-shadow: var(--shadow);
         margin-bottom: 20px;
+        gap: 1rem;
     }
 
     .toggle {
@@ -317,6 +327,11 @@
         width: 400px;
         margin: 0 10px;
     }
+
+        .topbar .search {
+            flex: 1;
+            max-width: 420px;
+        }
 
         .search label {
             position: relative;
@@ -357,6 +372,11 @@
         overflow: hidden;
         cursor: pointer;
         border: 2px solid var(--blue);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--gray-light);
+        color: var(--blue);
     }
 
         .user img {
@@ -367,6 +387,299 @@
             height: 100%;
             object-fit: cover;
         }
+
+        .user ion-icon {
+            font-size: 1.8rem;
+        }
+
+    .notification-center {
+        position: relative;
+        display: flex;
+        align-items: center;
+        margin-left: auto;
+    }
+
+    .notification-bell {
+        position: relative;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: none;
+        background: var(--gray-light);
+        color: var(--blue);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease;
+        box-shadow: 0 2px 5px rgba(37, 99, 235, 0.08);
+    }
+
+        .notification-bell:hover {
+            background: rgba(37, 99, 235, 0.14);
+            color: var(--blue);
+        }
+
+        .notification-bell ion-icon {
+            font-size: 1.4rem;
+        }
+
+        .notification-bell:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+        }
+
+    .notification-badge {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        min-width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        background: var(--danger);
+        color: var(--white);
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 18px;
+        text-align: center;
+        padding: 0 4px;
+        transform-origin: center;
+        transform: scale(0.5);
+        opacity: 0;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+        pointer-events: none;
+    }
+
+        .notification-badge.is-visible {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+    .notification-center.has-unread .notification-bell::after {
+        content: "";
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: var(--danger);
+        border-radius: 50%;
+        top: 10px;
+        left: 10px;
+        animation: pulse 1.2s ease infinite;
+    }
+
+    .notification-dropdown {
+        position: absolute;
+        top: calc(100% + 12px);
+        right: 0;
+        width: min(360px, 90vw);
+        background: var(--white);
+        border-radius: 14px;
+        box-shadow: 0 12px 36px rgba(15, 23, 42, 0.18);
+        border: 1px solid rgba(37, 99, 235, 0.12);
+        overflow: hidden;
+        transform: translateY(8px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        z-index: 16000;
+    }
+
+        .notification-dropdown.open {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+    .notification-header,
+    .notification-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: rgba(37, 99, 235, 0.05);
+    }
+
+    .notification-header span {
+        font-weight: 700;
+        color: var(--blue);
+    }
+
+    .mark-all-read {
+        background: transparent;
+        border: none;
+        color: var(--blue);
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 4px 6px;
+        border-radius: 6px;
+        transition: background 0.2s ease;
+    }
+
+        .mark-all-read:hover {
+            background: rgba(37, 99, 235, 0.12);
+        }
+
+        .mark-all-read:disabled {
+            color: var(--gray-dark);
+            cursor: default;
+            opacity: 0.6;
+        }
+
+    .notification-list {
+        max-height: 360px;
+        overflow-y: auto;
+        padding: 6px 0;
+        background: var(--white);
+    }
+
+        .notification-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .notification-list::-webkit-scrollbar-thumb {
+            background: rgba(37, 99, 235, 0.3);
+            border-radius: 999px;
+        }
+
+    .notification-item {
+        width: 100%;
+        border: none;
+        background: transparent;
+        padding: 10px 16px;
+        text-align: left;
+        display: grid;
+        grid-template-columns: 32px 1fr;
+        gap: 12px;
+        align-items: flex-start;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+
+        .notification-item:hover {
+            background: rgba(37, 99, 235, 0.08);
+        }
+
+        .notification-item.unread {
+            background: rgba(37, 99, 235, 0.1);
+        }
+
+        .notification-item.unread:hover {
+            background: rgba(37, 99, 235, 0.16);
+        }
+
+        .notification-item.just-arrived {
+            animation: popIn 0.35s ease;
+        }
+
+    .notification-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        background: rgba(37, 99, 235, 0.12);
+        color: var(--blue);
+    }
+
+        .notification-item.warning .notification-icon {
+            background: rgba(245, 158, 11, 0.18);
+            color: var(--warning);
+        }
+
+        .notification-item.danger .notification-icon {
+            background: rgba(239, 68, 68, 0.18);
+            color: var(--danger);
+        }
+
+        .notification-item.success .notification-icon {
+            background: rgba(16, 185, 129, 0.18);
+            color: var(--success);
+        }
+
+    .notification-content {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .notification-title {
+        font-weight: 600;
+        color: #1f2937;
+        font-size: 0.95rem;
+    }
+
+    .notification-message {
+        font-size: 0.85rem;
+        color: #4b5563;
+        line-height: 1.35;
+    }
+
+    .notification-meta {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.75rem;
+        color: var(--gray-dark);
+    }
+
+    .notification-footer {
+        justify-content: center;
+        gap: 0.75rem;
+    }
+
+    .notification-footer a {
+        color: var(--blue);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .notification-empty {
+        padding: 24px 16px;
+        text-align: center;
+        color: #4b5563;
+        font-size: 0.9rem;
+    }
+
+    .notification-error {
+        padding: 10px 16px;
+        color: var(--danger);
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    @@keyframes pulse {
+        0% {
+            opacity: 0.4;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+        100% {
+            opacity: 0.2;
+            transform: scale(1);
+        }
+    }
+
+    @@keyframes popIn {
+        0% {
+            opacity: 0;
+            transform: scale(0.94);
+        }
+        60% {
+            opacity: 1;
+            transform: scale(1.03);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
 
     /* ======================= Cards ====================== */
     .cardBox {
@@ -736,7 +1049,7 @@
     }
 </style>
 
-<body>
+<body data-user-id="@currentUserId" data-user-name="@currentUserName" data-user-wallet="@currentUserWallet">
     <!-- =============== Navigation ================ -->
     <div class="container">
         <div class="navigation">
@@ -750,13 +1063,14 @@
                     </a>
                 </li>
 
-               @Html.Partial("_Partial")
+               @await Html.PartialAsync("_Partial")
             </ul>
         </div>
 		@RenderBody()
     </div>
 
     <!-- =========== Scripts =========  -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js" referrerpolicy="no-referrer"></script>
     <script>
         // Improved navigation: compute floating submenu position when sidebar is collapsed
         document.addEventListener('DOMContentLoaded', function() {
@@ -996,6 +1310,7 @@
         });
     </script>
 
+    <script src="~/js/admin-notifications.js"></script>
     <!-- Scripts section -->
     @RenderSection("Scripts", required: false)
 

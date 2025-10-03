@@ -1,0 +1,159 @@
+@model CreateSupportTicketRequest
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Gửi yêu cầu hỗ trợ";
+    Layout = "~/Pages/_Layout.cshtml";
+    var priorityOptions = ViewBag.PriorityOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var categories = ViewBag.Categories as IEnumerable<string> ?? Enumerable.Empty<string>();
+    var allowedExtensions = ViewBag.AllowedAttachmentExtensions as IEnumerable<string> ?? Enumerable.Empty<string>();
+    var maxAttachmentSize = ViewBag.MaxAttachmentSizeMb as int? ?? 10;
+}
+
+@section Styles {
+    <style>
+        .support-create {
+            max-width: 900px;
+            margin: 120px auto 60px;
+            padding: 0 16px;
+        }
+
+        .support-card {
+            background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 28px;
+        }
+
+        .support-card h1 {
+            margin-bottom: 6px;
+            font-size: clamp(28px,4vw,36px);
+            font-weight: 700;
+        }
+
+        .support-lead {
+            color: var(--muted);
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .form-control, .form-select, textarea {
+            background: rgba(7,10,18,.5);
+            border: 1px solid rgba(255,255,255,.12);
+            color: var(--fg);
+        }
+
+        .form-control:focus, textarea:focus {
+            border-color: rgba(108,240,255,.4);
+            box-shadow: 0 0 0 2px rgba(108,240,255,.2);
+        }
+
+        .message-helper {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .action-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .alert-validation {
+            background: rgba(255,107,107,.14);
+            border: 1px solid rgba(255,107,107,.4);
+            color: #ffb7b7;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-top: 12px;
+        }
+    </style>
+}
+
+<div class="support-create">
+    <div class="support-card">
+        <h1>Gửi yêu cầu hỗ trợ</h1>
+        <p class="support-lead">Chúng tôi sẽ phản hồi sớm nhất có thể. Hãy mô tả chi tiết vấn đề để đội ngũ hỗ trợ xử lý nhanh hơn.</p>
+
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+
+            <div class="mb-3">
+                <label asp-for="Subject" class="form-label">Chủ đề <span class="text-danger">*</span></label>
+                <input asp-for="Subject" class="form-control" placeholder="Ví dụ: Lỗi không rút được tiền" />
+                <span asp-validation-for="Subject" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Category" class="form-label">Danh mục</label>
+                <input asp-for="Category" class="form-control" list="supportCategories" placeholder="Chọn hoặc nhập danh mục" />
+                <datalist id="supportCategories">
+                    @foreach (var category in categories)
+                    {
+                        <option value="@category"></option>
+                    }
+                </datalist>
+                <span asp-validation-for="Category" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Priority" class="form-label">Mức độ ưu tiên</label>
+                <select asp-for="Priority" class="form-select">
+                    @foreach (var option in priorityOptions)
+                    {
+                        <option value="@option.Value">@option.Text</option>
+                    }
+                </select>
+                <span asp-validation-for="Priority" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Message" class="form-label">Mô tả chi tiết <span class="text-danger">*</span></label>
+                <textarea asp-for="Message" class="form-control" rows="6" placeholder="Hãy mô tả rõ sự cố hoặc câu hỏi của bạn..."></textarea>
+                <div class="d-flex justify-content-between align-items-center mt-1 message-helper">
+                    <span>Vui lòng không chia sẻ thông tin nhạy cảm như mật khẩu, seed phrase.</span>
+                    <span id="message-counter">0/4000</span>
+                </div>
+                <span asp-validation-for="Message" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Đính kèm tệp (tùy chọn)</label>
+                <input type="file" name="attachments" class="form-control" multiple accept="@string.Join(',', allowedExtensions)" />
+                <div class="form-text">Cho phép @string.Join(", ", allowedExtensions) (tối đa @maxAttachmentSize MB mỗi tệp).</div>
+            </div>
+
+            <div asp-validation-summary="ModelOnly" class="alert-validation"></div>
+
+            <div class="action-row">
+                <a asp-controller="Support" asp-action="Index" class="btn secondary">Xem ticket của tôi</a>
+                <button type="submit" class="btn">Gửi yêu cầu</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const messageInput = document.getElementById('@Html.IdFor(m => m.Message)');
+            if (messageInput) {
+                const counter = document.getElementById('message-counter');
+                const maxLength = 4000;
+                const update = () => {
+                    if (counter) {
+                        counter.textContent = `${messageInput.value.length}/${maxLength}`;
+                    }
+                };
+                messageInput.addEventListener('input', update);
+                update();
+            }
+        })();
+    </script>
+}

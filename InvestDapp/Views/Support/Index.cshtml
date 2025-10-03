@@ -1,0 +1,400 @@
+@model InvestDapp.ViewModels.Support.UserSupportTicketListViewModel
+@using InvestDapp.Shared.Enums
+@using InvestDapp.Shared.Common.Respone
+@{
+    ViewData["Title"] = "Ticket hỗ trợ của tôi";
+    Layout = "~/Pages/_Layout.cshtml";
+
+    var statusOptions = new (SupportTicketStatus? Value, string Label, string Description)[]
+    {
+        (null, "Tất cả", "Xem mọi ticket của bạn"),
+        (SupportTicketStatus.New, "Mới", "Ticket vừa tạo"),
+        (SupportTicketStatus.InProgress, "Đang xử lý", "Đội ngũ đang xử lý"),
+        (SupportTicketStatus.WaitingForCustomer, "Chờ bạn", "Đang cần phản hồi"),
+        (SupportTicketStatus.Resolved, "Đã xử lý", "Ticket đã được giải quyết"),
+        (SupportTicketStatus.Closed, "Đã đóng", "Ticket đã đóng lại")
+    };
+
+    string GetStatusLabel(SupportTicketStatus status) => status switch
+    {
+        SupportTicketStatus.New => "Mới",
+        SupportTicketStatus.InProgress => "Đang xử lý",
+        SupportTicketStatus.WaitingForCustomer => "Chờ bạn",
+        SupportTicketStatus.Resolved => "Đã xử lý",
+        SupportTicketStatus.Closed => "Đã đóng",
+        SupportTicketStatus.Escalated => "Chuyển cấp",
+        _ => status.ToString()
+    };
+
+    string GetStatusClass(SupportTicketStatus status) => status switch
+    {
+        SupportTicketStatus.New => "badge status-new",
+        SupportTicketStatus.InProgress => "badge status-progress",
+        SupportTicketStatus.WaitingForCustomer => "badge status-wait",
+        SupportTicketStatus.Resolved => "badge status-resolved",
+        SupportTicketStatus.Closed => "badge status-closed",
+        SupportTicketStatus.Escalated => "badge status-escalated",
+        _ => "badge"
+    };
+
+    string GetPriorityLabel(SupportTicketPriority priority) => priority switch
+    {
+        SupportTicketPriority.Low => "Thấp",
+        SupportTicketPriority.Normal => "Bình thường",
+        SupportTicketPriority.High => "Cao",
+        SupportTicketPriority.Critical => "Khẩn cấp",
+        _ => priority.ToString()
+    };
+
+    string GetPriorityClass(SupportTicketPriority priority) => priority switch
+    {
+        SupportTicketPriority.Low => "priority low",
+        SupportTicketPriority.Normal => "priority normal",
+        SupportTicketPriority.High => "priority high",
+        SupportTicketPriority.Critical => "priority critical",
+        _ => "priority"
+    };
+}
+
+@section Styles {
+    <style>
+        .support-shell {
+            max-width: 1100px;
+            margin: 120px auto 60px;
+            padding: 0 16px;
+        }
+
+        .support-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .support-header h1 {
+            margin: 0;
+            font-size: clamp(28px, 4vw, 38px);
+            font-weight: 700;
+        }
+
+        .support-intro {
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .support-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .glass-card {
+            background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+
+        .support-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .filter-chip {
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--muted);
+            font-weight: 600;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            transition: background .2s, color .2s, border-color .2s;
+            text-decoration: none;
+        }
+
+        .filter-chip.active {
+            background: linear-gradient(180deg, rgba(108,240,255,.18), rgba(155,107,255,.18));
+            color: var(--fg);
+            border-color: rgba(255,255,255,.18);
+        }
+
+        .support-table {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .ticket-card {
+            display: grid;
+            grid-template-columns: minmax(200px, 1.3fr) minmax(180px, .9fr) minmax(160px, .8fr) 120px;
+            gap: 18px;
+            padding: 18px 20px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,.08);
+            background: rgba(255,255,255,.04);
+            align-items: center;
+            transition: transform .18s ease, border-color .18s, background .18s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .ticket-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(108,240,255,.25);
+            background: rgba(108,240,255,.08);
+        }
+
+        .ticket-title {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .ticket-code {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--muted);
+        }
+
+        .ticket-subject {
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .ticket-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .status-new { background: rgba(108,240,255,.18); color: #6cf0ff; }
+        .status-progress { background: rgba(155,107,255,.18); color: #bfa2ff; }
+        .status-wait { background: rgba(255,184,0,.18); color: #ffdd8f; }
+        .status-resolved { background: rgba(34,197,94,.18); color: #9ff7c4; }
+        .status-closed { background: rgba(148,163,184,.18); color: #d0d8e5; }
+        .status-escalated { background: rgba(255,107,107,.2); color: #ffb6b6; }
+
+        .priority {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 4px 8px;
+            font-size: 13px;
+        }
+
+        .priority.low { background: rgba(148,163,184,.14); color: #cbd5f5; }
+        .priority.normal { background: rgba(108,240,255,.14); color: #7beaff; }
+        .priority.high { background: rgba(255,184,0,.14); color: #ffd27d; }
+        .priority.critical { background: rgba(255,107,107,.16); color: #ffb7b7; }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+        }
+
+        .empty-state h3 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .pagination {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .pagination a, .pagination span {
+            min-width: 42px;
+            padding: 8px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,.08);
+            background: rgba(255,255,255,.03);
+            color: var(--fg);
+            text-align: center;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .pagination span.current {
+            background: linear-gradient(180deg, rgba(108,240,255,.18), rgba(155,107,255,.18));
+            border-color: rgba(255,255,255,.18);
+        }
+
+        .alert {
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 18px;
+            font-weight: 600;
+        }
+
+        .alert-success {
+            background: rgba(34,197,94,.16);
+            border: 1px solid rgba(34,197,94,.4);
+            color: #86f7b7;
+        }
+
+        .alert-danger {
+            background: rgba(255,107,107,.16);
+            border: 1px solid rgba(255,107,107,.4);
+            color: #ffb7b7;
+        }
+
+        @@media (max-width: 960px) {
+            .ticket-card {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .support-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .support-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+        }
+    </style>
+}
+
+<div class="support-shell">
+    <div class="support-header">
+        <div>
+            <h1>Ticket hỗ trợ của tôi</h1>
+            <p class="support-intro">Theo dõi tiến độ xử lý và trò chuyện với đội ngũ hỗ trợ.</p>
+        </div>
+        <div class="support-actions">
+            <a class="btn secondary" asp-controller="Support" asp-action="Create">Gửi ticket mới</a>
+        </div>
+    </div>
+
+    @if (TempData["SupportSuccess"] is string successMsg && !string.IsNullOrWhiteSpace(successMsg))
+    {
+        <div class="alert alert-success">@successMsg</div>
+    }
+
+    @if (TempData["SupportError"] is string errorMsg && !string.IsNullOrWhiteSpace(errorMsg))
+    {
+        <div class="alert alert-danger">@errorMsg</div>
+    }
+
+    <div class="glass-card">
+        <div class="support-filters">
+            @foreach (var option in statusOptions)
+            {
+                var isActive = option.Value == Model.Status || (option.Value == null && Model.Status == null);
+                <a class="filter-chip @(isActive ? "active" : string.Empty)"
+                   asp-controller="Support"
+                   asp-action="Index"
+                   asp-route-status="@(option.Value?.ToString())"
+                   asp-route-keyword="@Model.Keyword">
+                    <span>@option.Label</span>
+                </a>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Keyword))
+        {
+            <p class="support-intro">Kết quả cho từ khóa: <strong>@Model.Keyword</strong></p>
+        }
+
+        @if (!Model.HasTickets)
+        {
+            <div class="empty-state">
+                <h3>Chưa có ticket nào trong mục này</h3>
+                <p>Hãy tạo ticket mới khi bạn cần hỗ trợ, đội ngũ sẽ phản hồi trong thời gian sớm nhất.</p>
+                <div style="margin-top:20px;">
+                    <a class="btn" asp-controller="Support" asp-action="Create">Gửi yêu cầu hỗ trợ</a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="support-table">
+                @foreach (var ticket in Model.Tickets.Items)
+                {
+                    <a class="ticket-card" asp-controller="Support" asp-action="Details" asp-route-id="@ticket.Id">
+                        <div class="ticket-title">
+                            <span class="ticket-code">#@ticket.TicketCode</span>
+                            <span class="ticket-subject">@ticket.Subject</span>
+                            <div class="ticket-meta">
+                                <span>Ngày tạo: @ticket.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                                @if (!string.IsNullOrWhiteSpace(ticket.Category))
+                                {
+                                    <span>Danh mục: @ticket.Category</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="ticket-meta">
+                            <span>Trạng thái</span>
+                            <span class="@GetStatusClass(ticket.Status)">@GetStatusLabel(ticket.Status)</span>
+                            @if (ticket.DueAt.HasValue)
+                            {
+                                <span>Hạn xử lý: @ticket.DueAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                            }
+                        </div>
+                        <div class="ticket-meta">
+                            <span>Độ ưu tiên</span>
+                            <span class="@GetPriorityClass(ticket.Priority)">@GetPriorityLabel(ticket.Priority)</span>
+                            <span>Nhân sự phụ trách: @(ticket.AssignedToName ?? "Chưa có")</span>
+                        </div>
+                        <div class="ticket-meta" style="align-items:flex-end;text-align:right;">
+                            <span>Người yêu cầu</span>
+                            <strong>@ticket.RequesterName</strong>
+                        </div>
+                    </a>
+                }
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <div class="pagination">
+                    @if (Model.HasPreviousPage)
+                    {
+                        <a asp-controller="Support"
+                           asp-action="Index"
+                           asp-route-status="@(Model.Status?.ToString())"
+                           asp-route-keyword="@Model.Keyword"
+                           asp-route-page="@(Model.Page - 1)">Trước</a>
+                    }
+
+                    <span class="current">Trang @Model.Page/@Model.TotalPages</span>
+
+                    @if (Model.HasNextPage)
+                    {
+                        <a asp-controller="Support"
+                           asp-action="Index"
+                           asp-route-status="@(Model.Status?.ToString())"
+                           asp-route-keyword="@Model.Keyword"
+                           asp-route-page="@(Model.Page + 1)">Tiếp</a>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>

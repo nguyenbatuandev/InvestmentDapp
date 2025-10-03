@@ -1,0 +1,863 @@
+@model InvestDapp.Areas.admin.ViewModels.Support.SupportTicketDetailViewModel
+@using System
+@using System.Globalization
+@using System.Linq
+@using InvestDapp.Areas.admin.ViewModels.Support
+@using InvestDapp.Shared.Enums
+@{
+    Layout = "~/Areas/admin/Views/Shared/_Layout.cshtml";
+}
+<div class="main admin-ticket-detail">
+    <div class="topbar detail-topbar">
+        <div class="topbar-left">
+            <div class="toggle">
+                <ion-icon name="menu-outline"></ion-icon>
+            </div>
+            <nav class="breadcrumbs">
+                <a href="@Url.Action("Index", new { area = "admin" })">Ticket hỗ trợ</a>
+                <ion-icon name="chevron-forward-outline"></ion-icon>
+                <span>@Model.Ticket.TicketCode</span>
+            </nav>
+        </div>
+        <div class="topbar-right">
+            <a class="btn ghost" href="@Url.Action("Index", new { area = "admin", scope = "inbox" })">
+                <ion-icon name="arrow-back-outline"></ion-icon>
+                <span>Quay lại danh sách</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="admin-support-detail">
+        @if (TempData["TicketSuccess"] is string successMessage)
+        {
+            <div class="alert success">@successMessage</div>
+        }
+        @if (TempData["TicketError"] is string errorMessage)
+        {
+            <div class="alert danger">@errorMessage</div>
+        }
+
+        <section class="ticket-hero gradient-card">
+        <div class="hero-header">
+            <div class="hero-info">
+                <p class="hero-label">Ticket #@Model.Ticket.TicketCode</p>
+                <h1>@Model.Ticket.Subject</h1>
+                <p class="hero-customer">
+                    <ion-icon name="person-circle-outline"></ion-icon>
+                    <span>@Model.Ticket.RequesterName</span>
+                    <span class="wallet">@Model.Ticket.RequesterWallet</span>
+                </p>
+            </div>
+            <div class="hero-tags">
+                <span class="chip @StatusBadgeClass(Model.Ticket.Status)">@Model.Ticket.Status</span>
+                <span class="chip @PriorityBadgeClass(Model.Ticket.Priority)">@Model.Ticket.Priority</span>
+                <span class="chip @SlaBadgeClass(Model.Ticket.SlaStatus)">SLA: @Model.Ticket.SlaStatus</span>
+            </div>
+        </div>
+        <div class="hero-grid">
+            <div class="hero-stat">
+                <span class="label">Tạo lúc</span>
+                <span class="value">@Model.Ticket.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+            <div class="hero-stat">
+                <span class="label">Hạn SLA</span>
+                <span class="value">@(Model.Ticket.DueAt.HasValue ? Model.Ticket.DueAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm") : "--")</span>
+            </div>
+            <div class="hero-stat">
+                <span class="label">Danh mục</span>
+                <span class="value">@(!string.IsNullOrWhiteSpace(Model.Ticket.Category) ? Model.Ticket.Category : "(Không phân loại)")</span>
+            </div>
+            <div class="hero-stat">
+                <span class="label">Nhân sự phụ trách</span>
+                <span class="value">@(string.IsNullOrWhiteSpace(Model.Ticket.AssignedToName) ? "Chưa giao" : Model.Ticket.AssignedToName)</span>
+            </div>
+        </div>
+    </section>
+
+    @{
+        var orderedMessages = Model.Ticket.Messages.OrderBy(m => m.CreatedAt).ToList();
+        var orderedAssignments = Model.Ticket.Assignments.OrderByDescending(a => a.AssignedAt).ToList();
+    }
+
+        <div class="support-body">
+        <div class="column column-main">
+            <section class="card metric-card">
+                <div class="section-header">
+                    <h2>Tiến độ xử lý</h2>
+                </div>
+                <div class="metric-grid">
+                    <div class="metric">
+                        <span class="label">Phản hồi đầu tiên</span>
+                        <span class="value">@(Model.Ticket.FirstResponseAt.HasValue ? Model.Ticket.FirstResponseAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm") : "--")</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Hoàn tất</span>
+                        <span class="value">@(Model.Ticket.ResolvedAt.HasValue ? Model.Ticket.ResolvedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm") : "--")</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Đóng</span>
+                        <span class="value">@(Model.Ticket.ClosedAt.HasValue ? Model.Ticket.ClosedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm") : "--")</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Số phản hồi</span>
+                        <span class="value">@Model.Ticket.Messages.Count</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card conversation-card">
+                <div class="section-header">
+                    <h2>Trao đổi</h2>
+                    <span class="badge pill">@Model.Ticket.Messages.Count cuộc hội thoại</span>
+                </div>
+                <div class="timeline">
+                    @foreach (var message in orderedMessages)
+                    {
+                        var isStaff = message.IsFromStaff;
+                        <article class="bubble @(isStaff ? "staff" : "customer")">
+                            <header class="bubble-head">
+                                <div class="author">
+                                    <div class="avatar">@(string.IsNullOrWhiteSpace(message.SenderName) ? (isStaff ? "CS" : "KH") : message.SenderName.Substring(0, Math.Min(2, message.SenderName.Length)).ToUpperInvariant())</div>
+                                    <div class="info">
+                                        <span class="name">@message.SenderName</span>
+                                        <span class="time">@message.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                                    </div>
+                                </div>
+                                <span class="role-chip">@(isStaff ? "Staff" : "Khách hàng")</span>
+                            </header>
+                            <div class="bubble-body">@Html.Raw(message.Content.Replace("\n", "<br />"))</div>
+                            @if (message.Attachments.Any())
+                            {
+                                <footer class="bubble-attachments">
+                                    <span class="label">Đính kèm</span>
+                                    <div class="attachment-list">
+                                        @foreach (var attachment in message.Attachments)
+                                        {
+                                            <a class="attachment" href="@attachment.FilePath" target="_blank" rel="noopener">
+                                                <ion-icon name="attach-outline"></ion-icon>
+                                                <span class="name">@attachment.FileName</span>
+                                                <span class="size">@FormatFileSize(attachment.FileSize)</span>
+                                            </a>
+                                        }
+                                    </div>
+                                </footer>
+                            }
+                        </article>
+                    }
+                </div>
+            </section>
+
+            <section class="card history-card">
+                <div class="section-header">
+                    <h2>Lịch sử phân công</h2>
+                    <span class="badge pill">@Model.Ticket.Assignments.Count lượt</span>
+                </div>
+                @if (!Model.Ticket.Assignments.Any())
+                {
+                    <div class="empty">Chưa có lịch sử phân công.</div>
+                }
+                else
+                {
+                    <ul class="history-timeline">
+                        @foreach (var entry in orderedAssignments)
+                        {
+                            <li class="history-item">
+                                <div class="dot"></div>
+                                <div class="body">
+                                    <div class="time">@entry.AssignedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                                    <div class="title">Giao cho <strong>@entry.AssignedToName</strong></div>
+                                    <div class="subtitle">Bởi @entry.AssignedByName</div>
+                                    @if (!string.IsNullOrWhiteSpace(entry.Notes))
+                                    {
+                                        <div class="note">@entry.Notes</div>
+                                    }
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+        </div>
+
+        <div class="column column-side">
+            <section class="card control-card">
+                <div class="section-header">
+                    <h2>Phân công</h2>
+                </div>
+                @if (!Model.StaffOptions.Any())
+                {
+                    <div class="empty">
+                        Chưa có nhân sự hỗ trợ nào đủ quyền. Vui lòng tạo hoặc phân quyền nhân sự trước khi giao ticket.
+                    </div>
+                }
+                else
+                {
+                    <form method="post" action="@Url.Action("Assign", new { area = "admin" })" class="stacked-form">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="TicketId" value="@Model.AssignForm.TicketId" />
+                        <label class="field">
+                            <span class="field-label">Nhân sự</span>
+                            <select name="AssignedToUserId" class="input" required>
+                                <option value="" disabled @(Model.AssignForm.AssignedToUserId == 0 ? "selected" : string.Empty)>-- Chọn nhân sự --</option>
+                                @foreach (var staff in Model.StaffOptions)
+                                {
+                                    var selected = staff.UserId == Model.AssignForm.AssignedToUserId ? "selected" : string.Empty;
+                                    <option value="@staff.UserId" @selected>@staff.DisplayName (@staff.Email)</option>
+                                }
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span class="field-label">Ghi chú (tùy chọn)</span>
+                            <textarea name="Notes" rows="3" class="input" placeholder="Thông tin thêm cho người được giao">@Model.AssignForm.Notes</textarea>
+                        </label>
+                        <button type="submit" class="btn primary">Giao ticket</button>
+                    </form>
+                }
+            </section>
+
+            <section class="card control-card">
+                <div class="section-header">
+                    <h2>Phản hồi nhanh</h2>
+                </div>
+                <form method="post" action="@Url.Action("Reply", new { area = "admin" })" enctype="multipart/form-data" class="stacked-form">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="TicketId" value="@Model.ReplyForm.TicketId" />
+                    <label class="field">
+                        <span class="field-label">Nội dung</span>
+                        <textarea name="Message" rows="6" maxlength="4000" class="input" required>@Model.ReplyForm.Message</textarea>
+                    </label>
+                    <label class="field">
+                        <span class="field-label">Đính kèm</span>
+                        <input name="attachments" type="file" multiple class="input file" />
+                        <small class="hint">PNG, JPG, PDF, DOCX, XLSX, TXT – tối đa 10MB/tệp.</small>
+                    </label>
+                    <div class="toggles">
+                        <label class="inline-toggle">
+                            <input type="checkbox" name="MarkAsResolved" value="true" @(Model.ReplyForm.MarkAsResolved ? "checked" : string.Empty) />
+                            <span>Đánh dấu đã xử lý</span>
+                        </label>
+                        <label class="inline-toggle">
+                            <input type="checkbox" name="TransitionToCustomerWaiting" value="true" @(Model.ReplyForm.TransitionToCustomerWaiting ? "checked" : string.Empty) />
+                            <span>Chờ phản hồi khách</span>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn primary">Gửi phản hồi</button>
+                </form>
+            </section>
+
+            <section class="card control-card">
+                <div class="section-header">
+                    <h2>Trạng thái ticket</h2>
+                </div>
+                <div class="status-buttons">
+                    <form method="post" action="@Url.Action("UpdateStatus", new { area = "admin" })">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ticketId" value="@Model.Ticket.Id" />
+                        <input type="hidden" name="resolve" value="true" />
+                        <button type="submit" class="btn soft" @(Model.CanMarkResolved ? null : "disabled")>
+                            <ion-icon name="checkmark-circle-outline"></ion-icon>
+                            <span>Đánh dấu hoàn tất</span>
+                        </button>
+                    </form>
+                    <form method="post" action="@Url.Action("UpdateStatus", new { area = "admin" })">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ticketId" value="@Model.Ticket.Id" />
+                        <input type="hidden" name="close" value="true" />
+                        <button type="submit" class="btn danger" @(Model.CanClose ? null : "disabled")>
+                            <ion-icon name="lock-closed-outline"></ion-icon>
+                            <span>Đóng ticket</span>
+                        </button>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string StatusBadgeClass(SupportTicketStatus status)
+    {
+        return status switch
+        {
+            SupportTicketStatus.New => "chip-blue",
+            SupportTicketStatus.InProgress => "chip-indigo",
+            SupportTicketStatus.WaitingForCustomer => "chip-amber",
+            SupportTicketStatus.Resolved => "chip-green",
+            SupportTicketStatus.Closed => "chip-slate",
+            SupportTicketStatus.Escalated => "chip-red",
+            _ => "chip-slate"
+        };
+    }
+
+    string PriorityBadgeClass(SupportTicketPriority priority)
+    {
+        return priority switch
+        {
+            SupportTicketPriority.Low => "chip-slate",
+            SupportTicketPriority.Normal => "chip-blue",
+            SupportTicketPriority.High => "chip-amber",
+            SupportTicketPriority.Critical => "chip-red",
+            _ => "chip-slate"
+        };
+    }
+
+    string SlaBadgeClass(SupportTicketSlaStatus sla)
+    {
+        return sla switch
+        {
+            SupportTicketSlaStatus.OnTrack => "chip-green",
+            SupportTicketSlaStatus.AtRisk => "chip-amber",
+            SupportTicketSlaStatus.Breached => "chip-red",
+            _ => "chip-slate"
+        };
+    }
+
+    string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024)
+        {
+            return string.Format(CultureInfo.InvariantCulture, "{0} B", bytes);
+        }
+
+        var units = new[] { "KB", "MB", "GB", "TB" };
+        double size = bytes / 1024d;
+        int unitIndex = 0;
+
+        while (size >= 1024 && unitIndex < units.Length - 1)
+        {
+            size /= 1024;
+            unitIndex++;
+        }
+
+        return string.Format(CultureInfo.InvariantCulture, "{0:0.##} {1}", size, units[unitIndex]);
+    }
+}
+
+@section Styles {
+    <style>
+        .admin-ticket-detail {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .admin-ticket-detail .detail-topbar {
+            margin-bottom: 0;
+        }
+
+        .admin-support-detail {
+            --surface: #ffffff;
+            --surface-alt: #f3f4f6;
+            --primary: #3b82f6;
+            --primary-soft: rgba(59, 130, 246, 0.12);
+            --success-soft: rgba(34, 197, 94, 0.14);
+            --warning-soft: rgba(245, 158, 11, 0.16);
+            --danger-soft: rgba(239, 68, 68, 0.16);
+            --border-soft: rgba(148, 163, 184, 0.24);
+            --text-muted: #6b7280;
+            --shadow-lg: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .detail-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            background: var(--surface);
+            border-radius: 18px;
+            padding: 16px 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .breadcrumbs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .breadcrumbs a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: opacity .2s;
+        }
+
+        .breadcrumbs a:hover { opacity: .8; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            border: none;
+            justify-content: center;
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+
+        .btn.primary {
+            background: var(--primary);
+            color: #fff;
+            padding: 11px 18px;
+            box-shadow: 0 14px 30px -12px rgba(59, 130, 246, 0.6);
+        }
+
+        .btn.primary:hover { transform: translateY(-1px); }
+
+        .btn.ghost {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary);
+            padding: 10px 16px;
+        }
+
+        .btn.soft {
+            background: rgba(59, 130, 246, 0.08);
+            color: var(--primary);
+            padding: 12px 18px;
+        }
+
+        .btn.danger {
+            background: var(--danger-soft);
+            color: #ef4444;
+            padding: 12px 18px;
+        }
+
+        .btn[disabled] {
+            opacity: .6;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .alert {
+            border-radius: 14px;
+            padding: 14px 18px;
+            font-weight: 600;
+        }
+
+        .alert.success { background: var(--success-soft); color: #16a34a; }
+        .alert.danger { background: var(--danger-soft); color: #dc2626; }
+
+        .gradient-card {
+            background: linear-gradient(140deg, rgba(59, 130, 246, 0.14), rgba(14, 165, 233, 0.12));
+            border-radius: 24px;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .gradient-card::after {
+            content: "";
+            position: absolute;
+            inset: -60px 30% auto -40px;
+            height: 320px;
+            background: radial-gradient(circle at top, rgba(255,255,255,0.35), transparent 60%);
+            opacity: .6;
+            pointer-events: none;
+        }
+
+        .ticket-hero .hero-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 24px;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-info h1 {
+            font-size: clamp(26px, 3vw, 34px);
+            margin: 6px 0;
+        }
+
+        .hero-label {
+            text-transform: uppercase;
+            letter-spacing: .18em;
+            color: rgba(148, 163, 184, 0.9);
+            font-weight: 700;
+            font-size: 0.75rem;
+        }
+
+        .hero-customer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .hero-customer .wallet {
+            font-size: 0.85rem;
+            opacity: .8;
+            padding: 2px 8px;
+            background: rgba(15, 23, 42, 0.08);
+            border-radius: 999px;
+        }
+
+        .hero-tags {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-weight: 600;
+            text-transform: capitalize;
+            backdrop-filter: blur(4px);
+            background: rgba(255,255,255,0.48);
+            color: #1e293b;
+        }
+
+        .chip-blue { color: #2563eb; background: rgba(37,99,235,.16); }
+        .chip-indigo { color: #4338ca; background: rgba(79,70,229,.16); }
+        .chip-amber { color: #f59e0b; background: rgba(245,158,11,.18); }
+        .chip-green { color: #16a34a; background: rgba(16,185,129,.18); }
+        .chip-red { color: #ef4444; background: rgba(239,68,68,.18); }
+        .chip-slate { color: #475569; background: rgba(148,163,184,.24); }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 18px;
+            margin-top: 28px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-stat {
+            padding: 16px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.78);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+        }
+
+        .hero-stat .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+        }
+
+        .hero-stat .value {
+            display: block;
+            margin-top: 6px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .support-body {
+            display: grid;
+            grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+            gap: 24px;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .section-header h2 {
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        .badge.pill {
+            background: rgba(148, 163, 184, 0.14);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+        }
+
+        .metric-card .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 16px;
+        }
+
+        .metric {
+            padding: 16px;
+            border-radius: 16px;
+            background: var(--surface-alt);
+        }
+
+        .metric .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+        }
+
+        .metric .value {
+            display: block;
+            margin-top: 6px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .bubble {
+            background: rgba(248, 250, 252, 0.95);
+            border-radius: 18px;
+            padding: 18px 20px;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        .bubble.staff { border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.08); }
+        .bubble.customer { border-color: rgba(34, 197, 94, 0.28); background: rgba(34, 197, 94, 0.08); }
+
+        .bubble-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .author {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            font-weight: 700;
+            color: #1e293b;
+            background: #fff;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+        }
+
+        .author .info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .author .name { font-weight: 700; }
+        .author .time { font-size: 0.85rem; color: var(--text-muted); }
+
+        .role-chip {
+            background: rgba(15, 23, 42, 0.06);
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .bubble-body {
+            margin-top: 12px;
+            line-height: 1.6;
+            color: #0f172a;
+        }
+
+        .bubble-attachments {
+            margin-top: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .bubble-attachments .label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; }
+
+        .attachment-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .attachment {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: #fff;
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            font-size: 0.85rem;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .attachment .size { font-size: 0.75rem; color: var(--text-muted); }
+
+        .history-timeline {
+            position: relative;
+            padding-left: 28px;
+            list-style: none;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .history-timeline::before {
+            content: "";
+            position: absolute;
+            left: 12px;
+            top: 6px;
+            bottom: 6px;
+            width: 2px;
+            background: rgba(148, 163, 184, 0.3);
+        }
+
+        .history-item {
+            position: relative;
+            display: flex;
+            gap: 16px;
+        }
+
+        .history-item .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary);
+            position: absolute;
+            left: -22px;
+            top: 6px;
+            box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.15);
+        }
+
+        .history-item .body {
+            background: var(--surface-alt);
+            padding: 14px 16px;
+            border-radius: 16px;
+            flex: 1;
+        }
+
+        .history-item .time {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+        }
+
+        .history-item .title { font-weight: 700; margin-top: 6px; }
+        .history-item .subtitle { font-size: 0.9rem; color: var(--text-muted); margin-top: 4px; }
+        .history-item .note { margin-top: 8px; font-size: 0.9rem; }
+
+        .empty {
+            padding: 16px;
+            border-radius: 16px;
+            background: var(--surface-alt);
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .control-card .stacked-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .input {
+            border-radius: 14px;
+            border: 1px solid var(--border-soft);
+            padding: 11px 14px;
+            font-size: 0.95rem;
+            background: rgba(248, 250, 252, 0.8);
+            transition: border-color .2s, box-shadow .2s;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+        }
+
+        .input.file { padding: 10px; }
+
+        .toggles {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .inline-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .inline-toggle input { width: 16px; height: 16px; }
+
+        .status-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .status-buttons form { margin: 0; }
+
+        @@media (max-width: 1200px) {
+            .support-body {
+                grid-template-columns: 1fr;
+            }
+
+            .column-side { order: -1; }
+        }
+
+        @@media (max-width: 768px) {
+            .detail-topbar { flex-direction: column; align-items: flex-start; }
+            .ticket-hero { padding: 24px; }
+            .hero-header { flex-direction: column; align-items: flex-start; }
+            .hero-tags { width: 100%; }
+        }
+    </style>
+}

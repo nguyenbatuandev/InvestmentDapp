@@ -3,6 +3,7 @@ using InvestDapp.Shared.Models;
 using InvestDapp.Shared.Models.BlockchainModels;
 using InvestDapp.Shared.Models.Kyc;
 using InvestDapp.Shared.Models.Message;
+using InvestDapp.Shared.Models.Support;
 using InvestDapp.Shared.Models.Trading;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
@@ -111,7 +112,7 @@ namespace InvestDapp.Infrastructure.Data
 
         public DbSet<EventProcessingState> EventProcessingStates { get; set; }
         public DbSet<Profit> Profits { get; set; }
-    public DbSet<ProfitClaim> ProfitClaims { get; set; }
+        public DbSet<ProfitClaim> ProfitClaims { get; set; }
         public DbSet<Refund> Refunds { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Notification> Notifications { get; set; }
@@ -132,6 +133,12 @@ namespace InvestDapp.Infrastructure.Data
         public DbSet<Order> Orders { get; set; }
         public DbSet<Position> Positions { get; set; }
         public DbSet<UserBalance> UserBalances { get; set; }
-    public DbSet<BalanceTransaction> BalanceTransactions { get; set; }
+        public DbSet<BalanceTransaction> BalanceTransactions { get; set; }
+
+        // Support/Ticketing Models
+        public DbSet<SupportTicket> SupportTickets { get; set; }
+        public DbSet<SupportTicketMessage> SupportTicketMessages { get; set; }
+        public DbSet<SupportTicketAttachment> SupportTicketAttachments { get; set; }
+        public DbSet<SupportTicketAssignment> SupportTicketAssignments { get; set; }
     }
 }

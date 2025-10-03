@@ -1,0 +1,1131 @@
+@using InvestDapp.Areas.admin.ViewModels.Support
+@model SupportTicketListViewModel
+@{
+    Layout = "~/Areas/admin/Views/Shared/_Layout.cshtml";
+    var fragmentUrl = Url.Action("ListFragment", "Support", new { area = "admin" }) ?? "#";
+    var indexUrl = Url.Action("Index", "Support", new { area = "admin" }) ?? "#";
+    var userPortalUrl = Url.Action("Create", "Support", new { area = "" }) ?? "#";
+}
+<div class="main admin-support-index">
+    <div class="topbar">
+        <div class="toggle">
+            <ion-icon name="menu-outline"></ion-icon>
+        </div>
+        <div class="page-title">Ticket hỗ trợ</div>
+        <div class="topbar-spacer"></div>
+        <a class="topbar-btn" href="@userPortalUrl" target="_blank">
+            <ion-icon name="open-outline"></ion-icon>
+            <span>Cổng người dùng</span>
+        </a>
+    </div>
+
+    <section class="support-hero">
+        <div class="hero-copy">
+            <h1>Quản lý hỗ trợ thông minh</h1>
+            <p>Giám sát toàn bộ nhu cầu hỗ trợ, truy cập nhanh lịch sử trao đổi và phản hồi khách hàng tức thời.</p>
+            <div class="hero-buttons">
+                <a class="btn hero-primary" href="@Url.Action("Index", "Support", new { area = "admin", scope = "mine" })">Ticket của tôi</a>
+                <a class="btn hero-secondary" href="@Url.Action("Index", "Support", new { area = "admin", scope = "sla-risk" })">Cảnh báo SLA</a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="pulse"></div>
+            <div class="hero-stat">
+                <span>Ticket đang mở</span>
+                <strong>@Model.Metrics.TotalOpen</strong>
+            </div>
+            <div class="hero-highlight">
+                <ion-icon name="shield-checkmark-outline"></ion-icon>
+                <div>
+                    <small>SLA kiểm soát</small>
+                    <span>@Model.Metrics.SlaAtRisk @(Model.Metrics.SlaAtRisk == 1 ? "ticket" : "tickets") cần ưu tiên</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @if (TempData["TicketSuccess"] is string successMessage)
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+    @if (TempData["TicketError"] is string errorMessage)
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    <div class="ticket-shell" data-support-shell data-fragment-url="@fragmentUrl" data-index-url="@indexUrl">
+        <div class="ticket-loading" data-ticket-loading hidden style="display: none;">
+            <div class="loading-spinner"></div>
+            <span>Đang cập nhật danh sách ticket...</span>
+        </div>
+        <div class="ticket-content" data-ticket-content>
+            @await Html.PartialAsync("~/Areas/admin/Views/Support/_TicketListPartial.cshtml", Model)
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .admin-support-index {
+            background: var(--gray-light);
+            min-height: 100vh;
+            padding: 18px 20px 48px;
+        }
+
+        .admin-support-index .topbar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--white);
+            border-radius: 16px;
+            padding: 0 20px;
+            height: 64px;
+            box-shadow: var(--shadow);
+        }
+
+        .admin-support-index .page-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: var(--blue);
+        }
+
+        .admin-support-index .topbar-spacer {
+            flex: 1;
+        }
+
+        .admin-support-index .topbar-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(37, 99, 235, 0.12);
+            color: var(--blue);
+            border-radius: 999px;
+            padding: 10px 18px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.2s ease;
+        }
+
+        .admin-support-index .topbar-btn:hover {
+            background: rgba(37, 99, 235, 0.2);
+        }
+
+        .support-hero {
+            margin: 26px 0 28px;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0));
+            border-radius: 24px;
+            padding: 32px;
+            display: flex;
+            gap: 32px;
+            align-items: stretch;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .support-hero::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 85% 10%, rgba(59, 130, 246, 0.25), transparent 60%);
+            pointer-events: none;
+        }
+
+        .support-hero .hero-copy {
+            position: relative;
+            z-index: 1;
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .support-hero h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--black1);
+        }
+
+        .support-hero p {
+            margin: 0;
+            max-width: 520px;
+            color: var(--gray-dark);
+            line-height: 1.6;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .hero-buttons .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            padding: 10px 20px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .hero-primary {
+            background: var(--blue);
+            color: var(--white);
+            box-shadow: 0 10px 25px -12px rgba(37, 99, 235, 0.8);
+        }
+
+        .hero-secondary {
+            background: rgba(255, 255, 255, 0.6);
+            color: var(--blue);
+            border: 1px solid rgba(37, 99, 235, 0.2);
+        }
+
+        .hero-buttons .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .hero-visual {
+            position: relative;
+            z-index: 1;
+            flex: 2;
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 20px 50px -30px rgba(15, 23, 42, 0.45);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            justify-content: space-between;
+        }
+
+        .hero-visual .pulse {
+            width: 100%;
+            height: 140px;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.35), rgba(6, 182, 212, 0.25));
+            border-radius: 18px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-visual .pulse::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.55), transparent 60%);
+            animation: pulseGlow 4s ease-in-out infinite;
+        }
+
+        .hero-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            color: var(--blue);
+            font-weight: 600;
+        }
+
+        .hero-stat span {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .hero-stat strong {
+            font-size: 2rem;
+        }
+
+        .hero-highlight {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            padding: 12px 14px;
+            background: rgba(37, 99, 235, 0.08);
+            border-radius: 16px;
+            color: var(--blue);
+        }
+
+        .hero-highlight ion-icon {
+            font-size: 1.6rem;
+        }
+
+        .hero-highlight small {
+            display: block;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+            color: var(--gray-dark);
+        }
+
+        .hero-highlight span {
+            font-weight: 600;
+            color: var(--blue);
+        }
+
+        .alert {
+            margin-bottom: 18px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            box-shadow: 0 12px 30px -24px rgba(15, 23, 42, 0.4);
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+        }
+
+        .alert.inline {
+            margin-bottom: 14px;
+        }
+
+        .ticket-shell {
+            position: relative;
+            transition: opacity 0.2s ease, filter 0.2s ease;
+        }
+
+        .ticket-shell.is-loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .ticket-loading {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(8px);
+            display: none !important;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            border-radius: 24px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .ticket-loading[hidden] {
+            display: none !important;
+        }
+
+        .ticket-shell.is-loading .ticket-loading {
+            display: flex !important;
+            opacity: 1;
+        }
+
+        .ticket-content {
+            transition: opacity 0.15s ease;
+        }
+
+        .ticket-shell.is-loading .ticket-content {
+            opacity: 0.5;
+        }
+
+        .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 3px solid rgba(37, 99, 235, 0.15);
+            border-top-color: rgba(37, 99, 235, 0.9);
+            animation: spin 0.7s linear infinite;
+        }
+
+        .support-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .metric-card {
+            background: var(--white);
+            border-radius: 18px;
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::after {
+            content: "";
+            position: absolute;
+            inset: auto 0 -20px 0;
+            height: 40px;
+            background: linear-gradient(180deg, rgba(37, 99, 235, 0.12), transparent);
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .metric-card:hover::after {
+            opacity: 1;
+        }
+
+        .metric-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            font-size: 1.4rem;
+            color: var(--white);
+        }
+
+        .metric-icon.sky { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+        .metric-icon.amber { background: linear-gradient(135deg, #fbbf24, #f97316); }
+        .metric-icon.violet { background: linear-gradient(135deg, #a855f7, #6366f1); }
+        .metric-icon.rose { background: linear-gradient(135deg, #fb7185, #ef4444); }
+        .metric-icon.mint { background: linear-gradient(135deg, #34d399, #0ea5e9); }
+
+        .metric-body {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--gray-dark);
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .metric-caption {
+            font-size: 0.85rem;
+            color: var(--gray-dark);
+        }
+
+        .support-list-card {
+            background: var(--white);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .support-list-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .scope-pill-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .scope-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 10px 18px;
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.16);
+            color: var(--black1);
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .scope-pill:hover {
+            transform: translateY(-1px);
+        }
+
+        .scope-pill.active {
+            background: var(--blue);
+            color: var(--white);
+            box-shadow: 0 12px 40px -24px rgba(37, 99, 235, 0.9);
+        }
+
+        .support-list-actions {
+            display: flex;
+            align-items: center;
+            color: var(--gray-dark);
+            font-size: 0.9rem;
+        }
+
+        .support-list-actions .view-hint {
+            background: rgba(37, 99, 235, 0.08);
+            color: var(--blue);
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+
+        .ticket-filter {
+            background: rgba(248, 250, 252, 0.8);
+            border-radius: 18px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .filter-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-field label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--gray-dark);
+        }
+
+        .filter-field.grow {
+            grid-column: span 2;
+        }
+
+        .filter-field.compact {
+            max-width: 140px;
+        }
+
+        .form-control {
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            padding: 10px 12px;
+            font-size: 0.95rem;
+            background: var(--white);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: rgba(37, 99, 235, 0.6);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding-right: 36px;
+        }
+
+        .search-box ion-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-dark);
+        }
+
+        .filter-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border-radius: 12px;
+            padding: 10px 18px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--blue);
+            color: var(--white);
+            box-shadow: 0 12px 30px -18px rgba(37, 99, 235, 0.9);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-clear {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--black1);
+        }
+
+        .filter-hint {
+            font-size: 0.85rem;
+            color: var(--gray-dark);
+        }
+
+        .ticket-collection {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .ticket-card {
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            border-radius: 18px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: var(--white);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .ticket-card:hover {
+            border-color: rgba(37, 99, 235, 0.35);
+            box-shadow: 0 18px 45px -30px rgba(37, 99, 235, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .ticket-card-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .ticket-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .ticket-code {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--blue);
+            text-decoration: none;
+        }
+
+        .ticket-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .status-chip,
+        .priority-chip,
+        .sla-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .status-new { background: rgba(37, 99, 235, 0.14); color: var(--blue); }
+        .status-progress { background: rgba(59, 130, 246, 0.16); color: #1d4ed8; }
+        .status-waiting { background: rgba(245, 158, 11, 0.18); color: var(--warning); }
+        .status-resolved { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .status-closed { background: rgba(148, 163, 184, 0.2); color: #475569; }
+        .status-escalated { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+
+        .priority-critical { background: rgba(239, 68, 68, 0.18); color: var(--danger); }
+        .priority-high { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+        .priority-normal { background: rgba(37, 99, 235, 0.14); color: var(--blue); }
+        .priority-low { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+
+        .sla-ontrack { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .sla-risk { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+        .sla-breached { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+
+        .ticket-assignee {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(37, 99, 235, 0.12);
+            color: var(--blue);
+            border-radius: 999px;
+            padding: 8px 14px;
+        }
+
+        .ticket-card-body h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--black1);
+        }
+
+        .ticket-card-body .ticket-category {
+            margin: 0;
+            color: var(--gray-dark);
+            font-size: 0.9rem;
+        }
+
+        .ticket-card-footer {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .footer-item {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 10px 14px;
+            border-radius: 12px;
+            background: rgba(248, 250, 252, 0.8);
+        }
+
+        .footer-item ion-icon {
+            font-size: 1.2rem;
+            color: var(--blue);
+        }
+
+        .footer-item span {
+            display: block;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--gray-dark);
+        }
+
+        .footer-item strong {
+            display: block;
+            font-weight: 600;
+            color: var(--black1);
+        }
+
+        .empty-state {
+            border: 1px dashed rgba(148, 163, 184, 0.45);
+            border-radius: 18px;
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--gray-dark);
+            display: grid;
+            gap: 10px;
+            justify-items: center;
+        }
+
+        .empty-state .empty-icon ion-icon {
+            font-size: 2.5rem;
+            color: rgba(37, 99, 235, 0.5);
+        }
+
+        .empty-state h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .pagination.modern {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 22px;
+            flex-wrap: wrap;
+        }
+
+        .pagination.modern .page-link {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(248, 250, 252, 0.8);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: var(--black1);
+            font-weight: 600;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .pagination.modern .page-link:hover {
+            transform: translateY(-1px);
+        }
+
+        .pagination.modern .page-link.active {
+            background: var(--blue);
+            color: var(--white);
+            box-shadow: 0 12px 30px -18px rgba(37, 99, 235, 0.9);
+        }
+
+        .pagination.modern .page-link.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        @@keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @@keyframes pulseGlow {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        @@media (max-width: 1024px) {
+            .support-hero {
+                flex-direction: column;
+            }
+
+            .hero-visual {
+                order: -1;
+            }
+
+            .filter-grid {
+                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            }
+
+            .filter-field.grow {
+                grid-column: span 1;
+            }
+        }
+
+        @@media (max-width: 768px) {
+            .admin-support-index {
+                padding: 16px;
+            }
+
+            .support-list-card {
+                padding: 18px;
+            }
+
+            .ticket-card {
+                padding: 16px;
+            }
+
+            .ticket-card-footer {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .support-list-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .pagination.modern {
+                justify-content: center;
+            }
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        (() => {
+            console.log('[SUPPORT TICKET] Script initializing...');
+
+            const shell = document.querySelector('[data-support-shell]');
+            if (!shell) {
+                console.error('[SUPPORT TICKET] Shell element NOT found!');
+                return;
+            }
+            console.log('[SUPPORT TICKET] Shell element found:', shell);
+
+            const content = shell.querySelector('[data-ticket-content]');
+            const loader = shell.querySelector('[data-ticket-loading]');
+            const fragmentUrl = shell.dataset.fragmentUrl;
+            const indexUrl = shell.dataset.indexUrl;
+            let abortController = null;
+
+            console.log('[SUPPORT TICKET] Elements initialized:', {
+                content: !!content,
+                loader: !!loader,
+                fragmentUrl,
+                indexUrl
+            });
+
+            const toggleLoading = (isLoading) => {
+                console.log('[SUPPORT TICKET] toggleLoading called with:', isLoading);
+                try {
+                    if (shell) {
+                        if (isLoading) {
+                            shell.classList.add('is-loading');
+                        } else {
+                            shell.classList.remove('is-loading');
+                        }
+                        console.log('[SUPPORT TICKET] Shell class toggled. Current classes:', shell.className);
+                    }
+                    if (loader) {
+                        if (isLoading) {
+                            loader.hidden = false;
+                            loader.style.display = 'flex';
+                        } else {
+                            loader.hidden = true;
+                            loader.style.display = 'none';
+                        }
+                        console.log('[SUPPORT TICKET] Loader display:', loader.style.display, 'hidden:', loader.hidden);
+                    }
+                } catch (toggleError) {
+                    console.error('[SUPPORT TICKET] Error toggling loading state:', toggleError);
+                }
+            };
+
+            const extractQuery = (href) => {
+                try {
+                    const url = new URL(href, window.location.origin);
+                    return url.search.length > 1 ? url.search.substring(1) : '';
+                } catch {
+                    return '';
+                }
+            };
+
+            const load = async (query, pushState = true) => {
+                console.log('[SUPPORT TICKET] Load triggered with query:', query);
+
+                if (!fragmentUrl || !content) {
+                    console.error('[SUPPORT TICKET] Missing fragmentUrl or content element', { fragmentUrl, content });
+                    toggleLoading(false);
+                    return;
+                }
+
+                try {
+                    if (abortController && typeof abortController.abort === 'function') {
+                        console.log('[SUPPORT TICKET] Aborting previous request');
+                        abortController.abort();
+                    }
+                } catch (abortError) {
+                    console.warn('[SUPPORT TICKET] Abort previous request failed', abortError);
+                }
+
+                const supportsAbort = typeof AbortController !== 'undefined';
+                abortController = supportsAbort ? new AbortController() : null;
+                console.log('[SUPPORT TICKET] AbortController support:', supportsAbort);
+
+                toggleLoading(true);
+                console.log('[SUPPORT TICKET] Loading state enabled');
+
+                const requestUrl = query ? `${fragmentUrl}?${query}` : fragmentUrl;
+                console.log('[SUPPORT TICKET] Fetching URL:', requestUrl);
+
+                const options = {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
+                    cache: 'no-cache'
+                };
+
+                if (abortController && abortController.signal) {
+                    options.signal = abortController.signal;
+                }
+
+                try {
+                    console.log('[SUPPORT TICKET] Starting fetch...');
+                    const response = await fetch(requestUrl, options);
+                    console.log('[SUPPORT TICKET] Fetch response received:', response.status, response.statusText);
+                    console.log('[SUPPORT TICKET] Response headers:', {
+                        contentType: response.headers.get('content-type'),
+                        contentLength: response.headers.get('content-length')
+                    });
+
+                    if (response.status === 401 || response.status === 403) {
+                        console.warn('[SUPPORT TICKET] Unauthorized, redirecting to index');
+                        window.location.href = indexUrl;
+                        return;
+                    }
+
+                    if (response.redirected && response.url) {
+                        console.warn('[SUPPORT TICKET] Redirected to:', response.url);
+                        window.location.href = response.url;
+                        return;
+                    }
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('[SUPPORT TICKET] Server error response:', errorText);
+                        throw new Error(`Failed to load ticket list (${response.status}): ${errorText}`);
+                    }
+
+                    console.log('[SUPPORT TICKET] Reading response text...');
+                    const html = await response.text();
+                    console.log('[SUPPORT TICKET] Response HTML length:', html.length);
+                    console.log('[SUPPORT TICKET] Response HTML preview:', html.substring(0, 200));
+
+                    console.log('[SUPPORT TICKET] Injecting HTML into content');
+                    
+                    // Fade out -> swap -> fade in để mượt
+                    content.style.opacity = '0.5';
+                    
+                    // Small delay để transition chạy
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    
+                    content.innerHTML = html;
+                    content.style.opacity = '1';
+                    
+                    console.log('[SUPPORT TICKET] Binding interactions...');
+                    bindInteractions(content);
+
+                    if (pushState && window.history && typeof window.history.pushState === 'function') {
+                        const newUrl = query ? `${indexUrl}?${query}` : indexUrl;
+                        console.log('[SUPPORT TICKET] Pushing history state:', newUrl);
+                        window.history.pushState({ query }, '', newUrl);
+                    }
+
+                    console.log('[SUPPORT TICKET] Load completed successfully');
+                } catch (error) {
+                    if (error && error.name === 'AbortError') {
+                        console.log('[SUPPORT TICKET] Request aborted');
+                        return;
+                    }
+
+                    console.error('[SUPPORT TICKET] Load error:', error);
+                    console.error('[SUPPORT TICKET] Error stack:', error?.stack);
+
+                    const toast = document.createElement('div');
+                    toast.className = 'alert alert-danger inline';
+                    toast.textContent = (error?.message || 'Không tải được danh sách ticket') + '. Chi tiết lỗi trong console.';
+                    shell.prepend(toast);
+                    window.setTimeout(() => toast.remove(), 6000);
+                } finally {
+                    console.log('[SUPPORT TICKET] Finally block - disabling loading state');
+                    toggleLoading(false);
+                    abortController = null;
+                    console.log('[SUPPORT TICKET] Loading state disabled');
+                }
+            };
+
+            const bindInteractions = (root) => {
+                console.log('[SUPPORT TICKET] Binding interactions for root:', root);
+
+                // Find scope links - they might be nested deeper
+                const scopeLinks = root.querySelectorAll('.js-scope-link');
+                console.log('[SUPPORT TICKET] Found scope links:', scopeLinks.length);
+                Array.from(scopeLinks).forEach(link => {
+                    link.addEventListener('click', event => {
+                        event.preventDefault();
+                        console.log('[SUPPORT TICKET] Scope link clicked:', link.href);
+                        const query = extractQuery(link.href);
+                        load(query, true);
+                    });
+                });
+
+                // Find page links
+                const pageLinks = root.querySelectorAll('.js-page-link');
+                console.log('[SUPPORT TICKET] Found page links:', pageLinks.length);
+                Array.from(pageLinks).forEach(link => {
+                    link.addEventListener('click', event => {
+                        if (link.classList.contains('disabled')) {
+                            return;
+                        }
+                        event.preventDefault();
+                        console.log('[SUPPORT TICKET] Page link clicked:', link.href);
+                        const query = extractQuery(link.href);
+                        load(query, true);
+                    });
+                });
+
+                // Find filter form
+                const filterForm = root.querySelector('.js-ticket-filter-form');
+                console.log('[SUPPORT TICKET] Filter form search result:', filterForm);
+                
+                if (filterForm) {
+                    console.log('[SUPPORT TICKET] Filter form found, binding events');
+
+                    const resetPage = () => {
+                        const pageInput = filterForm.querySelector('input[name="page"]');
+                        if (pageInput) {
+                            pageInput.value = '1';
+                        }
+                    };
+
+                    filterForm.addEventListener('submit', event => {
+                        event.preventDefault();
+                        console.log('[SUPPORT TICKET] Filter form submitted');
+                        resetPage();
+                        const query = new URLSearchParams(new FormData(filterForm)).toString();
+                        console.log('[SUPPORT TICKET] Submitting query:', query);
+                        load(query, true);
+                    });
+
+                    const selects = filterForm.querySelectorAll('select');
+                    console.log('[SUPPORT TICKET] Found select elements:', selects.length);
+                    
+                    let selectChangeTimeout = null;
+                    Array.from(selects).forEach(select => {
+                        select.addEventListener('change', () => {
+                            console.log('[SUPPORT TICKET] Select changed:', select.name, select.value);
+                            
+                            // Debounce để tránh trigger liên tục
+                            if (selectChangeTimeout) {
+                                clearTimeout(selectChangeTimeout);
+                            }
+                            
+                            selectChangeTimeout = setTimeout(() => {
+                                resetPage();
+                                const query = new URLSearchParams(new FormData(filterForm)).toString();
+                                console.log('[SUPPORT TICKET] Submitting query from select:', query);
+                                load(query, true);
+                            }, 150); // Debounce 150ms
+                        });
+                    });
+
+                    const keywordInput = filterForm.querySelector('input[name="keyword"]');
+                    if (keywordInput) {
+                        console.log('[SUPPORT TICKET] Keyword input found');
+                        let timeoutId;
+                        keywordInput.addEventListener('input', () => {
+                            console.log('[SUPPORT TICKET] Keyword input changed');
+                            window.clearTimeout(timeoutId);
+                            timeoutId = window.setTimeout(() => {
+                                console.log('[SUPPORT TICKET] Keyword debounce triggered');
+                                resetPage();
+                                const query = new URLSearchParams(new FormData(filterForm)).toString();
+                                console.log('[SUPPORT TICKET] Submitting query from keyword:', query);
+                                load(query, true);
+                            }, 450);
+                        });
+                    }
+
+                    const clearLink = filterForm.querySelector('.js-clear-filter');
+                    if (clearLink) {
+                        console.log('[SUPPORT TICKET] Clear filter link found');
+                        clearLink.addEventListener('click', event => {
+                            event.preventDefault();
+                            console.log('[SUPPORT TICKET] Clear filter clicked');
+                            const query = extractQuery(clearLink.href);
+                            load(query, true);
+                        });
+                    }
+                } else {
+                    console.warn('[SUPPORT TICKET] Filter form NOT found in root');
+                    console.log('[SUPPORT TICKET] Root innerHTML preview:', root.innerHTML.substring(0, 500));
+                }
+            };
+
+            console.log('[SUPPORT TICKET] Initial content binding...');
+            bindInteractions(content);
+            console.log('[SUPPORT TICKET] Initial binding complete');
+
+            // FORCE DISABLE LOADING ON INIT
+            console.log('[SUPPORT TICKET] FORCE: Ensuring loader is hidden on page load');
+            toggleLoading(false);
+
+            window.addEventListener('popstate', event => {
+                console.log('[SUPPORT TICKET] Popstate event triggered');
+                const stateQuery = event.state?.query ?? extractQuery(window.location.href);
+                load(stateQuery, false);
+            });
+
+            console.log('[SUPPORT TICKET] Script initialization complete');
+        })();
+    </script>
+}
