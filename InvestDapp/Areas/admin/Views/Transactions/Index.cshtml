@@ -1,0 +1,782 @@
+@model InvestDapp.Areas.admin.ViewModels.TransactionReportPageViewModel
+@{
+    ViewData["Title"] = ViewData["Title"] ?? "Thống kê giao dịch";
+    Layout = "~/Areas/admin/Views/Shared/_Layout.cshtml";
+    var filter = Model.Filter;
+    var summary = Model.Result?.Summary ?? new InvestDapp.Shared.DTOs.Admin.TransactionReportSummaryDto();
+    var transactions = Model.Result?.Transactions ?? Array.Empty<InvestDapp.Shared.DTOs.Admin.AdminTransactionRecordDto>();
+    var pagination = Model.Result ?? new InvestDapp.Shared.DTOs.Admin.TransactionReportResultDto();
+    var pageSize = pagination.PageSize > 0 ? pagination.PageSize : 10;
+    var currentPage = pagination.PageNumber > 0 ? pagination.PageNumber : 1;
+    var totalPages = pagination.TotalPages > 0 ? pagination.TotalPages : 1;
+    var totalCount = pagination.TotalCount;
+    var startItem = totalCount == 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
+    var endItem = totalCount == 0 ? 0 : Math.Min(currentPage * pageSize, totalCount);
+    string FormatDate(System.DateTime value)
+    {
+        return value == System.DateTime.MinValue ? "--" : value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+    }
+
+    string Shorten(string? value, int prefix = 6, int suffix = 4)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return "--";
+        if (value.Length <= prefix + suffix + 3) return value;
+        return $"{value.Substring(0, prefix)}...{value.Substring(value.Length - suffix)}";
+    }
+}
+
+@section Styles {
+    <style>
+        :root {
+            --primary-50: #eff6ff;
+            --primary-100: #dbeafe;
+            --primary-500: #3b82f6;
+            --primary-600: #2563eb;
+            --primary-700: #1d4ed8;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        .analytics-container {
+            min-height: 100vh;
+            background: linear-gradient(160deg, #f0f4ff 0%, #f9fafb 45%, #ffffff 100%);
+            padding-bottom: 80px;
+        }
+
+        .analytics-header {
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            color: #fff;
+            padding: 2.5rem 2rem 2rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 45px rgba(37, 99, 235, 0.25);
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .analytics-header::after {
+            content: "";
+            position: absolute;
+            width: 240px;
+            height: 240px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 50%;
+            top: -120px;
+            right: -80px;
+            filter: blur(0.5px);
+        }
+
+        .analytics-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .analytics-title h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .analytics-subtitle {
+            margin-top: 0.5rem;
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .filter-bar {
+            margin-top: 2rem;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 18px;
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+            box-shadow: 0 16px 35px rgba(15, 23, 42, 0.08);
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--gray-600);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            width: 100%;
+            padding: 0.75rem 0.9rem;
+            border-radius: 12px;
+            border: 1px solid var(--gray-200);
+            background: #fff;
+            font-size: 0.95rem;
+            color: var(--gray-700);
+            transition: all 0.2s ease;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .filter-actions {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: var(--primary-600);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            cursor: pointer;
+            box-shadow: 0 12px 25px rgba(37, 99, 235, 0.25);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 35px rgba(29, 78, 216, 0.35);
+        }
+
+        .btn-outline {
+            background: #fff;
+            color: var(--gray-600);
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 0.75rem 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary-500);
+            color: var(--primary-600);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15);
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0 1rem;
+        }
+
+        .stat-card {
+            background: #fff;
+            border-radius: 18px;
+            padding: 1.75rem;
+            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: "";
+            position: absolute;
+            right: -20px;
+            top: -20px;
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, rgba(37,99,235,0.18) 0%, rgba(37,99,235,0) 60%);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--gray-500);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--primary-700);
+            margin-top: 0.75rem;
+        }
+
+        .stat-meta {
+            margin-top: 0.75rem;
+            font-size: 0.9rem;
+            color: var(--gray-600);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .transaction-section {
+            background: #fff;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        .transaction-section h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-700);
+            margin-bottom: 1.5rem;
+        }
+
+        .transaction-table-wrapper {
+            overflow-x: auto;
+            border-radius: 16px;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        table.transaction-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: #fff;
+        }
+
+        table.transaction-table thead {
+            background: var(--gray-50);
+        }
+
+        table.transaction-table th {
+            text-align: left;
+            padding: 1rem 1.25rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--gray-500);
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        table.transaction-table td {
+            padding: 1rem 1.25rem;
+            font-size: 0.95rem;
+            color: var(--gray-700);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+            background: #fff;
+        }
+
+        table.transaction-table tbody tr:hover td {
+            background: #f8fbff;
+        }
+
+        .type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.8rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+
+        .type-badge.investment {
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary-600);
+        }
+
+        .type-badge.refund {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .address-short {
+            font-family: "Fira Code", monospace;
+            letter-spacing: 0.02em;
+            cursor: help;
+        }
+
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-chip.completed {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .status-chip.pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        .hash-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(37, 99, 235, 0.12);
+            color: var(--primary-600);
+            border: 1px solid rgba(37, 99, 235, 0.25);
+            border-radius: 999px;
+            padding: 0.4rem 0.9rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .hash-btn:hover {
+            background: rgba(37, 99, 235, 0.2);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.15);
+        }
+
+        .pagination-bar {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(226, 232, 240, 0.7);
+        }
+
+        .pagination-info {
+            font-size: 0.9rem;
+            color: var(--gray-600);
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .page-btn {
+            min-width: 42px;
+            height: 38px;
+            padding: 0 0.75rem;
+            border-radius: 10px;
+            border: 1px solid var(--gray-200);
+            background: #fff;
+            font-weight: 600;
+            color: var(--gray-600);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            border-color: var(--primary-500);
+            color: var(--primary-600);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15);
+        }
+
+        .page-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+            box-shadow: none;
+        }
+
+        .page-btn.active {
+            background: var(--primary-600);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 12px 25px rgba(37, 99, 235, 0.25);
+        }
+
+        .page-ellipsis {
+            padding: 0 0.5rem;
+            color: var(--gray-400);
+            font-weight: 600;
+        }
+
+        .empty-state {
+            padding: 2.5rem;
+            text-align: center;
+            color: var(--gray-500);
+        }
+
+        .quick-range {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .quick-range button {
+            background: rgba(255,255,255,0.85);
+            border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 999px;
+            padding: 0.45rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .quick-range button:hover {
+            background: rgba(255,255,255,1);
+            color: var(--primary-600);
+        }
+
+        @@media (max-width: 992px) {
+            .analytics-header {
+                border-radius: 20px;
+            }
+
+            .transaction-section {
+                padding: 1.5rem;
+            }
+        }
+
+        @@media (max-width: 640px) {
+            .analytics-title h1 {
+                font-size: 1.6rem;
+            }
+
+            .stat-card {
+                padding: 1.5rem;
+            }
+
+            table.transaction-table th,
+            table.transaction-table td {
+                padding: 0.75rem 0.9rem;
+            }
+        }
+    </style>
+}
+
+<div class="main">
+    <div class="topbar">
+        <div class="toggle">
+            <ion-icon name="menu-outline"></ion-icon>
+        </div>
+        <div class="search">
+            <label>
+                <input type="text" placeholder="Tìm kiếm nhanh..." id="quickSearchInput">
+                <ion-icon name="search-outline"></ion-icon>
+            </label>
+        </div>
+        <div class="user">
+            <img src="/assets/imgs/customer01.jpg" alt="Admin" />
+        </div>
+    </div>
+
+    <div class="analytics-container">
+        <div class="analytics-header">
+            <div class="analytics-title">
+                <div>
+                    <h1>Thống kê giao dịch</h1>
+                    <p class="analytics-subtitle">Theo dõi dòng tiền đầu tư và hoàn tiền theo thời gian thực</p>
+                </div>
+                <div class="quick-range">
+                    <button type="button" data-range="7">7 ngày gần nhất</button>
+                    <button type="button" data-range="30">30 ngày gần nhất</button>
+                    <button type="button" data-range="90">90 ngày gần nhất</button>
+                    <button type="button" data-range="365">1 năm</button>
+                </div>
+            </div>
+            <form class="filter-bar" method="get" id="filterForm">
+                <input type="hidden" name="page" id="pageInput" value="@currentPage" />
+                <div class="filter-group">
+                    <label for="startDate">Từ ngày</label>
+                    <input type="date" id="startDate" name="startDate" value="@(filter.StartDate?.ToString("yyyy-MM-dd") ?? string.Empty)">
+                </div>
+                <div class="filter-group">
+                    <label for="endDate">Đến ngày</label>
+                    <input type="date" id="endDate" name="endDate" value="@(filter.EndDate?.ToString("yyyy-MM-dd") ?? string.Empty)">
+                </div>
+                <div class="filter-group">
+                    <label for="transactionType">Loại giao dịch</label>
+                    <select id="transactionType" name="transactionType">
+                        <option value="" @(string.IsNullOrEmpty(filter.TransactionType) ? "selected" : string.Empty)>Tất cả</option>
+                        <option value="Investment" @(string.Equals(filter.TransactionType, "Investment", System.StringComparison.OrdinalIgnoreCase) ? "selected" : string.Empty)>Đầu tư</option>
+                        <option value="Refund" @(string.Equals(filter.TransactionType, "Refund", System.StringComparison.OrdinalIgnoreCase) ? "selected" : string.Empty)>Refund</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="campaignName">Tên dự án</label>
+                    <input list="campaignList" id="campaignName" name="campaignName" placeholder="Nhập tên chiến dịch" value="@filter.CampaignName">
+                    <datalist id="campaignList">
+                        @foreach (var name in Model.CampaignOptions)
+                        {
+                            <option value="@name"></option>
+                        }
+                    </datalist>
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Áp dụng</button>
+                    <button type="button" class="btn-outline" id="resetFilters">Xóa bộ lọc</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-label">Tổng đầu tư</div>
+                <div class="stat-value">@summary.TotalInvestment.ToString("N4") BNB</div>
+                <div class="stat-meta">
+                    <ion-icon name="trending-up-outline"></ion-icon>
+                    @summary.InvestmentCount giao dịch
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Tổng Refund</div>
+                <div class="stat-value">@summary.TotalRefund.ToString("N4") BNB</div>
+                <div class="stat-meta">
+                    <ion-icon name="swap-horizontal-outline"></ion-icon>
+                    @summary.RefundCount giao dịch
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Dòng tiền ròng</div>
+                <div class="stat-value" style="color:@(summary.NetAmount >= 0 ? "var(--success)" : "var(--danger)")">@summary.NetAmount.ToString("N4") BNB</div>
+                <div class="stat-meta">
+                    <ion-icon name="pulse-outline"></ion-icon>
+                    Tổng giao dịch: @summary.TotalTransactions
+                </div>
+            </div>
+        </div>
+
+        <div class="transaction-section">
+            <div class="table-header" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+                <h2>Danh sách giao dịch</h2>
+                <button type="button" class="btn-outline" id="exportCsvBtn">
+                    <ion-icon name="download-outline"></ion-icon>
+                    Xuất CSV
+                </button>
+            </div>
+            <div class="transaction-table-wrapper">
+                <table class="transaction-table" id="transactionTable">
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Chiến dịch</th>
+                            <th>Loại</th>
+                            <th>Nhà đầu tư</th>
+                            <th>Số tiền (BNB)</th>
+                            <th>Trạng thái</th>
+                            <th>Tx Hash</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!transactions.Any())
+                        {
+                            <tr>
+                                <td colspan="7" class="empty-state">
+                                    <ion-icon name="folder-open-outline" style="font-size:2rem;"></ion-icon>
+                                    <p>Không có giao dịch nào phù hợp với bộ lọc hiện tại.</p>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var tx in transactions)
+                            {
+                                var badgeClass = tx.TransactionType.Equals("Investment", System.StringComparison.OrdinalIgnoreCase) ? "investment" : "refund";
+                                var statusClass = tx.Status.Equals("Completed", System.StringComparison.OrdinalIgnoreCase) || tx.Status.Equals("Refunded", System.StringComparison.OrdinalIgnoreCase) ? "completed" : "pending";
+                                <tr data-row-text="@((tx.CampaignName ?? string.Empty) + " " + tx.TransactionType + " " + tx.InvestorAddress + " " + tx.TransactionHash)" data-amount="@tx.Amount.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+                                    <td>@FormatDate(tx.OccurredAt)</td>
+                                    <td>@(tx.CampaignName ?? "Không xác định")</td>
+                                    <td>
+                                        <span class="type-badge @badgeClass">
+                                            <ion-icon name="@(badgeClass == "investment" ? "cash-outline" : "refresh-outline")"></ion-icon>
+                                            @tx.TransactionType
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="address-short" title="@tx.InvestorAddress">@Shorten(tx.InvestorAddress)</span>
+                                    </td>
+                                    <td>@tx.Amount.ToString("N4")</td>
+                                    <td>
+                                        <span class="status-chip @statusClass">@tx.Status</span>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace(tx.TransactionHash))
+                                        {
+                                            <button type="button" class="hash-btn" data-hash="@tx.TransactionHash" data-network="bsc-testnet">
+                                                <ion-icon name="open-outline"></ion-icon>
+                                                Xem giao dịch
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <span style="color:var(--gray-400);">--</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination-bar">
+                <div class="pagination-info">
+                    @if (totalCount == 0)
+                    {
+                        <span>Không có dữ liệu để hiển thị.</span>
+                    }
+                    else
+                    {
+                        <span>Hiển thị @startItem - @endItem trên tổng @totalCount giao dịch</span>
+                    }
+                </div>
+                @if (totalCount > 0 && totalPages > 1)
+                {
+                    var firstPage = 1;
+                    var lastPage = totalPages;
+                    var window = 2;
+                    var windowStart = Math.Max(firstPage, currentPage - window);
+                    var windowEnd = Math.Min(lastPage, currentPage + window);
+                    <div class="pagination-controls">
+                        <button type="button" class="page-btn" data-page-target="@(currentPage - 1)" @(currentPage <= 1 ? "disabled" : string.Empty)>Trước</button>
+                        @if (windowStart > firstPage)
+                        {
+                            <button type="button" class="page-btn" data-page-target="@firstPage">1</button>
+                            if (windowStart > firstPage + 1)
+                            {
+                                <span class="page-ellipsis">...</span>
+                            }
+                        }
+                        @for (var pageNumber = windowStart; pageNumber <= windowEnd; pageNumber++)
+                        {
+                            <button type="button" class="page-btn @(pageNumber == currentPage ? "active" : string.Empty)" data-page-target="@pageNumber">@pageNumber</button>
+                        }
+                        @if (windowEnd < lastPage)
+                        {
+                            if (windowEnd < lastPage - 1)
+                            {
+                                <span class="page-ellipsis">...</span>
+                            }
+                            <button type="button" class="page-btn" data-page-target="@lastPage">@lastPage</button>
+                        }
+                        <button type="button" class="page-btn" data-page-target="@(currentPage + 1)" @(currentPage >= totalPages ? "disabled" : string.Empty)>Sau</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function(){
+            const form = document.getElementById('filterForm');
+            const resetBtn = document.getElementById('resetFilters');
+            const quickButtons = document.querySelectorAll('.quick-range button[data-range]');
+            const startInput = document.getElementById('startDate');
+            const endInput = document.getElementById('endDate');
+            const quickSearchInput = document.getElementById('quickSearchInput');
+            const tableRows = Array.from(document.querySelectorAll('#transactionTable tbody tr')).filter(r => r.dataset.rowText);
+            const exportBtn = document.getElementById('exportCsvBtn');
+            const hashButtons = document.querySelectorAll('.hash-btn');
+            const pageInput = document.getElementById('pageInput');
+            const pageButtons = document.querySelectorAll('.page-btn[data-page-target]');
+
+            resetBtn?.addEventListener('click', () => {
+                startInput.value = '';
+                endInput.value = '';
+                document.getElementById('transactionType').selectedIndex = 0;
+                document.getElementById('campaignName').value = '';
+                if (pageInput) {
+                    pageInput.value = '1';
+                }
+                form.submit();
+            });
+
+            quickButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const days = parseInt(btn.dataset.range, 10);
+                    if (Number.isNaN(days)) return;
+                    const end = new Date();
+                    const start = new Date();
+                    start.setDate(end.getDate() - (days - 1));
+                    const fmt = (d) => d.toISOString().split('T')[0];
+                    startInput.value = fmt(start);
+                    endInput.value = fmt(end);
+                    if (pageInput) {
+                        pageInput.value = '1';
+                    }
+                    form.submit();
+                });
+            });
+
+            quickSearchInput?.addEventListener('input', (event) => {
+                const value = (event.target.value || '').toLowerCase();
+                tableRows.forEach(row => {
+                    const text = (row.dataset.rowText || '').toLowerCase();
+                    row.style.display = text.includes(value) ? '' : 'none';
+                });
+            });
+
+            exportBtn?.addEventListener('click', () => {
+                const rows = document.querySelectorAll('#transactionTable tbody tr');
+                if (!rows.length) return;
+                const headers = Array.from(document.querySelectorAll('#transactionTable thead th')).map(th => th.innerText.trim());
+                const csvRows = [headers.join(',')];
+
+                rows.forEach(row => {
+                    if (row.style.display === 'none') return;
+                    const cells = Array.from(row.querySelectorAll('td')).map(td => {
+                        const text = td.innerText.replace(/\r?\n|\r/g, ' ').trim();
+                        return '"' + text.replace(/"/g, '""') + '"';
+                    });
+                    csvRows.push(cells.join(','));
+                });
+
+                const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                const timestamp = new Date().toISOString().split('T')[0];
+                link.href = url;
+                link.setAttribute('download', `transaction-report-${timestamp}.csv`);
+                link.click();
+                URL.revokeObjectURL(url);
+            });
+
+            hashButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const hash = btn.getAttribute('data-hash');
+                    if (!hash) return;
+                    const url = `https://testnet.bscscan.com/tx/${hash}`;
+                    window.open(url, '_blank', 'noopener');
+                });
+            });
+
+            pageButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const target = parseInt(btn.getAttribute('data-page-target'), 10);
+                    if (!Number.isFinite(target) || target < 1 || btn.disabled) return;
+                    if (pageInput) {
+                        pageInput.value = target.toString();
+                    }
+                    form.submit();
+                });
+            });
+        })();
+    </script>
+}

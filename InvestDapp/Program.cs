@@ -1,5 +1,6 @@
 ﻿using Invest.Application.EventListener;
 using Invest.Application.EventService;
+using InvestDapp.Application.AdminAnalytics;
 using InvestDapp.Application.AuthService;
 using InvestDapp.Application.CampaignService;
 using InvestDapp.Application.KycService;
@@ -90,6 +91,7 @@ builder.Services.AddScoped<ICampaignPostRepository, CampaignPostRepository>();
 builder.Services.AddScoped<ICampaignPostService, CampaignPostService>();
 builder.Services.AddScoped<ICampaign, CampaignRepository>();
 builder.Services.AddScoped<CampaignEventService>();
+builder.Services.AddScoped<ITransactionReportService, TransactionReportService>();
 
 // =======================
 // 10. CẤU HÌNH SIGNALR
