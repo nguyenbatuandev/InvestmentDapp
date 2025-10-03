@@ -14,10 +14,12 @@ namespace InvestDapp.Areas.admin.Controllers
     public class TransactionsController : Controller
     {
         private readonly ITransactionReportService _transactionReportService;
+        private readonly ITransactionReportPdfService _transactionReportPdfService;
 
-        public TransactionsController(ITransactionReportService transactionReportService)
+        public TransactionsController(ITransactionReportService transactionReportService, ITransactionReportPdfService transactionReportPdfService)
         {
             _transactionReportService = transactionReportService;
+            _transactionReportPdfService = transactionReportPdfService;
         }
 
         [HttpGet("")]
@@ -49,6 +51,52 @@ namespace InvestDapp.Areas.admin.Controllers
 
             ViewData["Title"] = "Thống kê giao dịch";
             return View(viewModel);
+        }
+
+        [HttpGet("chart-data")]
+        public async Task<IActionResult> GetChartData(DateTime? startDate, DateTime? endDate, string? transactionType, string? campaignName, string grouping = "Daily")
+        {
+            var sanitizedType = string.IsNullOrWhiteSpace(transactionType) ? null : transactionType.Trim();
+            var sanitizedCampaign = string.IsNullOrWhiteSpace(campaignName) ? null : campaignName.Trim();
+
+            var filter = new TransactionReportFilterRequest
+            {
+                StartDate = startDate,
+                EndDate = endDate,
+                TransactionType = sanitizedType,
+                CampaignName = sanitizedCampaign,
+                IncludeAll = true
+            };
+
+            var groupingEnum = grouping?.ToLowerInvariant() switch
+            {
+                "weekly" => InvestDapp.Shared.Enums.TransactionGrouping.Weekly,
+                "monthly" => InvestDapp.Shared.Enums.TransactionGrouping.Monthly,
+                _ => InvestDapp.Shared.Enums.TransactionGrouping.Daily
+            };
+
+            var chartData = await _transactionReportService.GetChartDataAsync(filter, groupingEnum);
+            return Ok(chartData);
+        }
+
+        [HttpGet("export-pdf")]
+        public async Task<IActionResult> ExportPdf(DateTime? startDate, DateTime? endDate, string? transactionType, string? campaignName)
+        {
+            var sanitizedType = string.IsNullOrWhiteSpace(transactionType) ? null : transactionType.Trim();
+            var sanitizedCampaign = string.IsNullOrWhiteSpace(campaignName) ? null : campaignName.Trim();
+
+            var filter = new TransactionReportFilterRequest
+            {
+                StartDate = startDate,
+                EndDate = endDate,
+                TransactionType = sanitizedType,
+                CampaignName = sanitizedCampaign,
+                IncludeAll = true
+            };
+
+            var pdfBytes = await _transactionReportPdfService.GenerateReportAsync(filter);
+            var filename = $"transaction-report-{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
+            return File(pdfBytes, "application/pdf", filename);
         }
     }
 }

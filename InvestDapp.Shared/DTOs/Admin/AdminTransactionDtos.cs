@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using InvestDapp.Shared.Enums;
 
 namespace InvestDapp.Shared.DTOs.Admin
 {
@@ -37,5 +39,32 @@ namespace InvestDapp.Shared.DTOs.Admin
         public int TotalPages { get; set; }
         public bool HasPrevious => PageNumber > 1;
         public bool HasNext => PageNumber < TotalPages;
+        public TransactionChartDataDto ChartData { get; set; } = new();
+    }
+
+    public class TransactionTimelinePointDto
+    {
+        public DateTime Period { get; set; }
+        public string Label { get; set; } = string.Empty;
+        public decimal InvestmentTotal { get; set; }
+        public decimal RefundTotal { get; set; }
+        public decimal NetAmount => InvestmentTotal - RefundTotal;
+    }
+
+    public class TransactionCampaignSummaryDto
+    {
+        public int CampaignId { get; set; }
+        public string CampaignName { get; set; } = string.Empty;
+        public decimal InvestmentTotal { get; set; }
+        public decimal RefundTotal { get; set; }
+        public decimal NetAmount => InvestmentTotal - RefundTotal;
+    }
+
+    public class TransactionChartDataDto
+    {
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public TransactionGrouping Grouping { get; set; } = TransactionGrouping.Daily;
+        public IReadOnlyList<TransactionTimelinePointDto> Timeline { get; set; } = Array.Empty<TransactionTimelinePointDto>();
+        public IReadOnlyList<TransactionCampaignSummaryDto> TopCampaigns { get; set; } = Array.Empty<TransactionCampaignSummaryDto>();
     }
 }

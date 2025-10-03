@@ -17,8 +17,11 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Nethereum.Web3;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 // =======================
 // 1. CẤU HÌNH BLOCKCHAIN
@@ -92,6 +95,7 @@ builder.Services.AddScoped<ICampaignPostService, CampaignPostService>();
 builder.Services.AddScoped<ICampaign, CampaignRepository>();
 builder.Services.AddScoped<CampaignEventService>();
 builder.Services.AddScoped<ITransactionReportService, TransactionReportService>();
+builder.Services.AddScoped<ITransactionReportPdfService, TransactionReportPdfService>();
 
 // =======================
 // 10. CẤU HÌNH SIGNALR

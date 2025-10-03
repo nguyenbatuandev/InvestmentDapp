@@ -1,3 +1,5 @@
+@using System.Text.Json
+@using System.Text.Json.Serialization
 @model InvestDapp.Areas.admin.ViewModels.TransactionReportPageViewModel
 @{
     ViewData["Title"] = ViewData["Title"] ?? "Thống kê giao dịch";
@@ -12,6 +14,11 @@
     var totalCount = pagination.TotalCount;
     var startItem = totalCount == 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
     var endItem = totalCount == 0 ? 0 : Math.Min(currentPage * pageSize, totalCount);
+    var chartData = pagination.ChartData ?? new InvestDapp.Shared.DTOs.Admin.TransactionChartDataDto();
+    var defaultGrouping = chartData.Grouping;
+    var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    jsonOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+    var chartDataJson = JsonSerializer.Serialize(chartData, jsonOptions);
     string FormatDate(System.DateTime value)
     {
         return value == System.DateTime.MinValue ? "--" : value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
@@ -203,6 +210,90 @@
             width: 120px;
             height: 120px;
             background: radial-gradient(circle, rgba(37,99,235,0.18) 0%, rgba(37,99,235,0) 60%);
+        }
+
+        .chart-section {
+            margin: 2rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .chart-header h2 {
+            margin: 0;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--gray-700);
+        }
+
+        .chart-header p {
+            margin: 0.5rem 0 0;
+            color: var(--gray-600);
+        }
+
+        .chart-toggle {
+            display: inline-flex;
+            background: rgba(37, 99, 235, 0.08);
+            padding: 0.4rem;
+            border-radius: 999px;
+            gap: 0.3rem;
+        }
+
+        .chart-toggle button {
+            border: none;
+            background: transparent;
+            color: var(--primary-600);
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .chart-toggle button.active {
+            background: #fff;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.2);
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .chart-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            min-height: 240px;
+        }
+
+        .chart-card h3 {
+            margin: 0 0 1rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--gray-700);
+        }
+
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 240px;
+        }
+
+        .chart-wrapper canvas {
+            width: 100% !important;
+            height: 100% !important;
         }
 
         .stat-label {
@@ -451,6 +542,10 @@
             .transaction-section {
                 padding: 1.5rem;
             }
+
+            .chart-wrapper {
+                height: 220px;
+            }
         }
 
         @@media (max-width: 640px) {
@@ -465,6 +560,10 @@
             table.transaction-table th,
             table.transaction-table td {
                 padding: 0.75rem 0.9rem;
+            }
+
+            .chart-wrapper {
+                height: 200px;
             }
         }
     </style>
@@ -562,12 +661,44 @@
             </div>
         </div>
 
+        <div class="chart-section">
+            <div class="chart-header">
+                <div>
+                    <h2>Biểu đồ giao dịch</h2>
+                    <p>So sánh dòng tiền đầu tư và hoàn tiền theo từng giai đoạn</p>
+                </div>
+                <div class="chart-toggle">
+                    <button type="button" class="@(defaultGrouping == InvestDapp.Shared.Enums.TransactionGrouping.Daily ? "active" : string.Empty)" data-grouping="Daily">Ngày</button>
+                    <button type="button" class="@(defaultGrouping == InvestDapp.Shared.Enums.TransactionGrouping.Weekly ? "active" : string.Empty)" data-grouping="Weekly">Tuần</button>
+                    <button type="button" class="@(defaultGrouping == InvestDapp.Shared.Enums.TransactionGrouping.Monthly ? "active" : string.Empty)" data-grouping="Monthly">Tháng</button>
+                </div>
+            </div>
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <h3>Dòng tiền theo thời gian</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="transactionsTimelineChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Top chiến dịch</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="campaignComparisonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="transaction-section">
             <div class="table-header" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
                 <h2>Danh sách giao dịch</h2>
                 <button type="button" class="btn-outline" id="exportCsvBtn">
                     <ion-icon name="download-outline"></ion-icon>
                     Xuất CSV
+                </button>
+                <button type="button" class="btn-outline" id="exportPdfBtn">
+                    <ion-icon name="document-text-outline"></ion-icon>
+                    Xuất PDF
                 </button>
             </div>
             <div class="transaction-table-wrapper">
@@ -683,6 +814,7 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script>
         (function(){
             const form = document.getElementById('filterForm');
@@ -692,10 +824,176 @@
             const endInput = document.getElementById('endDate');
             const quickSearchInput = document.getElementById('quickSearchInput');
             const tableRows = Array.from(document.querySelectorAll('#transactionTable tbody tr')).filter(r => r.dataset.rowText);
-            const exportBtn = document.getElementById('exportCsvBtn');
+            const exportCsvBtn = document.getElementById('exportCsvBtn');
+            const exportPdfBtn = document.getElementById('exportPdfBtn');
             const hashButtons = document.querySelectorAll('.hash-btn');
             const pageInput = document.getElementById('pageInput');
             const pageButtons = document.querySelectorAll('.page-btn[data-page-target]');
+            const chartToggleButtons = document.querySelectorAll('.chart-toggle button[data-grouping]');
+            const timelineCanvas = document.getElementById('transactionsTimelineChart');
+            const campaignCanvas = document.getElementById('campaignComparisonChart');
+            const initialChartData = @Html.Raw(chartDataJson);
+
+            const safeGrouping = (value) => {
+                if (typeof value === 'string') {
+                    return value.toLowerCase();
+                }
+                if (value === 1) return 'weekly';
+                if (value === 2) return 'monthly';
+                return 'daily';
+            };
+
+            const chartState = {
+                grouping: safeGrouping(initialChartData?.grouping)
+            };
+
+            const timelineChart = timelineCanvas ? new Chart(timelineCanvas, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Đầu tư',
+                            data: [],
+                            borderColor: 'rgba(37, 99, 235, 0.9)',
+                            backgroundColor: 'rgba(37, 99, 235, 0.15)',
+                            tension: 0.35,
+                            fill: true
+                        },
+                        {
+                            label: 'Refund',
+                            data: [],
+                            borderColor: 'rgba(239, 68, 68, 0.85)',
+                            backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                            tension: 0.35,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(4)} BNB`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: (value) => `${parseFloat(value).toFixed(2)} BNB`
+                            }
+                        }
+                    }
+                }
+            }) : null;
+
+            const campaignChart = campaignCanvas ? new Chart(campaignCanvas, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Đầu tư',
+                            data: [],
+                            backgroundColor: 'rgba(59, 130, 246, 0.7)'
+                        },
+                        {
+                            label: 'Refund',
+                            data: [],
+                            backgroundColor: 'rgba(248, 113, 113, 0.7)'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `${context.dataset.label}: ${context.parsed.x.toFixed(4)} BNB`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: (value) => `${parseFloat(value).toFixed(2)} BNB`
+                            }
+                        }
+                    }
+                }
+            }) : null;
+
+            const hydrateCharts = (data) => {
+                if (!data || (!timelineChart && !campaignChart)) {
+                    return;
+                }
+
+                chartState.grouping = safeGrouping(data.grouping);
+
+                if (timelineChart) {
+                    const labels = (data.timeline || []).map(item => item.label);
+                    const investments = (data.timeline || []).map(item => Number(item.investmentTotal || 0));
+                    const refunds = (data.timeline || []).map(item => Number(item.refundTotal || 0));
+                    timelineChart.data.labels = labels;
+                    timelineChart.data.datasets[0].data = investments;
+                    timelineChart.data.datasets[1].data = refunds;
+                    timelineChart.update();
+                }
+
+                if (campaignChart) {
+                    const labels = (data.topCampaigns || []).map(item => item.campaignName || 'Không xác định');
+                    const investments = (data.topCampaigns || []).map(item => Number(item.investmentTotal || 0));
+                    const refunds = (data.topCampaigns || []).map(item => Number(item.refundTotal || 0));
+                    campaignChart.data.labels = labels;
+                    campaignChart.data.datasets[0].data = investments;
+                    campaignChart.data.datasets[1].data = refunds;
+                    campaignChart.update();
+                }
+
+                chartToggleButtons.forEach(btn => {
+                    const btnGrouping = safeGrouping(btn.dataset.grouping);
+                    btn.classList.toggle('active', btnGrouping === chartState.grouping);
+                });
+            };
+
+            hydrateCharts(initialChartData);
+
+            const applyGrouping = (grouping) => {
+                const params = new URLSearchParams(new FormData(form));
+                params.delete('page');
+                params.set('grouping', grouping);
+
+                fetch(`/admin/transactions/chart-data?${params.toString()}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Không thể tải dữ liệu biểu đồ');
+                        return response.json();
+                    })
+                    .then(data => hydrateCharts(data))
+                    .catch(error => console.error(error));
+            };
+
+            chartToggleButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetGrouping = safeGrouping(btn.dataset.grouping);
+                    if (targetGrouping === chartState.grouping) {
+                        return;
+                    }
+                    applyGrouping(btn.dataset.grouping);
+                });
+            });
 
             resetBtn?.addEventListener('click', () => {
                 startInput.value = '';
@@ -733,7 +1031,7 @@
                 });
             });
 
-            exportBtn?.addEventListener('click', () => {
+            exportCsvBtn?.addEventListener('click', () => {
                 const rows = document.querySelectorAll('#transactionTable tbody tr');
                 if (!rows.length) return;
                 const headers = Array.from(document.querySelectorAll('#transactionTable thead th')).map(th => th.innerText.trim());
@@ -756,6 +1054,13 @@
                 link.setAttribute('download', `transaction-report-${timestamp}.csv`);
                 link.click();
                 URL.revokeObjectURL(url);
+            });
+
+            exportPdfBtn?.addEventListener('click', () => {
+                const params = new URLSearchParams(new FormData(form));
+                params.delete('page');
+                const url = `/admin/transactions/export-pdf?${params.toString()}`;
+                window.open(url, '_blank', 'noopener');
             });
 
             hashButtons.forEach(btn => {

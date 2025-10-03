@@ -1,6 +1,7 @@
 using InvestDapp.Infrastructure.Data;
 using InvestDapp.Shared.Common.Request;
 using InvestDapp.Shared.DTOs.Admin;
+using InvestDapp.Shared.Enums;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -24,9 +25,71 @@ namespace InvestDapp.Application.AdminAnalytics
         {
             filterRequest ??= new TransactionReportFilterRequest();
 
-            var pageSize = filterRequest.PageSize <= 0 ? 10 : filterRequest.PageSize;
-            var requestedPage = filterRequest.PageNumber <= 0 ? 1 : filterRequest.PageNumber;
+            var allRecords = await FetchRecordsAsync(filterRequest);
 
+            var totalCount = allRecords.Count;
+            var pageSize = filterRequest.IncludeAll
+                ? (totalCount == 0 ? 1 : totalCount)
+                : (filterRequest.PageSize <= 0 ? 10 : filterRequest.PageSize);
+
+            var requestedPage = filterRequest.IncludeAll
+                ? 1
+                : (filterRequest.PageNumber <= 0 ? 1 : filterRequest.PageNumber);
+
+            var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            if (!filterRequest.IncludeAll)
+            {
+                requestedPage = Math.Min(Math.Max(requestedPage, 1), totalPages);
+            }
+            else
+            {
+                requestedPage = 1;
+                totalPages = 1;
+            }
+
+            var pagedRecords = filterRequest.IncludeAll
+                ? allRecords
+                : allRecords
+                    .Skip((requestedPage - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+            var summary = BuildSummary(allRecords);
+
+            return new TransactionReportResultDto
+            {
+                Summary = summary,
+                Transactions = pagedRecords,
+                TotalCount = totalCount,
+                PageNumber = requestedPage,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                ChartData = BuildChartData(allRecords, TransactionGrouping.Daily)
+            };
+        }
+
+        public async Task<IReadOnlyList<string>> GetCampaignNamesAsync()
+        {
+            return await _context.Campaigns
+                .AsNoTracking()
+                .OrderBy(c => c.Name)
+                .Select(c => c.Name)
+                .Distinct()
+                .ToListAsync();
+        }
+
+        public async Task<TransactionChartDataDto> GetChartDataAsync(TransactionReportFilterRequest filterRequest, TransactionGrouping grouping, int topCampaigns = 5)
+        {
+            filterRequest ??= new TransactionReportFilterRequest();
+            filterRequest.IncludeAll = true;
+
+            var allRecords = await FetchRecordsAsync(filterRequest);
+            return BuildChartData(allRecords, grouping, topCampaigns);
+        }
+
+        private async Task<List<AdminTransactionRecordDto>> FetchRecordsAsync(TransactionReportFilterRequest filterRequest)
+        {
             var investmentQuery = _context.Investment
                 .AsNoTracking()
                 .Include(i => i.Campaign)
@@ -125,46 +188,98 @@ namespace InvestDapp.Application.AdminAnalytics
                 }
             }
 
-            var orderedRecords = records
+            return records
                 .OrderByDescending(r => r.OccurredAt == DateTime.MinValue ? DateTime.MinValue : r.OccurredAt)
                 .ThenByDescending(r => r.Id)
                 .ToList();
+        }
 
-            var totalCount = orderedRecords.Count;
-            var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
-            var currentPage = Math.Min(Math.Max(requestedPage, 1), totalPages);
-            var pagedRecords = orderedRecords
-                .Skip((currentPage - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-
-            var summary = new TransactionReportSummaryDto
+        private static TransactionReportSummaryDto BuildSummary(IReadOnlyCollection<AdminTransactionRecordDto> records)
+        {
+            return new TransactionReportSummaryDto
             {
-                TotalInvestment = orderedRecords.Where(r => r.TransactionType == "Investment").Sum(r => r.Amount),
-                TotalRefund = orderedRecords.Where(r => r.TransactionType == "Refund").Sum(r => r.Amount),
-                InvestmentCount = orderedRecords.Count(r => r.TransactionType == "Investment"),
-                RefundCount = orderedRecords.Count(r => r.TransactionType == "Refund")
-            };
-
-            return new TransactionReportResultDto
-            {
-                Summary = summary,
-                Transactions = pagedRecords,
-                TotalCount = totalCount,
-                PageNumber = currentPage,
-                PageSize = pageSize,
-                TotalPages = totalPages
+                TotalInvestment = records.Where(r => r.TransactionType.Equals("Investment", StringComparison.OrdinalIgnoreCase)).Sum(r => r.Amount),
+                TotalRefund = records.Where(r => r.TransactionType.Equals("Refund", StringComparison.OrdinalIgnoreCase)).Sum(r => r.Amount),
+                InvestmentCount = records.Count(r => r.TransactionType.Equals("Investment", StringComparison.OrdinalIgnoreCase)),
+                RefundCount = records.Count(r => r.TransactionType.Equals("Refund", StringComparison.OrdinalIgnoreCase))
             };
         }
 
-        public async Task<IReadOnlyList<string>> GetCampaignNamesAsync()
+        private static TransactionChartDataDto BuildChartData(IReadOnlyCollection<AdminTransactionRecordDto> records, TransactionGrouping grouping, int topCampaigns = 5)
         {
-            return await _context.Campaigns
-                .AsNoTracking()
-                .OrderBy(c => c.Name)
-                .Select(c => c.Name)
-                .Distinct()
-                .ToListAsync();
+            if (records == null || records.Count == 0)
+            {
+                return new TransactionChartDataDto
+                {
+                    Grouping = grouping
+                };
+            }
+
+            var timeline = records
+                .Where(r => r.OccurredAt != DateTime.MinValue)
+                .GroupBy(r => GetPeriodStart(r.OccurredAt, grouping))
+                .OrderBy(g => g.Key)
+                .Select(g => new TransactionTimelinePointDto
+                {
+                    Period = g.Key,
+                    Label = FormatPeriodLabel(g.Key, grouping),
+                    InvestmentTotal = g.Where(r => r.TransactionType.Equals("Investment", StringComparison.OrdinalIgnoreCase)).Sum(r => r.Amount),
+                    RefundTotal = g.Where(r => r.TransactionType.Equals("Refund", StringComparison.OrdinalIgnoreCase)).Sum(r => r.Amount)
+                })
+                .ToList();
+
+            var campaigns = records
+                .GroupBy(r => new { r.CampaignId, Name = r.CampaignName ?? "Không xác định" })
+                .Select(g => new TransactionCampaignSummaryDto
+                {
+                    CampaignId = g.Key.CampaignId,
+                    CampaignName = g.Key.Name,
+                    InvestmentTotal = g.Where(r => r.TransactionType.Equals("Investment", StringComparison.OrdinalIgnoreCase)).Sum(r => r.Amount),
+                    RefundTotal = g.Where(r => r.TransactionType.Equals("Refund", StringComparison.OrdinalIgnoreCase)).Sum(r => r.Amount)
+                })
+                .OrderByDescending(c => c.InvestmentTotal)
+                .ThenByDescending(c => c.NetAmount)
+                .Take(Math.Max(topCampaigns, 1))
+                .ToList();
+
+            return new TransactionChartDataDto
+            {
+                Grouping = grouping,
+                Timeline = timeline,
+                TopCampaigns = campaigns
+            };
+        }
+
+        private static DateTime GetPeriodStart(DateTime occurredAt, TransactionGrouping grouping)
+        {
+            var date = occurredAt.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(occurredAt, DateTimeKind.Utc)
+                : occurredAt;
+
+            date = date.ToLocalTime().Date;
+
+            return grouping switch
+            {
+                TransactionGrouping.Weekly => StartOfWeek(date),
+                TransactionGrouping.Monthly => new DateTime(date.Year, date.Month, 1),
+                _ => date
+            };
+        }
+
+        private static string FormatPeriodLabel(DateTime periodStart, TransactionGrouping grouping)
+        {
+            return grouping switch
+            {
+                TransactionGrouping.Weekly => $"{periodStart:dd/MM} - {periodStart.AddDays(6):dd/MM}",
+                TransactionGrouping.Monthly => periodStart.ToString("MM/yyyy"),
+                _ => periodStart.ToString("dd/MM/yyyy")
+            };
+        }
+
+        private static DateTime StartOfWeek(DateTime date)
+        {
+            var diff = (7 + (date.DayOfWeek - DayOfWeek.Monday)) % 7;
+            return date.AddDays(-1 * diff);
         }
 
         private static decimal ConvertWeiToBnb(string? amountInWei)

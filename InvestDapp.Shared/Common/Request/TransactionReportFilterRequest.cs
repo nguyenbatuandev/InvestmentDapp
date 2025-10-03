@@ -10,5 +10,6 @@ namespace InvestDapp.Shared.Common.Request
         public string? CampaignName { get; set; }
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
+        public bool IncludeAll { get; set; }
     }
 }
