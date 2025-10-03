@@ -1,9 +1,16 @@
-﻿using InvestDapp.Models;
+﻿using InvestDapp.Application.CampaignService;
+using InvestDapp.Infrastructure.Data;
+using InvestDapp.Models;
+using InvestDapp.ViewModels.Home;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Text;
+using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
+using InvestDapp.Shared.Enums;
+using System.Linq;
 
 namespace InvestDapp.Controllers
 {
@@ -13,20 +20,148 @@ namespace InvestDapp.Controllers
 
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly string _geminiApiKey;
+    private readonly ILogger<HomeController> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly string? _geminiApiKey;
+    private readonly InvestDbContext _dbContext;
+    private readonly ICampaignPostService _campaignPostService;
 
-        public HomeController(ILogger<HomeController> logger, IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        public HomeController(
+            ILogger<HomeController> logger,
+            IHttpClientFactory httpClientFactory,
+            IConfiguration configuration,
+            InvestDbContext dbContext,
+            ICampaignPostService campaignPostService)
         {
             _logger = logger;
             _httpClientFactory = httpClientFactory;
             _geminiApiKey = configuration["GeminiApiKey"];
+            _dbContext = dbContext;
+            _campaignPostService = campaignPostService;
         }
 
         public async Task<IActionResult> Index()
         {
-            return View();
+            var viewModel = await BuildLandingModelAsync();
+            return View(viewModel);
+        }
+
+        private async Task<HomeLandingViewModel> BuildLandingModelAsync()
+        {
+            var campaigns = (await _campaignPostService.GetApprovedCampaignsAsync()).ToList();
+
+            var stats = new LandingStatsViewModel
+            {
+                TotalRaised = (decimal)campaigns.Sum(c => c.CurrentRaisedAmount),
+                TotalInvestors = campaigns.Sum(c => c.InvestorCount),
+                ActiveCampaigns = campaigns.Count(c => c.Status == CampaignStatus.Active),
+                CompletedCampaigns = campaigns.Count(c => c.Status == CampaignStatus.Completed),
+                TotalValueLocked = (decimal)campaigns
+                    .Where(c => c.Status == CampaignStatus.Active || c.Status == CampaignStatus.Voting)
+                    .Sum(c => c.CurrentRaisedAmount)
+            };
+
+            var featuredCampaigns = campaigns
+                .OrderByDescending(c => c.Status == CampaignStatus.Active)
+                .ThenByDescending(CalculateProgress)
+                .ThenByDescending(c => c.CurrentRaisedAmount)
+                .Take(3)
+                .Select(c => new CampaignSummaryCard
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Category = c.category?.Name,
+                    ImageUrl = string.IsNullOrWhiteSpace(c.ImageUrl) ? null : c.ImageUrl,
+                    GoalAmount = c.GoalAmount,
+                    RaisedAmount = c.CurrentRaisedAmount,
+                    ProgressPercentage = Math.Round(CalculateProgress(c) * 100d, 2),
+                    Status = c.Status,
+                    IsHot = IsHotCampaign(c),
+                    EndTime = c.EndTime
+                })
+                .ToList();
+
+            var recentInvestments = await _dbContext.Investment
+                .AsNoTracking()
+                .Include(i => i.Campaign)
+                .OrderByDescending(i => i.Timestamp)
+                .Take(12)
+                .Select(i => new InvestmentTickerItem
+                {
+                    CampaignName = i.Campaign.Name,
+                    InvestorAddress = i.InvestorAddress,
+                    Amount = i.Amount,
+                    Timestamp = i.Timestamp
+                })
+                .ToListAsync();
+
+            var approvedPosts = (await _campaignPostService.GetApprovedPostsAsync(1, 6)).ToList();
+            var highlights = approvedPosts
+                .Select(p => new NewsSpotlightViewModel
+                {
+                    Id = p.Id,
+                    Title = p.Title,
+                    CampaignName = p.Campaign?.Name ?? "Chiến dịch",
+                    ImageUrl = !string.IsNullOrWhiteSpace(p.ImageUrl) ? p.ImageUrl : p.Campaign?.ImageUrl,
+                    Excerpt = BuildExcerpt(p.Content, 160),
+                    PostType = p.PostType,
+                    PublishedAt = p.ApprovedAt ?? p.CreatedAt
+                })
+                .ToList();
+
+            return new HomeLandingViewModel
+            {
+                Stats = stats,
+                FeaturedCampaigns = featuredCampaigns,
+                RecentInvestments = recentInvestments,
+                Highlights = highlights,
+                IsAuthenticated = User?.Identity?.IsAuthenticated ?? false,
+                WalletAddress = User?.FindFirst("WalletAddress")?.Value
+            };
+        }
+
+        private static double CalculateProgress(Campaign campaign)
+        {
+            if (campaign.GoalAmount <= 0)
+            {
+                return 0d;
+            }
+
+            return Math.Clamp(campaign.CurrentRaisedAmount / campaign.GoalAmount, 0d, 1d);
+        }
+
+        private static bool IsHotCampaign(Campaign campaign)
+        {
+            var progress = CalculateProgress(campaign);
+            if (progress >= 0.85d)
+            {
+                return true;
+            }
+
+            if (campaign.Status == CampaignStatus.Active && campaign.EndTime <= DateTime.UtcNow.AddDays(3))
+            {
+                return true;
+            }
+
+            return campaign.Status == CampaignStatus.Completed;
+        }
+
+        private static string BuildExcerpt(string? content, int maxLength)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                return string.Empty;
+            }
+
+            var plain = Regex.Replace(content, "<[^>]+>", string.Empty);
+            plain = plain.Replace("\r", string.Empty).Replace("\n", " ").Trim();
+
+            if (plain.Length <= maxLength)
+            {
+                return plain;
+            }
+
+            return plain[..maxLength].TrimEnd() + "…";
         }
 
 

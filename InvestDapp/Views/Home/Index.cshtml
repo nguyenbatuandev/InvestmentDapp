@@ -1,38 +1,133 @@
-﻿@using Microsoft.AspNetCore.Authorization
+﻿@model InvestDapp.ViewModels.Home.HomeLandingViewModel
+@using Microsoft.AspNetCore.Authorization
+@using System.Globalization
+@using System.Linq
+@using InvestDapp.Shared.Enums
 @{
     ViewData["Title"] = "Trang chủ";
     Layout = "~/Pages/_Layout.cshtml";
+    var totalRaised = Math.Round((double)Model.Stats.TotalRaised, 2);
+    var totalInvestors = Model.Stats.TotalInvestors;
+    var completedCampaigns = Model.Stats.CompletedCampaigns;
+    var activeCampaigns = Model.Stats.ActiveCampaigns;
+    var totalValueLocked = Math.Round((double)Model.Stats.TotalValueLocked, 2);
+    var tickerItems = Model.RecentInvestments ?? Array.Empty<InvestDapp.ViewModels.Home.InvestmentTickerItem>();
+    var featuredCampaigns = Model.FeaturedCampaigns ?? Array.Empty<InvestDapp.ViewModels.Home.CampaignSummaryCard>();
+    var highlights = Model.Highlights ?? Array.Empty<InvestDapp.ViewModels.Home.NewsSpotlightViewModel>();
+    var heroCampaign = featuredCampaigns.FirstOrDefault();
+    var supportingCampaigns = featuredCampaigns.Skip(1).Take(4).ToList();
+    var liveFeed = tickerItems.OrderByDescending(t => t.Timestamp).Take(6).ToList();
+    var totalCampaigns = Math.Max(activeCampaigns + completedCampaigns, 1);
+    var completionRate = Math.Round((double)completedCampaigns / totalCampaigns * 100, 1);
+    var lastInvestment = liveFeed.FirstOrDefault();
+    var liveFeedCount = liveFeed.Count;
+    var liveFeedVolume = liveFeed.Sum(i => i.Amount);
+}
+
+@functions {
+    private static string StatusBadgeClass(CampaignStatus status) => status switch
+    {
+        CampaignStatus.Active => "badge",
+        CampaignStatus.Completed => "badge hot",
+        CampaignStatus.Voting => "badge dao",
+        CampaignStatus.PendingApproval => "badge",
+        CampaignStatus.PendingPost => "badge",
+        CampaignStatus.Failed => "badge hot",
+        _ => "badge"
+    };
+
+    private static string StatusBadgeLabel(CampaignStatus status) => status switch
+    {
+        CampaignStatus.Active => "Đang gọi vốn",
+        CampaignStatus.Completed => "Hoàn thành",
+        CampaignStatus.Voting => "Đang biểu quyết",
+        CampaignStatus.PendingApproval => "Chờ duyệt",
+        CampaignStatus.PendingPost => "Chuẩn bị",
+        CampaignStatus.Failed => "Thất bại",
+        _ => status.ToString()
+    };
+
+    private static string RelativeTime(DateTime timestamp)
+    {
+        var delta = DateTime.UtcNow - timestamp.ToUniversalTime();
+        if (delta < TimeSpan.Zero)
+        {
+            delta = TimeSpan.Zero;
+        }
+
+        if (delta.TotalSeconds < 45) return "Vừa xong";
+        if (delta.TotalMinutes < 1.5) return "1 phút trước";
+        if (delta.TotalMinutes < 60) return $"{(int)Math.Round(delta.TotalMinutes)} phút trước";
+        if (delta.TotalHours < 1.5) return "1 giờ trước";
+        if (delta.TotalHours < 24) return $"{(int)Math.Round(delta.TotalHours)} giờ trước";
+        if (delta.TotalDays < 1.5) return "Hôm qua";
+        if (delta.TotalDays < 7) return $"{(int)Math.Round(delta.TotalDays)} ngày trước";
+        if (delta.TotalDays < 31) return $"{(int)Math.Round(delta.TotalDays / 7)} tuần trước";
+        if (delta.TotalDays < 365) return $"{(int)Math.Round(delta.TotalDays / 30)} tháng trước";
+        return $"{(int)Math.Round(delta.TotalDays / 365)} năm trước";
+    }
 }
 
 @section Styles {
     <style>
-        /* ====== LANDING (scoped) ====== */
-        .landing {
-            --speed: 820ms;
-            position: relative;
-        }
-        /* vùng slide toàn màn hình (trừ topbar fixed) */
-        #slides {
-            position: fixed;
-            inset: 0;
-            overflow: hidden;
-            z-index: 1;
+        html {
+            scroll-behavior: smooth;
         }
 
-        #slidesTrack {
-            height: 100%;
-            width: 100%;
-            transition: transform var(--speed) cubic-bezier(.22,.61,.36,1);
-            will-change: transform;
+        body {
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ====== LANDING (scoped) ====== */
+        .landing {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: clamp(64px, 11vw, 150px);
+            padding-bottom: clamp(80px, 12vw, 180px);
+        }
+
+        .landing--lite .orb,
+        .landing--lite .coin,
+        .landing--lite .gridfx,
+        .landing--lite .marquee {
+            transition: none;
+        }
+
+        .landing--lite .orb {
+            animation: none;
+            filter: blur(36px);
+            opacity: .18;
+        }
+
+        .landing--lite .gridfx {
+            animation: none;
+            background-image: linear-gradient(to right, rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.04) 1px, transparent 1px);
+        }
+
+        .landing--lite .coin {
+            backdrop-filter: none;
+            box-shadow: none;
+            border-color: rgba(255,255,255,.06);
+            background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+        }
+
+        .landing--lite .marquee {
+            animation-duration: 28s;
+        }
+
+        .landing--lite .growth-card,
+        .landing--lite .project-hero,
+        .landing--lite .project-card,
+        .landing--lite .live-feed {
+            box-shadow: 0 10px 28px rgba(12,14,34,.32);
         }
 
         .slide {
-            height: 100vh;
-            width: 100vw;
             position: relative;
-            display: grid;
-            place-items: center;
-            padding: clamp(12px,3vw,36px);
+            width: 100%;
+            padding: clamp(48px, 6vw, 120px) clamp(12px,3vw,36px);
         }
 
         .slide-inner {
@@ -240,6 +335,266 @@
             margin: 0 0 14px
         }
 
+        .stats-shell {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .stats-headline {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .stats-headline p {
+            margin: 0;
+            color: var(--muted);
+            max-width: 520px;
+        }
+
+        .live-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: rgba(108,240,255,.12);
+            color: #7beaff;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            font-size: .72rem;
+        }
+
+        .live-pill::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: linear-gradient(180deg,#00e0ff,#9b6bff);
+            box-shadow: 0 0 12px rgba(123,234,255,.6);
+            animation: pulse 1.6s ease-in-out infinite;
+        }
+
+        @@keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: .65; }
+        }
+
+        .stats-panels {
+            display: grid;
+            grid-template-columns: minmax(0,1.45fr) minmax(0,1.05fr) minmax(0,.9fr);
+            gap: 20px;
+            align-items: stretch;
+        }
+
+        .growth-card {
+            position: relative;
+            border-radius: 20px;
+            padding: 28px;
+            background: radial-gradient(circle at top right, rgba(155,107,255,.28), transparent 45%),
+                        radial-gradient(circle at bottom left, rgba(108,240,255,.28), transparent 55%),
+                        rgba(19,22,44,.68);
+            border: 1px solid rgba(255,255,255,.08);
+            box-shadow: 0 18px 45px rgba(12,14,34,.45);
+            overflow: hidden;
+        }
+
+        .growth-card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,0) 45%);
+            pointer-events: none;
+        }
+
+        .growth-title {
+            font-size: .95rem;
+            font-weight: 600;
+            color: rgba(255,255,255,.76);
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+
+        .growth-primary {
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .growth-value {
+            font-size: clamp(34px,5.8vw,64px);
+            font-weight: 800;
+            letter-spacing: -.02em;
+        }
+
+        .growth-sub {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: .95rem;
+            color: rgba(255,255,255,.75);
+        }
+
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #7beaff;
+            box-shadow: 0 0 10px rgba(123,234,255,.9);
+            animation: pulse 1.8s ease-in-out infinite;
+        }
+
+        .growth-meta {
+            display: grid;
+            grid-template-columns: repeat(2,minmax(0,1fr));
+            gap: 14px;
+            margin-top: 24px;
+        }
+
+        .growth-meta-item {
+            background: rgba(255,255,255,.06);
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid rgba(255,255,255,.04);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .growth-meta-item span:first-child {
+            font-size: .8rem;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: rgba(255,255,255,.6);
+        }
+
+        .growth-meta-item span:last-child {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .stat-metrics {
+            display: grid;
+            gap: 14px;
+        }
+
+        .metric-card {
+            background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,.08);
+            padding: 20px;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 16px;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+
+        .metric-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            background: linear-gradient(180deg, rgba(108,240,255,.18), rgba(155,107,255,.18));
+            display: grid;
+            place-items: center;
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: rgba(255,255,255,.85);
+        }
+
+        .metric-body {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .metric-body strong {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .metric-body span {
+            color: var(--muted);
+            font-size: .9rem;
+        }
+
+        .live-feed {
+            background: linear-gradient(180deg, rgba(12,16,38,.88), rgba(22,28,54,.88));
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,.08);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 20px 45px rgba(12,14,34,.45);
+        }
+
+        .live-feed header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .live-feed h3 {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .live-feed ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            gap: 12px;
+        }
+
+        .live-feed li {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 12px;
+            align-items: center;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: rgba(255,255,255,.04);
+            border: 1px solid rgba(255,255,255,.04);
+        }
+
+        .feed-amount {
+            font-weight: 700;
+            color: #7beaff;
+        }
+
+        .feed-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .feed-line {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 6px;
+        }
+
+        .feed-line span:not(.feed-amount) {
+            color: rgba(255,255,255,.7);
+        }
+
+        .feed-meta span {
+            font-size: .85rem;
+            color: var(--muted);
+        }
+
+        .feed-meta strong {
+            font-size: .95rem;
+        }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4,minmax(0,1fr));
@@ -265,34 +620,263 @@
             margin-top: 6px
         }
 
-        /* projects */
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(3,minmax(0,1fr));
-            gap: 16px
+        .mini-meta {
+            margin-top: 6px;
+            font-size: .85rem;
+            color: var(--muted);
+            opacity: .85
         }
 
-        .card {
+        /* projects */
+        .project-deck {
+            display: grid;
+            grid-template-columns: minmax(0,1.6fr) minmax(0,1fr);
+            gap: 20px;
+            align-items: stretch;
+        }
+
+        .project-hero {
+            position: relative;
+            border-radius: 24px;
+            overflow: hidden;
+            min-height: 420px;
+            background: linear-gradient(135deg, rgba(108,240,255,.15), rgba(155,107,255,.25));
+            border: 1px solid rgba(255,255,255,.08);
+            box-shadow: 0 24px 50px rgba(12,14,34,.45);
+        }
+
+        .project-hero__media {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+        }
+
+        .project-hero__media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(.82) saturate(1.05);
+            transform: scale(1.05);
+        }
+
+        .project-hero__info {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(10,12,25,.05) 0%, rgba(8,10,20,.72) 45%, rgba(8,10,20,.92) 100%);
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            gap: 18px;
+        }
+
+        .project-hero__chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .chip {
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: rgba(255,255,255,.08);
+            font-size: .8rem;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,.76);
+        }
+
+        .chip.hot {
+            background: linear-gradient(90deg,#ff4d4d,#ff8c4d);
+            color: #fff;
+        }
+
+        .chip.dao {
+            background: linear-gradient(90deg,#4d4dff,#8c4dff);
+            color: #fff;
+        }
+
+        .project-hero__title {
+            font-size: clamp(28px,4vw,42px);
+            font-weight: 800;
+            margin: 0;
+        }
+
+        .project-hero__meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            font-size: .95rem;
+            color: rgba(255,255,255,.75);
+        }
+
+        .project-hero__bar {
+            height: 10px;
+            background: rgba(255,255,255,.15);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .project-hero__progress {
+            height: 100%;
+            background: linear-gradient(90deg,var(--primary),var(--accent));
+        }
+
+        .project-hero__bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .project-hero__cta {
+            min-width: 180px;
+        }
+
+        .project-hero__stats {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .project-hero__stats strong {
+            font-size: 1.4rem;
+            font-weight: 800;
+        }
+
+        .project-hero__stats span {
+            color: rgba(255,255,255,.74);
+            font-size: .9rem;
+        }
+
+        .project-sigil {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            font-size: clamp(42px,6vw,72px);
+            font-weight: 800;
+            letter-spacing: .1em;
+            color: rgba(255,255,255,.12);
+            background: linear-gradient(135deg, rgba(108,240,255,.18), rgba(155,107,255,.12));
+        }
+
+        .project-stack {
+            display: grid;
+            gap: 16px;
+        }
+
+        .project-card {
+            position: relative;
+            border-radius: 18px;
+            padding: 22px;
+            background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+            border: 1px solid rgba(255,255,255,.06);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            overflow: hidden;
+        }
+
+        .project-card__header {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .project-card__meta {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .project-card__meta span {
+            font-size: .85rem;
+            color: var(--muted);
+        }
+
+        .project-card__progress {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: .9rem;
+        }
+
+        .project-updates {
+            margin-top: 28px;
             background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
             border: 1px solid var(--border);
-            border-radius: 14px;
+            border-radius: 16px;
             box-shadow: var(--shadow);
-            overflow: hidden;
-            transition: transform .2s
+            padding: 20px;
         }
 
-            .card:hover {
-                transform: translateY(-4px)
-            }
+        .updates-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
 
-            .card img {
-                width: 100%;
-                height: 180px;
-                object-fit: cover
-            }
+        .updates-head h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
 
-        .content {
-            padding: 16px
+        .updates-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            gap: 12px;
+        }
+
+        .updates-list li {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 14px;
+            align-items: center;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(255,255,255,.03);
+            border: 1px solid rgba(255,255,255,.04);
+        }
+
+        .tag {
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(108,240,255,.12);
+            color: #7beaff;
+            font-size: .8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .updates-title {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .updates-meta {
+            font-size: .85rem;
+            color: var(--muted);
+        }
+
+        .link {
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .link:hover {
+            color: var(--accent);
         }
 
         .badge {
@@ -313,26 +897,6 @@
             .badge.dao {
                 background: linear-gradient(90deg,#4d4dff,#8c4dff)
             }
-
-        .progress-bar {
-            height: 8px;
-            background: rgba(255,255,255,.12);
-            border-radius: 6px;
-            overflow: hidden;
-            margin: 8px 0
-        }
-
-        .progress {
-            height: 100%;
-            background: linear-gradient(90deg,var(--primary),var(--accent))
-        }
-
-        .meta {
-            display: flex;
-            justify-content: space-between;
-            color: var(--muted);
-            font-size: .95rem
-        }
 
         /* faq */
         .faq {
@@ -417,33 +981,6 @@
                 padding: 0 12px
             }
 
-        /* right dots */
-        .dots {
-            position: fixed;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 3
-        }
-
-        .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: rgba(255,255,255,.25);
-            border: 1px solid var(--border);
-            cursor: pointer;
-            transition: transform .18s, background .18s
-        }
-
-            .dot.active {
-                background: linear-gradient(180deg, var(--primary), var(--accent));
-                transform: scale(1.25)
-            }
-
         /* responsive */
         @@media (max-width:1080px) {
             .hero
@@ -457,12 +994,35 @@
             height: 380px
         }
 
-        .cards {
-            grid-template-columns: 1fr
+        .stats-panels {
+            grid-template-columns: 1fr;
         }
 
-        .stats-grid {
-            grid-template-columns: repeat(2,minmax(0,1fr))
+        .project-deck {
+            grid-template-columns: 1fr;
+        }
+
+        .project-hero {
+            min-height: 360px;
+        }
+
+        .project-hero__bottom {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .live-feed {
+            order: 3;
+        }
+
+        .updates-list li {
+            grid-template-columns: 1fr;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .updates-list li .link {
+            justify-self: flex-start;
         }
 
         .nl .form {
@@ -472,12 +1032,6 @@
         }
         /* reduce motion */
         @@media (prefers-reduced-motion: reduce) {
-            #slidesTrack
-
-        {
-            transition: none
-        }
-
         .orb {
             animation: none
         }
@@ -491,21 +1045,19 @@
 }
 
 <div class="landing">
-    <div id="slides">
-        <div id="slidesTrack">
-            <!-- SLIDE 0: HERO -->
-            <section class="slide" id="s-hero" aria-label="Hero">
+    <!-- HERO -->
+    <section class="slide" id="s-hero" aria-label="Hero">
                 <div class="orb cyan float-slow" style="top:-140px; right:-140px"></div>
                 <div class="orb violet float-rev" style="bottom:-180px; left:-160px"></div>
 
                 <div class="slide-inner hero">
                     <div>
                         <span class="pill" style="display:inline-block;margin-bottom:10px;">New • Web3 Launchpad</span>
-                        <h1>Trang chủ crypto hiện đại <span class="gradient-text">slide-by-slide</span></h1>
-                        <p>Không cuộn dài. Mỗi màn hình là một câu chuyện: hero, thống kê, dự án, FAQ, đối tác và newsletter.</p>
+                        <h1>Trang chủ crypto hiện đại <span class="gradient-text">theo dòng realtime</span></h1>
+                        <p>Lướt xuống để xem thống kê trực tiếp, dự án nổi bật, FAQ, đối tác và newsletter — tất cả nối tiếp mượt mà trong một trang.</p>
                         <div class="actions">
-                            <a class="btn" data-goto="2" href="#s-projects">Khám phá Dự án</a>
-                            @if (User.Identity.IsAuthenticated)
+                            <a class="btn" href="#s-projects">Khám phá Dự án</a>
+                            @if (Model.IsAuthenticated)
                             {
                                 <a id="kycBtn" class="btn secondary" href="/Kyc/FundraiserKycView">KYC Nhà gây quỹ</a>
                             }
@@ -526,15 +1078,22 @@
 
                         <div class="ticker">
                             <div class="marquee" id="marquee">
-                                <div class="pair"><span class="sym">BTC/USDT</span><span class="px">$ 67,420</span><span class="chg up">+2.41%</span></div>
-                                <div class="pair"><span class="sym">ETH/USDT</span><span class="px">$ 2,420</span><span class="chg down">-0.58%</span></div>
-                                <div class="pair"><span class="sym">BNB/USDT</span><span class="px">$ 590</span><span class="chg up">+1.12%</span></div>
-                                <div class="pair"><span class="sym">SOL/USDT</span><span class="px">$ 155</span><span class="chg up">+0.42%</span></div>
-                                <!-- duplicate for seamless loop -->
-                                <div class="pair"><span class="sym">BTC/USDT</span><span class="px">$ 67,420</span><span class="chg up">+2.41%</span></div>
-                                <div class="pair"><span class="sym">ETH/USDT</span><span class="px">$ 2,420</span><span class="chg down">-0.58%</span></div>
-                                <div class="pair"><span class="sym">BNB/USDT</span><span class="px">$ 590</span><span class="chg up">+1.12%</span></div>
-                                <div class="pair"><span class="sym">SOL/USDT</span><span class="px">$ 155</span><span class="chg up">+0.42%</span></div>
+                                @if (tickerItems.Count == 0)
+                                {
+                                    <div class="pair"><span class="sym">Đang cập nhật dữ liệu on-chain...</span></div>
+                                }
+                                else
+                                {
+                                    foreach (var item in tickerItems.Concat(tickerItems))
+                                    {
+                                        var amount = item.Amount.ToString("F2", CultureInfo.InvariantCulture);
+                                        <div class="pair">
+                                            <span class="sym">@item.CampaignName</span>
+                                            <span class="px">@amount BNB</span>
+                                            <span class="chg up">@item.ShortInvestorAddress</span>
+                                        </div>
+                                    }
+                                }
                             </div>
                         </div>
                     </div>
@@ -545,12 +1104,95 @@
             <section class="slide" id="s-stats" aria-label="Stats">
                 <div class="orb cyan float-slow" style="top:auto; bottom:-140px; right:-140px"></div>
                 <div class="slide-inner stats">
-                    <h2>Tăng trưởng theo thời gian thực</h2>
-                    <div class="stats-grid">
-                        <div class="stat"><div class="num counter" data-to="15000000" data-prefix="$">$0</div><div class="k">Tổng vốn đã huy động</div></div>
-                        <div class="stat"><div class="num counter" data-to="8245">0</div><div class="k">Nhà đầu tư</div></div>
-                        <div class="stat"><div class="num counter" data-to="216">0</div><div class="k">Dự án thành công</div></div>
-                        <div class="stat"><div class="num counter" data-to="980000000" data-prefix="$">$0</div><div class="k">TVL</div></div>
+                    <div class="stats-shell">
+                        <div class="stats-headline">
+                            <span class="live-pill">Realtime metrics</span>
+                            <h2>Tăng trưởng theo thời gian thực</h2>
+                            <p>Dữ liệu được đồng bộ trực tiếp từ hợp đồng thông minh và tự động làm mới mỗi khi có giao dịch mới trên nền tảng.</p>
+                        </div>
+                        <div class="stats-panels">
+                            <article class="growth-card" aria-label="Tổng vốn đã huy động">
+                                <div class="growth-title">Tổng vốn đã huy động</div>
+                                <div class="growth-primary">
+                                    <div class="growth-value counter" data-to="@totalRaised.ToString(CultureInfo.InvariantCulture)" data-prefix="BNB " data-decimals="2">BNB 0</div>
+                                    <div class="growth-sub">
+                                        <span class="pulse-dot" aria-hidden="true"></span>
+                                        <span>Dòng vốn được cập nhật liên tục từ các chiến dịch.</span>
+                                    </div>
+                                </div>
+                                <div class="growth-meta">
+                                    <div class="growth-meta-item">
+                                        <span>TVL</span>
+                                        <span>BNB @totalValueLocked.ToString("N2", CultureInfo.InvariantCulture)</span>
+                                    </div>
+                                    <div class="growth-meta-item">
+                                        <span>Chiến dịch mở</span>
+                                        <span>@activeCampaigns</span>
+                                    </div>
+                                    <div class="growth-meta-item">
+                                        <span>Giao dịch gần nhất</span>
+                                        <span>@(lastInvestment is null ? "Chưa có" : RelativeTime(lastInvestment.Timestamp))</span>
+                                    </div>
+                                    <div class="growth-meta-item">
+                                        <span>Tỷ lệ hoàn thành</span>
+                                        <span>@completionRate.ToString("N1", CultureInfo.InvariantCulture)%</span>
+                                    </div>
+                                </div>
+                            </article>
+                            <div class="stat-metrics">
+                                <div class="metric-card">
+                                    <div class="metric-icon">👥</div>
+                                    <div class="metric-body">
+                                        <strong class="counter" data-to="@totalInvestors" data-decimals="0">0</strong>
+                                        <span>Nhà đầu tư đã tham gia</span>
+                                    </div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-icon">🚀</div>
+                                    <div class="metric-body">
+                                        <strong class="counter" data-to="@activeCampaigns" data-decimals="0">0</strong>
+                                        <span>@completedCampaigns chiến dịch đã hoàn thành</span>
+                                    </div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-icon">BNB</div>
+                                    <div class="metric-body">
+                                        <strong>BNB @liveFeedVolume.ToString("N2", CultureInfo.InvariantCulture)</strong>
+                                        <span>Từ @liveFeedCount giao dịch gần nhất</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <aside class="live-feed" aria-live="polite">
+                                <header>
+                                    <h3>Luồng giao dịch trực tiếp</h3>
+                                    <span class="chip" style="background: rgba(123,234,255,.18); color: #7beaff;">@liveFeedCount giao dịch</span>
+                                </header>
+                                @if (liveFeedCount == 0)
+                                {
+                                    <p class="k" style="margin:0;">Chưa có giao dịch gần đây. Khi nền tảng ghi nhận giao dịch mới, chúng sẽ hiển thị tại đây ngay lập tức.</p>
+                                }
+                                else
+                                {
+                                    <ul>
+                                        @foreach (var item in liveFeed)
+                                        {
+                                            var amount = item.Amount.ToString("N2", CultureInfo.InvariantCulture);
+                                            <li>
+                                                <span class="pulse-dot" aria-hidden="true"></span>
+                                                <div class="feed-meta">
+                                                    <strong>@item.CampaignName</strong>
+                                                    <div class="feed-line">
+                                                        <span class="feed-amount">@amount BNB</span>
+                                                        <span>• @item.ShortInvestorAddress</span>
+                                                    </div>
+                                                    <span>@RelativeTime(item.Timestamp)</span>
+                                                </div>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </aside>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -560,42 +1202,131 @@
                 <div class="orb violet float-rev" style="top:-140px; left:-140px"></div>
                 <div class="slide-inner">
                     <h2 style="margin-bottom:12px">Dự án nổi bật</h2>
-                    <p class="k" style="margin-bottom:16px">Thẻ mẫu — có thể bind từ API sau.</p>
+                        <p class="k" style="margin-bottom:16px">Số liệu cập nhật từ các chiến dịch đã được duyệt.</p>
 
-                    <div class="cards">
-                        <article class="card">
-                            <img src="https://images.unsplash.com/photo-1639755243236-4098a8c4f09d?q=80&w=1600&auto=format&fit=crop" alt="DeFi project cover" />
-                            <span class="badge">Mới</span>
-                            <div class="content">
-                                <h3>DeFi QuantumLeap</h3>
-                                <div class="progress-bar"><div class="progress" style="width:75%"></div></div>
-                                <div class="meta"><span>75%</span><span>$150,000 / $200,000</span></div>
-                                <a href="#" class="btn">Đầu tư ngay</a>
+                        @if (heroCampaign is null)
+                        {
+                            <div class="project-deck">
+                                <div class="project-card" style="justify-content:center;align-items:flex-start;min-height:220px;">
+                                    <div class="project-card__meta">
+                                        <h3>Chưa có chiến dịch được phê duyệt</h3>
+                                        <span class="k">Khi admin duyệt chiến dịch mới, chúng sẽ xuất hiện tại đây với đầy đủ số liệu realtime.</span>
+                                    </div>
+                                </div>
                             </div>
-                        </article>
+                        }
+                        else
+                        {
+                            var heroProgress = Math.Clamp(Math.Round(heroCampaign.ProgressPercentage, 1), 0, 100);
+                            var heroRaised = heroCampaign.RaisedAmount.ToString("N2", CultureInfo.InvariantCulture);
+                            var heroGoal = heroCampaign.GoalAmount.ToString("N2", CultureInfo.InvariantCulture);
+                            var heroDeadline = heroCampaign.EndTime.ToLocalTime().ToString("dd/MM/yyyy");
+                            var heroStatusLabel = heroCampaign.IsHot && heroCampaign.Status == CampaignStatus.Active
+                                ? "Đang bùng nổ"
+                                : StatusBadgeLabel(heroCampaign.Status);
+                            var heroStatusClass = heroCampaign.IsHot ? "chip hot" : heroCampaign.Status == CampaignStatus.Voting ? "chip dao" : "chip";
+                            <div class="project-deck">
+                                <article class="project-hero">
+                                    @if (!string.IsNullOrWhiteSpace(heroCampaign.ImageUrl))
+                                    {
+                                        <div class="project-hero__media"><img src="@heroCampaign.ImageUrl" alt="@heroCampaign.Name" /></div>
+                                    }
+                                    else
+                                    {
+                                        <div class="project-sigil">@heroCampaign.Name[..Math.Min(2, heroCampaign.Name.Length)].ToUpperInvariant()</div>
+                                    }
+                                    <div class="project-hero__info">
+                                        <div class="project-hero__chips">
+                                            <span class="chip">@(heroCampaign.Category ?? "Chưa phân loại")</span>
+                                            <span class="@heroStatusClass">@heroStatusLabel</span>
+                                        </div>
+                                        <h3 class="project-hero__title">@heroCampaign.Name</h3>
+                                        <div class="project-hero__meta">
+                                            <span>Kết thúc @heroDeadline</span>
+                                            <span>@heroRaised / @heroGoal BNB</span>
+                                        </div>
+                                        <div class="project-hero__bar">
+                                            <div class="project-hero__progress" style="width:@heroProgress%"></div>
+                                        </div>
+                                        <div class="project-hero__bottom">
+                                            <div class="project-hero__stats">
+                                                <strong>@heroProgress%</strong>
+                                                <span>Mức hoàn thành mục tiêu gọi vốn</span>
+                                            </div>
+                                            <a href="@Url.Action("Dashboard", "Campaigns", new { id = heroCampaign.Id })" class="btn project-hero__cta">Xem dashboard</a>
+                                        </div>
+                                    </div>
+                                </article>
+                                <div class="project-stack">
+                                    @if (supportingCampaigns.Count == 0)
+                                    {
+                                        <div class="project-card" style="min-height:160px;justify-content:center;">
+                                            <div class="project-card__meta">
+                                                <strong>Chưa có dự án khác</strong>
+                                                <span class="k">Khi có thêm chiến dịch nổi bật, chúng sẽ được ghim vào danh sách này.</span>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        foreach (var campaign in supportingCampaigns)
+                                        {
+                                            var progress = Math.Clamp(Math.Round(campaign.ProgressPercentage, 1), 0, 100);
+                                            var raised = campaign.RaisedAmount.ToString("N2", CultureInfo.InvariantCulture);
+                                            var goal = campaign.GoalAmount.ToString("N2", CultureInfo.InvariantCulture);
+                                            var remaining = campaign.EndTime.ToLocalTime().ToString("dd/MM/yyyy");
+                                            var statusLabel = campaign.IsHot && campaign.Status == CampaignStatus.Active
+                                                ? "Đang bùng nổ"
+                                                : StatusBadgeLabel(campaign.Status);
+                                            var statusClass = campaign.IsHot ? "chip hot" : campaign.Status == CampaignStatus.Voting ? "chip dao" : "chip";
+                                            <article class="project-card">
+                                                <div class="project-card__header">
+                                                    <div class="project-card__meta">
+                                                        <h4 style="margin:0">@campaign.Name</h4>
+                                                        <span>@(campaign.Category ?? "Chưa phân loại") • Kết thúc @remaining</span>
+                                                    </div>
+                                                    <span class="@statusClass">@statusLabel</span>
+                                                </div>
+                                                <div class="project-card__progress">
+                                                    <div style="width:100%;height:8px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden;">
+                                                        <div style="width:@progress%;height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));"></div>
+                                                    </div>
+                                                    <span>@progress%</span>
+                                                </div>
+                                                <div class="project-card__progress">
+                                                    <span>@raised / @goal BNB</span>
+                                                    <a class="btn secondary" href="@Url.Action("Dashboard", "Campaigns", new { id = campaign.Id })">Chi tiết</a>
+                                                </div>
+                                            </article>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        }
 
-                        <article class="card">
-                            <img src="https://images.unsplash.com/photo-1642104793542-b69806505342?q=80&w=1600&auto=format&fit=crop" alt="NFT project cover" />
-                            <span class="badge hot">Sắp hoàn thành</span>
-                            <div class="content">
-                                <h3>NFT Metaverse Hub</h3>
-                                <div class="progress-bar"><div class="progress" style="width:92%"></div></div>
-                                <div class="meta"><span>92%</span><span>$460,000 / $500,000</span></div>
-                                <a href="#" class="btn">Đầu tư ngay</a>
+                        @if (highlights.Count > 0)
+                        {
+                            <div class="project-updates">
+                                <div class="updates-head">
+                                    <h3>Cập nhật mới nhất</h3>
+                                    <a class="link" asp-controller="News" asp-action="Index">Xem tất cả tin tức</a>
+                                </div>
+                                <ul class="updates-list">
+                                    @foreach (var item in highlights.Take(4))
+                                    {
+                                        var published = item.PublishedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+                                        <li>
+                                            <span class="tag">@item.PostType</span>
+                                            <div>
+                                                <div class="updates-title">@item.Title</div>
+                                                <div class="updates-meta">@item.CampaignName • @published</div>
+                                            </div>
+                                            <a class="link" href="@Url.Action("PostDetails", "Campaigns", new { id = item.Id })">Đọc</a>
+                                        </li>
+                                    }
+                                </ul>
                             </div>
-                        </article>
-
-                        <article class="card">
-                            <img src="https://images.unsplash.com/photo-1640578622184-45373a3c220e?q=80&w=1600&auto=format&fit=crop" alt="Green project cover" />
-                            <span class="badge dao">DAO Vote</span>
-                            <div class="content">
-                                <h3>GreenBlock Chain</h3>
-                                <div class="progress-bar"><div class="progress" style="width:100%"></div></div>
-                                <div class="meta"><span>100%</span><span>$100,000 / $100,000</span></div>
-                                <a href="#" class="btn secondary">Xem biểu quyết</a>
-                            </div>
-                        </article>
-                    </div>
+                        }
                 </div>
             </section>
 
@@ -608,7 +1339,7 @@
                         <div class="qa"><div class="q">Có thể đầu tư bằng token nào? <span>＋</span></div><div class="a"><p>Hỗ trợ BNB, BUSD, USDT trên BSC; sẽ mở rộng thêm.</p></div></div>
                         <div class="qa"><div class="q">Nền tảng có thu phí không? <span>＋</span></div><div class="a"><p>Phí 2–5% trên vốn huy động thành công; không có phí ẩn.</p></div></div>
                         <div class="qa"><div class="q">Dự án có đảm bảo thành công? <span>＋</span></div><div class="a"><p>Không thể đảm bảo. Có cơ chế DAO giám sát rút vốn. Hãy DYOR.</p></div></div>
-                        <div class="qa"><div class="q">Khi nào hiện nút KYC? <span>＋</span></div><div class="a"><p>Nếu <code>User.Identity.IsAuthenticated</code> là true, nút KYC xuất hiện ở Hero.</p></div></div>
+                        <div class="qa"><div class="q">Khi nào hiện nút KYC? <span>＋</span></div><div class="a"><p>Khi bạn đã đăng nhập, nút KYC sẽ xuất hiện ngay tại phần Hero để truy cập nhanh.</p></div></div>
                     </div>
                 </div>
             </section>
@@ -637,133 +1368,173 @@
                         <button class="btn" type="submit">Đăng ký</button>
                     </form>
                     <p id="nlMsg" class="k" style="margin-top:10px"></p>
-                    <div style="margin-top:20px"><a class="btn secondary" data-goto="0" href="#s-hero">Về Trang chủ</a></div>
+                    <div style="margin-top:20px"><a class="btn secondary" href="#s-hero">Về Trang chủ</a></div>
                 </div>
             </section>
-        </div>
-    </div>
-
-    <!-- dots (nav nội trang) -->
-    <div class="dots" aria-label="Slide pagination">
-        <button class="dot active" data-goto="0" aria-label="Trang 1"></button>
-        <button class="dot" data-goto="1" aria-label="Trang 2"></button>
-        <button class="dot" data-goto="2" aria-label="Trang 3"></button>
-        <button class="dot" data-goto="3" aria-label="Trang 4"></button>
-        <button class="dot" data-goto="4" aria-label="Trang 5"></button>
-        <button class="dot" data-goto="5" aria-label="Trang 6"></button>
-    </div>
 </div>
 
 @section Scripts {
-    <script>
-        (function(){
-          // ===== Core refs
-          const track = document.getElementById('slidesTrack') || document.querySelector('#slides > div');
-          const slides = Array.from(document.querySelectorAll('.slide'));
-          const dots = Array.from(document.querySelectorAll('.dot'));
-          // chỉ bắt [data-goto] trong main/dots để nav header không điều khiển slide
-          const gotoEls = Array.from(document.querySelectorAll('main [data-goto], .dots [data-goto]'));
+        <script>
+                (function () {
+                    const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+                    const coarsePointerQuery = window.matchMedia('(pointer: coarse)');
+                    const landingEl = document.querySelector('.landing');
 
-          let index = 0, lock = false;
-          const N = slides.length;
+                    const shouldReduce = () => reduceMotionQuery.matches || coarsePointerQuery.matches;
 
-          const anchors = ['s-hero','s-stats','s-projects','s-faq','s-partners','s-newsletter'];
-          function clamp(i){ return Math.max(0, Math.min(N-1, i)); }
-          function setActive(i){ dots.forEach((d,k)=>d.classList.toggle('active',k===i)); }
-          function go(i){
-            i = clamp(i);
-            index = i;
-            if(track) track.style.transform = `translateY(${-i*100}%)`;
-            setActive(i);
-            history.replaceState(null,'','#'+anchors[i]);
-          }
+                    const toNumber = (value) => {
+                        if (typeof value === 'number') {
+                            return value;
+                        }
+                        return Number.parseFloat(value ?? '0');
+                    };
 
-          // wheel (debounce so one slide per gesture)
-          function onWheel(e){
-            // đừng bắt khi rê trên chat panel hoặc input
-            const target = e.target;
-            if(target.closest('#chatPanel') || target.closest('input,textarea,select')) return;
-            if(lock) return; lock = true;
-            const dy = (e.deltaY || e.wheelDelta || -e.detail);
-            if(dy>0) go(index+1); else go(index-1);
-            setTimeout(()=>lock=false, 850);
-          }
-          // keyboard
-          function onKey(e){
-            if(e.target.closest('input,textarea')) return;
-            if(['ArrowDown','PageDown'].includes(e.key)) go(index+1);
-            if(['ArrowUp','PageUp'].includes(e.key)) go(index-1);
-            if(e.key==='Home') go(0);
-            if(e.key==='End') go(N-1);
-          }
-          // touch
-          let touchStart=null;
-          function onTouchStart(e){ if(e.target.closest('#chatPanel')) return; touchStart = e.touches[0].clientY; }
-          function onTouchEnd(e){
-            if(touchStart==null) return;
-            const dy = (e.changedTouches[0].clientY - touchStart);
-            if(Math.abs(dy) > 50){ if(dy<0) go(index+1); else go(index-1); }
-            touchStart = null;
-          }
+                    const formatValue = (value, decimals) => {
+                        if (decimals > 0) {
+                            return value.toLocaleString('en-US', {
+                                minimumFractionDigits: decimals,
+                                maximumFractionDigits: decimals
+                            });
+                        }
+                        return Math.round(value).toLocaleString('en-US');
+                    };
 
-          // init listeners
-          window.addEventListener('wheel', onWheel, {passive:true});
-          window.addEventListener('keydown', onKey);
-          document.getElementById('slides')?.addEventListener('touchstart', onTouchStart, {passive:true});
-          document.getElementById('slides')?.addEventListener('touchend', onTouchEnd, {passive:true});
+                    const setCounterFinalValue = (el, target, prefix, decimals) => {
+                        el.textContent = prefix + formatValue(target, decimals);
+                    };
 
-          gotoEls.forEach(el=>{
-            el.addEventListener('click', e=>{
-              const to = parseInt(el.dataset.goto,10);
-              if(!isNaN(to)){ e.preventDefault(); go(to); }
-            });
-          });
+                    const animateCounter = (el, target, prefix, decimals) => {
+                        const startTime = performance.now();
+                        const duration = 900 + Math.min(Math.abs(target) * 4, 900);
+                        const startValue = 0;
 
-          // deep-link on load
-          const map = { 's-hero':0,'s-stats':1,'s-projects':2,'s-faq':3,'s-partners':4,'s-newsletter':5 };
-          if(location.hash){ const h = location.hash.replace('#',''); if(map[h]!==undefined) index = map[h]; }
-          go(index);
+                        const step = (now) => {
+                            const progress = Math.min((now - startTime) / duration, 1);
+                            const eased = 1 - Math.pow(1 - progress, 3);
+                            const value = startValue + (target - startValue) * eased;
+                            setCounterFinalValue(el, value, prefix, decimals);
+                            if (progress < 1) {
+                                requestAnimationFrame(step);
+                            }
+                        };
 
-          // ===== Stats counter when stats slide visible =====
-          const io = new IntersectionObserver((entries,obs)=>{
-            entries.forEach(en=>{
-              if(!en.isIntersecting) return;
-              en.target.querySelectorAll('.counter').forEach(el=>{
-                const to = +el.dataset.to || 0;
-                const prefix = el.dataset.prefix || '';
-                let cur = 0;
-                const steps = 48, inc = Math.max(1, Math.round(to/steps));
-                const t = setInterval(()=>{
-                  cur += inc;
-                  if(cur >= to){ cur=to; clearInterval(t); }
-                  el.textContent = prefix + cur.toLocaleString('en-US');
-                }, 20);
-              });
-              obs.unobserve(en.target);
-            });
-          }, {threshold:.45});
-          const statsSlide = document.getElementById('s-stats');
-          if(statsSlide) io.observe(statsSlide);
+                        requestAnimationFrame(step);
+                    };
 
-          // ===== FAQ accordion =====
-          document.getElementById('faqList')?.addEventListener('click', (e)=>{
-            const q = e.target.closest('.q'); if(!q) return;
-            q.parentElement.classList.toggle('open');
-          });
+                    const animateCounters = (root, reduce) => {
+                        root.querySelectorAll('.counter').forEach(el => {
+                            const target = toNumber(el.dataset.to);
+                            if (Number.isNaN(target)) {
+                                return;
+                            }
+                            const prefix = el.dataset.prefix ?? '';
+                            const decimals = Number.parseInt(el.dataset.decimals ?? (Number.isInteger(target) ? '0' : '2'), 10) || 0;
 
-          // ===== Newsletter demo =====
-          document.getElementById('nlForm')?.addEventListener('submit', (e)=>{
-            e.preventDefault();
-            const v = document.getElementById('nlEmail').value.trim();
-            document.getElementById('nlMsg').textContent = v ? ('Đã nhận: ' + v + ' (demo)') : '';
-            e.target.reset();
-          });
+                            if (reduce) {
+                                setCounterFinalValue(el, target, prefix, decimals);
+                                return;
+                            }
 
-          // disable motion if prefers-reduced-motion
-          if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
-            document.querySelectorAll('.orb').forEach(o=>o.style.animation='none');
-            if(track) track.style.transition = 'none';
-          }
-        })();
-    </script>
+                            animateCounter(el, target, prefix, decimals);
+                        });
+                    };
+
+                    let countersAnimated = false;
+                    const statsSection = document.getElementById('s-stats');
+
+                    const triggerCounters = (reduce) => {
+                        if (!statsSection || countersAnimated) {
+                            return;
+                        }
+                        animateCounters(statsSection, reduce);
+                        countersAnimated = true;
+                    };
+
+                    if (statsSection && !shouldReduce()) {
+                        const observer = new IntersectionObserver((entries, obs) => {
+                            entries.forEach(entry => {
+                                if (!entry.isIntersecting) {
+                                    return;
+                                }
+                                triggerCounters(false);
+                                obs.unobserve(entry.target);
+                            });
+                        }, { threshold: 0.4 });
+                        observer.observe(statsSection);
+                    } else {
+                        triggerCounters(true);
+                    }
+
+                    const updateReducedState = () => {
+                        const reduce = shouldReduce();
+                        if (landingEl) {
+                            landingEl.classList.toggle('landing--lite', reduce);
+                        }
+                        const toggleAnimation = (selector) => {
+                            document.querySelectorAll(selector).forEach(node => {
+                                node.style.animation = reduce ? 'none' : '';
+                                node.style.animationPlayState = reduce ? 'paused' : '';
+                            });
+                        };
+                        toggleAnimation('.orb');
+                        toggleAnimation('.gridfx');
+                        toggleAnimation('.marquee');
+
+                        if (reduce && !countersAnimated) {
+                            triggerCounters(true);
+                        }
+                    };
+
+                    updateReducedState();
+
+                    const safeListen = (mql, handler) => {
+                        if (typeof mql.addEventListener === 'function') {
+                            mql.addEventListener('change', handler);
+                        } else if (typeof mql.addListener === 'function') {
+                            mql.addListener(handler);
+                        }
+                    };
+
+                    safeListen(reduceMotionQuery, updateReducedState);
+                    safeListen(coarsePointerQuery, updateReducedState);
+
+                    document.querySelectorAll('a[href^="#s-"]').forEach(link => {
+                        link.addEventListener('click', (event) => {
+                            const id = link.getAttribute('href');
+                            if (!id) {
+                                return;
+                            }
+                            const target = document.querySelector(id);
+                            if (!target) {
+                                return;
+                            }
+                            event.preventDefault();
+                            target.scrollIntoView({
+                                behavior: shouldReduce() ? 'auto' : 'smooth',
+                                block: 'start'
+                            });
+                        });
+                    });
+
+                    document.getElementById('faqList')?.addEventListener('click', (event) => {
+                        const question = event.target.closest('.q');
+                        if (!question) {
+                            return;
+                        }
+                        question.parentElement.classList.toggle('open');
+                    });
+
+                    document.getElementById('nlForm')?.addEventListener('submit', (event) => {
+                        event.preventDefault();
+                        const input = document.getElementById('nlEmail');
+                        const message = document.getElementById('nlMsg');
+                        if (!input || !message) {
+                            return;
+                        }
+                        const value = input.value.trim();
+                        message.textContent = value ? `Đã nhận: ${value} (demo)` : '';
+                        event.target.reset();
+                    });
+                })();
+        </script>
 }

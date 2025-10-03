@@ -481,7 +481,6 @@
                 <a asp-controller="News" asp-action="Index">Tin tức</a>
                 <a asp-controller="Campaigns" asp-action="Index">Dự án</a>
                 <a asp-controller="TradingView" asp-action="Chart">Trading</a>
-                <a asp-controller="Conversations" asp-action="Index">Messenger</a>
             </nav>
 
             <div class="wallet-area d-flex align-items-center gap-2">
@@ -498,9 +497,8 @@
                     <div id="walletMenu" class="wd-menu" role="menu" aria-label="Wallet Menu">
                         <a class="wd-item" asp-controller="User" asp-action="Profile">Profile <span id="notificationBadgeMenu" class="badge hidden">0</span></a>
                         <a class="wd-item" asp-controller="Campaigns" asp-action="MyCampaigns">Quản lý chiến dịch</a>
-                        <a class="wd-item" asp-controller="Support" asp-action="Index">Ticket hỗ trợ của tôi</a>
+                        <a class="wd-item" asp-controller="Support" asp-action="Index">Ticket hỗ trợ</a>
                         <a class="wd-item" asp-controller="Campaigns" asp-action="TaskAnalysis">Thống kê</a>
-                        <a class="wd-item" asp-controller="TradingView" asp-action="Chart">Trading</a>
                         <a class="wd-item" asp-controller="Conversations" asp-action="Index">Messenger <span id="unreadBadgeMenu" class="badge hidden">0</span></a>
                         @* Admin link sẽ bật qua /User/GetUserProfile *@
                         <a id="adminLink" class="wd-item hidden" asp-area="Admin" asp-controller="Manage_Campaigns" asp-action="Index">Admin</a>
