@@ -1,0 +1,772 @@
+@model InvestDapp.ViewModels.AdminRoles.StaffManagementViewModel
+@{
+    ViewData["Title"] = "Quản lý Nhân viên & Phân quyền";
+    Layout = "~/Areas/admin/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .staff-management-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+        margin-left: 280px; /* Space for sidebar */
+        transition: margin-left 0.3s ease;
+    }
+
+    /* Responsive: When sidebar collapses */
+    @@media (max-width: 991px) {
+        .staff-management-container {
+            margin-left: 0;
+        }
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .page-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: #111827;
+        margin: 0;
+    }
+
+    .alert {
+        padding: 16px 20px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .alert-success {
+        background: #d1fae5;
+        border: 1px solid #6ee7b7;
+        color: #065f46;
+    }
+
+    .alert-error {
+        background: #fee2e2;
+        border: 1px solid #fca5a5;
+        color: #991b1b;
+    }
+
+    .create-staff-card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+
+    .create-staff-card h2 {
+        font-size: 20px;
+        font-weight: 600;
+        color: #111827;
+        margin: 0 0 20px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .form-group label .required {
+        color: #dc2626;
+    }
+
+    .form-control {
+        padding: 10px 14px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .btn-create {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        padding: 12px 32px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-create:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .staff-list-card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .staff-list-card h2 {
+        font-size: 20px;
+        font-weight: 600;
+        color: #111827;
+        margin: 0 0 20px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .staff-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .staff-table thead {
+        background: #f9fafb;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .staff-table th {
+        padding: 12px 16px;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        font-size: 14px;
+    }
+
+    .staff-table td {
+        padding: 16px;
+        border-bottom: 1px solid #e5e7eb;
+        font-size: 14px;
+    }
+
+    .staff-table tr:hover {
+        background: #f9fafb;
+    }
+
+    .staff-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .staff-name {
+        font-weight: 600;
+        color: #111827;
+    }
+
+    .staff-email {
+        color: #6b7280;
+        font-size: 13px;
+    }
+
+    .staff-wallet {
+        color: #3b82f6;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+    }
+
+    .role-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .role-badge {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .role-badge.superadmin { background: #fef3c7; color: #92400e; }
+    .role-badge.admin { background: #dbeafe; color: #1e40af; }
+    .role-badge.moderator { background: #e0e7ff; color: #3730a3; }
+    .role-badge.supportagent { background: #d1fae5; color: #065f46; }
+    .role-badge.fundraiser { background: #fce7f3; color: #9f1239; }
+
+    .no-roles {
+        color: #9ca3af;
+        font-style: italic;
+        font-size: 13px;
+    }
+
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .status-badge.active {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .status-badge.inactive {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .btn-grant {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .btn-grant:hover {
+        background: #bfdbfe;
+    }
+
+    .btn-revoke {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .btn-revoke:hover {
+        background: #fecaca;
+    }
+
+    .btn-toggle {
+        background: #f3f4f6;
+        color: #374151;
+    }
+
+    .btn-toggle:hover {
+        background: #e5e7eb;
+    }
+
+    .btn-delete {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .btn-delete:hover {
+        background: #fecaca;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #111827;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #6b7280;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+    }
+
+    .modal-close:hover {
+        background: #f3f4f6;
+    }
+
+    .role-options {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .role-option {
+        padding: 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .role-option:hover {
+        border-color: #3b82f6;
+        background: #f0f9ff;
+    }
+
+    .role-option.selected {
+        border-color: #3b82f6;
+        background: #dbeafe;
+    }
+
+    .role-option input[type="radio"] {
+        margin-right: 10px;
+    }
+
+    .role-option-label {
+        font-weight: 600;
+        color: #111827;
+    }
+
+    .role-option-desc {
+        font-size: 13px;
+        color: #6b7280;
+        margin-top: 4px;
+    }
+
+    .modal-footer {
+        margin-top: 20px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    .btn-cancel {
+        background: #f3f4f6;
+        color: #374151;
+    }
+
+    .btn-cancel:hover {
+        background: #e5e7eb;
+    }
+
+    .btn-confirm {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+    }
+
+    .btn-confirm:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6b7280;
+    }
+
+    .empty-state ion-icon {
+        font-size: 64px;
+        color: #d1d5db;
+        margin-bottom: 16px;
+    }
+</style>
+
+<div class="staff-management-container">
+    <div class="page-header">
+        <h1>
+            <ion-icon name="people-outline"></ion-icon>
+            Quản lý Nhân viên & Phân quyền
+        </h1>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success">
+            <ion-icon name="checkmark-circle"></ion-icon>
+            @Model.SuccessMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-error">
+            <ion-icon name="alert-circle"></ion-icon>
+            @Model.ErrorMessage
+        </div>
+    }
+
+    <!-- Create Staff Form -->
+    <div class="create-staff-card">
+        <h2>
+            <ion-icon name="person-add-outline"></ion-icon>
+            Tạo nhân viên mới
+        </h2>
+
+        <form action="/admin/StaffManagement/CreateStaff" method="post">
+            @* DEBUG: Disabled antiforgery token *@
+            @* @Html.AntiForgeryToken() *@
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>
+                        Địa chỉ ví <span class="required">*</span>
+                    </label>
+                    <input type="text" 
+                           name="WalletAddress" 
+                           class="form-control" 
+                           placeholder="0x..." 
+                           pattern="^0x[a-fA-F0-9]{40}$"
+                           required />
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        Tên nhân viên <span class="required">*</span>
+                    </label>
+                    <input type="text" 
+                           name="Name" 
+                           class="form-control" 
+                           placeholder="Nguyễn Văn A" 
+                           required />
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        Email <span class="required">*</span>
+                    </label>
+                    <input type="email" 
+                           name="Email" 
+                           class="form-control" 
+                           placeholder="email@example.com" 
+                           required />
+                </div>
+            </div>
+
+            <button type="submit" class="btn-create">
+                <ion-icon name="add-circle-outline"></ion-icon>
+                Tạo nhân viên
+            </button>
+        </form>
+    </div>
+
+    <!-- Staff List -->
+    <div class="staff-list-card">
+        <h2>
+            <ion-icon name="list-outline"></ion-icon>
+            Danh sách nhân viên (@Model.StaffList.Count)
+        </h2>
+
+        @if (Model.StaffList.Any())
+        {
+            <table class="staff-table">
+                <thead>
+                    <tr>
+                        <th>Nhân viên</th>
+                        <th>Quyền hạn</th>
+                        <th>Trạng thái</th>
+                        <th>Ngày tạo</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var staff in Model.StaffList)
+                    {
+                        <tr>
+                            <td>
+                                <div class="staff-info">
+                                    <span class="staff-name">@staff.Name</span>
+                                    <span class="staff-email">@staff.Email</span>
+                                    <span class="staff-wallet">@staff.WalletAddress</span>
+                                </div>
+                            </td>
+                            <td>
+                                @if (staff.Roles.Any())
+                                {
+                                    <div class="role-badges">
+                                        @foreach (var role in staff.Roles)
+                                        {
+                                            <span class="role-badge @role.ToString().ToLower()">
+                                                @switch (role)
+                                                {
+                                                    case InvestDapp.Shared.Enums.RoleType.SuperAdmin:
+                                                        <ion-icon name="shield-checkmark"></ion-icon>
+                                                        <text>Super Admin</text>
+                                                        break;
+                                                    case InvestDapp.Shared.Enums.RoleType.Admin:
+                                                        <ion-icon name="shield"></ion-icon>
+                                                        <text>Admin</text>
+                                                        break;
+                                                    case InvestDapp.Shared.Enums.RoleType.Moderator:
+                                                        <ion-icon name="eye"></ion-icon>
+                                                        <text>Moderator</text>
+                                                        break;
+                                                    case InvestDapp.Shared.Enums.RoleType.SupportAgent:
+                                                        <ion-icon name="headset"></ion-icon>
+                                                        <text>Support Agent</text>
+                                                        break;
+                                                    case InvestDapp.Shared.Enums.RoleType.Fundraiser:
+                                                        <ion-icon name="wallet"></ion-icon>
+                                                        <text>Fundraiser</text>
+                                                        break;
+                                                }
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="no-roles">Chưa có quyền</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="status-badge @(staff.IsActive ? "active" : "inactive")">
+                                    @(staff.IsActive ? "Hoạt động" : "Vô hiệu hóa")
+                                </span>
+                            </td>
+                            <td>
+                                @staff.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-grant" onclick="openGrantModal(@staff.Id, '@staff.Name')">
+                                        <ion-icon name="add"></ion-icon>
+                                        Cấp quyền
+                                    </button>
+                                    
+                                    @if (staff.Roles.Any())
+                                    {
+                                        <button class="btn btn-revoke" onclick="openRevokeModal(@staff.Id, '@staff.Name')">
+                                            <ion-icon name="remove"></ion-icon>
+                                            Thu hồi
+                                        </button>
+                                    }
+
+                                    <form action="/admin/StaffManagement/ToggleStatus" method="post" style="display: inline;">
+                                        <input type="hidden" name="staffId" value="@staff.Id" />
+                                        <button type="submit" class="btn btn-toggle">
+                                            <ion-icon name="@(staff.IsActive ? "pause" : "play")-outline"></ion-icon>
+                                            @(staff.IsActive ? "Vô hiệu hóa" : "Kích hoạt")
+                                        </button>
+                                    </form>
+
+                                    <form action="/admin/StaffManagement/Delete" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc muốn xóa nhân viên này?')">
+                                        <input type="hidden" name="staffId" value="@staff.Id" />
+                                        <button type="submit" class="btn btn-delete">
+                                            <ion-icon name="trash-outline"></ion-icon>
+                                            Xóa
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="empty-state">
+                <ion-icon name="people-outline"></ion-icon>
+                <p>Chưa có nhân viên nào. Hãy tạo nhân viên mới ở form bên trên.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Grant Role Modal -->
+<div id="grantModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Cấp quyền cho <span id="grantStaffName"></span></h3>
+            <button class="modal-close" onclick="closeGrantModal()">×</button>
+        </div>
+        
+        <form action="/admin/StaffManagement/GrantRole" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="staffId" id="grantStaffId" />
+            
+            <div class="role-options">
+                @foreach (var roleOption in Model.AvailableRoles)
+                {
+                    <label class="role-option">
+                        <input type="radio" name="role" value="@roleOption.Value" required />
+                        <div>
+                            <div class="role-option-label">@roleOption.Label</div>
+                            <div class="role-option-desc">@roleOption.Description</div>
+                        </div>
+                    </label>
+                }
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cancel" onclick="closeGrantModal()">Hủy</button>
+                <button type="submit" class="btn btn-confirm">
+                    <ion-icon name="checkmark"></ion-icon>
+                    Xác nhận
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Revoke Role Modal -->
+<div id="revokeModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Thu hồi quyền từ <span id="revokeStaffName"></span></h3>
+            <button class="modal-close" onclick="closeRevokeModal()">×</button>
+        </div>
+        
+        <form action="/admin/StaffManagement/RevokeRole" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="staffId" id="revokeStaffId" />
+            
+            <div class="role-options" id="revokeRoleOptions">
+                <!-- Will be populated dynamically -->
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cancel" onclick="closeRevokeModal()">Hủy</button>
+                <button type="submit" class="btn btn-confirm">
+                    <ion-icon name="checkmark"></ion-icon>
+                    Xác nhận
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const staffData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StaffList.Select(s => new { 
+        id = s.Id, 
+        name = s.Name, 
+        roles = s.Roles.Select(r => new { 
+            value = r.ToString(), 
+            label = r.ToString() switch {
+                "SuperAdmin" => "Super Admin",
+                "Admin" => "Admin",
+                "Moderator" => "Moderator",
+                "SupportAgent" => "Support Agent",
+                "Fundraiser" => "Fundraiser",
+                _ => r.ToString()
+            }
+        }).ToList() 
+    })));
+
+    function openGrantModal(staffId, staffName) {
+        document.getElementById('grantStaffId').value = staffId;
+        document.getElementById('grantStaffName').textContent = staffName;
+        document.getElementById('grantModal').classList.add('show');
+    }
+
+    function closeGrantModal() {
+        document.getElementById('grantModal').classList.remove('show');
+    }
+
+    function openRevokeModal(staffId, staffName) {
+        const staff = staffData.find(s => s.id === staffId);
+        if (!staff || !staff.roles.length) return;
+
+        document.getElementById('revokeStaffId').value = staffId;
+        document.getElementById('revokeStaffName').textContent = staffName;
+
+        const container = document.getElementById('revokeRoleOptions');
+        container.innerHTML = staff.roles.map(role => `
+            <label class="role-option">
+                <input type="radio" name="role" value="${role.value}" required />
+                <div>
+                    <div class="role-option-label">${role.label}</div>
+                </div>
+            </label>
+        `).join('');
+
+        document.getElementById('revokeModal').classList.add('show');
+    }
+
+    function closeRevokeModal() {
+        document.getElementById('revokeModal').classList.remove('show');
+    }
+
+    // Close modals on background click
+    document.getElementById('grantModal').addEventListener('click', function(e) {
+        if (e.target === this) closeGrantModal();
+    });
+
+    document.getElementById('revokeModal').addEventListener('click', function(e) {
+        if (e.target === this) closeRevokeModal();
+    });
+
+    // Add selected class to role options
+    document.querySelectorAll('.role-option').forEach(option => {
+        option.addEventListener('click', function() {
+            this.closest('.role-options').querySelectorAll('.role-option').forEach(o => o.classList.remove('selected'));
+            this.classList.add('selected');
+            this.querySelector('input[type="radio"]').checked = true;
+        });
+    });
+</script>

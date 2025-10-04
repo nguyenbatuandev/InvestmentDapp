@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Security.Claims;
 using InvestDapp.Application.AuthService.Roles;
+using InvestDapp.Application.AuthService.Staff;
 using InvestDapp.Infrastructure.Data;
 using InvestDapp.Shared.Enums;
 using InvestDapp.Shared.Security;
@@ -40,6 +41,7 @@ public class AdminLoginService : IAdminLoginService
     private readonly IRoleService _roleService;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly InvestDbContext _dbContext;
+    private readonly IStaffManagementService _staffService;
     private readonly ILogger<AdminLoginService> _logger;
 
     public AdminLoginService(
@@ -47,12 +49,14 @@ public class AdminLoginService : IAdminLoginService
         IRoleService roleService,
         IHttpContextAccessor httpContextAccessor,
         InvestDbContext dbContext,
+        IStaffManagementService staffService,
         ILogger<AdminLoginService> logger)
     {
         _cache = cache;
         _roleService = roleService;
         _httpContextAccessor = httpContextAccessor;
         _dbContext = dbContext;
+        _staffService = staffService;
         _logger = logger;
     }
 
@@ -174,49 +178,8 @@ public class AdminLoginService : IAdminLoginService
 
     private async Task<IReadOnlyCollection<RoleType>> GetOffchainRolesAsync(string normalizedWallet)
     {
-        if (string.IsNullOrWhiteSpace(normalizedWallet))
-        {
-            return Array.Empty<RoleType>();
-        }
-
-        var lowered = normalizedWallet.Trim().ToLowerInvariant();
-
-        // Load ALL users with non-null roles, then filter in memory
-        // EF cannot translate ToLower() comparison properly in SQL WHERE clause
-        var allUsersWithRoles = await _dbContext.Users
-            .AsNoTracking()
-            .Where(u => u.Role != null && u.Role != "")
-            .ToListAsync()
-            .ConfigureAwait(false);
-
-        // Filter in C# memory with case-insensitive comparison
-        var user = allUsersWithRoles
-            .FirstOrDefault(u => string.Equals(u.WalletAddress, normalizedWallet, StringComparison.OrdinalIgnoreCase));
-
-        if (user is null || string.IsNullOrWhiteSpace(user.Role))
-        {
-            return Array.Empty<RoleType>();
-        }
-
-        var separators = new[] { ',', ';', '|', ' ' };
-        var tokens = user.Role
-            .Split(separators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-        if (tokens.Length == 0)
-        {
-            tokens = new[] { user.Role };
-        }
-
-        var roles = new List<RoleType>();
-        foreach (var token in tokens)
-        {
-            if (Enum.TryParse<RoleType>(token, true, out var parsed))
-            {
-                roles.Add(parsed);
-            }
-        }
-
-        return roles;
+        // Use new Staff table instead of Users table
+        return await _staffService.GetStaffRolesForAuthAsync(normalizedWallet);
     }
 
     public async Task SignOutAsync()

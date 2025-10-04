@@ -140,5 +140,9 @@ namespace InvestDapp.Infrastructure.Data
         public DbSet<SupportTicketMessage> SupportTicketMessages { get; set; }
         public DbSet<SupportTicketAttachment> SupportTicketAttachments { get; set; }
         public DbSet<SupportTicketAssignment> SupportTicketAssignments { get; set; }
+
+        // Staff Management Models
+        public DbSet<Staff> Staff { get; set; }
+        public DbSet<StaffRole> StaffRoles { get; set; }
     }
 }

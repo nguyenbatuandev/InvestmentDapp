@@ -97,13 +97,13 @@ namespace InvestDapp.Areas.admin.Controllers
             _logger = logger;
         }
 
-        public async Task<IActionResult> Index()
+        /// <summary>
+        /// DEPRECATED: Redirect to new StaffManagement page
+        /// </summary>
+        public IActionResult Index()
         {
-            ViewData["Title"] = "Phân quyền quản trị";
-            var staffMembers = await GetStaffMembersAsync().ConfigureAwait(false);
-            var status = BuildBlockchainStatus();
-            var model = BuildViewModel(staffMembers, status);
-            return View(model);
+            _logger.LogInformation("AdminRoles/Index accessed - redirecting to StaffManagement");
+            return RedirectToAction("Index", "StaffManagement", new { area = "Admin" });
         }
 
         [HttpPost]
