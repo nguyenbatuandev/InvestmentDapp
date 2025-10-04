@@ -5,12 +5,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
+using InvestDapp.Shared.Security;
 
 namespace InvestDapp.Areas.admin.Controllers
 {
     [Area("Admin")]
     [Route("admin/transactions")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthorizationPolicies.RequireModerator)] // Moderator can view financial reports
     public class TransactionsController : Controller
     {
         private readonly ITransactionReportService _transactionReportService;

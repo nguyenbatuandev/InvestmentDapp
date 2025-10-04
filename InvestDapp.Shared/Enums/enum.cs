@@ -59,4 +59,14 @@ namespace InvestDapp.Shared.Enums
         Achievement,  
         Announcement  
     }
+
+    public enum RoleType
+    {
+        SuperAdmin,
+        Admin,
+        Moderator,
+        SupportAgent,
+        Fundraiser,
+        User
+    }
 }

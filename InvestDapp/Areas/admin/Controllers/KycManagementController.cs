@@ -3,11 +3,12 @@ using InvestDapp.Shared.Common.Request;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using InvestDapp.Shared.Security;
 
 namespace InvestDapp.Areas.admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthorizationPolicies.RequireModerator)] // Moderator can view, Admin+ can approve
     [Route("admin/kyc-management")]
     public class KycManagementController : Controller
     {
@@ -43,6 +44,7 @@ namespace InvestDapp.Areas.admin.Controllers
 
         [HttpPost("{id:int}/approve")]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = AuthorizationPolicies.RequireAdmin)] // Only Admin/SuperAdmin can approve
         public async Task<IActionResult> Approve(int id)
         {
             var result = await _kycService.ApproveKycAsync(id);
@@ -56,6 +58,7 @@ namespace InvestDapp.Areas.admin.Controllers
 
         [HttpPost("{id:int}/reject")]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = AuthorizationPolicies.RequireAdmin)] // Only Admin/SuperAdmin can reject
         public async Task<IActionResult> Reject(int id)
         {
             var result = await _kycService.RejectKycAsync(id);

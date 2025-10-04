@@ -366,17 +366,36 @@
 
     .user {
         position: relative;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        overflow: hidden;
-        cursor: pointer;
-        border: 2px solid var(--blue);
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--gray-light);
-        color: var(--blue);
+    }
+
+    .admin-logout-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(239, 68, 68, 0.12);
+        color: var(--danger);
+        border: 1px solid rgba(239, 68, 68, 0.25);
+        padding: 0.5rem 1rem;
+        border-radius: 999px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .admin-logout-btn:hover,
+    .admin-logout-btn:focus-visible {
+        background: rgba(239, 68, 68, 0.18);
+        border-color: rgba(239, 68, 68, 0.4);
+        box-shadow: 0 6px 16px -8px rgba(239, 68, 68, 0.6);
+    }
+
+    .admin-logout-btn ion-icon {
+        font-size: 1.2rem;
     }
 
         .user img {
@@ -1015,6 +1034,11 @@
             min-width: 40px;
         }
 
+        .admin-logout-btn {
+            padding: 0.45rem 0.8rem;
+            font-size: 0.85rem;
+        }
+
         .navigation {
             width: 100%;
             left: -100%;
@@ -1066,6 +1090,9 @@
                @await Html.PartialAsync("_Partial")
             </ul>
         </div>
+    <form id="adminLogoutForm" method="post" action='@Url.Action("Logout", "AdminAuth")' style="display:none;" data-confirm-message="Bạn có chắc chắn muốn đăng xuất khỏi hệ thống quản trị?">
+            @Html.AntiForgeryToken()
+        </form>
 		@RenderBody()
     </div>
 
@@ -1307,6 +1334,34 @@
                     if (parentLi) parentLi.classList.add('hovered');
                 }
             });
+
+            // admin logout handling
+            const logoutButtons = document.querySelectorAll('[data-admin-logout]');
+            if (logoutButtons.length) {
+                const logoutForm = document.getElementById('adminLogoutForm');
+                logoutButtons.forEach(button => {
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        if (!logoutForm) {
+                            console.warn('Không tìm thấy form đăng xuất quản trị.');
+                            return;
+                        }
+
+                        const confirmMessage = logoutForm.getAttribute('data-confirm-message')
+                            || 'Bạn có chắc chắn muốn đăng xuất khỏi hệ thống quản trị?';
+
+                        const skipConfirm = button.hasAttribute('data-skip-confirm');
+                        if (!skipConfirm) {
+                            const shouldLogout = window.confirm(confirmMessage);
+                            if (!shouldLogout) {
+                                return;
+                            }
+                        }
+
+                        logoutForm.submit();
+                    });
+                });
+            }
         });
     </script>
 

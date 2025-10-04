@@ -9,12 +9,13 @@ using InvestDapp.Shared.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using InvestDapp.Shared.Security;
 
 namespace InvestDapp.Areas.admin.Controllers
 {
     [Area("Admin")]
     [Route("admin/support")]
-    [Authorize(Roles = "Admin,Support")]
+    [Authorize(Policy = AuthorizationPolicies.RequireSupportAgent)] // FIXED: Allow SupportAgent, Admin, SuperAdmin
     public class SupportController : Controller
     {
         private readonly ISupportTicketService _supportTicketService;

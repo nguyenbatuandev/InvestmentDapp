@@ -8,12 +8,13 @@ using InvestDapp.Shared.Models.Message;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using InvestDapp.Shared.Security;
 
 namespace InvestDapp.Areas.admin.Controllers
 {
     [Area("Admin")]
     [Route("admin/manage-campaigns")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthorizationPolicies.RequireModerator)] // Moderator, Fundraiser can view/edit, Admin+ can approve
     public class Manage_CampaignsController : Controller
     {
         private readonly ICampaignPostService _campaignService;
@@ -54,6 +55,7 @@ namespace InvestDapp.Areas.admin.Controllers
         [Route("approve/{id}")]
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = AuthorizationPolicies.RequireAdmin)] // Only Admin/SuperAdmin can approve
         public async Task<IActionResult> ApproveCampaign(int id, string? adminNotes = null)
         {
 
@@ -69,25 +71,30 @@ namespace InvestDapp.Areas.admin.Controllers
 
                 // Prefer to notify the campaign owner. Fall back to current admin user if owner not found.
                 var camp = await _campaignService.GetCampaignByIdAsync(id);
-                var UserId = await _userService.GetUserByWalletAddressAsync(camp.OwnerAddress);
+                var ownerResponse = camp != null
+                    ? await _userService.GetUserByWalletAddressAsync(camp.OwnerAddress)
+                    : null;
 
-                var noti = new CreateNotificationRequest
+                if (ownerResponse?.Data != null)
                 {
-                    UserId = UserId.Data.ID,
-                    Type = "CampaignApproved",
-                    Title = "Chiến dịch của bạn đã được phê duyệt",
-                    Message = $"Chiến dịch của bạn đã được phê duyệt bởi quản trị viên.",
-                    Data = $"{{\"campaignId\":{id}}}"
-                };
+                    var noti = new CreateNotificationRequest
+                    {
+                        UserId = ownerResponse.Data.ID,
+                        Type = "CampaignApproved",
+                        Title = "Chiến dịch của bạn đã được phê duyệt",
+                        Message = $"Chiến dịch của bạn đã được phê duyệt bởi quản trị viên.",
+                        Data = $"{{\"campaignId\":{id}}}"
+                    };
 
-                var resp = await _notificationService.CreateNotificationAsync(noti);
-                if (resp == null)
-                {
-                    TempData["ErrorMessage"] = "Không thể tạo thông báo (null response).";
-                }
-                else if (!resp.Success)
-                {
-                    TempData["ErrorMessage"] = "Không thể tạo thông báo: " + resp.Message;
+                    var resp = await _notificationService.CreateNotificationAsync(noti);
+                    if (resp == null)
+                    {
+                        TempData["ErrorMessage"] = "Không thể tạo thông báo (null response).";
+                    }
+                    else if (!resp.Success)
+                    {
+                        TempData["ErrorMessage"] = "Không thể tạo thông báo: " + resp.Message;
+                    }
                 }
 
 
@@ -135,6 +142,7 @@ namespace InvestDapp.Areas.admin.Controllers
         [Route("reject/{id}")]
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = AuthorizationPolicies.RequireAdmin)] // Only Admin/SuperAdmin can reject
         public async Task<IActionResult> RejectCampaign(int id, string adminNotes)
         {
             try
@@ -149,18 +157,22 @@ namespace InvestDapp.Areas.admin.Controllers
                 TempData["SuccessMessage"] = "Chiến dịch đã bị từ chối.";
                 // Prefer to notify the campaign owner. Fall back to current admin user if owner not found.
                 var campR = await _campaignService.GetCampaignByIdAsync(id);
-                var UserId = await _userService.GetUserByWalletAddressAsync(campR.OwnerAddress);
+                var ownerResponse = campR != null
+                    ? await _userService.GetUserByWalletAddressAsync(campR.OwnerAddress)
+                    : null;
 
-
-                var noti = new CreateNotificationRequest
+                if (ownerResponse?.Data != null)
                 {
-                    UserId = UserId.Data.ID,
-                    Type = "CampaignRejected",
-                    Title = "Chiến dịch của bạn đã bị từ chối",
-                    Message = $"Chiến dịch của bạn đã bị từ chối bởi quản trị viên. Lý do: {adminNotes}",
-                    Data = $"{{\"campaignId\":{id}}}"
-                };
-                var resp = await _notificationService.CreateNotificationAsync(noti);
+                    var noti = new CreateNotificationRequest
+                    {
+                        UserId = ownerResponse.Data.ID,
+                        Type = "CampaignRejected",
+                        Title = "Chiến dịch của bạn đã bị từ chối",
+                        Message = $"Chiến dịch của bạn đã bị từ chối bởi quản trị viên. Lý do: {adminNotes}",
+                        Data = $"{{\"campaignId\":{id}}}"
+                    };
+                    await _notificationService.CreateNotificationAsync(noti);
+                }
                 return RedirectToAction("Index");
             }
             catch (Exception ex)
@@ -219,7 +231,14 @@ namespace InvestDapp.Areas.admin.Controllers
                 }
                 else
                 {
-                    TempData["SuccessMessage"] = $"Thông báo đã gửi tới {((dynamic)resp.Data).Sent} nhà đầu tư.";
+                    if (resp.Data != null && resp.Data.GetType().GetProperty("Sent")?.GetValue(resp.Data) is int sent)
+                    {
+                        TempData["SuccessMessage"] = $"Thông báo đã gửi tới {sent} nhà đầu tư.";
+                    }
+                    else
+                    {
+                        TempData["SuccessMessage"] = "Thông báo đã gửi tới nhà đầu tư.";
+                    }
                 }
 
                 return RedirectToAction("Details", new { id });

@@ -6,12 +6,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
+using InvestDapp.Shared.Security;
 
 namespace InvestDapp.Areas.admin.Controllers
 {
     [Area("Admin")]
     [Route("admin/api/transactions")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthorizationPolicies.RequireModerator)] // Match TransactionsController policy
     [ApiController]
     public class TransactionsApiController : ControllerBase
     {

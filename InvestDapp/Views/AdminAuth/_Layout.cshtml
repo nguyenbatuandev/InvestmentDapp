@@ -1,0 +1,197 @@
+﻿@{
+    Layout = null;
+    var pageTitle = ViewData["Title"] as string ?? "InvestDapp Admin";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@pageTitle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet" />
+    @RenderSection("HeadLinks", required: false)
+    <style>
+        :root {
+            --blue: #2563eb;
+            --blue-dark: #1e40af;
+            --blue-gradient: linear-gradient(140deg, #1d4ed8 0%, #3b82f6 45%, #6366f1 100%);
+            --glass: linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02));
+            --surface: rgba(15, 23, 42, 0.48);
+            --text: #f8fafc;
+            --muted: rgba(226, 232, 240, 0.7);
+            --shadow: 0 22px 65px rgba(15, 23, 42, 0.45);
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            font-family: "Ubuntu", sans-serif;
+            background: var(--blue-gradient);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        .auth-shell {
+            width: min(960px, 100%);
+            height: 100%;
+            display: flex;
+            gap: 24px;
+            align-items: stretch;
+            justify-content: center;
+            padding: 16px 8px;
+        }
+
+        .auth-hero {
+            flex: 0 0 360px;
+            position: relative;
+            padding: 28px;
+            border-radius: 20px;
+            background: rgba(15, 23, 42, 0.65);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .auth-hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top left, rgba(255,255,255,0.25), transparent 55%),
+                        radial-gradient(circle at bottom right, rgba(59,130,246,0.35), transparent 60%);
+            opacity: 0.7;
+        }
+
+        .auth-hero__content {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            gap: 12px;
+        }
+
+        .auth-hero__badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            background: rgba(37, 99, 235, 0.24);
+            color: #e0f2fe;
+            font-weight: 600;
+            font-size: 0.78rem;
+            letter-spacing: 0.32px;
+            text-transform: uppercase;
+        }
+
+        .auth-hero h1 {
+            margin: 0;
+            font-size: 1.85rem;
+            font-weight: 800;
+            letter-spacing: -0.4px;
+        }
+
+        .auth-hero p {
+            margin: 0;
+            color: rgba(241,245,249,0.88);
+            font-size: 0.95rem;
+            line-height: 1.45;
+        }
+
+        .auth-hero__highlights {
+            display: grid;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .auth-hero__item {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .auth-hero__icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            background: rgba(14, 165, 233, 0.22);
+            display: grid;
+            place-items: center;
+            font-size: 1.1rem;
+        }
+
+        .auth-hero__item strong {
+            display: block;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .auth-card {
+            flex: 1 1 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 28px;
+            border-radius: 20px;
+            background: var(--glass);
+            border: 1px solid rgba(255,255,255,0.18);
+            box-shadow: var(--shadow);
+            max-width: 520px;
+        }
+
+        .auth-card > * {
+            width: 100%;
+        }
+    </style>
+    @RenderSection("Styles", required: false)
+</head>
+<body>
+    <main class="auth-shell">
+        <section class="auth-hero">
+            <div class="auth-hero__content">
+                <span class="auth-hero__badge">
+                    <ion-icon name="shield-checkmark-outline"></ion-icon>
+                    InvestDapp Admin Portal
+                </span>
+                <h1>Bảo mật truy cập cho đội ngũ quản trị</h1>
+                <p>Đăng nhập bằng ví MetaMask đã được cấp quyền trên smart contract để theo dõi chiến dịch, xét duyệt KYC và vận hành nền tảng.</p>
+                <div class="auth-hero__highlights">
+                    <div class="auth-hero__item">
+                        <div class="auth-hero__icon">
+                            <ion-icon name="lock-closed-outline"></ion-icon>
+                        </div>
+                        <div>
+                            <strong>Xác thực bằng chữ ký</strong>
+                            <span>Không cần mật khẩu. Chỉ ví được phân quyền Admin hoặc SuperAdmin mới truy cập được.</span>
+                        </div>
+                    </div>
+                    <div class="auth-hero__item">
+                        <div class="auth-hero__icon">
+                            <ion-icon name="rocket-outline"></ion-icon>
+                        </div>
+                        <div>
+                            <strong>Quản trị thời gian thực</strong>
+                            <span>Theo dõi chiến dịch, xử lý yêu cầu KYC và quản lý thông báo tức thì.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="auth-card">
+            @RenderBody()
+        </section>
+    </main>
+
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

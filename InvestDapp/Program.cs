@@ -3,6 +3,9 @@ using Invest.Application.EventService;
 using InvestDapp.Application.AdminAnalytics;
 using InvestDapp.Application.AdminDashboard;
 using InvestDapp.Application.AuthService;
+using InvestDapp.Application.AuthService.Admin;
+using InvestDapp.Application.AuthService.Roles;
+using InvestDapp.Shared.Enums;
 using InvestDapp.Application.CampaignService;
 using InvestDapp.Application.KycService;
 using InvestDapp.Application.MessageService;
@@ -20,6 +23,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Nethereum.Web3;
 using QuestPDF.Infrastructure;
+using InvestDapp.Shared.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -86,6 +90,9 @@ builder.Services.AddScoped<IUser, UserRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IRoleService, SmartContractRoleService>();
+builder.Services.AddScoped<IAdminLoginService, AdminLoginService>();
+builder.Services.AddScoped<IRoleManagementService, RoleManagementService>();
 builder.Services.AddScoped<IKycService, KycService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserConnectionManager, UserConnectionManager>();
@@ -134,13 +141,47 @@ builder.Services.AddHttpClient();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/Home/Index";
+        options.LoginPath = "/admin/auth/login";
         options.Events.OnRedirectToAccessDenied = context =>
         {
             context.Response.StatusCode = 403;
             return Task.CompletedTask;
         };
     });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(AuthorizationPolicies.RequireSuperAdmin, policy =>
+        policy.RequireAuthenticatedUser()
+              .RequireClaim(AuthorizationPolicies.AdminSessionClaim, AuthorizationPolicies.AdminSessionVerified)
+              .RequireRole(RoleType.SuperAdmin.ToString()));
+    options.AddPolicy(AuthorizationPolicies.RequireAdmin, policy =>
+        policy.RequireAuthenticatedUser()
+              .RequireClaim(AuthorizationPolicies.AdminSessionClaim, AuthorizationPolicies.AdminSessionVerified)
+              .RequireRole(RoleType.Admin.ToString(), RoleType.SuperAdmin.ToString()));
+    options.AddPolicy(AuthorizationPolicies.RequireModerator, policy =>
+        policy.RequireAuthenticatedUser()
+              .RequireClaim(AuthorizationPolicies.AdminSessionClaim, AuthorizationPolicies.AdminSessionVerified)
+              .RequireRole(RoleType.Moderator.ToString(), RoleType.Admin.ToString(), RoleType.SuperAdmin.ToString()));
+    options.AddPolicy(AuthorizationPolicies.RequireSupportAgent, policy =>
+        policy.RequireAuthenticatedUser()
+              .RequireClaim(AuthorizationPolicies.AdminSessionClaim, AuthorizationPolicies.AdminSessionVerified)
+              .RequireRole(RoleType.SupportAgent.ToString(), RoleType.Admin.ToString(), RoleType.SuperAdmin.ToString()));
+    options.AddPolicy(AuthorizationPolicies.RequireFundraiser, policy =>
+        policy.RequireAuthenticatedUser()
+              .RequireRole(RoleType.Fundraiser.ToString(), RoleType.Admin.ToString(), RoleType.SuperAdmin.ToString()));
+    
+    // NEW: Staff Access - allows all staff roles (SuperAdmin, Admin, Moderator, SupportAgent, Fundraiser)
+    options.AddPolicy(AuthorizationPolicies.RequireStaffAccess, policy =>
+        policy.RequireAuthenticatedUser()
+              .RequireClaim(AuthorizationPolicies.AdminSessionClaim, AuthorizationPolicies.AdminSessionVerified)
+              .RequireRole(
+                  RoleType.SuperAdmin.ToString(), 
+                  RoleType.Admin.ToString(), 
+                  RoleType.Moderator.ToString(), 
+                  RoleType.SupportAgent.ToString(), 
+                  RoleType.Fundraiser.ToString()));
+});
 
 // =======================
 // 14. ĐĂNG KÝ CONTROLLERS VỚI VIEWS
@@ -180,6 +221,12 @@ app.MapHub<InvestDapp.Application.NotificationService.NotificationHub>("/notific
 // =======================
 // 17. MAP ROUTES
 // =======================
+app.MapAreaControllerRoute(
+        name: "admin",
+        areaName: "Admin",
+        pattern: "admin/{controller=Dashboard}/{action=Index}/{id?}")
+   .RequireAuthorization();
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
