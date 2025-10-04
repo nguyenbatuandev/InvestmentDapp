@@ -47,8 +47,11 @@ namespace InvestDapp.Application.AuthService
 
         public async Task SignInUser(User user)
         {
+            // ✅ Lấy KYC record MỚI NHẤT (theo SubmittedAt) để tránh lấy nhầm record cũ
             var kyc = await _dbContext.FundraiserKyc
-          .FirstOrDefaultAsync(k => k.UserId == user.ID && k.IsApproved == true);
+                .Where(k => k.UserId == user.ID && k.IsApproved == true)
+                .OrderByDescending(k => k.SubmittedAt)
+                .FirstOrDefaultAsync();
 
             var claims = new List<Claim>
             {
@@ -58,6 +61,7 @@ namespace InvestDapp.Application.AuthService
                 new Claim(ClaimTypes.Role, user.Role)
             };
 
+            // ✅ Cần cả IsApproved = true VÀ AcceptedTerms = true
             if (kyc != null && kyc.AcceptedTerms)
             {
                 claims.Add(new Claim(ClaimTypes.Role, "KycVerified"));

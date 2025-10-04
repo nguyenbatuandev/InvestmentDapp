@@ -652,25 +652,34 @@
           let unreadNotifications = 0;
           
           function setUnreadMessages(n){
+            console.log('🔔 setUnreadMessages called with:', n, 'current:', unreadMessages);
             unreadMessages = n;
             updateBadges();
           }
           
           function setUnreadNotifications(n){
+            console.log('🔔 setUnreadNotifications called with:', n, 'current:', unreadNotifications);
             unreadNotifications = n;
             updateBadges();
           }
           
+          // ✅ Expose functions to window for cross-script access
+          window.setUnreadMessages = setUnreadMessages;
+          window.setUnreadNotifications = setUnreadNotifications;
+          
           function updateBadges(){
             const totalUnread = unreadMessages + unreadNotifications;
+            console.log('🎨 updateBadges: messages=', unreadMessages, 'notifications=', unreadNotifications, 'total=', totalUnread);
             
             // Update combined badge on wallet trigger
             if(totalUnread > 0){
               const txt = (totalUnread > 99 ? '99+' : String(totalUnread));
               combinedBadge.textContent = txt;
               combinedBadge.classList.remove('hidden');
+              console.log('✅ combinedBadge updated:', txt);
             } else {
               combinedBadge.classList.add('hidden');
+              console.log('✅ combinedBadge hidden');
             }
             
             // Update individual badges in menu
@@ -881,16 +890,26 @@
             // Messages hub
             try{
               hub=new signalR.HubConnectionBuilder().withUrl('/chathub').withAutomaticReconnect().build();
-              hub.on('UnreadChanged',(n)=>{ setUnreadMessages(+n||0); });
-              await hub.start().catch(()=>{});
-            }catch{}
+              hub.on('UnreadChanged',(n)=>{ 
+                const receiveTime = performance.now();
+                console.log('🔔 [T+???ms] _Layout received UnreadChanged:', n, 'at', new Date().toISOString());
+                setUnreadMessages(+n||0); 
+              });
+              await hub.start();
+              console.log('✅ _Layout ChatHub connected');
+            }catch(err){
+              console.error('❌ _Layout ChatHub connection failed:', err);
+            }
             
             // Notifications hub
             try{
               notificationHub=new signalR.HubConnectionBuilder().withUrl('/notificationHub').withAutomaticReconnect().build();
               notificationHub.on('UnreadNotificationCountChanged',(n)=>{ setUnreadNotifications(+n||0); });
-              await notificationHub.start().catch(()=>{});
-            }catch{}
+              await notificationHub.start();
+              console.log('✅ _Layout NotificationHub connected');
+            }catch(err){
+              console.error('❌ _Layout NotificationHub connection failed:', err);
+            }
             
             clearInterval(pollIv); 
             clearInterval(notificationPollIv);

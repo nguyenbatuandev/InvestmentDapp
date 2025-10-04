@@ -126,9 +126,11 @@ namespace InvestDapp.Application.MessageService
                 MessageType = MessageType.Text
             };
 
-            // 2. Lưu tin nhắn vào database
+            // 2. Lưu tin nhắn vào database VÀ SAVECHANGES ĐỂ CÓ MessageId
             await _convoRepo.AddMessageAsync(message);
-            // 2. TÌM VÀ TĂNG UNREADCOUNT CHO NGƯỜI NHẬN
+            await _context.SaveChangesAsync(); // ✅ SAVE NGAY ĐỂ CÓ message.MessageId
+            
+            // 3. Tìm và tăng UnreadCount cho người nhận
             var otherParticipants = await _context.Participants
                 .Where(p => p.ConversationId == conversationId && p.UserId != senderId)
                 .ToListAsync();
@@ -138,25 +140,23 @@ namespace InvestDapp.Application.MessageService
                 participant.UnreadCount++;
             }
 
-            // 3. LƯU TẤT CẢ THAY ĐỔI VÀO DATABASE TRONG MỘT LẦN
-            await _context.SaveChangesAsync();
-
-            var a= await _convoRepo.FindByIdAsync(conversationId);
-
-            if (a == null)
+            // 4. Tìm conversation và set LastMessageId (BÂY GIỜ message.MessageId đã có giá trị)
+            var conversation = await _convoRepo.FindByIdAsync(conversationId);
+            if (conversation == null)
             {
                 throw new Exception("Conversation not found.");
             }   
-            
-            a.LastMessageId = message.MessageId;
+            conversation.LastMessageId = message.MessageId;
+
+            // 5. ✅ LƯU THAY ĐỔI UnreadCount VÀ LastMessageId
             await _context.SaveChangesAsync();
 
-            // Lấy lại tin nhắn với thông tin người gửi để gửi về client
+            // 6. Lấy lại tin nhắn với thông tin người gửi để gửi về client
             var messageWithSender = await _context.Messagers
                 .Include(m => m.Sender)
                 .FirstAsync(m => m.MessageId == message.MessageId);
 
-            // 3. Chuẩn bị DTO để gửi đi, tránh lộ thông tin không cần thiết
+            // 7. Chuẩn bị DTO để gửi đi
             var messageDto = new
             {
                 messageWithSender.MessageId,
@@ -174,16 +174,19 @@ namespace InvestDapp.Application.MessageService
                 }
             };
 
-            // 4. Dùng Hub Context để gửi tin nhắn real-time đến các client trong nhóm
+            // 8. Gửi tin nhắn real-time đến các client trong nhóm
             await _hubContext.Clients
                 .Group(conversationId.ToString())
                 .SendAsync("ReceiveMessage", messageDto);
 
-            await _context.SaveChangesAsync();
-                string json = JsonSerializer.Serialize(messageDto, new JsonSerializerOptions { WriteIndented = true });
-            Console.WriteLine(json); // Hoặc logger.LogInformation(json);
-
-
+            // 9. ✅ Emit UnreadChanged cho mỗi người nhận (SAU KHI ĐÃ SAVECHANGES)
+            foreach (var participant in otherParticipants)
+            {
+                var newUnreadCount = await GetTotalUnreadCountAsync(participant.UserId);
+                await _hubContext.Clients
+                    .User(participant.UserId.ToString())
+                    .SendAsync("UnreadChanged", newUnreadCount);
+            }
         }
 
         public async Task<IEnumerable<Conversation>> GetUserConversationsServiceAsync(int userId)
@@ -204,28 +207,61 @@ namespace InvestDapp.Application.MessageService
 
         public async Task MarkConversationAsReadAsync(int conversationId, int readerUserId)
         {
-            var participant = await _context.Participants
-           .FirstOrDefaultAsync(p => p.ConversationId == conversationId && p.UserId == readerUserId);
-            var unreadMessages = await _context.Messagers
-                .Where(m => m.ConversationId == conversationId &&
-                            m.SenderId != readerUserId && 
-                            !m.isRead)
-                .ToListAsync();
-
-            // 2. Nếu có tin nhắn nào thỏa mãn, cập nhật và lưu
-            if (unreadMessages.Any())
+            Console.WriteLine($"🔵 MarkConversationAsReadAsync called: ConversationId={conversationId}, UserId={readerUserId}");
+            
+            // ✅ Bắt đầu transaction để đảm bảo atomic
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            
+            try
             {
-                foreach (var message in unreadMessages)
+                var participant = await _context.Participants
+                   .FirstOrDefaultAsync(p => p.ConversationId == conversationId && p.UserId == readerUserId);
+                
+                if (participant == null)
                 {
-                    message.isRead = true;
+                    Console.WriteLine($"⚠️ Participant not found for ConversationId={conversationId}, UserId={readerUserId}");
+                    await transaction.RollbackAsync();
+                    return;
                 }
+                
+                Console.WriteLine($"🔵 Before: Participant.UnreadCount = {participant.UnreadCount}");
+                
+                var unreadMessages = await _context.Messagers
+                    .Where(m => m.ConversationId == conversationId &&
+                                m.SenderId != readerUserId && 
+                                !m.isRead)
+                    .ToListAsync();
 
-                await _context.SaveChangesAsync();
-            }
-            if (participant != null)
-            {
+                Console.WriteLine($"🔵 Found {unreadMessages.Count} unread messages");
+
+                // Đánh dấu tất cả tin nhắn đã đọc
+                if (unreadMessages.Any())
+                {
+                    foreach (var message in unreadMessages)
+                    {
+                        message.isRead = true;
+                    }
+                }
+                
+                // Reset UnreadCount của participant
                 participant.UnreadCount = 0;
-                await _context.SaveChangesAsync();
+                
+                Console.WriteLine($"🔵 After: Participant.UnreadCount = {participant.UnreadCount}");
+                
+                // ✅ LƯU TẤT CẢ THAY ĐỔI
+                var saveResult = await _context.SaveChangesAsync();
+                Console.WriteLine($"✅ SaveChanges: {saveResult} rows affected");
+                
+                // ✅ Commit transaction
+                await transaction.CommitAsync();
+                
+                Console.WriteLine($"✅ MarkConversationAsReadAsync completed. Committed to DB.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error in MarkConversationAsReadAsync: {ex.Message}");
+                await transaction.RollbackAsync();
+                throw;
             }
         }
 
@@ -236,47 +272,58 @@ namespace InvestDapp.Application.MessageService
 
         public Task<IEnumerable<ConversationDto>> MapConversationsToDtosAsync(IEnumerable<Conversation> conversations, int currentUserId)
         {
-            var conversationDtos = conversations.Select(c => new ConversationDto
+            Console.WriteLine($"📋 MapConversationsToDtosAsync: CurrentUserId={currentUserId}, Conversations={conversations.Count()}");
+            
+            var conversationDtos = conversations.Select(c =>
             {
-                ConversationId = c.ConversationId,
-                Type = c.Type,
-                Name = c.Name,
-                AvatarURL = c.AvatarURL,
-
-                UnreadCount = c.Messages?.Count(m => !m.isRead && m.SenderId != currentUserId) ?? 0,
-
-                Participants = c.Participants.Select(p => new ParticipantDto
+                var participant = c.Participants?.FirstOrDefault(p => p.UserId == currentUserId);
+                var unreadCount = participant?.UnreadCount ?? 0;
+                
+                Console.WriteLine($"   - ConversationId={c.ConversationId}, Participant.UnreadCount={unreadCount}");
+                
+                return new ConversationDto
                 {
-                    UserId = p.UserId,
-                    Role = p.Role,
-                    User = new UserDto
+                    ConversationId = c.ConversationId,
+                    Type = c.Type,
+                    Name = c.Name,
+                    AvatarURL = c.AvatarURL,
+
+                    // Dùng Participant.UnreadCount làm nguồn chân lý
+                    UnreadCount = unreadCount,
+
+                    Participants = c.Participants?.Select(p => new ParticipantDto
                     {
-                        UserId = p.User.ID,
-                        FullName = p.User.Name,
-                        AvatarURL = p.User.Avatar,
-                    }
-                }).ToList(),
+                        UserId = p?.UserId ?? 0,
+                        Role = p?.Role ?? 0,
+                        User = new UserDto
+                        {
+                            UserId = p?.User?.ID ?? 0,
+                            FullName = p?.User?.Name ?? "",
+                            AvatarURL = p?.User?.Avatar ?? "",
+                        }
+                    }).ToList() ?? new List<ParticipantDto>(),
 
-                LastMessage = c.LastMessage == null ? null : new MessageDto
-                {
-                    MessageId = c.LastMessage.MessageId,
-                    Content = c.LastMessage.Content,
-                    SentAt = c.LastMessage.SentAt,
-                    SenderId = c.LastMessage.SenderId,
-                    Sender = c.LastMessage.Sender == null ? null : new UserDto
+                    LastMessage = c.LastMessage == null ? null : new MessageDto
                     {
-                        UserId = c.LastMessage.Sender.ID,
-                        FullName = c.LastMessage.Sender.Name,
-                        AvatarURL = c.LastMessage.Sender.Avatar
-                    }
-                },
+                        MessageId = c.LastMessage.MessageId,
+                        Content = c.LastMessage.Content,
+                        SentAt = c.LastMessage.SentAt,
+                        SenderId = c.LastMessage.SenderId,
+                        Sender = c.LastMessage.Sender == null ? null : new UserDto
+                        {
+                            UserId = c.LastMessage.Sender.ID,
+                            FullName = c.LastMessage.Sender.Name,
+                            AvatarURL = c.LastMessage.Sender.Avatar
+                        }
+                    },
 
-                Campaign = c.Campaign == null ? null : new CampaignDto
-                {
-                    Id = c.Campaign.Id,
-                    Name = c.Campaign.Name,
-                    ImageUrl = c.Campaign.ImageUrl
-                }
+                    Campaign = c.Campaign == null ? null : new CampaignDto
+                    {
+                        Id = c.Campaign.Id,
+                        Name = c.Campaign.Name,
+                        ImageUrl = c.Campaign.ImageUrl
+                    }
+                };
             });
 
             return Task.FromResult(conversationDtos);
@@ -284,9 +331,17 @@ namespace InvestDapp.Application.MessageService
 
         public async Task<int> GetTotalUnreadCountAsync(int userId)
         {
-            var totalUnreadCount = await _context.Participants
+            var participants = await _context.Participants
                        .Where(p => p.UserId == userId)
-                       .SumAsync(p => p.UnreadCount);
+                       .ToListAsync();
+            
+            var totalUnreadCount = participants.Sum(p => p.UnreadCount);
+            
+            Console.WriteLine($"📊 GetTotalUnreadCountAsync: UserId={userId}, Conversations={participants.Count}, TotalUnread={totalUnreadCount}");
+            foreach (var p in participants)
+            {
+                Console.WriteLine($"   - ConversationId={p.ConversationId}, UnreadCount={p.UnreadCount}");
+            }
 
             return totalUnreadCount;
         }

@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
+using InvestDapp.Infrastructure.Data.interfaces;
 
 namespace InvestDapp.Application.MessageService
 {
@@ -11,13 +11,47 @@ namespace InvestDapp.Application.MessageService
         private readonly IConversationService _chatService;
         private readonly IUserConnectionManager _userConnectionManager;
         private readonly ILogger<ChatHub> _logger;
-        private static readonly ConcurrentDictionary<string, HashSet<string>> UserConnections = new ConcurrentDictionary<string, HashSet<string>>();
+        private readonly IUser _userRepository;
 
-        public ChatHub(IConversationService chatService, ILogger<ChatHub> logger, IUserConnectionManager userConnectionManager)
+        public ChatHub(IConversationService chatService, ILogger<ChatHub> logger, IUserConnectionManager userConnectionManager, IUser userRepository)
         {
             _chatService = chatService;
             _logger = logger;
             _userConnectionManager = userConnectionManager;
+            _userRepository = userRepository;
+        }
+
+        /// <summary>
+        /// Helper method to resolve Context.UserIdentifier to a numeric user ID.
+        /// Handles both numeric IDs (regular users) and wallet addresses (admin users).
+        /// </summary>
+        private async Task<int?> GetCurrentUserIdAsync()
+        {
+            var userIdString = Context.UserIdentifier;
+            if (string.IsNullOrEmpty(userIdString))
+            {
+                _logger.LogWarning("Context.UserIdentifier is null or empty");
+                return null;
+            }
+
+            // Try to parse as numeric ID first (regular users)
+            if (int.TryParse(userIdString, out int userId))
+            {
+                return userId;
+            }
+
+            // If not numeric, it's probably a wallet address (admin users)
+            _logger.LogInformation("UserIdentifier is wallet address: {Wallet}", userIdString);
+            var user = await _userRepository.GetUserByWalletAddressAsync(userIdString);
+            
+            if (user == null)
+            {
+                _logger.LogWarning("User not found for wallet: {Wallet}", userIdString);
+                return null;
+            }
+
+            _logger.LogInformation("Resolved wallet {Wallet} to UserId {UserId}", userIdString, user.ID);
+            return user.ID;
         }
 
         public async Task SendMessage(int conversationId, int userId, string content)
@@ -59,37 +93,50 @@ namespace InvestDapp.Application.MessageService
         // ✅ HÀM BỊ THIẾU MÀ BẠN CẦN THÊM VÀO
         public async Task MarkConversationAsRead(int conversationId)
         {
-            var readerUserIdString = Context.UserIdentifier;
-            if (string.IsNullOrEmpty(readerUserIdString)) return;
-
-            if (!int.TryParse(readerUserIdString, out int readerUserId))
+            var startTime = DateTime.UtcNow;
+            var readerUserId = await GetCurrentUserIdAsync();
+            if (readerUserId == null)
             {
-                _logger.LogWarning("Invalid UserIdentifier: {UserIdentifier}", readerUserIdString);
+                _logger.LogWarning("MarkConversationAsRead: Could not resolve user ID");
                 return;
             }
 
-            // 1. Đánh dấu đã đọc trong DB
-            await _chatService.MarkConversationAsReadAsync(conversationId, readerUserId);
+            _logger.LogInformation($"🟢 [T+0ms] ChatHub.MarkConversationAsRead: ConversationId={conversationId}, UserId={readerUserId}");
 
-            // 2. Lấy những người còn lại trong conversation
+            // 1. Đánh dấu đã đọc trong DB
+            await _chatService.MarkConversationAsReadAsync(conversationId, readerUserId.Value);
+            _logger.LogInformation($"⏱️ [T+{(DateTime.UtcNow - startTime).TotalMilliseconds}ms] Marked as read in DB");
+
+            // 2. ✅ Lấy tổng số tin nhắn chưa đọc mới và emit UnreadChanged
+            var newUnreadCount = await _chatService.GetTotalUnreadCountAsync(readerUserId.Value);
+            _logger.LogInformation($"⏱️ [T+{(DateTime.UtcNow - startTime).TotalMilliseconds}ms] Got new unread count: {newUnreadCount}");
+            
+            _logger.LogInformation($"🟢 Emitting UnreadChanged: UserId={readerUserId}, NewCount={newUnreadCount}");
+            
+            await Clients.User(readerUserId.Value.ToString()).SendAsync("UnreadChanged", newUnreadCount);
+            _logger.LogInformation($"⏱️ [T+{(DateTime.UtcNow - startTime).TotalMilliseconds}ms] Emitted UnreadChanged event");
+
+            // 3. Lấy những người còn lại trong conversation
             var participants = await _chatService.GetAllUserByConversationIdServiceAsync(conversationId);
 
-            // 3. Tạo payload thông báo
+            // 4. Tạo payload thông báo
             var data = new
             {
                 ConversationId = conversationId,
-                ReaderUserId = readerUserId
+                ReaderUserId = readerUserId.Value
             };
 
-            // 4. Gửi thông báo đến các user còn lại
+            // 5. Gửi thông báo đến các user còn lại
             foreach (var user in participants)
             {
-                if (user.ID != readerUserId)
+                if (user.ID != readerUserId.Value)
                 {
                     await Clients.User(user.ID.ToString())
                         .SendAsync("MessagesRead", data);
                 }
             }
+            
+            _logger.LogInformation($"✅ ChatHub.MarkConversationAsRead completed");
         }
 
 
@@ -103,21 +150,25 @@ namespace InvestDapp.Application.MessageService
         // HÀM ONCONNECTEDASYNC PHIÊN BẢN CÓ GỠ LỖI
         public override async Task OnConnectedAsync()
         {
-            var userIdString = Context.UserIdentifier;
+            var userId = await GetCurrentUserIdAsync();
             var connectionId = Context.ConnectionId;
 
-            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int userId))
+            if (userId == null)
             {
+                _logger.LogWarning("OnConnectedAsync: Could not resolve user ID");
                 await base.OnConnectedAsync();
                 return;
             }
+
+            // ✅ Dùng numeric userId làm key thống nhất
+            var userIdString = userId.Value.ToString();
 
             // 1. Quản lý kết nối
             bool isFirstConnection = !_userConnectionManager.GetConnections(userIdString).Any();
             _userConnectionManager.AddConnection(userIdString, connectionId);
 
             // 2. Tự động tham gia các group chat
-            var conversations = await _chatService.GetUserConversationsServiceAsync(userId);
+            var conversations = await _chatService.GetUserConversationsServiceAsync(userId.Value);
             try
             {
                 foreach (var convo in conversations)
@@ -140,7 +191,7 @@ namespace InvestDapp.Application.MessageService
                     {
                         foreach (var participant in convo.Participants)
                         {
-                            if (participant.UserId != userId)
+                            if (participant.UserId != userId.Value)
                             {
                                 partnerUserIds.Add(participant.UserId.ToString());
                             }
@@ -150,13 +201,13 @@ namespace InvestDapp.Application.MessageService
                     if (partnerUserIds.Any())
                     {
                         var partnerIdList = partnerUserIds.ToList();
-                        _logger.LogInformation("[BROADCAST CHECK] Chuẩn bị gửi 'UserOnline' của User {UserId} đến các partner: {PartnerIds}", userId, string.Join(", ", partnerIdList));
+                        _logger.LogInformation("[BROADCAST CHECK] Chuẩn bị gửi 'UserOnline' của User {UserId} đến các partner: {PartnerIds}", userId.Value, string.Join(", ", partnerIdList));
 
                         // GỬI MỘT EVENT RIÊNG ĐỂ GỠ LỖI
-                        await Clients.Users(partnerIdList).SendAsync("ReceiveDebug", $"Server đang cố gửi thông báo UserOnline cho user ID: {userIdString}");
+                        await Clients.Users(partnerIdList).SendAsync("ReceiveDebug", $"Server đang cố gửi thông báo UserOnline cho user ID: {userId.Value}");
 
                         // GỬI EVENT CHÍNH
-                        await Clients.Users(partnerIdList).SendAsync("UserOnline", userIdString);
+                        await Clients.Users(partnerIdList).SendAsync("UserOnline", userId.Value.ToString());
                     }
                 }
                 catch (Exception ex)
@@ -169,11 +220,13 @@ namespace InvestDapp.Application.MessageService
         }
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            var userIdString = Context.UserIdentifier;
+            var userId = await GetCurrentUserIdAsync();
             var connectionId = Context.ConnectionId;
 
-            if (!string.IsNullOrEmpty(userIdString) && int.TryParse(userIdString, out int userId))
+            if (userId != null)
             {
+                var userIdString = userId.Value.ToString();
+                
                 // 1. Xóa kết nối khỏi service quản lý
                 _userConnectionManager.RemoveConnection(userIdString, connectionId);
 
@@ -183,19 +236,19 @@ namespace InvestDapp.Application.MessageService
                 // 3. Nếu đây là kết nối cuối cùng, thông báo user đã offline
                 if (isLastConnection)
                 {
-                    _logger.LogInformation("User {UserId} is now OFFLINE.", userId);
+                    _logger.LogInformation("User {UserId} is now OFFLINE.", userId.Value);
                     try
                     {
-                        var conversations = await _chatService.GetUserConversationsServiceAsync(userId);
+                        var conversations = await _chatService.GetUserConversationsServiceAsync(userId.Value);
                         foreach (var convo in conversations)
                         {
                             // Gửi sự kiện "UserOffline" đến những người khác trong cùng group chat
-                            await Clients.OthersInGroup(convo.ConversationId.ToString()).SendAsync("UserOffline", userIdString);
+                            await Clients.OthersInGroup(convo.ConversationId.ToString()).SendAsync("UserOffline", userId.Value.ToString());
                         }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Error broadcasting UserOffline status for user {UserId}", userId);
+                        _logger.LogError(ex, "Error broadcasting UserOffline status for user {UserId}", userId.Value);
                     }
                 }
             }
@@ -204,23 +257,36 @@ namespace InvestDapp.Application.MessageService
         }
         public async Task GoOffline()
         {
-            var userId = Context.UserIdentifier;
-            if (string.IsNullOrEmpty(userId)) return;
-
-            if (UserConnections.TryRemove(userId, out _))
+            var userId = await GetCurrentUserIdAsync();
+            if (userId == null)
             {
-                _logger.LogInformation("User {UserId} proactively went OFFLINE.", userId);
+                _logger.LogWarning("GoOffline: Could not resolve user ID");
+                return;
+            }
+
+            var userIdString = userId.Value.ToString();
+            
+            var connections = _userConnectionManager.GetConnections(userIdString);
+            if (connections.Any())
+            {
+                // Remove tất cả connections của user này
+                foreach (var connId in connections.ToList())
+                {
+                    _userConnectionManager.RemoveConnection(userIdString, connId);
+                }
+                
+                _logger.LogInformation("User {UserId} proactively went OFFLINE.", userId.Value);
                 try
                 {
-                    var conversations = await _chatService.GetUserConversationsServiceAsync(Convert.ToInt32(userId));
+                    var conversations = await _chatService.GetUserConversationsServiceAsync(userId.Value);
                     foreach (var convo in conversations)
                     {
-                        await Clients.OthersInGroup(convo.ConversationId.ToString()).SendAsync("UserOffline", userId);
+                        await Clients.OthersInGroup(convo.ConversationId.ToString()).SendAsync("UserOffline", userIdString);
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error in GoOffline for user {UserId}", userId);
+                    _logger.LogError(ex, "Error in GoOffline for user {UserId}", userId.Value);
                 }
             }
         }

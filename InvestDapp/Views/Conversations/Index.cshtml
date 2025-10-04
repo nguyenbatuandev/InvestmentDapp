@@ -1435,7 +1435,16 @@
                     console.error(`❌ Failed to join group ${convoId}:`, err);
                 }
                 
-                await connection.invoke("MarkConversationAsRead", convoId);
+                // ✅ MARK CONVERSATION AS READ
+                try {
+                    const markReadStartTime = performance.now();
+                    console.log(`🔵 [T+0ms] Calling MarkConversationAsRead for conversation ${convoId}`);
+                    await connection.invoke("MarkConversationAsRead", convoId);
+                    const elapsed = (performance.now() - markReadStartTime).toFixed(2);
+                    console.log(`✅ [T+${elapsed}ms] Successfully marked conversation ${convoId} as read`);
+                } catch (err) {
+                    console.error(`❌ Failed to mark conversation ${convoId} as read:`, err);
+                }
 
                 try {
                     messageHistoryEl.innerHTML = '<p style="text-align:center;color:var(--text-muted);">Đang tải tin nhắn...</p>';
@@ -1592,7 +1601,7 @@
                 /**
                  * Được gọi khi có một tin nhắn mới được gửi đến từ server.
                  */
-                connection.on("ReceiveMessage", (message) => {
+                connection.on("ReceiveMessage", async (message) => {
                     console.log('ReceiveMessage event received:', message);
                     if (!message || !message.conversationId || !message.sender?.id) return;
 
@@ -1634,7 +1643,13 @@
                             }
                         } else {
                             // Nếu người khác gửi, tự động đánh dấu là đã đọc
-                            connection.invoke("MarkConversationAsRead", incomingConvoId);
+                            try {
+                                console.log(`🔵 Auto-marking conversation ${incomingConvoId} as read (received message)`);
+                                await connection.invoke("MarkConversationAsRead", incomingConvoId);
+                                console.log(`✅ Successfully auto-marked conversation ${incomingConvoId} as read`);
+                            } catch (err) {
+                                console.error(`❌ Failed to auto-mark conversation ${incomingConvoId} as read:`, err);
+                            }
                         }
                     } else {
                         // --- B. TIN NHẮN DÀNH CHO BOX CHAT ĐANG ĐÓNG ---
@@ -1663,6 +1678,20 @@
                         }
                     }
                 });
+
+                /**
+                 * ✅ Được gọi khi tổng số tin nhắn chưa đọc thay đổi
+                 */
+                connection.on("UnreadChanged", (newCount) => {
+                    console.log('📊 UnreadChanged event received:', newCount);
+                    // Update badge trong _Layout.cshtml nếu function có sẵn
+                    if (typeof window.setUnreadMessages === 'function') {
+                        window.setUnreadMessages(newCount);
+                    }
+                    // Update document title
+                    updateDocumentTitle();
+                });
+
                     connection.on("ReceiveDebug", (message) => {
             // Log này sẽ có màu vàng để dễ nhận biết
             console.log("%c[SERVER DEBUG]:", "color: yellow; font-weight: bold;", message);
