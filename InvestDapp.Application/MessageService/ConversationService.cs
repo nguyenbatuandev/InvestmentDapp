@@ -269,6 +269,13 @@ namespace InvestDapp.Application.MessageService
                         FullName = c.LastMessage.Sender.Name,
                         AvatarURL = c.LastMessage.Sender.Avatar
                     }
+                },
+
+                Campaign = c.Campaign == null ? null : new CampaignDto
+                {
+                    Id = c.Campaign.Id,
+                    Name = c.Campaign.Name,
+                    ImageUrl = c.Campaign.ImageUrl
                 }
             });
 

@@ -51,7 +51,8 @@ namespace InvestDapp.Infrastructure.Data.Repository
                     .ThenInclude(p => p.User)
                 .Include(c => c.LastMessage)
                     .ThenInclude(m => m.Sender)
-                .Include(c => c.Messages) 
+                .Include(c => c.Messages)
+                .Include(c => c.Campaign)
                 .OrderByDescending(c => c.LastMessage != null ? c.LastMessage.SentAt : c.CreatedAt)
                 .ToListAsync();
         }

@@ -43,5 +43,13 @@ namespace InvestDapp.Shared.DTOs.MessageDTO
         public MessageDto LastMessage { get; set; }
         public int UnreadCount { get; set; } // <--- THÊM DÒNG NÀY
         public ICollection<ParticipantDto> Participants { get; set; }
+        public CampaignDto Campaign { get; set; } // Campaign data for group chats
+    }
+
+    public class CampaignDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string ImageUrl { get; set; }
     }
 }

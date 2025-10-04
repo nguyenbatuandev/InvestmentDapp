@@ -100,7 +100,72 @@ namespace InvestDapp.Controllers
             return Ok(new { user.ID, user.Name, user.Avatar });
         }
 
-        // File: Controllers/ConversationsController.cs
+        [HttpPost("Conversations/upload")]
+        public async Task<IActionResult> UploadFile(IFormFile file)
+        {
+            try
+            {
+                if (file == null || file.Length == 0)
+                {
+                    return BadRequest("Không có file được chọn.");
+                }
+
+                // Giới hạn kích thước file (10MB)
+                if (file.Length > 10 * 1024 * 1024)
+                {
+                    return BadRequest("File quá lớn. Kích thước tối đa là 10MB.");
+                }
+
+                // Kiểm tra loại file
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx", ".txt", ".zip" };
+                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                
+                if (!allowedExtensions.Contains(extension))
+                {
+                    return BadRequest("Loại file không được hỗ trợ.");
+                }
+
+                // Tạo tên file unique
+                var fileName = $"{Guid.NewGuid()}{extension}";
+                var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "chat");
+                
+                // Tạo folder nếu chưa tồn tại
+                if (!Directory.Exists(uploadPath))
+                {
+                    Directory.CreateDirectory(uploadPath);
+                }
+
+                var filePath = Path.Combine(uploadPath, fileName);
+
+                // Lưu file
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                // Trả về URL của file
+                var fileUrl = $"/uploads/chat/{fileName}";
+                var fileType = extension.ToLower() switch
+                {
+                    ".jpg" or ".jpeg" or ".png" or ".gif" => "image",
+                    _ => "file"
+                };
+
+                return Ok(new 
+                { 
+                    url = fileUrl,
+                    type = fileType,
+                    name = file.FileName,
+                    size = file.Length
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi khi upload file: {ex.Message}");
+            }
+        }
+
+        // Trong file Controllers/ConversationsController.cs
 
         [HttpGet]
         public async Task<IActionResult> GetUserConversations()
@@ -165,6 +230,31 @@ namespace InvestDapp.Controllers
             var totalUnreadCount = await _convoService.GetTotalUnreadCountAsync(currentUserId);
 
             return Ok(new { count = totalUnreadCount });
+        }
+
+        [HttpGet("Conversations/profile/{userId}")]
+        public async Task<IActionResult> GetUserProfile(int userId)
+        {
+            try
+            {
+                var user = await _user.GetUserByIdAsync(userId);
+                if (user == null) return NotFound("Không tìm thấy người dùng");
+
+                var profile = new
+                {
+                    id = user.ID,
+                    name = user.Name,
+                    email = user.Email,
+                    avatar = user.Avatar,
+                    walletAddress = user.WalletAddress
+                };
+
+                return Ok(profile);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi: {ex.Message}");
+            }
         }
 
     }

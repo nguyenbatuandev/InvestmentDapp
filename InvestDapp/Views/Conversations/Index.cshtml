@@ -710,6 +710,140 @@
         .conversation-item {
             position: relative;
         }
+
+        /* Profile Modal Styles */
+        .profile-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .profile-modal.show {
+            display: flex;
+        }
+
+        .profile-modal-content {
+            background: linear-gradient(135deg, var(--bg-dark), var(--bg-light));
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-color);
+            position: relative;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @@keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .profile-modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--secondary);
+            border: none;
+            color: var(--text-color);
+            font-size: 1.5rem;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .profile-modal-close:hover {
+            background: var(--primary);
+            transform: rotate(90deg);
+        }
+
+        .profile-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid var(--primary);
+            margin: 0 auto 15px;
+            object-fit: cover;
+        }
+
+        .profile-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 5px;
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .profile-info-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--secondary);
+            border-radius: 8px;
+        }
+
+        .profile-info-item i {
+            color: var(--primary);
+            font-size: 1.2rem;
+            width: 25px;
+        }
+
+        .profile-info-item .label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+
+        .profile-info-item .value {
+            font-size: 1rem;
+            color: var(--text-color);
+            word-break: break-all;
+        }
+
+        .sender-avatar {
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .sender-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        #remove-file:hover {
+            background: rgba(255, 59, 48, 1) !important;
+            transform: scale(1.1);
+        }
+
+        #file-preview {
+            position: relative;
+        }
+
     </style>
 </head>
 <body>
@@ -730,14 +864,10 @@
                 </button>
                 <button class="btn-icon back-btn"><i class="fas fa-arrow-left"></i></button>
                 <div class="group-info"></div>
-                <div class="action-buttons">
-                    <button class="btn-icon"><i class="fas fa-phone"></i></button>
-                    <button class="btn-icon"><i class="fas fa-video"></i></button>
-                    <button class="btn-icon"><i class="fas fa-info-circle"></i></button>
-                </div>
             </header>
             <div class="message-area"></div>
             <footer class="chat-input-area">
+                <input type="file" id="file-input" accept="image/*,.pdf,.doc,.docx,.txt,.zip" style="display: none;" />
                 <button id="image-btn" class="btn-icon"><i class="fas fa-image"></i></button>
                 <div class="input-wrapper">
                     <textarea id="chat-input" placeholder="Aa" rows="1"></textarea>
@@ -747,118 +877,42 @@
                 <div class="emoji-picker-container">
                     <emoji-picker class="dark"></emoji-picker>
                 </div>
+                <div id="file-preview" style="display: none; padding: 8px 12px; background: var(--bg-light); border-radius: 8px; margin-top: 8px; border: 1px solid var(--border-color); max-width: 100%;">
+                    <button id="remove-file" style="position: absolute; top: 5px; right: 5px; background: rgba(255, 59, 48, 0.9); border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; color: white; font-size: 16px; line-height: 1; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">×</button>
+                    <div id="file-preview-content" style="display: flex; align-items: center; gap: 10px; max-width: 100%;"></div>
+                </div>
             </footer>
         </main>
     </div>
+
+    <!-- Profile Modal -->
+    <div id="profile-modal" class="profile-modal">
+        <div class="profile-modal-content">
+            <button class="profile-modal-close" onclick="closeProfileModal()">×</button>
+            <div class="profile-header">
+                <img id="profile-modal-avatar" class="profile-avatar" src="" alt="Avatar">
+                <h3 id="profile-modal-name" class="profile-name"></h3>
+            </div>
+            <div class="profile-info">
+                <div class="profile-info-item">
+                    <i class="fas fa-envelope"></i>
+                    <div>
+                        <div class="label">Email</div>
+                        <div id="profile-modal-email" class="value"></div>
+                    </div>
+                </div>
+                <div class="profile-info-item">
+                    <i class="fas fa-wallet"></i>
+                    <div>
+                        <div class="label">Địa chỉ ví</div>
+                        <div id="profile-modal-wallet" class="value"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-                // Typing effect for sidebar header and group name
-        function typeText(element, text, speed = 100) {
-            let index = 0;
-            element.innerHTML = '';
-            const type = () => {
-                if (index < text.length) {
-                    element.innerHTML += text.charAt(index);
-                    index++;
-                    setTimeout(type, speed);
-                } else {
-                    setTimeout(() => {
-                        index = 0;
-                        element.innerHTML = '';
-                        type();
-                    }, 2000); // Repeat after 2s pause
-                }
-            };
-            type();
-        }
-
-        // Initialize typing effect for sidebar header and group name
-        document.addEventListener('DOMContentLoaded', () => {
-            const sidebarHeader = document.querySelector('.sidebar-header h2');
-            const groupName = document.querySelector('.group-info .group-name');
-
-            if (sidebarHeader) {
-                typeText(sidebarHeader, 'Chats', 150);
-            }
-            if (groupName) {
-                typeText(groupName, 'Blockchain Group', 150);
-            }
-        });
-
-        // Hover effect for conversation items
-        const conversationItems = document.querySelectorAll('.conversation-item');
-        conversationItems.forEach(item => {
-            item.addEventListener('mouseenter', () => {
-                item.style.transform = 'translateY(-5px) scale(1.02)';
-                item.style.boxShadow = '0 0 20px var(--glow)';
-                item.style.transition = 'all 0.3s ease';
-            });
-            item.addEventListener('mouseleave', () => {
-                item.style.transform = 'translateY(0) scale(1)';
-                item.style.boxShadow = 'none';
-            });
-        });
-
-        // Hover effect for message bubbles
-        const messageBubbles = document.querySelectorAll('.message-bubble');
-        messageBubbles.forEach(bubble => {
-            bubble.addEventListener('mouseenter', () => {
-                bubble.style.transform = 'scale(1.05)';
-                bubble.style.boxShadow = '0 0 15px var(--glow)';
-            });
-            bubble.addEventListener('mouseleave', () => {
-                bubble.style.transform = 'scale(1)';
-                bubble.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-            });
-        });
-
-        // Blockchain-style loading effect
-        function createBlockchainLoading() {
-            const loadingSpinner = document.querySelector('.loading-spinner');
-            if (loadingSpinner) {
-                loadingSpinner.innerHTML = '';
-                for (let i = 0; i < 3; i++) {
-                    const dot = document.createElement('div');
-                    dot.style.width = '8px';
-                    dot.style.height = '8px';
-                    dot.style.background = 'var(--primary)';
-                    dot.style.borderRadius = '50%';
-                    dot.style.display = 'inline-block';
-                    dot.style.margin = '0 4px';
-                    dot.style.animation = `blockchain-pulse 1.5s ${i * 0.2}s ease-in-out infinite`;
-                    loadingSpinner.appendChild(dot);
-                }
-                loadingSpinner.classList.add('show');
-                setTimeout(() => {
-                    loadingSpinner.classList.remove('show');
-                }, 3000); // Simulate loading for 3s
-            }
-        }
-
-        // Add blockchain loading animation keyframes dynamically
-        const styleSheet = document.createElement('style');
-        styleSheet.textContent = `
-            @@keyframes blockchain-pulse {
-                0%, 100% { transform: translateY(0); opacity: 0.6; }
-                50% { transform: translateY(-10px); opacity: 1; }
-            }
-        `;
-        document.head.appendChild(styleSheet);
-
-        // Trigger loading effect on page load (for demo)
-        document.addEventListener('DOMContentLoaded', () => {
-            createBlockchainLoading();
-        });
-
-        // Handle input focus glow
-        const chatInput = document.querySelector('#chat-input');
-        if (chatInput) {
-            chatInput.addEventListener('focus', () => {
-                chatInput.style.boxShadow = '0 0 15px var(--glow)';
-            });
-            chatInput.addEventListener('blur', () => {
-                chatInput.style.boxShadow = '0 0 0 2px rgba(74, 144, 226, 0.3)';
-            });
-        }
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -875,6 +929,11 @@
             const emojiBtn = document.getElementById('emoji-btn');
             const emojiPickerContainer = document.querySelector('.emoji-picker-container');
             const emojiPicker = document.querySelector('emoji-picker');
+            const imageBtn = document.getElementById('image-btn');
+            const fileInput = document.getElementById('file-input');
+            const filePreview = document.getElementById('file-preview');
+            const filePreviewContent = document.getElementById('file-preview-content');
+            const removeFileBtn = document.getElementById('remove-file');
             const sidebarToggleBtn = document.querySelector('.sidebar-toggle-btn');
             const searchInput = document.getElementById('search-input');
             const searchResultsContainer = document.querySelector('.search-results');
@@ -893,6 +952,7 @@
             let onlineUsers = new Set(); // Tập hợp chứa ID của những người dùng đang online
             let conversationState = new Map(); // Lưu trạng thái riêng của mỗi cuộc hội thoại (ví dụ: trang tin nhắn hiện tại)
             let searchDebounceTimeout; // Biến dùng cho việc debounce khi tìm kiếm
+            let selectedFile = null; // File được chọn để gửi
 
             // =================================================================
             // THIẾT LẬP KẾT NỐI SIGNALR
@@ -1081,11 +1141,11 @@
 
                         // Xử lý hiển thị tên và avatar (cho chat riêng hoặc chat nhóm)
                         let displayName = convo.name || "Conversation";
-                        let displayAvatar = convo.avatarURL || `https://i.pravatar.cc/150?u=group${convoId}`;
+                        let displayAvatar = `https://i.pravatar.cc/150?u=group${convoId}`;
                         let statusClass = '';
-                        let roleInfo = '';
 
                         if (convo.type === 0 && convo.participants && currentUser) {
+                            // Chat 1-1: Dùng ảnh đại diện cá nhân của đối phương
                             const partnerParticipant = convo.participants.find(p => String(p.user.userId) !== String(currentUser.id));
                             if (partnerParticipant) {
                                 const partner = partnerParticipant.user;
@@ -1093,18 +1153,10 @@
                                 displayName = partner.fullName || "Partner";
                                 displayAvatar = partner.avatarURL || `https://i.pravatar.cc/150?u=user${partnerIdStr}`;
                                 if (onlineUsers.has(partnerIdStr)) statusClass = 'online';
-                                
-                                // Hiển thị role nếu có
-                                const roleNames = { 0: 'Admin', 1: 'Member' };
-                                roleInfo = roleNames[partnerParticipant.role] || '';
                             }
-                        } else if (convo.type === 1 && convo.participants) {
-                            // Group chat - hiển thị số thành viên và role của user hiện tại
-                            const currentParticipant = convo.participants.find(p => String(p.user.userId) === String(currentUser.id));
-                            if (currentParticipant) {
-                                const roleNames = { 0: 'Admin', 1: 'Member' };
-                                roleInfo = roleNames[currentParticipant.role] || '';
-                            }
+                        } else if (convo.type === 1 && convo.campaign && convo.campaign.imageUrl) {
+                            // Group chat: Dùng ảnh đại diện của chiến dịch
+                            displayAvatar = convo.campaign.imageUrl;
                         }
 
                         // ✅ LOGIC XỬ LÝ TIN NHẮN CUỐI CÙNG ĐÃ ĐƯỢC GOM LẠI VÀ SỬA LỖI
@@ -1112,21 +1164,49 @@
                         const lastMessage = convo.lastMessage;
 
                         if (lastMessage) {
-                            // Kiểm tra xem người gửi có phải là user hiện tại không để thêm "Bạn: "
-                            const prefix = (currentUser && String(lastMessage.senderId) === String(currentUser.id)) ? "Bạn: " : "";
+                            // Kiểm tra xem người gửi có phải là user hiện tại không
+                            const isCurrentUser = (currentUser && String(lastMessage.senderId) === String(currentUser.id));
+                            
+                            // Lấy tên người gửi nếu không phải user hiện tại
+                            let senderName = "Bạn";
+                            if (!isCurrentUser) {
+                                const senderParticipant = convo.participants?.find(p => String(p.user.userId) === String(lastMessage.senderId));
+                                senderName = senderParticipant?.user?.fullName || senderParticipant?.user?.name || "Người dùng";
+                            }
+                            
+                            const prefix = isCurrentUser ? "Bạn: " : `${senderName}: `;
 
-                            // Kiểm tra nếu tin nhắn là một đường dẫn hình ảnh
-                            const isImg = typeof lastMessage.content === 'string' && lastMessage.content.match(/\.(jpeg|jpg|gif|png)$/i) != null;
-                            // Kiểm tra nếu tin nhắn là URL
-                            const isUrl = typeof lastMessage.content === 'string' && lastMessage.content.match(/^https?:\/\//) != null;
+                            // Kiểm tra nếu tin nhắn là file message (JSON format)
+                            let fileData = null;
+                            try {
+                                if (lastMessage.content && lastMessage.content.startsWith('{')) {
+                                    fileData = JSON.parse(lastMessage.content);
+                                }
+                            } catch (e) {
+                                // Not a JSON message
+                            }
 
-                            // Tạo ra chuỗi hiển thị cuối cùng
-                            if (isImg) {
-                                lastMessageText = `${prefix}[Hình ảnh]`;
-                            } else if (isUrl) {
-                                lastMessageText = `${prefix}[Link]`;
+                            if (fileData && fileData.type) {
+                                // File message
+                                if (fileData.type === 'image') {
+                                    lastMessageText = `${isCurrentUser ? 'Bạn' : senderName} đã gửi hình ảnh`;
+                                } else {
+                                    lastMessageText = `${isCurrentUser ? 'Bạn' : senderName} đã gửi file`;
+                                }
                             } else {
-                                lastMessageText = prefix + (lastMessage.content || "");
+                                // Kiểm tra nếu tin nhắn là một đường dẫn hình ảnh
+                                const isImg = typeof lastMessage.content === 'string' && lastMessage.content.match(/\.(jpeg|jpg|gif|png)$/i) != null;
+                                // Kiểm tra nếu tin nhắn là URL
+                                const isUrl = typeof lastMessage.content === 'string' && lastMessage.content.match(/^https?:\/\//) != null;
+
+                                // Tạo ra chuỗi hiển thị cuối cùng
+                                if (isImg) {
+                                    lastMessageText = `${prefix}[Hình ảnh]`;
+                                } else if (isUrl) {
+                                    lastMessageText = `${prefix}[Link]`;
+                                } else {
+                                    lastMessageText = prefix + (lastMessage.content || "");
+                                }
                             }
                         }
                               const time1 = activeConversationId === convoId && convo.lastMessage?.sentAt
@@ -1157,7 +1237,7 @@
                                 <div class="status-dot ${statusClass}"></div>
                             </div>
                             <div class="conversation-details">
-                                <p class="name">${displayName}${roleInfo ? ` (${roleInfo})` : ''}</p>
+                                <p class="name">${displayName}</p>
                                 <p class="last-message">${lastMessageText}</p>
                                 <p class="last-message">${time1}</p>
                             </div>`;
@@ -1210,7 +1290,7 @@
                 
                 if (messageTypeClass === 'received') {
                     const avatarSrc = message.sender?.avatarURL || `https://i.pravatar.cc/150?u=user${senderId}`;
-                    avatarHtml = `<img src="${avatarSrc}" alt="Avatar" class="sender-avatar">`;
+                    avatarHtml = `<img src="${avatarSrc}" alt="Avatar" class="sender-avatar" onclick="openProfileModal(${senderId})" title="Xem profile">`;
                     
                     // Hiển thị tên và role của người gửi
                     const senderName = message.sender?.fullName || message.sender?.name || 'Unknown';
@@ -1236,8 +1316,37 @@
                 const sanitizedContent = message.content ? message.content.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
                 
                 let messageBubbleContent;
-                if (isImg) {
-                    messageBubbleContent = `<img src="${message.content}" alt="Sent image">`;
+                
+                // Check if message is a file message (JSON format)
+                let fileData = null;
+                try {
+                    if (message.content && message.content.startsWith('{')) {
+                        fileData = JSON.parse(message.content);
+                    }
+                } catch (e) {
+                    // Not a JSON message, treat as regular text
+                }
+
+                if (fileData && fileData.type) {
+                    // This is a file message
+                    if (fileData.type === 'image') {
+                        messageBubbleContent = `
+                            <img src="${fileData.url}" alt="${fileData.name}" style="max-width: 300px; border-radius: 8px; cursor: pointer;" onclick="window.open('${fileData.url}', '_blank')">
+                            <p style="font-size: 0.85rem; margin-top: 5px; color: var(--text-muted);">${fileData.name}</p>
+                        `;
+                    } else {
+                        messageBubbleContent = `
+                            <a href="${fileData.url}" download="${fileData.name}" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-color);">
+                                <i class="fas fa-file" style="font-size: 2rem; color: var(--primary);"></i>
+                                <div>
+                                    <p style="margin: 0; font-weight: 600;">${fileData.name}</p>
+                                    <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Click để tải xuống</p>
+                                </div>
+                            </a>
+                        `;
+                    }
+                } else if (isImg) {
+                    messageBubbleContent = `<img src="${message.content}" alt="Sent image" style="max-width: 300px; border-radius: 8px;">`;
                 } else if (isUrl) {
                     messageBubbleContent = `<p><a href="${message.content}" target="_blank" style="color: var(--primary); text-decoration: underline;">${sanitizedContent}</a></p>`;
                 } else {
@@ -1317,6 +1426,15 @@
 
                 // Đánh dấu đã đọc và tải tin nhắn
                 conversationState.set(convoId.toString(), { currentPage: 1, hasMoreMessages: true, isLoading: false });
+                
+                // ✅ JOIN SIGNALR GROUP - QUAN TRỌNG ĐỂ NHẬN TIN NHẮN REALTIME
+                try {
+                    await connection.invoke("JoinConversation", convoId);
+                    console.log(`✅ Joined SignalR group: ${convoId}`);
+                } catch (err) {
+                    console.error(`❌ Failed to join group ${convoId}:`, err);
+                }
+                
                 await connection.invoke("MarkConversationAsRead", convoId);
 
                 try {
@@ -1380,16 +1498,82 @@
              * Gửi một tin nhắn mới.
              */
             async function handleSendMessage(content) {
-                const trimmedContent = content.trim();
-                if (trimmedContent === '' || !activeConversationId) return;
+                if (!activeConversationId) return;
+
                 try {
-                    // Gọi hàm 'SendMessage' trên Hub
-                    await connection.invoke("SendMessage", activeConversationId, currentUser.id, trimmedContent);
+                    // Nếu có file được chọn, upload file trước
+                    if (selectedFile) {
+                        console.log('Uploading file...', selectedFile.name);
+                        const formData = new FormData();
+                        formData.append('file', selectedFile);
+
+                        const response = await fetch('/Conversations/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (response.ok) {
+                            const fileData = await response.json();
+                            console.log('File uploaded:', fileData);
+                            
+                            // Gửi file message qua SignalR
+                            console.log('Sending file message via SignalR...');
+                            await connection.invoke("SendFileMessage", activeConversationId, currentUser.id, fileData.url, fileData.type, fileData.name);
+                            console.log('File message sent successfully');
+                            
+                            // Reset file selection
+                            selectedFile = null;
+                            filePreview.style.display = 'none';
+                            fileInput.value = '';
+                        } else {
+                            const errorText = await response.text();
+                            console.error('Upload error:', errorText);
+                            alert('Lỗi khi upload file: ' + errorText);
+                            return;
+                        }
+                    }
+
+                    // Gửi text message nếu có
+                    const trimmedContent = content.trim();
+                    if (trimmedContent !== '') {
+                        await connection.invoke("SendMessage", activeConversationId, currentUser.id, trimmedContent);
+                    }
+
                     chatInput.value = '';
-                    chatInput.style.height = 'auto'; // Reset chiều cao của textarea
+                    chatInput.style.height = 'auto';
                 } catch (err) {
                     console.error("Gửi tin nhắn thất bại: ", err);
+                    alert('Lỗi: ' + err.message);
                 }
+            }
+
+            function showFilePreview(file) {
+                const isImage = file.type.startsWith('image/');
+                filePreviewContent.innerHTML = '';
+
+                if (isImage) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        filePreviewContent.innerHTML = `
+                            <img src="${e.target.result}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; flex-shrink: 0;" />
+                            <div style="flex: 1; min-width: 0; overflow: hidden;">
+                                <p style="margin: 0; font-weight: 600; font-size: 0.9rem; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</p>
+                                <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted);">${(file.size / 1024).toFixed(1)} KB</p>
+                            </div>
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    filePreviewContent.innerHTML = `
+                        <i class="fas fa-file" style="font-size: 2rem; color: var(--primary); flex-shrink: 0;"></i>
+                        <div style="flex: 1; min-width: 0; overflow: hidden;">
+                            <p style="margin: 0; font-weight: 600; font-size: 0.9rem; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</p>
+                            <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted);">${(file.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                    `;
+                }
+
+                filePreview.style.display = 'block';
             }
 
             /**
@@ -1409,6 +1593,7 @@
                  * Được gọi khi có một tin nhắn mới được gửi đến từ server.
                  */
                 connection.on("ReceiveMessage", (message) => {
+                    console.log('ReceiveMessage event received:', message);
                     if (!message || !message.conversationId || !message.sender?.id) return;
 
                     const incomingConvoId = message.conversationId.toString();
@@ -1513,11 +1698,12 @@
                 }
 
                 let displayName = convo.name || "Conversation";
-                let displayAvatar = convo.avatarURL || `https://i.pravatar.cc/150?u=group${convoId}`;
+                let displayAvatar = `https://i.pravatar.cc/150?u=group${convoId}`;
                 let membersText = `${convo.participants?.length || 1} thành viên`;
                 let roleInfo = '';
 
                 if (convo.type === 0 && convo.participants && currentUser?.id != null) {
+                    // Chat 1-1: Dùng ảnh đại diện cá nhân của đối phương
                     const partnerParticipant = convo.participants.find(p => String(p.user.userId) !== String(currentUser.id));
                     if (partnerParticipant) {
                         const partner = partnerParticipant.user;
@@ -1529,13 +1715,20 @@
                         const roleNames = { 0: 'Admin', 1: 'Member' };
                         roleInfo = roleNames[partnerParticipant.role] || '';
                     }
-                } else if (convo.type === 1 && convo.participants && currentUser?.id != null) {
-                    // Group chat - hiển thị role của user hiện tại
-                    const currentParticipant = convo.participants.find(p => String(p.user.userId) === String(currentUser.id));
-                    if (currentParticipant) {
-                        const roleNames = { 0: 'Admin', 1: 'Member' };
-                        roleInfo = roleNames[currentParticipant.role] || '';
-                        membersText += roleInfo ? ` • Bạn là ${roleInfo}` : '';
+                } else if (convo.type === 1) {
+                    // Group chat: Dùng ảnh đại diện của chiến dịch
+                    if (convo.campaign && convo.campaign.imageUrl) {
+                        displayAvatar = convo.campaign.imageUrl;
+                    }
+                    
+                    // Hiển thị role của user hiện tại trong group
+                    if (convo.participants && currentUser?.id != null) {
+                        const currentParticipant = convo.participants.find(p => String(p.user.userId) === String(currentUser.id));
+                        if (currentParticipant) {
+                            const roleNames = { 0: 'Admin', 1: 'Member' };
+                            roleInfo = roleNames[currentParticipant.role] || '';
+                            membersText += roleInfo ? ` • Bạn là ${roleInfo}` : '';
+                        }
                     }
                 }
 
@@ -1601,8 +1794,38 @@
                         chatInput.value += event.detail.unicode;
                     });
 
+                    // File upload handlers
+                    imageBtn.addEventListener('click', () => {
+                        fileInput.click();
+                    });
+
+                    fileInput.addEventListener('change', (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                            selectedFile = file;
+                            showFilePreview(file);
+                        }
+                    });
+
+                    removeFileBtn.addEventListener('click', () => {
+                        selectedFile = null;
+                        filePreview.style.display = 'none';
+                        fileInput.value = '';
+                    });
+
                     // 5. Tải dữ liệu ban đầu
                     conversationsCache = await api.getConversations();
+
+                    // ✅ TỰ ĐỘNG JOIN TẤT CẢ CONVERSATIONS ĐỂ NHẬN TIN NHẮN REALTIME
+                    console.log(`🔄 Joining ${conversationsCache.length} conversations...`);
+                    for (const convo of conversationsCache) {
+                        try {
+                            await connection.invoke("JoinConversation", convo.conversationId);
+                            console.log(`✅ Joined conversation ${convo.conversationId}`);
+                        } catch (err) {
+                            console.error(`❌ Failed to join conversation ${convo.conversationId}:`, err);
+                        }
+                    }
 
                     // Lấy danh sách ID của các đối tác chat để kiểm tra trạng thái online
                     const userIdsToCheck = conversationsCache.filter(c => c.type === 0 && c.participants)
@@ -1630,6 +1853,41 @@
 
             // Bắt đầu chạy ứng dụng
             initializeChat();
+        });
+
+        // Profile modal functions (outside DOMContentLoaded for global access)
+        async function openProfileModal(userId) {
+            try {
+                const response = await fetch(`/Conversations/profile/${userId}`);
+                if (!response.ok) {
+                    alert('Không thể tải thông tin người dùng');
+                    return;
+                }
+
+                const profile = await response.json();
+                
+                document.getElementById('profile-modal-avatar').src = profile.avatar || `https://i.pravatar.cc/150?u=user${userId}`;
+                document.getElementById('profile-modal-name').textContent = profile.name || 'Unknown';
+                document.getElementById('profile-modal-email').textContent = profile.email || 'N/A';
+                document.getElementById('profile-modal-wallet').textContent = profile.walletAddress || 'N/A';
+                
+                document.getElementById('profile-modal').classList.add('show');
+            } catch (error) {
+                console.error('Lỗi khi tải profile:', error);
+                alert('Đã xảy ra lỗi khi tải thông tin người dùng');
+            }
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profile-modal').classList.remove('show');
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('profile-modal');
+            if (e.target === modal) {
+                closeProfileModal();
+            }
         });
     </script>
 

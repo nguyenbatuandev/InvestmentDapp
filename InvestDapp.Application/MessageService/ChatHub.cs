@@ -25,6 +25,19 @@ namespace InvestDapp.Application.MessageService
             await _chatService.CreateAndSendMessageAsync(conversationId, userId, content);
         }
 
+        public async Task SendFileMessage(int conversationId, int userId, string fileUrl, string fileType, string fileName)
+        {
+            // Tạo nội dung message dạng JSON để chứa thông tin file
+            var messageContent = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                type = fileType,
+                url = fileUrl,
+                name = fileName
+            });
+            
+            await _chatService.CreateAndSendMessageAsync(conversationId, userId, messageContent);
+        }
+
         public List<string> GetOnlineUsers(List<string> userIds)
         {
             if (userIds == null) return new List<string>();
