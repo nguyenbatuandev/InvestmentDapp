@@ -1,6 +1,5 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+using InvestDapp.Application.AuthService.Admin;
+using InvestDapp.Application.AuthService.Roles;
 using InvestDapp.Application.AuthService.Staff;
 using InvestDapp.Shared.DTOs;
 using InvestDapp.Shared.Enums;
@@ -8,16 +7,17 @@ using InvestDapp.Shared.Security;
 using InvestDapp.ViewModels.AdminRoles;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using Nethereum.Util;
 
 namespace InvestDapp.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [AllowAnonymous] // TEMPORARY: For debugging
-    //[Authorize(Policy = AuthorizationPolicies.RequireSuperAdmin)]
+    [Authorize(Policy = AuthorizationPolicies.RequireSuperAdmin)]
     public class StaffManagementController : Controller
     {
         private readonly IStaffManagementService _staffService;
+        private readonly IRoleManagementService _roleManagementService;
+        private readonly IRoleService _roleService;
         private readonly ILogger<StaffManagementController> _logger;
 
         private static readonly RoleOption[] _availableRoles = new[]
@@ -29,9 +29,9 @@ namespace InvestDapp.Areas.Admin.Controllers
                 Label = "Super Admin",
                 Description = "Toàn quyền hệ thống, quản lý tất cả",
                 Category = "Leadership",
-                RequiresSignature = false,
-                ModeLabel = "Off-chain",
-                ModeDescription = "Lưu trữ trong database"
+                RequiresSignature = true,
+                ModeLabel = "On-chain",
+                ModeDescription = "Ký MetaMask & ghi smart contract"
             },
             new RoleOption
             {
@@ -40,9 +40,9 @@ namespace InvestDapp.Areas.Admin.Controllers
                 Label = "Admin",
                 Description = "Quản trị viên, phê duyệt KYC/Campaign",
                 Category = "Leadership",
-                RequiresSignature = false,
-                ModeLabel = "Off-chain",
-                ModeDescription = "Lưu trữ trong database"
+                RequiresSignature = true,
+                ModeLabel = "On-chain",
+                ModeDescription = "Ký MetaMask & ghi smart contract"
             },
             new RoleOption
             {
@@ -81,9 +81,13 @@ namespace InvestDapp.Areas.Admin.Controllers
 
         public StaffManagementController(
             IStaffManagementService staffService,
+            IRoleManagementService roleManagementService,
+            IRoleService roleService,
             ILogger<StaffManagementController> logger)
         {
             _staffService = staffService;
+            _roleManagementService = roleManagementService;
+            _roleService = roleService;
             _logger = logger;
         }
 
@@ -183,11 +187,87 @@ namespace InvestDapp.Areas.Admin.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> GrantRole(int staffId, RoleType role)
+        public async Task<IActionResult> GrantRole(
+            int staffId, 
+            RoleType role, 
+            bool alreadySigned = false, 
+            string? transactionHash = null)
         {
             var currentWallet = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "system";
 
-            var (isSuccess, message) = await _staffService.GrantRoleAsync(staffId, role, currentWallet);
+            // Get staff to retrieve wallet address
+            var staff = await _staffService.GetStaffByIdAsync(staffId);
+            if (staff == null)
+            {
+                return RedirectToAction(nameof(Index), new
+                {
+                    message = "Không tìm thấy nhân viên",
+                    success = false
+                });
+            }
+
+            // Check if role requires on-chain signature
+            var roleOption = _availableRoles.FirstOrDefault(r => r.Role == role);
+            bool requiresSignature = roleOption?.RequiresSignature ?? false;
+
+            string message;
+            bool isSuccess;
+
+            if (requiresSignature)
+            {
+                if (alreadySigned)
+                {
+                    // CLIENT ALREADY SIGNED - Just update database
+                    _logger.LogInformation("Client-side signature completed for {Role}, updating database only. Tx: {TxHash}", 
+                        role, transactionHash ?? "unknown");
+                    
+                    var normalizedWallet = new AddressUtil().ConvertToChecksumAddress(staff.WalletAddress);
+                    _roleService.InvalidateRoleCache(normalizedWallet);
+                    
+                    var (dbSuccess, dbMessage) = await _staffService.GrantRoleAsync(staffId, role, currentWallet);
+                    
+                    message = dbSuccess 
+                        ? $"✅ Đã cấp quyền {roleOption?.Label} (on-chain) cho {staff.Name}. Tx: {transactionHash}"
+                        : $"⚠️ Blockchain thành công nhưng database lỗi: {dbMessage}";
+                    isSuccess = dbSuccess;
+                }
+                else
+                {
+                    // SERVER-SIDE SIGNING (fallback)
+                    _logger.LogInformation("Server-side on-chain grant: Role {Role} for wallet {Wallet}", role, staff.WalletAddress);
+                    
+                    var normalizedWallet = new AddressUtil().ConvertToChecksumAddress(staff.WalletAddress);
+                    var blockchainResult = await _roleManagementService.GrantRoleAsync(role, normalizedWallet, CancellationToken.None);
+                    
+                    if (!blockchainResult.Success)
+                    {
+                        message = blockchainResult.Error ?? "Không thể cấp quyền on-chain";
+                        isSuccess = false;
+                    }
+                    else
+                    {
+                        // Invalidate cache and grant in database
+                        _roleService.InvalidateRoleCache(normalizedWallet);
+                        var (dbSuccess, dbMessage) = await _staffService.GrantRoleAsync(staffId, role, currentWallet);
+                        
+                        message = dbSuccess 
+                            ? $"Đã cấp quyền {roleOption?.Label} (on-chain) cho {staff.Name}. Tx: {blockchainResult.TransactionHash}"
+                            : $"Blockchain thành công nhưng database lỗi: {dbMessage}";
+                        isSuccess = dbSuccess;
+                    }
+                }
+            }
+            else
+            {
+                // OFF-CHAIN: Only database
+                _logger.LogInformation("Off-chain grant: Role {Role} for staff {StaffId}", role, staffId);
+                (isSuccess, message) = await _staffService.GrantRoleAsync(staffId, role, currentWallet);
+                
+                if (isSuccess)
+                {
+                    message = $"Đã cấp quyền {roleOption?.Label} (off-chain) cho {staff.Name}";
+                }
+            }
 
             if (isSuccess)
             {
@@ -208,9 +288,55 @@ namespace InvestDapp.Areas.Admin.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> RevokeRole(int staffId, RoleType role)
+        public async Task<IActionResult> RevokeRole(
+            int staffId, 
+            RoleType role,
+            bool alreadySigned = false,
+            string? transactionHash = null)
         {
-            var (isSuccess, message) = await _staffService.RevokeRoleAsync(staffId, role);
+            // Get staff to check if role is on-chain
+            var staff = await _staffService.GetStaffByIdAsync(staffId);
+            if (staff == null)
+            {
+                return RedirectToAction(nameof(Index), new
+                {
+                    message = "Không tìm thấy nhân viên",
+                    success = false
+                });
+            }
+
+            var roleOption = _availableRoles.FirstOrDefault(r => r.Role == role);
+            bool requiresSignature = roleOption?.RequiresSignature ?? false;
+
+            string message;
+            bool isSuccess;
+
+            if (requiresSignature && alreadySigned)
+            {
+                // CLIENT ALREADY SIGNED - Just update database
+                _logger.LogInformation("Client-side revoke completed for {Role}, updating database only. Tx: {TxHash}", 
+                    role, transactionHash ?? "unknown");
+                
+                var normalizedWallet = new AddressUtil().ConvertToChecksumAddress(staff.WalletAddress);
+                _roleService.InvalidateRoleCache(normalizedWallet);
+                
+                (isSuccess, message) = await _staffService.RevokeRoleAsync(staffId, role);
+                
+                if (isSuccess)
+                {
+                    message = $"✅ Đã thu hồi quyền {roleOption?.Label} (on-chain) từ {staff.Name}. Tx: {transactionHash}";
+                }
+            }
+            else
+            {
+                // OFF-CHAIN or SERVER-SIDE
+                (isSuccess, message) = await _staffService.RevokeRoleAsync(staffId, role);
+                
+                if (isSuccess && roleOption != null)
+                {
+                    message = $"Đã thu hồi quyền {roleOption.Label} ({roleOption.ModeLabel}) từ {staff.Name}";
+                }
+            }
 
             if (isSuccess)
             {

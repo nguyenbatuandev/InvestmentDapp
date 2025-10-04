@@ -5,82 +5,109 @@
 }
 
 <style>
-    .staff-management-container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 20px;
-        margin-left: 280px; /* Space for sidebar */
-        transition: margin-left 0.3s ease;
+    * {
+        box-sizing: border-box;
     }
 
-    /* Responsive: When sidebar collapses */
+    .staff-management-container {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 30px;
+        margin-left: 280px;
+        transition: margin-left 0.3s ease;
+        background: #f8fafc;
+        min-height: 100vh;
+    }
+
     @@media (max-width: 991px) {
         .staff-management-container {
             margin-left: 0;
+            padding: 20px;
         }
     }
 
+    /* ===== HEADER ===== */
     .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 30px;
-        padding-bottom: 20px;
-        border-bottom: 2px solid #e5e7eb;
+        background: #667eea;
+        padding: 24px 32px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
     .page-header h1 {
         font-size: 28px;
         font-weight: 700;
-        color: #111827;
+        color: white;
         margin: 0;
-    }
-
-    .alert {
-        padding: 16px 20px;
-        border-radius: 8px;
-        margin-bottom: 24px;
-        font-weight: 500;
         display: flex;
         align-items: center;
         gap: 12px;
     }
 
+    .page-header h1 ion-icon {
+        font-size: 32px;
+    }
+
+    /* ===== ALERTS ===== */
+    .alert {
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .alert ion-icon {
+        font-size: 24px;
+    }
+
     .alert-success {
-        background: #d1fae5;
-        border: 1px solid #6ee7b7;
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        border: 2px solid #6ee7b7;
         color: #065f46;
     }
 
     .alert-error {
-        background: #fee2e2;
-        border: 1px solid #fca5a5;
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        border: 2px solid #fca5a5;
         color: #991b1b;
     }
 
+    /* ===== CREATE STAFF CARD ===== */
     .create-staff-card {
         background: white;
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         margin-bottom: 30px;
+        border: 1px solid #e5e7eb;
     }
 
     .create-staff-card h2 {
-        font-size: 20px;
-        font-weight: 600;
+        font-size: 24px;
+        font-weight: 700;
         color: #111827;
-        margin: 0 0 20px 0;
+        margin: 0 0 24px 0;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid #f3f4f6;
+    }
+
+    .create-staff-card h2 ion-icon {
+        font-size: 28px;
+        color: #667eea;
     }
 
     .form-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 20px;
-        margin-bottom: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        margin-bottom: 24px;
     }
 
     .form-group {
@@ -91,214 +118,377 @@
     .form-group label {
         font-weight: 600;
         color: #374151;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
         font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }
 
     .form-group label .required {
         color: #dc2626;
+        font-size: 18px;
     }
 
     .form-control {
-        padding: 10px 14px;
-        border: 1px solid #d1d5db;
-        border-radius: 6px;
-        font-size: 14px;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 15px;
         transition: all 0.2s;
+        background: #f9fafb;
+    }
+
+    .form-control:hover {
+        border-color: #cbd5e1;
+        background: white;
     }
 
     .form-control:focus {
         outline: none;
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        background: white;
     }
 
     .btn-create {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        padding: 12px 32px;
+        padding: 14px 36px;
         border: none;
-        border-radius: 6px;
+        border-radius: 10px;
         font-weight: 600;
+        font-size: 15px;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.3s;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
     }
 
     .btn-create:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
     }
 
+    .btn-create ion-icon {
+        font-size: 20px;
+    }
+
+    /* ===== STAFF LIST CARD ===== */
     .staff-list-card {
         background: white;
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid #e5e7eb;
     }
 
     .staff-list-card h2 {
-        font-size: 20px;
-        font-weight: 600;
+        font-size: 24px;
+        font-weight: 700;
         color: #111827;
-        margin: 0 0 20px 0;
+        margin: 0 0 24px 0;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid #f3f4f6;
+    }
+
+    .staff-list-card h2 ion-icon {
+        font-size: 28px;
+        color: #667eea;
     }
 
     .staff-table {
         width: 100%;
-        border-collapse: collapse;
+        border-collapse: separate;
+        border-spacing: 0 12px;
     }
 
-    .staff-table thead {
+    .staff-table thead th {
+        padding: 16px;
+        text-align: left;
+        font-weight: 700;
+        color: #6b7280;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
         background: #f9fafb;
         border-bottom: 2px solid #e5e7eb;
     }
 
-    .staff-table th {
-        padding: 12px 16px;
-        text-align: left;
-        font-weight: 600;
-        color: #374151;
-        font-size: 14px;
+    .staff-table thead th:first-child {
+        border-radius: 8px 0 0 8px;
+    }
+
+    .staff-table thead th:last-child {
+        border-radius: 0 8px 8px 0;
+    }
+
+    .staff-table tbody tr {
+        background: white;
+        transition: all 0.2s;
+    }
+
+    .staff-table tbody tr:hover {
+        background: #f9fafb;
+        transform: translateX(4px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
 
     .staff-table td {
-        padding: 16px;
-        border-bottom: 1px solid #e5e7eb;
+        padding: 20px 16px;
         font-size: 14px;
+        border-top: 1px solid #f3f4f6;
+        border-bottom: 1px solid #f3f4f6;
     }
 
-    .staff-table tr:hover {
-        background: #f9fafb;
+    .staff-table td:first-child {
+        border-left: 1px solid #f3f4f6;
+        border-radius: 8px 0 0 8px;
+    }
+
+    .staff-table td:last-child {
+        border-right: 1px solid #f3f4f6;
+        border-radius: 0 8px 8px 0;
     }
 
     .staff-info {
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 6px;
     }
 
     .staff-name {
-        font-weight: 600;
+        font-weight: 700;
         color: #111827;
+        font-size: 15px;
     }
 
     .staff-email {
         color: #6b7280;
         font-size: 13px;
-    }
-
-    .staff-wallet {
-        color: #3b82f6;
-        font-family: 'Courier New', monospace;
-        font-size: 12px;
-    }
-
-    .role-badges {
         display: flex;
-        flex-wrap: wrap;
+        align-items: center;
         gap: 6px;
     }
 
-    .role-badge {
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
+    .staff-email ion-icon {
+        font-size: 16px;
     }
 
-    .role-badge.superadmin { background: #fef3c7; color: #92400e; }
-    .role-badge.admin { background: #dbeafe; color: #1e40af; }
-    .role-badge.moderator { background: #e0e7ff; color: #3730a3; }
-    .role-badge.supportagent { background: #d1fae5; color: #065f46; }
-    .role-badge.fundraiser { background: #fce7f3; color: #9f1239; }
+    .staff-wallet {
+        color: #667eea;
+        font-family: 'Monaco', 'Courier New', monospace;
+        font-size: 12px;
+        background: #f3f4f6;
+        padding: 4px 8px;
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    /* ===== ROLE BADGES ===== */
+    .role-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .role-badge {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .role-badge ion-icon {
+        font-size: 16px;
+    }
+
+    .role-badge.superadmin { 
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); 
+        color: #92400e;
+        border: 2px solid #fbbf24;
+    }
+
+    .role-badge.admin { 
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); 
+        color: #1e40af;
+        border: 2px solid #3b82f6;
+    }
+
+    .role-badge.moderator { 
+        background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); 
+        color: #3730a3;
+        border: 2px solid #6366f1;
+    }
+
+    .role-badge.supportagent { 
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); 
+        color: #065f46;
+        border: 2px solid #10b981;
+    }
+
+    .role-badge.fundraiser { 
+        background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%); 
+        color: #9f1239;
+        border: 2px solid #ec4899;
+    }
 
     .no-roles {
         color: #9ca3af;
         font-style: italic;
         font-size: 13px;
+        padding: 4px 12px;
+        background: #f3f4f6;
+        border-radius: 6px;
+        display: inline-block;
     }
 
+    /* ===== STATUS BADGE ===== */
     .status-badge {
-        padding: 4px 12px;
-        border-radius: 12px;
+        padding: 6px 14px;
+        border-radius: 20px;
         font-size: 12px;
-        font-weight: 600;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .status-badge.active {
-        background: #d1fae5;
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
         color: #065f46;
+        border: 2px solid #10b981;
     }
 
     .status-badge.inactive {
-        background: #fee2e2;
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
         color: #991b1b;
+        border: 2px solid #ef4444;
     }
 
+    /* ===== ACTION BUTTONS ===== */
     .action-buttons {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
+        position: relative;
+        display: inline-block;
     }
 
     .btn {
-        padding: 6px 14px;
+        padding: 8px 16px;
         border-radius: 6px;
         font-size: 13px;
         font-weight: 500;
         border: none;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.15s;
         display: inline-flex;
         align-items: center;
-        gap: 4px;
-    }
-
-    .btn-grant {
-        background: #dbeafe;
-        color: #1e40af;
-    }
-
-    .btn-grant:hover {
-        background: #bfdbfe;
-    }
-
-    .btn-revoke {
-        background: #fee2e2;
-        color: #991b1b;
-    }
-
-    .btn-revoke:hover {
-        background: #fecaca;
-    }
-
-    .btn-toggle {
-        background: #f3f4f6;
+        gap: 6px;
+        background: white;
+        border: 1px solid #d1d5db;
         color: #374151;
     }
 
-    .btn-toggle:hover {
+    .btn:hover {
+        background: #f9fafb;
+        border-color: #9ca3af;
+    }
+
+    .btn ion-icon {
+        font-size: 18px;
+    }
+
+    .btn-actions {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+
+    .btn-actions:hover {
+        background: #5568d3;
+    }
+
+    .btn-grant {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .btn-grant:hover {
+        background: #2563eb;
+    }
+
+    /* Dropdown Menu */
+    .dropdown-menu {
+        position: absolute;
+        bottom: 100%;
+        right: 0;
+        margin-bottom: 8px;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+        min-width: 180px;
+        display: none;
+        z-index: 1000;
+    }
+
+    .dropdown-menu.show {
+        display: block;
+    }
+
+    .dropdown-item {
+        padding: 10px 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #374151;
+        font-size: 14px;
+        transition: background 0.15s;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+    }
+
+    .dropdown-item:hover {
+        background: #f3f4f6;
+    }
+
+    .dropdown-item ion-icon {
+        font-size: 18px;
+    }
+
+    .dropdown-item.revoke {
+        color: #f59e0b;
+    }
+
+    .dropdown-item.toggle {
+        color: #6b7280;
+    }
+
+    .dropdown-item.delete {
+        color: #ef4444;
+    }
+
+    .dropdown-divider {
+        height: 1px;
         background: #e5e7eb;
+        margin: 4px 0;
     }
 
-    .btn-delete {
-        background: #fee2e2;
-        color: #991b1b;
-    }
-
-    .btn-delete:hover {
-        background: #fecaca;
-    }
-
+    /* ===== MODALS ===== */
     .modal {
         display: none;
         position: fixed;
@@ -307,7 +497,7 @@
         width: 100%;
         height: 100%;
         background: rgba(0,0,0,0.5);
-        z-index: 1000;
+        z-index: 10000;
         align-items: center;
         justify-content: center;
     }
@@ -324,6 +514,7 @@
         width: 90%;
         max-height: 80vh;
         overflow-y: auto;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
     }
 
     .modal-header {
@@ -331,6 +522,8 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e5e7eb;
     }
 
     .modal-header h3 {
@@ -338,6 +531,14 @@
         font-size: 18px;
         font-weight: 600;
         color: #111827;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .modal-header h3 ion-icon {
+        color: #667eea;
+        font-size: 22px;
     }
 
     .modal-close {
@@ -345,7 +546,7 @@
         border: none;
         font-size: 24px;
         cursor: pointer;
-        color: #6b7280;
+        color: #9ca3af;
         padding: 0;
         width: 32px;
         height: 32px;
@@ -353,87 +554,324 @@
         align-items: center;
         justify-content: center;
         border-radius: 6px;
+        transition: all 0.15s;
     }
 
     .modal-close:hover {
         background: #f3f4f6;
+        color: #374151;
     }
 
+    .modal-body {
+        margin: 24px 0;
+    }
+
+    .modal-body label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #374151;
+        font-size: 14px;
+    }
+
+    .modal-body .form-control {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+
+    .modal-body .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    /* ===== ROLE OPTIONS ===== */
     .role-options {
         display: flex;
         flex-direction: column;
         gap: 12px;
+        margin-top: 16px;
     }
 
     .role-option {
-        padding: 12px;
-        border: 2px solid #e5e7eb;
+        padding: 16px;
+        border: 1px solid #e5e7eb;
         border-radius: 8px;
         cursor: pointer;
         transition: all 0.2s;
+        background: white;
+        position: relative;
     }
 
     .role-option:hover {
-        border-color: #3b82f6;
-        background: #f0f9ff;
+        border-color: #667eea;
+        background: #f9fafb;
     }
 
     .role-option.selected {
-        border-color: #3b82f6;
-        background: #dbeafe;
+        border-color: #667eea;
+        background: #eff6ff;
     }
 
     .role-option input[type="radio"] {
-        margin-right: 10px;
+        position: absolute;
+        opacity: 0;
+    }
+
+    .role-option-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+
+    .role-option-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .role-option-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .role-option-icon.superadmin {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .role-option-icon.admin {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .role-option-icon.moderator {
+        background: #e0e7ff;
+        color: #3730a3;
+    }
+
+    .role-option-icon.supportagent {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .role-option-icon.fundraiser {
+        background: #fce7f3;
+        color: #9f1239;
     }
 
     .role-option-label {
-        font-weight: 600;
+        font-weight: 700;
         color: #111827;
+        font-size: 16px;
+        margin-bottom: 2px;
+    }
+
+    .role-mode-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .role-mode-badge.onchain {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .role-mode-badge.offchain {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .role-mode-badge ion-icon {
+        font-size: 14px;
     }
 
     .role-option-desc {
         font-size: 13px;
         color: #6b7280;
-        margin-top: 4px;
+        line-height: 1.6;
+        margin-top: 8px;
+        padding-left: 56px; /* Align with icon */
     }
 
+    .role-option-permissions {
+        margin-top: 12px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 8px;
+        padding-left: 56px;
+    }
+
+    .role-option-permissions ul {
+        margin: 0;
+        padding-left: 20px;
+        font-size: 12px;
+        color: #4b5563;
+        line-height: 1.8;
+    }
+
+    .role-option-permissions li {
+        position: relative;
+    }
+
+    .role-option-permissions li::marker {
+        color: #667eea;
+    }
+
+    /* ===== MODAL FOOTER ===== */
     .modal-footer {
-        margin-top: 20px;
+        margin-top: 28px;
         display: flex;
         justify-content: flex-end;
         gap: 12px;
+        padding-top: 20px;
+        border-top: 2px solid #f3f4f6;
     }
 
     .btn-cancel {
         background: #f3f4f6;
         color: #374151;
+        border: 2px solid #e5e7eb;
     }
 
     .btn-cancel:hover {
         background: #e5e7eb;
+        transform: translateY(-2px);
     }
 
     .btn-confirm {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
+        border: 2px solid #667eea;
+        padding: 10px 24px;
     }
 
     .btn-confirm:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
     }
 
+    /* ===== EMPTY STATE ===== */
     .empty-state {
         text-align: center;
         padding: 60px 20px;
-        color: #6b7280;
+        color: #9ca3af;
     }
 
     .empty-state ion-icon {
         font-size: 64px;
         color: #d1d5db;
         margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #6b7280;
+        margin: 0 0 8px 0;
+    }
+
+    .empty-state p {
+        font-size: 14px;
+        margin: 0;
+    }
+
+    /* ===== UNIFIED LOADING SPINNER ===== */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999;
+    }
+
+    .loading-content {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        text-align: center;
+        min-width: 300px;
+    }
+
+    .spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid #f3f4f6;
+        border-top-color: #667eea;
+        border-radius: 50%;
+        margin: 0 auto 16px;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @@keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .loading-content h3 {
+        margin: 0 0 8px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #111827;
+    }
+
+    .loading-content p {
+        margin: 0;
+        color: #6b7280;
+        font-size: 13px;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @@media (max-width: 768px) {
+        .page-header h1 {
+            font-size: 24px;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .modal-content {
+            padding: 20px;
+            width: 95%;
+        }
+
+        .role-option-desc,
+        .role-option-permissions {
+            padding-left: 0;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
     }
 </style>
 
@@ -593,34 +1031,44 @@
                             </td>
                             <td>
                                 <div class="action-buttons">
-                                    <button class="btn btn-grant" onclick="openGrantModal(@staff.Id, '@staff.Name')">
-                                        <ion-icon name="add"></ion-icon>
-                                        Cấp quyền
+                                    <button class="btn btn-actions" onclick="toggleDropdown(this, event)">
+                                        <ion-icon name="ellipsis-horizontal"></ion-icon>
+                                        Thao tác
                                     </button>
-                                    
-                                    @if (staff.Roles.Any())
-                                    {
-                                        <button class="btn btn-revoke" onclick="openRevokeModal(@staff.Id, '@staff.Name')">
-                                            <ion-icon name="remove"></ion-icon>
-                                            Thu hồi
+                                    <div class="dropdown-menu">
+                                        <button class="dropdown-item" onclick="openGrantModal(@staff.Id, '@staff.Name', '@staff.WalletAddress'); closeAllDropdowns();">
+                                            <ion-icon name="add-circle-outline"></ion-icon>
+                                            Cấp quyền
                                         </button>
-                                    }
+                                        
+                                        @if (staff.Roles.Any())
+                                        {
+                                            <button class="dropdown-item revoke" onclick="openRevokeModal(@staff.Id, '@staff.Name'); closeAllDropdowns();">
+                                                <ion-icon name="remove-circle-outline"></ion-icon>
+                                                Thu hồi quyền
+                                            </button>
+                                        }
+                                        
+                                        <div class="dropdown-divider"></div>
 
-                                    <form action="/admin/StaffManagement/ToggleStatus" method="post" style="display: inline;">
-                                        <input type="hidden" name="staffId" value="@staff.Id" />
-                                        <button type="submit" class="btn btn-toggle">
-                                            <ion-icon name="@(staff.IsActive ? "pause" : "play")-outline"></ion-icon>
-                                            @(staff.IsActive ? "Vô hiệu hóa" : "Kích hoạt")
-                                        </button>
-                                    </form>
+                                        <form action="/admin/StaffManagement/ToggleStatus" method="post" style="margin: 0;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="staffId" value="@staff.Id" />
+                                            <button type="submit" class="dropdown-item toggle">
+                                                <ion-icon name="@(staff.IsActive ? "pause" : "play")-outline"></ion-icon>
+                                                @(staff.IsActive ? "Vô hiệu hóa" : "Kích hoạt")
+                                            </button>
+                                        </form>
 
-                                    <form action="/admin/StaffManagement/Delete" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc muốn xóa nhân viên này?')">
-                                        <input type="hidden" name="staffId" value="@staff.Id" />
-                                        <button type="submit" class="btn btn-delete">
-                                            <ion-icon name="trash-outline"></ion-icon>
-                                            Xóa
-                                        </button>
-                                    </form>
+                                        <form action="/admin/StaffManagement/Delete" method="post" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xóa nhân viên này?')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="staffId" value="@staff.Id" />
+                                            <button type="submit" class="dropdown-item delete">
+                                                <ion-icon name="trash-outline"></ion-icon>
+                                                Xóa nhân viên
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -646,28 +1094,105 @@
             <button class="modal-close" onclick="closeGrantModal()">×</button>
         </div>
         
-        <form action="/admin/StaffManagement/GrantRole" method="post">
+        <form action="/admin/StaffManagement/GrantRole" method="post" class="staff-role-form" data-role-action="grant">
             @Html.AntiForgeryToken()
             <input type="hidden" name="staffId" id="grantStaffId" />
+            <input type="hidden" name="walletAddress" id="grantWalletAddress" />
+            <input type="hidden" name="alreadySigned" id="grantAlreadySigned" value="false" />
+            <input type="hidden" name="transactionHash" id="grantTransactionHash" value="" />
             
             <div class="role-options">
                 @foreach (var roleOption in Model.AvailableRoles)
                 {
+                    var roleClass = roleOption.Value.ToString().ToLower();
+                    var icon = roleOption.Value.ToString() switch {
+                        "SuperAdmin" => "shield-checkmark",
+                        "Admin" => "settings",
+                        "Moderator" => "eye",
+                        "SupportAgent" => "headset",
+                        "Fundraiser" => "wallet",
+                        _ => "person"
+                    };
+                    var permissions = roleOption.Value.ToString() switch {
+                        "SuperAdmin" => new[] {
+                            "Toàn quyền quản trị hệ thống",
+                            "Quản lý tất cả nhân viên và phân quyền",
+                            "Cấu hình hệ thống và smart contract",
+                            "Truy cập mọi chức năng quản trị"
+                        },
+                        "Admin" => new[] {
+                            "Phê duyệt KYC và chiến dịch",
+                            "Quản lý người dùng và ví",
+                            "Xem báo cáo và phân tích",
+                            "Quản lý nội dung và tin tức"
+                        },
+                        "Moderator" => new[] {
+                            "Kiểm duyệt nội dung và bình luận",
+                            "Xử lý báo cáo vi phạm",
+                            "Quản lý danh sách đen/trắng",
+                            "Xem thống kê người dùng"
+                        },
+                        "SupportAgent" => new[] {
+                            "Xử lý yêu cầu hỗ trợ khách hàng",
+                            "Trả lời tin nhắn và tickets",
+                            "Xem thông tin người dùng cơ bản",
+                            "Ghi chú lịch sử hỗ trợ"
+                        },
+                        "Fundraiser" => new[] {
+                            "Tạo và chỉnh sửa chiến dịch gây quỹ",
+                            "Quản lý thông tin dự án",
+                            "Xem báo cáo đóng góp",
+                            "Cập nhật tiến độ chiến dịch"
+                        },
+                        _ => new string[] { }
+                    };
+
                     <label class="role-option">
-                        <input type="radio" name="role" value="@roleOption.Value" required />
-                        <div>
-                            <div class="role-option-label">@roleOption.Label</div>
-                            <div class="role-option-desc">@roleOption.Description</div>
+                        <input type="radio" 
+                               name="role" 
+                               value="@roleOption.Value" 
+                               data-requires-signature="@roleOption.RequiresSignature.ToString().ToLower()"
+                               data-role-label="@roleOption.Label"
+                               data-mode-label="@roleOption.ModeLabel"
+                               required />
+                        <div class="role-option-header">
+                            <div class="role-option-title">
+                                <div class="role-option-icon @roleClass">
+                                    <ion-icon name="@icon"></ion-icon>
+                                </div>
+                                <div>
+                                    <div class="role-option-label">@roleOption.Label</div>
+                                    <span class="role-mode-badge @(roleOption.RequiresSignature ? "onchain" : "offchain")">
+                                        <ion-icon name="@(roleOption.RequiresSignature ? "link" : "save")"></ion-icon>
+                                        @roleOption.ModeLabel
+                                    </span>
+                                </div>
+                            </div>
                         </div>
+                        <div class="role-option-desc">@roleOption.Description</div>
+                        @if (permissions.Length > 0)
+                        {
+                            <div class="role-option-permissions">
+                                <ul>
+                                    @foreach (var permission in permissions)
+                                    {
+                                        <li>@permission</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
                     </label>
                 }
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-cancel" onclick="closeGrantModal()">Hủy</button>
+                <button type="button" class="btn btn-cancel" onclick="closeGrantModal()">
+                    <ion-icon name="close"></ion-icon>
+                    Hủy
+                </button>
                 <button type="submit" class="btn btn-confirm">
-                    <ion-icon name="checkmark"></ion-icon>
-                    Xác nhận
+                    <ion-icon name="checkmark-circle"></ion-icon>
+                    Xác nhận cấp quyền
                 </button>
             </div>
         </form>
@@ -678,23 +1203,32 @@
 <div id="revokeModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Thu hồi quyền từ <span id="revokeStaffName"></span></h3>
+            <h3>
+                <ion-icon name="remove-circle-outline"></ion-icon>
+                Thu hồi quyền từ <span id="revokeStaffName"></span>
+            </h3>
             <button class="modal-close" onclick="closeRevokeModal()">×</button>
         </div>
         
-        <form action="/admin/StaffManagement/RevokeRole" method="post">
+        <form action="/admin/StaffManagement/RevokeRole" method="post" class="staff-role-form" data-role-action="revoke">
             @Html.AntiForgeryToken()
             <input type="hidden" name="staffId" id="revokeStaffId" />
+            <input type="hidden" name="walletAddress" id="revokeWalletAddress" />
+            <input type="hidden" name="alreadySigned" id="revokeAlreadySigned" value="false" />
+            <input type="hidden" name="transactionHash" id="revokeTransactionHash" value="" />
             
             <div class="role-options" id="revokeRoleOptions">
                 <!-- Will be populated dynamically -->
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-cancel" onclick="closeRevokeModal()">Hủy</button>
-                <button type="submit" class="btn btn-confirm">
-                    <ion-icon name="checkmark"></ion-icon>
-                    Xác nhận
+                <button type="button" class="btn btn-cancel" onclick="closeRevokeModal()">
+                    <ion-icon name="close"></ion-icon>
+                    Hủy
+                </button>
+                <button type="submit" class="btn btn-confirm btn-revoke">
+                    <ion-icon name="trash"></ion-icon>
+                    Xác nhận thu hồi
                 </button>
             </div>
         </form>
@@ -704,7 +1238,8 @@
 <script>
     const staffData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StaffList.Select(s => new { 
         id = s.Id, 
-        name = s.Name, 
+        name = s.Name,
+        walletAddress = s.WalletAddress,
         roles = s.Roles.Select(r => new { 
             value = r.ToString(), 
             label = r.ToString() switch {
@@ -714,13 +1249,16 @@
                 "SupportAgent" => "Support Agent",
                 "Fundraiser" => "Fundraiser",
                 _ => r.ToString()
-            }
+            },
+            requiresSignature = (r.ToString() == "SuperAdmin" || r.ToString() == "Admin"),
+            modeLabel = (r.ToString() == "SuperAdmin" || r.ToString() == "Admin") ? "On-chain" : "Off-chain"
         }).ToList() 
     })));
 
-    function openGrantModal(staffId, staffName) {
+    function openGrantModal(staffId, staffName, staffWallet) {
         document.getElementById('grantStaffId').value = staffId;
         document.getElementById('grantStaffName').textContent = staffName;
+        document.getElementById('grantWalletAddress').value = staffWallet || '';
         document.getElementById('grantModal').classList.add('show');
     }
 
@@ -734,16 +1272,45 @@
 
         document.getElementById('revokeStaffId').value = staffId;
         document.getElementById('revokeStaffName').textContent = staffName;
+        document.getElementById('revokeWalletAddress').value = staff.walletAddress || '';
+
+        const roleInfo = {
+            'SuperAdmin': { icon: 'shield-checkmark', class: 'superadmin' },
+            'Admin': { icon: 'settings', class: 'admin' },
+            'Moderator': { icon: 'eye', class: 'moderator' },
+            'SupportAgent': { icon: 'headset', class: 'supportagent' },
+            'Fundraiser': { icon: 'wallet', class: 'fundraiser' }
+        };
 
         const container = document.getElementById('revokeRoleOptions');
-        container.innerHTML = staff.roles.map(role => `
-            <label class="role-option">
-                <input type="radio" name="role" value="${role.value}" required />
-                <div>
-                    <div class="role-option-label">${role.label}</div>
-                </div>
-            </label>
-        `).join('');
+        container.innerHTML = staff.roles.map(role => {
+            const info = roleInfo[role.value] || { icon: 'person', class: '' };
+            return `
+                <label class="role-option">
+                    <input type="radio" 
+                           name="role" 
+                           value="${role.value}" 
+                           data-requires-signature="${role.requiresSignature || 'false'}"
+                           data-role-label="${role.label}"
+                           data-mode-label="${role.modeLabel || 'Off-chain'}"
+                           required />
+                    <div class="role-option-header">
+                        <div class="role-option-title">
+                            <div class="role-option-icon ${info.class}">
+                                <ion-icon name="${info.icon}"></ion-icon>
+                            </div>
+                            <div>
+                                <div class="role-option-label">${role.label}</div>
+                                <span class="role-mode-badge ${role.requiresSignature ? 'onchain' : 'offchain'}">
+                                    <ion-icon name="${role.requiresSignature ? 'link' : 'save'}"></ion-icon>
+                                    ${role.modeLabel || 'Off-chain'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </label>
+            `;
+        }).join('');
 
         document.getElementById('revokeModal').classList.add('show');
     }
@@ -769,4 +1336,64 @@
             this.querySelector('input[type="radio"]').checked = true;
         });
     });
+
+    // Dropdown menu functionality
+    function toggleDropdown(button, event) {
+        event.stopPropagation();
+        const dropdown = button.nextElementSibling;
+        const isOpen = dropdown.classList.contains('show');
+        
+        // Close all dropdowns
+        closeAllDropdowns();
+        
+        // Toggle current dropdown
+        if (!isOpen) {
+            dropdown.classList.add('show');
+        }
+    }
+
+    function closeAllDropdowns() {
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            menu.classList.remove('show');
+        });
+    }
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.action-buttons')) {
+            closeAllDropdowns();
+        }
+    });
+
+    // Unified loading spinner
+    function showLoading(message) {
+        const overlay = document.createElement('div');
+        overlay.className = 'loading-overlay';
+        overlay.innerHTML = `
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <h3>Đang xử lý...</h3>
+                <p>${message || 'Vui lòng đợi'}</p>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+
+    function hideLoading() {
+        const overlay = document.querySelector('.loading-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+
+    // Show loading on form submissions
+    document.querySelectorAll('form[action*="ToggleStatus"], form[action*="Delete"]').forEach(form => {
+        form.addEventListener('submit', function() {
+            const action = this.action.includes('ToggleStatus') ? 'Đang cập nhật trạng thái...' : 'Đang xóa nhân viên...';
+            showLoading(action);
+        });
+    });
 </script>
+
+<script src="~/js/contract-config.js"></script>
+<script src="~/js/staff-management-roles.js"></script>
