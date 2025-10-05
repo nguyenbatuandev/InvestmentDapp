@@ -14,6 +14,7 @@ using InvestDapp.Application.NotificationService;
 using InvestDapp.Application.Services.Trading;
 using InvestDapp.Application.SupportService;
 using InvestDapp.Application.UserService;
+using InvestDapp.Application.TradingServices.Admin;
 using InvestDapp.Infrastructure.Data;
 using InvestDapp.Infrastructure.Data.Config;
 using InvestDapp.Infrastructure.Data.interfaces;
@@ -25,6 +26,7 @@ using Microsoft.Extensions.Options;
 using Nethereum.Web3;
 using QuestPDF.Infrastructure;
 using InvestDapp.Shared.Security;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -110,6 +112,7 @@ builder.Services.AddScoped<CampaignEventService>();
 builder.Services.AddScoped<ITransactionReportService, TransactionReportService>();
 builder.Services.AddScoped<ITransactionReportPdfService, TransactionReportPdfService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+builder.Services.AddScoped<IAdminTradingService, AdminTradingService>();
 
 // =======================
 // 10. CẤU HÌNH SIGNALR
@@ -195,6 +198,12 @@ var app = builder.Build();
 // =======================
 // 15. CẤU HÌNH MIDDLEWARE PIPELINE
 // =======================
+
+// Force InvariantCulture for decimal parsing (fix decimal number binding from forms)
+var cultureInfo = new CultureInfo("en-US");
+cultureInfo.NumberFormat.NumberDecimalSeparator = ".";
+CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
 
 if (!app.Environment.IsDevelopment())
 {

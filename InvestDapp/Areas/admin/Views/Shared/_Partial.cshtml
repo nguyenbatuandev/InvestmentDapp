@@ -10,6 +10,24 @@
 <li class="has-submenu">
     <a href="javascript:void(0)" class="dropdown-toggle">
         <span class="icon">
+            <ion-icon name="bar-chart-outline"></ion-icon>
+        </span>
+        <span class="title">Trading Management</span>
+        <span class="arrow">
+            <ion-icon name="chevron-down-outline"></ion-icon>
+        </span>
+    </a>
+    <ul class="submenu">
+        <li><a href="@Url.Action("Index", "TradingManagement", new { area = "admin" })">Dashboard</a></li>
+        <li><a href="@Url.Action("Users", "TradingManagement", new { area = "admin" })">Users</a></li>
+        <li><a href="@Url.Action("Withdrawals", "TradingManagement", new { area = "admin" })">Withdrawals</a></li>
+        <li><a href="@Url.Action("FeeConfig", "TradingManagement", new { area = "admin" })">Fee Configuration</a></li>
+    </ul>
+</li>
+
+<li class="has-submenu">
+    <a href="javascript:void(0)" class="dropdown-toggle">
+        <span class="icon">
             <ion-icon name="people-outline"></ion-icon>
         </span>
         <span class="title">Manage Campaigns</span>

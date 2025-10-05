@@ -91,6 +91,24 @@ namespace InvestDapp.Infrastructure.Data
                 entity.HasIndex(e => e.Status);
             });
 
+            modelBuilder.Entity<TradingFeeConfig>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.HasIndex(e => e.IsActive);
+            });
+
+            modelBuilder.Entity<TradingAccountLock>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.UserWallet).IsRequired().HasMaxLength(42);
+                entity.Property(e => e.Reason).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.LockedByAdmin).IsRequired().HasMaxLength(42);
+                entity.Property(e => e.LockType).HasConversion<int>();
+                entity.HasIndex(e => e.UserWallet);
+                entity.HasIndex(e => e.IsUnlocked);
+            });
+
             modelBuilder.Entity<ProfitClaim>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -134,6 +152,8 @@ namespace InvestDapp.Infrastructure.Data
         public DbSet<Position> Positions { get; set; }
         public DbSet<UserBalance> UserBalances { get; set; }
         public DbSet<BalanceTransaction> BalanceTransactions { get; set; }
+        public DbSet<TradingFeeConfig> TradingFeeConfigs { get; set; }
+        public DbSet<TradingAccountLock> TradingAccountLocks { get; set; }
 
         // Support/Ticketing Models
         public DbSet<SupportTicket> SupportTickets { get; set; }

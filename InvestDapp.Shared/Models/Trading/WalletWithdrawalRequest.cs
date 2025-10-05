@@ -20,7 +20,14 @@ namespace InvestDapp.Shared.Models.Trading
         public string RecipientAddress { get; set; }
 
         [Required]
+        [Column(TypeName = "decimal(18,8)")]
         public decimal Amount { get; set; }
+
+        /// <summary>
+        /// Phí rút tiền (BNB)
+        /// </summary>
+        [Column(TypeName = "decimal(18,8)")]
+        public decimal Fee { get; set; }
 
         public WithdrawalStatus Status { get; set; } = WithdrawalStatus.Pending;
 

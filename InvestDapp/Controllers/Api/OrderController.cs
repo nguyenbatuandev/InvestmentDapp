@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Microsoft.Extensions.Options;
 using InvestDapp.Infrastructure.Data.Config;
+using InvestDapp.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 namespace InvestDapp.Controllers.Api
 {
     [ApiController]
@@ -18,18 +20,40 @@ namespace InvestDapp.Controllers.Api
         private readonly ITradingRepository? _repo;
         private readonly IOptions<TradingConfig>? _tradingConfig;
         private readonly ILogger<OrderController> _logger;
+        private readonly InvestDbContext _dbContext;
 
         // Single constructor: required services first, optional services nullable with defaults
         public OrderController(
             IInternalOrderService orderService,
             ILogger<OrderController> logger,
+            InvestDbContext dbContext,
             ITradingRepository? repo = null,
             IOptions<TradingConfig>? tradingConfig = null)
         {
             _orderService = orderService;
             _logger = logger;
+            _dbContext = dbContext;
             _repo = repo;
             _tradingConfig = tradingConfig;
+        }
+
+        /// <summary>
+        /// Lấy cấu hình phí active từ database
+        /// </summary>
+        private TradingFeeConfig? GetActiveFeeConfig()
+        {
+            try
+            {
+                return _dbContext.TradingFeeConfigs
+                    .Where(c => c.IsActive)
+                    .OrderByDescending(c => c.CreatedAt)
+                    .FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get active fee config from database");
+                return null;
+            }
         }
         
         [HttpPost]
@@ -291,28 +315,61 @@ namespace InvestDapp.Controllers.Api
             if (req.Amount <= 0) return BadRequest(new { error = "Amount must be > 0" });
             var userKey = GetTradingUserKey();
             if (string.IsNullOrEmpty(userKey)) return Unauthorized();
-            _logger.LogInformation("Withdraw requested by {User} Amount={Amount}", userKey, req.Amount);
+            
+            // Lấy fee config từ database
+            var feeConfig = GetActiveFeeConfig();
+            if (feeConfig == null)
+            {
+                _logger.LogError("No active fee config found for withdrawal");
+                return StatusCode(500, new { error = "System configuration error. Please contact admin." });
+            }
+
+            // Validate withdrawal amount
+            if (req.Amount < (decimal)feeConfig.MinWithdrawalAmount)
+            {
+                return BadRequest(new { error = $"Minimum withdrawal amount is {feeConfig.MinWithdrawalAmount} BNB" });
+            }
+            if (req.Amount > (decimal)feeConfig.MaxWithdrawalAmount)
+            {
+                return BadRequest(new { error = $"Maximum withdrawal amount is {feeConfig.MaxWithdrawalAmount} BNB" });
+            }
+
+            // Tính phí rút tiền
+            var feePercent = feeConfig.WithdrawalFeePercent;
+            var calculatedFee = req.Amount * (decimal)feePercent / 100m;
+            var withdrawalFee = Math.Max(calculatedFee, (decimal)feeConfig.MinWithdrawalFee);
+            var totalDeduction = req.Amount + withdrawalFee;
+
+            _logger.LogInformation("Withdraw requested by {User} Amount={Amount}, Fee={Fee} ({FeePercent}%), Total={Total}", 
+                userKey, req.Amount, withdrawalFee, feePercent, totalDeduction);
+            
             var bal = await _orderService.GetUserBalanceAsync(userKey);
             if (bal == null)
             {
                 _logger.LogWarning("Withdraw attempt but balance record missing for {User}", userKey);
                 return BadRequest(new { error = "Insufficient available balance" });
             }
-            if (bal.AvailableBalance < req.Amount)
+            
+            // Kiểm tra balance đủ cho amount + fee
+            if (bal.AvailableBalance < totalDeduction)
             {
-                _logger.LogWarning("Withdraw denied for {User}: available={Available} requested={Requested}", userKey, bal.AvailableBalance, req.Amount);
-                return BadRequest(new { error = "Insufficient available balance" });
+                _logger.LogWarning("Withdraw denied for {User}: available={Available} required={Required} (amount={Amount} + fee={Fee})", 
+                    userKey, bal.AvailableBalance, totalDeduction, req.Amount, withdrawalFee);
+                return BadRequest(new { error = $"Insufficient balance. Required: {totalDeduction} BNB (amount + fee), Available: {bal.AvailableBalance} BNB" });
             }
+            
             try
             {
                 InternalUserBalance updated;
                 try
                 {
-                    updated = await _orderService.UpdateUserBalanceAsync(userKey, -req.Amount, "WITHDRAW_REQUEST");
+                    // Trừ amount + fee từ balance
+                    updated = await _orderService.UpdateUserBalanceAsync(userKey, -totalDeduction, "WITHDRAW_REQUEST");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error updating balance during withdraw request for {User} Amount={Amount}", userKey, req.Amount);
+                    _logger.LogError(ex, "Error updating balance during withdraw request for {User} Amount={Amount} Fee={Fee}", 
+                        userKey, req.Amount, withdrawalFee);
                     return StatusCode(500, new { error = "Unable to reserve funds for withdraw: " + (ex.Message ?? ex.ToString()) });
                 }
 
@@ -327,25 +384,51 @@ namespace InvestDapp.Controllers.Api
                         UserWallet = userKey,
                         RecipientAddress = recipient,
                         Amount = req.Amount,
+                        Fee = withdrawalFee,
                         Status = InvestDapp.Shared.Enums.WithdrawalStatus.Pending,
                         CreatedAt = DateTime.UtcNow
                     };
                     try
                     {
                         await _repo.AddWalletWithdrawalRequestAsync(wreq);
+                        
+                        // Tạo transaction record cho phí rút tiền
+                        await _repo.AddBalanceTransactionAsync(new BalanceTransaction
+                        {
+                            UserWallet = userKey,
+                            Amount = -withdrawalFee,
+                            Type = "WITHDRAWAL_FEE",
+                            Reference = wreq.Id.ToString(),
+                            Description = $"Withdrawal fee ({feePercent}%) for {req.Amount} BNB withdrawal request",
+                            BalanceAfter = updated.Balance,
+                            CreatedAt = DateTime.UtcNow
+                        });
+                        
                         await _repo.SaveChangesAsync();
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Error saving withdrawal request for {User} Amount={Amount} Recipient={Recipient}", userKey, req.Amount, recipient);
-                        try { await _orderService.UpdateUserBalanceAsync(userKey, req.Amount, "WITHDRAW_REQUEST_ROLLBACK"); } catch (Exception rbEx) { _logger.LogError(rbEx, "Rollback failed for {User}", userKey); }
+                        _logger.LogError(ex, "Error saving withdrawal request for {User} Amount={Amount} Recipient={Recipient}", 
+                            userKey, req.Amount, recipient);
+                        try { 
+                            await _orderService.UpdateUserBalanceAsync(userKey, totalDeduction, "WITHDRAW_REQUEST_ROLLBACK"); 
+                        } catch (Exception rbEx) { 
+                            _logger.LogError(rbEx, "Rollback failed for {User}", userKey); 
+                        }
                         var errMsg = ex.InnerException?.Message ?? ex.Message;
                         return StatusCode(500, new { error = "Unable to create withdraw request: " + errMsg });
                     }
                 }
 
-                _logger.LogInformation("Withdraw request created for {User}: amount={Amount}", userKey, req.Amount);
-                return Ok(new { message = "Withdrawal request created and pending admin approval", balance = updated });
+                _logger.LogInformation("Withdraw request created for {User}: amount={Amount}, fee={Fee}, total={Total}", 
+                    userKey, req.Amount, withdrawalFee, totalDeduction);
+                return Ok(new { 
+                    message = "Withdrawal request created and pending admin approval", 
+                    balance = updated,
+                    withdrawalAmount = req.Amount,
+                    fee = withdrawalFee,
+                    total = totalDeduction
+                });
             }
             catch (Exception ex)
             {

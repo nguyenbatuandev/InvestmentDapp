@@ -1,0 +1,793 @@
+@using System.Linq
+@model InvestDapp.Shared.DTOs.Admin.TradingDashboardDto
+@{
+    ViewData["Title"] = "Trading Management Dashboard";
+    Layout = "~/Areas/admin/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .trading-dashboard {
+        padding: 24px;
+        background: #f8fafc;
+        min-height: calc(100vh - 80px);
+    }
+
+    /* Hero Header */
+    .dashboard-hero {
+        background: linear-gradient(135deg, #1e40af 0%, #7c3aed 50%, #db2777 100%);
+        border-radius: 20px;
+        padding: 40px;
+        margin-bottom: 30px;
+        color: white;
+        box-shadow: 0 20px 60px rgba(30, 64, 175, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .dashboard-hero::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero-title {
+        font-size: 36px;
+        font-weight: 800;
+        margin: 0 0 12px 0;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .hero-subtitle {
+        font-size: 18px;
+        opacity: 0.95;
+        margin: 0 0 24px 0;
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .hero-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 24px;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 15px;
+        transition: all 0.3s;
+    }
+
+    .hero-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .hero-btn.primary {
+        background: white;
+        color: #1e40af;
+        border-color: white;
+    }
+
+    .hero-btn.primary:hover {
+        background: #f8fafc;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 28px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, var(--color) 0%, transparent 100%);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card.blue::before { --color: #3b82f6; }
+    .stat-card.green::before { --color: #10b981; }
+    .stat-card.purple::before { --color: #8b5cf6; }
+    .stat-card.orange::before { --color: #f59e0b; }
+    .stat-card.red::before { --color: #ef4444; }
+    .stat-card.pink::before { --color: #ec4899; }
+
+    .stat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+
+    .stat-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+    }
+
+    .stat-icon.blue { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1e40af; }
+    .stat-icon.green { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #065f46; }
+    .stat-icon.purple { background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); color: #5b21b6; }
+    .stat-icon.orange { background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%); color: #92400e; }
+    .stat-icon.red { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #991b1b; }
+    .stat-icon.pink { background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%); color: #9f1239; }
+
+    .stat-label {
+        font-size: 14px;
+        color: #6b7280;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+    }
+
+    .stat-value {
+        font-size: 36px;
+        font-weight: 800;
+        color: #111827;
+        margin-bottom: 8px;
+        line-height: 1;
+    }
+
+    .stat-change {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 8px;
+    }
+
+    .stat-change.positive {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .stat-change.negative {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .stat-change.neutral {
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+
+    /* Content Grid */
+    .content-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 24px;
+        margin-bottom: 30px;
+    }
+
+    /* Data Card */
+    .data-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+    }
+
+    .card-header {
+        padding: 24px 28px;
+        border-bottom: 1px solid #f3f4f6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .card-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #111827;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+    }
+
+    .card-action {
+        font-size: 14px;
+        color: #3b82f6;
+        text-decoration: none;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+    }
+
+    .card-action:hover {
+        color: #2563eb;
+        transform: translateX(3px);
+    }
+
+    .card-body {
+        padding: 24px 28px;
+    }
+
+    /* Top Traders List */
+    .trader-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px;
+        border-radius: 12px;
+        transition: background 0.2s;
+        margin-bottom: 12px;
+    }
+
+    .trader-item:hover {
+        background: #f9fafb;
+    }
+
+    .trader-info {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex: 1;
+    }
+
+    .trader-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 18px;
+    }
+
+    .trader-details h4 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #111827;
+        margin: 0 0 4px 0;
+        font-family: 'Courier New', monospace;
+    }
+
+    .trader-details p {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0;
+    }
+
+    .trader-stats {
+        text-align: right;
+    }
+
+    .trader-stats .balance {
+        font-size: 16px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 4px;
+    }
+
+    .trader-stats .pnl {
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .pnl.positive { color: #10b981; }
+    .pnl.negative { color: #ef4444; }
+
+    /* Recent Activities */
+    .activity-item {
+        display: flex;
+        gap: 16px;
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        border-left: 3px solid transparent;
+        transition: all 0.2s;
+    }
+
+    .activity-item:hover {
+        background: #f9fafb;
+    }
+
+    .activity-item.deposit { border-left-color: #10b981; }
+    .activity-item.withdrawal { border-left-color: #f59e0b; }
+    .activity-item.trade { border-left-color: #3b82f6; }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .activity-icon.deposit { background: #dcfce7; color: #166534; }
+    .activity-icon.withdrawal { background: #fef3c7; color: #92400e; }
+    .activity-icon.trade { background: #dbeafe; color: #1e40af; }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-content h4 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #111827;
+        margin: 0 0 4px 0;
+    }
+
+    .activity-content p {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0;
+    }
+
+    .activity-amount {
+        font-size: 15px;
+        font-weight: 700;
+        text-align: right;
+    }
+
+    /* Pending Withdrawals */
+    .withdrawal-item {
+        padding: 16px;
+        border-radius: 12px;
+        background: #fef3c7;
+        border: 1px solid #fde68a;
+        margin-bottom: 12px;
+        transition: all 0.2s;
+    }
+
+    .withdrawal-item:hover {
+        background: #fde68a;
+    }
+
+    .withdrawal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .withdrawal-wallet {
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        font-weight: 600;
+        color: #78350f;
+    }
+
+    .withdrawal-amount {
+        font-size: 16px;
+        font-weight: 700;
+        color: #92400e;
+    }
+
+    .withdrawal-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .withdrawal-time {
+        font-size: 12px;
+        color: #78350f;
+    }
+
+    .withdrawal-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .withdrawal-btn {
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .withdrawal-btn.approve {
+        background: #10b981;
+        color: white;
+    }
+
+    .withdrawal-btn.approve:hover {
+        background: #059669;
+    }
+
+    .withdrawal-btn.view {
+        background: white;
+        color: #92400e;
+        border: 1px solid #d97706;
+    }
+
+    .withdrawal-btn.view:hover {
+        background: #78350f;
+        color: white;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+    }
+
+    .empty-state ion-icon {
+        font-size: 48px;
+        color: #d1d5db;
+        margin-bottom: 12px;
+    }
+
+    .empty-state p {
+        color: #9ca3af;
+        font-size: 14px;
+    }
+
+    /* Responsive */
+    @@media (max-width: 1200px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .hero-title {
+            font-size: 28px;
+        }
+
+        .dashboard-hero {
+            padding: 28px;
+        }
+    }
+</style>
+
+<div class="main">
+    <div class="topbar">
+        <div class="toggle">
+            <ion-icon name="menu-outline"></ion-icon>
+        </div>
+    </div>
+
+<div class="trading-dashboard">
+    <!-- Hero Header -->
+    <div class="dashboard-hero">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <ion-icon name="trending-up"></ion-icon>
+                Trading Management Dashboard
+            </h1>
+            <p class="hero-subtitle">
+                Quản lý toàn diện hệ thống giao dịch Futures, rút tiền và cấu hình phí
+            </p>
+            <div class="hero-actions">
+                <a href="/admin/trading/users" class="hero-btn primary">
+                    <ion-icon name="people"></ion-icon>
+                    Danh sách Users
+                </a>
+                <a href="/admin/trading/withdrawals" class="hero-btn">
+                    <ion-icon name="wallet"></ion-icon>
+                    Quản lý Rút tiền
+                </a>
+                <a href="/admin/trading/fee-config" class="hero-btn">
+                    <ion-icon name="settings"></ion-icon>
+                    Cấu hình Phí
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Grid -->
+    <div class="stats-grid">
+        <div class="stat-card blue">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-label">Total Users</div>
+                    <div class="stat-value">@Model.Stats.TotalUsers</div>
+                    <span class="stat-change positive">
+                        <ion-icon name="arrow-up"></ion-icon>
+                        @Model.Stats.ActiveUsers Active
+                    </span>
+                </div>
+                <div class="stat-icon blue">
+                    <ion-icon name="people"></ion-icon>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card green">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-label">Total Balance</div>
+                    <div class="stat-value">@Model.Stats.TotalBalance.ToString("N2")</div>
+                    <span class="stat-change neutral">BNB in platform</span>
+                </div>
+                <div class="stat-icon green">
+                    <ion-icon name="wallet"></ion-icon>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card purple">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-label">Total Orders</div>
+                    <div class="stat-value">@Model.Stats.TotalOrders</div>
+                    <span class="stat-change neutral">@Model.Stats.OpenPositions Open</span>
+                </div>
+                <div class="stat-icon purple">
+                    <ion-icon name="bar-chart"></ion-icon>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card @(Model.Stats.TotalPnL >= 0 ? "green" : "red")">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-label">Total PnL</div>
+                    <div class="stat-value" style="color: @(Model.Stats.TotalPnL >= 0 ? "#10b981" : "#ef4444")">
+                        @(Model.Stats.TotalPnL >= 0 ? "+" : "")@Model.Stats.TotalPnL.ToString("N2")
+                    </div>
+                    <span class="stat-change @(Model.Stats.TotalPnL >= 0 ? "positive" : "negative")">
+                        <ion-icon name="@(Model.Stats.TotalPnL >= 0 ? "trending-up" : "trending-down")"></ion-icon>
+                        BNB Total P&L
+                    </span>
+                </div>
+                <div class="stat-icon @(Model.Stats.TotalPnL >= 0 ? "green" : "red")">
+                    <ion-icon name="@(Model.Stats.TotalPnL >= 0 ? "trending-up" : "trending-down")"></ion-icon>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card orange">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-label">Margin Used</div>
+                    <div class="stat-value">@Model.Stats.TotalMarginUsed.ToString("N2")</div>
+                    <span class="stat-change neutral">BNB in use</span>
+                </div>
+                <div class="stat-icon orange">
+                    <ion-icon name="analytics"></ion-icon>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card pink">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-label">Total Fees</div>
+                    <div class="stat-value">@Model.Stats.TotalFees.ToString("N4")</div>
+                    <span class="stat-change positive">
+                        <ion-icon name="cash"></ion-icon>
+                        Platform revenue
+                    </span>
+                </div>
+                <div class="stat-icon pink">
+                    <ion-icon name="cash"></ion-icon>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="content-grid">
+        <!-- Top Traders -->
+        <div class="data-card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <ion-icon name="trophy"></ion-icon>
+                    Top Traders
+                </h3>
+                <a href="/admin/trading/users" class="card-action">
+                    View All
+                    <ion-icon name="arrow-forward"></ion-icon>
+                </a>
+            </div>
+            <div class="card-body">
+                @if (Model.TopTraders.Any())
+                {
+                    @foreach (var trader in Model.TopTraders.Take(5))
+                    {
+                        <div class="trader-item">
+                            <div class="trader-info">
+                                <div class="trader-avatar">
+                                    @trader.UserWallet.Substring(2, 2).ToUpper()
+                                </div>
+                                <div class="trader-details">
+                                    <h4>@trader.UserWallet.Substring(0, 10)...@trader.UserWallet.Substring(trader.UserWallet.Length - 8)</h4>
+                                    <p>@trader.TotalOrders orders • @trader.OpenPositions positions</p>
+                                </div>
+                            </div>
+                            <div class="trader-stats">
+                                <div class="balance">@trader.Balance.ToString("N2") BNB</div>
+                                <div class="pnl @(trader.TotalPnL >= 0 ? "positive" : "negative")">
+                                    @(trader.TotalPnL >= 0 ? "+" : "")@trader.TotalPnL.ToString("N2") BNB
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <ion-icon name="people-outline"></ion-icon>
+                        <p>No traders found</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Pending Withdrawals -->
+        <div class="data-card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <ion-icon name="hourglass"></ion-icon>
+                    Pending Withdrawals
+                </h3>
+                <a href="/admin/trading/withdrawals" class="card-action">
+                    View All
+                    <ion-icon name="arrow-forward"></ion-icon>
+                </a>
+            </div>
+            <div class="card-body">
+                @if (Model.PendingWithdrawals.Any())
+                {
+                    @foreach (var withdrawal in Model.PendingWithdrawals.Take(4))
+                    {
+                        <div class="withdrawal-item">
+                            <div class="withdrawal-header">
+                                <span class="withdrawal-wallet">
+                                    @withdrawal.UserWallet.Substring(0, 8)...@withdrawal.UserWallet.Substring(withdrawal.UserWallet.Length - 6)
+                                </span>
+                                <span class="withdrawal-amount">
+                                    @withdrawal.Amount.ToString("N4") BNB
+                                </span>
+                            </div>
+                            <div class="withdrawal-footer">
+                                <span class="withdrawal-time">
+                                    <ion-icon name="time-outline"></ion-icon>
+                                    @withdrawal.PendingDays days ago
+                                </span>
+                                <div class="withdrawal-actions">
+                                    <a href="/admin/trading/withdrawals" class="withdrawal-btn view">View</a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <ion-icon name="checkmark-circle-outline"></ion-icon>
+                        <p>No pending withdrawals</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="data-card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <ion-icon name="pulse"></ion-icon>
+                Recent Activities
+            </h3>
+        </div>
+        <div class="card-body">
+            @if (Model.RecentActivities.Any())
+            {
+                @foreach (var activity in Model.RecentActivities.Take(8))
+                {
+                    <div class="activity-item @activity.Type.ToLower()">
+                        <div class="activity-icon @activity.Type.ToLower()">
+                            <ion-icon name="@(activity.Type == "DEPOSIT" ? "arrow-down" : activity.Type == "WITHDRAWAL" ? "arrow-up" : "swap-horizontal")"></ion-icon>
+                        </div>
+                        <div class="activity-content">
+                            <h4>@activity.Type - @(activity.Symbol ?? "Wallet")</h4>
+                            <p>
+                                @activity.UserWallet.Substring(0, 10)...@activity.UserWallet.Substring(activity.UserWallet.Length - 6)
+                                • @activity.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                            </p>
+                        </div>
+                        <div class="activity-amount" style="color: @(activity.Type == "DEPOSIT" ? "#10b981" : activity.Type == "WITHDRAWAL" ? "#f59e0b" : "#3b82f6")">
+                            @(activity.Type == "DEPOSIT" ? "+" : activity.Type == "WITHDRAWAL" ? "-" : "")@activity.Amount.ToString("N4") BNB
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-state">
+                    <ion-icon name="pulse-outline"></ion-icon>
+                    <p>No recent activities</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div style="position: fixed; top: 20px; right: 20px; background: #dcfce7; color: #166534; padding: 16px 24px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 9999; border-left: 4px solid #10b981;">
+        <strong>✓ @TempData["Success"]</strong>
+    </div>
+    <script>
+        setTimeout(() => {
+            document.querySelector('[style*="fixed"]').style.opacity = '0';
+            setTimeout(() => document.querySelector('[style*="fixed"]').remove(), 300);
+        }, 3000);
+    </script>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div style="position: fixed; top: 20px; right: 20px; background: #fee2e2; color: #991b1b; padding: 16px 24px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 9999; border-left: 4px solid #ef4444;">
+        <strong>✗ @TempData["Error"]</strong>
+    </div>
+    <script>
+        setTimeout(() => {
+            document.querySelector('[style*="fixed"]').style.opacity = '0';
+            setTimeout(() => document.querySelector('[style*="fixed"]').remove(), 300);
+        }, 3000);
+    </script>
+}
+</div>
+</div>

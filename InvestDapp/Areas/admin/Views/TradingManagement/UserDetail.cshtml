@@ -1,0 +1,667 @@
+@model InvestDapp.Shared.DTOs.Admin.UserTradingDetailDto
+@{
+    ViewData["Title"] = "User Trading Detail";
+    Layout = "~/Areas/admin/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .detail-container {
+        padding: 24px;
+    }
+    
+    .user-header {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .wallet-title {
+        font-family: 'Courier New', monospace;
+        font-size: 24px;
+        font-weight: 700;
+        color: #111;
+        margin-bottom: 12px;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-top: 24px;
+    }
+    
+    .stat-box {
+        padding: 16px;
+        background: #f9fafb;
+        border-radius: 8px;
+    }
+    
+    .stat-label {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 6px;
+    }
+    
+    .stat-value {
+        font-size: 22px;
+        font-weight: 700;
+        color: #111;
+    }
+    
+    .actions-bar {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    
+    .btn-primary { background: #3b82f6; color: white; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-warning { background: #f59e0b; color: white; }
+    .btn-success { background: #10b981; color: white; }
+    .btn-secondary { background: #f3f4f6; color: #374151; }
+    
+    .btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+    
+    .tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #f3f4f6;
+    }
+    
+    .tab {
+        padding: 12px 24px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-weight: 500;
+        color: #666;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        transition: all 0.2s;
+    }
+    
+    .tab.active {
+        color: #3b82f6;
+        border-bottom-color: #3b82f6;
+    }
+    
+    .tab-content {
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .table th {
+        text-align: left;
+        padding: 12px;
+        font-weight: 600;
+        color: #666;
+        border-bottom: 2px solid #f3f4f6;
+        font-size: 13px;
+    }
+    
+    .table td {
+        padding: 12px;
+        border-bottom: 1px solid #f3f4f6;
+        font-size: 14px;
+    }
+    
+    .table tr:hover {
+        background: #f9fafb;
+    }
+    
+    .badge {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    .badge-long { background: #d1fae5; color: #065f46; }
+    .badge-short { background: #fef3c7; color: #92400e; }
+    .badge-buy { background: #dbeafe; color: #1e40af; }
+    .badge-sell { background: #fee2e2; color: #991b1b; }
+    .badge-open { background: #e0e7ff; color: #3730a3; }
+    .badge-closed { background: #f3f4f6; color: #6b7280; }
+    .badge-pending { background: #fef3c7; color: #92400e; }
+    .badge-approved { background: #d1fae5; color: #065f46; }
+    .badge-rejected { background: #fee2e2; color: #991b1b; }
+    
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .modal-content {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        max-width: 500px;
+        width: 90%;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #374151;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+</style>
+
+<div class="main">
+    <div class="topbar">
+        <div class="toggle">
+            <ion-icon name="menu-outline"></ion-icon>
+        </div>
+    </div>
+
+<div class="detail-container">
+    <!-- User Header -->
+    <div class="user-header">
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div>
+                <div class="wallet-title">👤 @Model.UserWallet</div>
+                <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                    @if (Model.IsActive)
+                    {
+                        <span class="badge badge-approved">✓ Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge" style="background: #f3f4f6; color: #6b7280;">Inactive</span>
+                    }
+                    
+                    @if (Model.ActiveLocks.Any())
+                    {
+                        <span class="badge badge-rejected">🔒 @Model.ActiveLocks.Count Lock(s)</span>
+                    }
+                </div>
+                
+                <div style="color: #666; font-size: 14px;">
+                    First Order: @(Model.FirstOrderDate?.ToString("dd/MM/yyyy HH:mm") ?? "N/A") •
+                    Last Order: @(Model.LastOrderDate?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")
+                </div>
+            </div>
+            
+            <a href="/admin/trading/users" class="btn btn-secondary">← Back</a>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-label">Balance</div>
+                <div class="stat-value">@Model.Balance.ToString("N4") BNB</div>
+            </div>
+            
+            <div class="stat-box">
+                <div class="stat-label">Margin Used</div>
+                <div class="stat-value">@Model.MarginUsed.ToString("N4") BNB</div>
+                <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                    @((Model.Balance > 0 ? (Model.MarginUsed / Model.Balance * 100) : 0).ToString("N1"))%
+                </div>
+            </div>
+            
+            <div class="stat-box">
+                <div class="stat-label">Total PnL</div>
+                <div class="stat-value" style="color: @(Model.TotalPnL >= 0 ? "#10b981" : "#ef4444")">
+                    @(Model.TotalPnL >= 0 ? "+" : "")@Model.TotalPnL.ToString("N4") BNB
+                </div>
+            </div>
+            
+            <div class="stat-box">
+                <div class="stat-label">Total Fees</div>
+                <div class="stat-value">@Model.TotalFees.ToString("N4") BNB</div>
+            </div>
+            
+            <div class="stat-box">
+                <div class="stat-label">Total Orders</div>
+                <div class="stat-value">@Model.TotalOrders</div>
+                <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                    @Model.ClosedOrders closed
+                </div>
+            </div>
+            
+            <div class="stat-box">
+                <div class="stat-label">Open Positions</div>
+                <div class="stat-value">@Model.OpenPositions</div>
+            </div>
+            
+            <div class="stat-box">
+                <div class="stat-label">Win Rate</div>
+                <div class="stat-value" style="color: @(Model.WinRate >= 50 ? "#10b981" : "#ef4444")">
+                    @Model.WinRate.ToString("N1")%
+                </div>
+                <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                    @Model.WinningOrders/@Model.ClosedOrders
+                </div>
+            </div>
+            
+            <div class="stat-box">
+                <div class="stat-label">Withdrawals</div>
+                <div class="stat-value">@Model.TotalWithdrawals</div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="actions-bar">
+            @if (Model.ActiveLocks.Any())
+            {
+                <button class="btn btn-success" onclick="unlockAccount()">🔓 Unlock Account</button>
+            }
+            else
+            {
+                <button class="btn btn-danger" onclick="lockAccount()">🔒 Lock Account</button>
+            }
+            
+            <button class="btn btn-warning" onclick="adjustBalance()">💰 Adjust Balance</button>
+            <button class="btn btn-primary" onclick="exportReport()">📊 Export Report</button>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('orders')">📋 Orders (@Model.Orders.Count)</button>
+        <button class="tab" onclick="showTab('positions')">📊 Positions (@Model.Positions.Count)</button>
+        <button class="tab" onclick="showTab('transactions')">💳 Transactions (@Model.Transactions.Count)</button>
+        <button class="tab" onclick="showTab('withdrawals')">💸 Withdrawals (@Model.Withdrawals.Count)</button>
+        <button class="tab" onclick="showTab('locks')">🔒 Locks (@Model.ActiveLocks.Count)</button>
+    </div>
+
+    <!-- Tab Content: Orders -->
+    <div id="tab-orders" class="tab-content">
+        <h3 style="margin-bottom: 20px;">Orders History</h3>
+        @if (Model.Orders.Any())
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Symbol</th>
+                        <th>Type</th>
+                        <th>Side</th>
+                        <th>Size</th>
+                        <th>Entry Price</th>
+                        <th>Exit Price</th>
+                        <th>PnL</th>
+                        <th>Fee</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in Model.Orders.OrderByDescending(o => o.CreatedAt))
+                    {
+                        <tr>
+                            <td style="font-size: 13px; color: #666;">@order.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                            <td><strong>@order.Symbol</strong></td>
+                            <td><span class="badge @(order.Type == "LONG" ? "badge-long" : "badge-short")">@order.Type</span></td>
+                            <td><span class="badge @(order.Side == "BUY" ? "badge-buy" : "badge-sell")">@order.Side</span></td>
+                            <td>@order.Size.ToString("N4")</td>
+                            <td>$@order.EntryPrice.ToString("N2")</td>
+                            <td>@(order.ExitPrice.HasValue ? "$" + order.ExitPrice.Value.ToString("N2") : "-")</td>
+                            <td style="color: @(order.PnL >= 0 ? "#10b981" : "#ef4444"); font-weight: 600;">
+                                @(order.PnL >= 0 ? "+" : "")@order.PnL.ToString("N4") BNB
+                            </td>
+                            <td>@order.Fee.ToString("N4") BNB</td>
+                            <td><span class="badge @(order.Status == "OPEN" ? "badge-open" : "badge-closed")">@order.Status</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p style="text-align: center; color: #999; padding: 40px 0;">No orders yet</p>
+        }
+    </div>
+
+    <!-- Tab Content: Positions -->
+    <div id="tab-positions" class="tab-content" style="display: none;">
+        <h3 style="margin-bottom: 20px;">Open Positions</h3>
+        @if (Model.Positions.Any())
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Type</th>
+                        <th>Size</th>
+                        <th>Entry Price</th>
+                        <th>Margin</th>
+                        <th>Leverage</th>
+                        <th>Unrealized PnL</th>
+                        <th>Opened At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var pos in Model.Positions)
+                    {
+                        <tr>
+                            <td><strong>@pos.Symbol</strong></td>
+                            <td><span class="badge @(pos.Type == "LONG" ? "badge-long" : "badge-short")">@pos.Type</span></td>
+                            <td>@pos.Size.ToString("N4")</td>
+                            <td>$@pos.EntryPrice.ToString("N2")</td>
+                            <td>@pos.Margin.ToString("N4") BNB</td>
+                            <td>@pos.Leverage.ToString("N1")x</td>
+                            <td style="color: @(pos.UnrealizedPnL >= 0 ? "#10b981" : "#ef4444"); font-weight: 600;">
+                                @(pos.UnrealizedPnL >= 0 ? "+" : "")@pos.UnrealizedPnL.ToString("N4") BNB
+                            </td>
+                            <td style="font-size: 13px; color: #666;">@pos.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p style="text-align: center; color: #999; padding: 40px 0;">No open positions</p>
+        }
+    </div>
+
+    <!-- Tab Content: Transactions -->
+    <div id="tab-transactions" class="tab-content" style="display: none;">
+        <h3 style="margin-bottom: 20px;">Balance Transactions</h3>
+        @if (Model.Transactions.Any())
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Balance After</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var tx in Model.Transactions.OrderByDescending(t => t.CreatedAt))
+                    {
+                        <tr>
+                            <td style="font-size: 13px; color: #666;">@tx.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                            <td><span class="badge badge-pending">@tx.Type</span></td>
+                            <td style="color: @(tx.Amount >= 0 ? "#10b981" : "#ef4444"); font-weight: 600;">
+                                @(tx.Amount >= 0 ? "+" : "")@tx.Amount.ToString("N4") BNB
+                            </td>
+                            <td>@tx.BalanceAfter.ToString("N4") BNB</td>
+                            <td style="font-size: 13px; color: #666;">@(tx.Description ?? "-")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p style="text-align: center; color: #999; padding: 40px 0;">No transactions</p>
+        }
+    </div>
+
+    <!-- Tab Content: Withdrawals -->
+    <div id="tab-withdrawals" class="tab-content" style="display: none;">
+        <h3 style="margin-bottom: 20px;">Withdrawal Requests</h3>
+        @if (Model.Withdrawals.Any())
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Amount</th>
+                        <th>Fee</th>
+                        <th>Net Amount</th>
+                        <th>Status</th>
+                        <th>Processed By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var w in Model.Withdrawals.OrderByDescending(w => w.CreatedAt))
+                    {
+                        <tr>
+                            <td style="font-size: 13px; color: #666;">@w.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td><strong>@w.Amount.ToString("N4") BNB</strong></td>
+                            <td>@w.Fee.ToString("N4") BNB</td>
+                            <td>@w.NetAmount.ToString("N4") BNB</td>
+                            <td><span class="badge badge-@w.Status.ToLower()">@w.Status</span></td>
+                            <td style="font-size: 12px;">@(w.ProcessedByAdmin ?? "-")</td>
+                            <td>
+                                @if (w.Status == "PENDING")
+                                {
+                                    <div style="display: flex; gap: 8px;">
+                                        <form method="post" action="/admin/trading/withdrawals/approve" style="display: inline;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="WithdrawalId" value="@w.Id" />
+                                            <button type="submit" class="btn btn-sm btn-success">✓ Approve</button>
+                                        </form>
+                                        <button class="btn btn-sm btn-danger" onclick="rejectWithdrawal(@w.Id)">✗ Reject</button>
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p style="text-align: center; color: #999; padding: 40px 0;">No withdrawal requests</p>
+        }
+    </div>
+
+    <!-- Tab Content: Locks -->
+    <div id="tab-locks" class="tab-content" style="display: none;">
+        <h3 style="margin-bottom: 20px;">Account Locks</h3>
+        @if (Model.ActiveLocks.Any())
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Lock Type</th>
+                        <th>Reason</th>
+                        <th>Locked By</th>
+                        <th>Locked At</th>
+                        <th>Expires At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var lockItem in Model.ActiveLocks)
+                    {
+                        <tr>
+                            <td><span class="badge badge-rejected">@lockItem.LockType</span></td>
+                            <td>@lockItem.Reason</td>
+                            <td style="font-size: 12px;">@lockItem.LockedByAdmin</td>
+                            <td style="font-size: 13px; color: #666;">@lockItem.LockedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td style="font-size: 13px; color: #666;">@(lockItem.ExpiresAt?.ToString("dd/MM/yyyy HH:mm") ?? "Never")</td>
+                            <td>
+                                <form method="post" action="/admin/trading/locks/unlock" style="display: inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="LockId" value="@lockItem.Id" />
+                                    <button type="submit" class="btn btn-sm btn-success">🔓 Unlock</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p style="text-align: center; color: #999; padding: 40px 0;">No active locks</p>
+        }
+    </div>
+</div>
+
+<!-- Lock Account Modal -->
+<div id="lockModal" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-bottom: 20px;">Lock Account</h3>
+        <form method="post" action="/admin/trading/locks/lock">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="UserWallet" value="@Model.UserWallet" />
+            
+            <div class="form-group">
+                <label>Lock Type:</label>
+                <select name="LockType" class="form-control" required>
+                    <option value="TradingOnly">Trading Only</option>
+                    <option value="WithdrawalOnly">Withdrawal Only</option>
+                    <option value="Full">Full Lock</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Reason:</label>
+                <textarea name="Reason" class="form-control" rows="3" required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Expires At (Optional):</label>
+                <input type="datetime-local" name="ExpiresAt" class="form-control" />
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('lockModal')">Cancel</button>
+                <button type="submit" class="btn btn-danger">Lock Account</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Adjust Balance Modal -->
+<div id="balanceModal" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-bottom: 20px;">Adjust Balance</h3>
+        <form method="post" action="/admin/trading/balance/adjust">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="UserWallet" value="@Model.UserWallet" />
+            
+            <div class="form-group">
+                <label>Current Balance:</label>
+                <input type="text" class="form-control" value="@Model.Balance.ToString("N4") BNB" readonly />
+            </div>
+            
+            <div class="form-group">
+                <label>Adjustment Amount:</label>
+                <input type="number" step="0.0001" name="Amount" class="form-control" placeholder="+ or - amount" required />
+                <small style="color: #666;">Positive for deposit, negative for withdrawal</small>
+            </div>
+            
+            <div class="form-group">
+                <label>Reason:</label>
+                <textarea name="Reason" class="form-control" rows="3" required></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('balanceModal')">Cancel</button>
+                <button type="submit" class="btn btn-warning">Adjust Balance</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function showTab(tab) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+        
+        // Show selected tab
+        document.getElementById('tab-' + tab).style.display = 'block';
+        event.target.classList.add('active');
+    }
+    
+    function lockAccount() {
+        document.getElementById('lockModal').style.display = 'flex';
+    }
+    
+    function unlockAccount() {
+        if (confirm('Unlock all locks for this account?')) {
+            // Submit first lock's unlock form
+            document.querySelector('form[action*="unlock"]').submit();
+        }
+    }
+    
+    function adjustBalance() {
+        document.getElementById('balanceModal').style.display = 'flex';
+    }
+    
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+    
+    function rejectWithdrawal(id) {
+        const reason = prompt('Rejection reason:');
+        if (reason) {
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.action = '/admin/trading/withdrawals/reject';
+            
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]').cloneNode(true);
+            const idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.name = 'WithdrawalId';
+            idInput.value = id;
+            
+            const reasonInput = document.createElement('input');
+            reasonInput.type = 'hidden';
+            reasonInput.name = 'Reason';
+            reasonInput.value = reason;
+            
+            form.appendChild(tokenInput);
+            form.appendChild(idInput);
+            form.appendChild(reasonInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+    
+    function exportReport() {
+        window.location.href = '/admin/trading/export/@Model.UserWallet';
+    }
+</script>
+</div>
+</div>

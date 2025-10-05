@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
 using InvestDapp.Infrastructure.Data.interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace InvestDapp.Application.Services.Trading
 {
@@ -35,12 +36,14 @@ namespace InvestDapp.Application.Services.Trading
         private readonly ITradingRepository _repo;
         private readonly IMarketPriceService _priceService;
         private readonly ILogger<InternalOrderService> _logger;
+        private readonly InvestDbContext _dbContext;
         private readonly object _lockObject = new();
 
         public InternalOrderService(IOptions<TradingConfig> tradingConfig,
             ILogger<InternalOrderService> logger,
             ITradingRepository repo,
-            IMarketPriceService priceService)
+            IMarketPriceService priceService,
+            InvestDbContext dbContext)
         {
             _orders = new ConcurrentDictionary<string, InternalOrder>();
             _positions = new ConcurrentDictionary<string, InternalPosition>();
@@ -49,6 +52,32 @@ namespace InvestDapp.Application.Services.Trading
             _logger = logger;
             _repo = repo;
             _priceService = priceService;
+            _dbContext = dbContext;
+        }
+
+        /// <summary>
+        /// Lấy cấu hình phí active từ database
+        /// </summary>
+        private TradingFeeConfig? GetActiveFeeConfig()
+        {
+            try
+            {
+                return _dbContext.TradingFeeConfigs
+                    .Where(c => c.IsActive)
+                    .OrderByDescending(c => c.CreatedAt)
+                    .FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get active fee config from database");
+                // Return default config if database fails
+                return new TradingFeeConfig
+                {
+                    MakerFeePercent = 0.02,
+                    TakerFeePercent = 0.04,
+                    WithdrawalFeePercent = 0.5
+                };
+            }
         }
 
         public async Task<InternalOrder> CreateOrderAsync(InternalOrder order)
@@ -163,8 +192,22 @@ namespace InvestDapp.Application.Services.Trading
                 // Update in-memory positions and balances
                 UpdateUserPosition(currentOrder, executionPrice);
 
-                var tradingFeeRate = _tradingConfig.FeeRatePercent / 100m; // Convert percent to decimal (0.04% -> 0.0004)
+                // Lấy fee config từ database
+                var feeConfig = GetActiveFeeConfig();
+                
+                // Xác định loại phí: Maker (limit order) hoặc Taker (market order)
+                // Market orders và orders execute ngay là Taker
+                // Limit orders chờ match là Maker
+                var isTaker = currentOrder.Type == OrderType.Market || currentOrder.Type == OrderType.StopMarket;
+                var feePercent = isTaker ? 
+                    (feeConfig?.TakerFeePercent ?? 0.04) : 
+                    (feeConfig?.MakerFeePercent ?? 0.02);
+                
+                var tradingFeeRate = (decimal)feePercent / 100m; // Convert percent to decimal (0.04% -> 0.0004)
                 var tradingFee = (currentOrder.Quantity * executionPrice) * tradingFeeRate;
+                
+                _logger.LogInformation("Trading fee calculated: {FeePercent}% ({FeeType}) for order {OrderId} ({OrderType}), amount: {Fee} BNB", 
+                    feePercent, isTaker ? "Taker" : "Maker", currentOrder.Id, currentOrder.Type, tradingFee);
                 
                 var balance = GetUserBalanceSync(currentOrder.UserId);
                 if (balance != null)

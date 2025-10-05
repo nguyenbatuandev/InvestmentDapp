@@ -4,6 +4,7 @@ using InvestDapp.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace InvestDapp.Infrastructure.Migrations
 {
     [DbContext(typeof(InvestDbContext))]
-    partial class InvestDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251004235730_AddFeeToWalletWithdrawalRequest")]
+    partial class AddFeeToWalletWithdrawalRequest
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1170,23 +1173,28 @@ namespace InvestDapp.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<double>("DailyWithdrawalLimit")
-                        .HasColumnType("float");
+                    b.Property<decimal>("DailyWithdrawalLimit")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<double>("MakerFeePercent")
-                        .HasColumnType("float");
+                    b.Property<decimal>("MakerFeePercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<double>("MaxWithdrawalAmount")
-                        .HasColumnType("float");
+                    b.Property<decimal>("MaxWithdrawalAmount")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
 
-                    b.Property<double>("MinWithdrawalAmount")
-                        .HasColumnType("float");
+                    b.Property<decimal>("MinWithdrawalAmount")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
 
-                    b.Property<double>("MinWithdrawalFee")
-                        .HasColumnType("float");
+                    b.Property<decimal>("MinWithdrawalFee")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1197,14 +1205,16 @@ namespace InvestDapp.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<double>("TakerFeePercent")
-                        .HasColumnType("float");
+                    b.Property<decimal>("TakerFeePercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<double>("WithdrawalFeePercent")
-                        .HasColumnType("float");
+                    b.Property<decimal>("WithdrawalFeePercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
 
                     b.HasKey("Id");
 

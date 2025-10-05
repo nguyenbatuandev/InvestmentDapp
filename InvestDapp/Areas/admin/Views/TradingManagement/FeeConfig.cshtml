@@ -1,0 +1,720 @@
+@model InvestDapp.Shared.Models.Trading.TradingFeeConfig
+@{
+    ViewData["Title"] = "Fee Configuration";
+    Layout = "~/Areas/admin/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .fee-config-page {
+        padding: 24px;
+        background: #f8fafc;
+        min-height: calc(100vh - 80px);
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    /* Hero Header */
+    .fee-hero {
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
+        border-radius:                                       step="0.0001" 
+                                       min=                            <div class="input-wrapper">
+                                <input type="number" 
+                                       step="1" 
+                                       name="MaxWithdrawalAmount" 
+                                       class="form-control" 
+                                       value="@(Model?.MaxWithdrawalAmount ?? 100)" 
+                                       required />
+                                <span class="input-suffix">BNB</span>
+                                <div class="input-wrapper">
+                                <input type="number" 
+                                       step="1" 
+                                       name="DailyWithdrawalLimit" 
+                                       class="form-control" 
+                                       value="@(Model?.DailyWithdrawalLimit ?? 500)" 
+                                       required />
+                                <span class="input-suffix">BNB/day</span>                           max="100"
+                                       name="WithdrawalFeePercent" 
+                                       class="form-control" 
+                                       value="@(Model?.WithdrawalFeePercent ?? 0.5)" 
+                                       required />
+        padding: 40px;
+        margin-bottom: 30px;
+        color: white;
+        box-shadow: 0 20px 60px rgba(139, 92, 246, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .fee-hero::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero-title {
+        font-size: 36px;
+        font-weight: 800;
+        margin: 0 0 12px 0;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .hero-subtitle {
+        font-size: 18px;
+        opacity: 0.95;
+        margin: 0;
+    }
+
+    /* Warning Banner */
+    .warning-banner {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 4px solid #f59e0b;
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin-bottom: 30px;
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+    }
+
+    .warning-banner ion-icon {
+        font-size: 28px;
+        color: #92400e;
+        flex-shrink: 0;
+    }
+
+    .warning-content h4 {
+        font-size: 16px;
+        font-weight: 700;
+        color: #92400e;
+        margin: 0 0 4px 0;
+    }
+
+    .warning-content p {
+        font-size: 14px;
+        color: #78350f;
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    /* Config Cards */
+    .config-section {
+        margin-bottom: 30px;
+    }
+
+    .section-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+    }
+
+    .section-header {
+        padding: 24px 28px;
+        border-bottom: 1px solid #f3f4f6;
+        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    }
+
+    .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #111827;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-body {
+        padding: 28px;
+    }
+
+    /* Current Config Display */
+    .config-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .config-item {
+        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+        border-radius: 12px;
+        padding: 20px;
+        border: 2px solid #e5e7eb;
+        transition: all 0.3s;
+    }
+
+    .config-item:hover {
+        border-color: #8b5cf6;
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+    }
+
+    .config-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6b7280;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .config-value {
+        font-size: 28px;
+        font-weight: 800;
+        color: #8b5cf6;
+        margin: 0;
+        line-height: 1;
+    }
+
+    .config-unit {
+        font-size: 16px;
+        color: #6b7280;
+        margin-left: 4px;
+    }
+
+    .config-meta {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #e5e7eb;
+        font-size: 13px;
+        color: #6b7280;
+    }
+
+    .config-meta-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+    }
+
+    .config-meta-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .config-meta strong {
+        color: #374151;
+    }
+
+    .status-active {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        background: #dcfce7;
+        color: #166534;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    /* Update Form */
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    .form-group {
+        margin-bottom: 0;
+    }
+
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .help-text {
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 6px;
+        font-style: italic;
+    }
+
+    .input-wrapper {
+        position: relative;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 16px;
+        padding-right: 50px;
+        border: 2px solid #d1d5db;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        color: #111827;
+        transition: all 0.2s;
+        background: white;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+
+    .input-suffix {
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #8b5cf6;
+        font-weight: 700;
+        font-size: 14px;
+        pointer-events: none;
+    }
+
+    /* Section Divider */
+    .section-divider {
+        height: 2px;
+        background: linear-gradient(90deg, transparent 0%, #e5e7eb 50%, transparent 100%);
+        margin: 32px 0;
+    }
+
+    .subsection-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #374151;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Action Bar */
+    .action-bar {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 2px solid #f3f4f6;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 32px;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 600;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+    }
+
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+    }
+
+    .btn-secondary:hover {
+        background: #e5e7eb;
+    }
+
+    /* Info Banner */
+    .info-banner {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border-radius: 12px;
+        padding: 20px 24px;
+        text-align: center;
+        margin-top: 30px;
+        border: 1px solid #93c5fd;
+    }
+
+    .info-banner p {
+        margin: 0;
+        color: #1e40af;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .info-banner strong {
+        color: #1e3a8a;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .hero-title {
+            font-size: 28px;
+        }
+
+        .fee-hero {
+            padding: 28px;
+        }
+
+        .config-grid,
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="main">
+    <div class="topbar">
+        <div class="toggle">
+            <ion-icon name="menu-outline"></ion-icon>
+        </div>
+    </div>
+
+<div class="fee-config-page">
+    <!-- Hero Header -->
+    <div class="fee-hero">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <ion-icon name="settings"></ion-icon>
+                Fee Configuration
+            </h1>
+            <p class="hero-subtitle">
+                Cấu hình chi tiết phí giao dịch Trading và phí rút tiền
+            </p>
+        </div>
+    </div>
+
+    <!-- Warning Banner -->
+    <div class="warning-banner">
+        <ion-icon name="warning"></ion-icon>
+        <div class="warning-content">
+            <h4>⚠️ Important Notice</h4>
+            <p>
+                Thay đổi cấu hình phí sẽ tạo version mới và deactivate config hiện tại. 
+                Tất cả giao dịch mới sẽ áp dụng cấu trúc phí mới ngay lập tức.
+            </p>
+        </div>
+    </div>
+
+    <!-- Current Configuration Section -->
+    @if (Model != null)
+    {
+        <div class="config-section">
+            <div class="section-card">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <ion-icon name="bar-chart"></ion-icon>
+                        Current Active Configuration
+                    </h3>
+                </div>
+
+                <div class="section-body">
+                    <div class="config-grid">
+                        <div class="config-item">
+                            <div class="config-label">Maker Fee</div>
+                            <div class="config-value">
+                                @Model.MakerFeePercent<span class="config-unit">%</span>
+                            </div>
+                        </div>
+
+                        <div class="config-item">
+                            <div class="config-label">Taker Fee</div>
+                            <div class="config-value">
+                                @Model.TakerFeePercent<span class="config-unit">%</span>
+                            </div>
+                        </div>
+
+                        <div class="config-item">
+                            <div class="config-label">Withdrawal Fee</div>
+                            <div class="config-value">
+                                @Model.WithdrawalFeePercent<span class="config-unit">%</span>
+                            </div>
+                        </div>
+
+                        <div class="config-item">
+                            <div class="config-label">Min Withdrawal Fee</div>
+                            <div class="config-value">
+                                @Model.MinWithdrawalFee<span class="config-unit">BNB</span>
+                            </div>
+                        </div>
+
+                        <div class="config-item">
+                            <div class="config-label">Min Withdrawal</div>
+                            <div class="config-value">
+                                @Model.MinWithdrawalAmount<span class="config-unit">BNB</span>
+                            </div>
+                        </div>
+
+                        <div class="config-item">
+                            <div class="config-label">Max Withdrawal</div>
+                            <div class="config-value">
+                                @Model.MaxWithdrawalAmount<span class="config-unit">BNB</span>
+                            </div>
+                        </div>
+
+                        <div class="config-item">
+                            <div class="config-label">Daily Limit</div>
+                            <div class="config-value">
+                                @Model.DailyWithdrawalLimit<span class="config-unit">BNB</span>
+                            </div>
+                        </div>
+
+                        <div class="config-item">
+                            <div class="config-label">Status</div>
+                            <div class="config-value" style="font-size: 18px;">
+                                <span class="status-active">
+                                    <ion-icon name="checkmark-circle"></ion-icon>
+                                    Active
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-meta">
+                        <div class="config-meta-row">
+                            <span><strong>Config Name:</strong></span>
+                            <span>@Model.Name</span>
+                        </div>
+                        <div class="config-meta-row">
+                            <span><strong>Created At:</strong></span>
+                            <span>@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Update Configuration Section -->
+    <div class="config-section">
+        <div class="section-card">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <ion-icon name="create"></ion-icon>
+                    Update Fee Configuration
+                </h3>
+            </div>
+
+            <div class="section-body">
+                <form method="post" action="/admin/trading/fee-config">
+                    @Html.AntiForgeryToken()
+
+                    <!-- Trading Fees -->
+                    <div class="subsection-title">
+                        <ion-icon name="swap-horizontal"></ion-icon>
+                        Trading Fees
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Maker Fee (%)</label>
+                            <div class="input-wrapper">
+                                <input type="number" 
+                                       step="0.0001" 
+                                       min="0.0001"
+                                       max="100"
+                                       name="MakerFeePercent" 
+                                       class="form-control" 
+                                       value="@(Model?.MakerFeePercent ?? 0.02)" 
+                                       required />
+                                <span class="input-suffix">%</span>
+                            </div>
+                            <div class="help-text">Fee cho Limit orders (tạo liquidity). Ví dụ: 0.02</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Taker Fee (%)</label>
+                            <div class="input-wrapper">
+                                <input type="number" 
+                                       step="0.0001" 
+                                       min="0.0001"
+                                       max="100"
+                                       name="TakerFeePercent" 
+                                       class="form-control" 
+                                       value="@(Model?.TakerFeePercent ?? 0.04)" 
+                                       required />
+                                <span class="input-suffix">%</span>
+                            </div>
+                            <div class="help-text">Fee cho Market orders (lấy liquidity). Ví dụ: 0.04</div>
+                        </div>
+                    </div>
+
+                    <div class="section-divider"></div>
+
+                    <!-- Withdrawal Fees -->
+                    <div class="subsection-title">
+                        <ion-icon name="wallet"></ion-icon>
+                        Withdrawal Fees
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Withdrawal Fee (%)</label>
+                            <div class="input-wrapper">
+                                <input type="number" 
+                                       step="0.0001" 
+                                       name="WithdrawalFeePercent" 
+                                       class="form-control" 
+                                       value="@(Model?.WithdrawalFeePercent ?? 0.5)" 
+                                       required />
+                                <span class="input-suffix">%</span>
+                            </div>
+                            <div class="help-text">Phần trăm phí rút tiền</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Min Withdrawal Fee</label>
+                            <div class="input-wrapper">
+                                <input type="number" 
+                                       step="0.0001" 
+                                       name="MinWithdrawalFee" 
+                                       class="form-control" 
+                                       value="@(Model?.MinWithdrawalFee ?? 0.001)" 
+                                       required />
+                                <span class="input-suffix">BNB</span>
+                            </div>
+                            <div class="help-text">Phí rút tối thiểu</div>
+                        </div>
+                    </div>
+
+                    <div class="section-divider"></div>
+
+                    <!-- Withdrawal Limits -->
+                    <div class="subsection-title">
+                        <ion-icon name="shield-checkmark"></ion-icon>
+                        Withdrawal Limits
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Min Withdrawal Amount</label>
+                            <div class="input-wrapper">
+                                <input type="number" 
+                                       step="0.001" 
+                                       name="MinWithdrawalAmount" 
+                                       class="form-control" 
+                                       value="@(Model?.MinWithdrawalAmount ?? 0.01)" 
+                                       required />
+                                <span class="input-suffix">BNB</span>
+                            </div>
+                            <div class="help-text">Số tiền rút tối thiểu mỗi lần</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Max Withdrawal Amount</label>
+                            <div class="input-wrapper">
+                                <input type="number" 
+                                       step="0.1" 
+                                       name="MaxWithdrawalAmount" 
+                                       class="form-control" 
+                                       value="@(Model?.MaxWithdrawalAmount ?? 100)" 
+                                       required />
+                                <span class="input-suffix">BNB</span>
+                            </div>
+                            <div class="help-text">Số tiền rút tối đa mỗi lần</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Daily Withdrawal Limit</label>
+                            <div class="input-wrapper">
+                                <input type="number" 
+                                       step="1" 
+                                       name="DailyWithdrawalLimit" 
+                                       class="form-control" 
+                                       value="@(Model?.DailyWithdrawalLimit ?? 500)" 
+                                       required />
+                                <span class="input-suffix">BNB</span>
+                            </div>
+                            <div class="help-text">Giới hạn rút tổng trong 24 giờ</div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-bar">
+                        <a href="/admin/trading" class="btn btn-secondary">
+                            <ion-icon name="close"></ion-icon>
+                            Cancel
+                        </a>
+                        <button type="submit" 
+                                class="btn btn-primary" 
+                                onclick="return confirm('💾 Update fee configuration?\n\nThis will create a new version and deactivate the current config. Changes take effect immediately.')">
+                            <ion-icon name="save"></ion-icon>
+                            Save Configuration
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Banner -->
+    <div class="info-banner">
+        <p>
+            <strong>💡 Pro Tip:</strong> Fee configuration is versioned for audit trail. 
+            Old configs are preserved for historical tracking. All new transactions will use the updated fee structure immediately after saving.
+        </p>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div style="position: fixed; top: 24px; right: 24px; background: #dcfce7; color: #166534; padding: 16px 24px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 10000; border-left: 4px solid #10b981; animation: slideIn 0.3s ease;">
+        <strong>✓ @TempData["Success"]</strong>
+    </div>
+    <style>
+        @@keyframes slideIn {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    </style>
+    <script>
+        setTimeout(() => {
+            const toast = document.querySelector('[style*="fixed"]');
+            if (toast) {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, 4000);
+    </script>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div style="position: fixed; top: 24px; right: 24px; background: #fee2e2; color: #991b1b; padding: 16px 24px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 10000; border-left: 4px solid #ef4444; animation: slideIn 0.3s ease;">
+        <strong>✗ @TempData["Error"]</strong>
+    </div>
+    <style>
+        @@keyframes slideIn {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    </style>
+    <script>
+        setTimeout(() => {
+            const toast = document.querySelector('[style*="fixed"]');
+            if (toast) {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, 4000);
+    </script>
+}
+</div>
+</div>
