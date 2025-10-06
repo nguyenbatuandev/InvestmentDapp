@@ -3,6 +3,7 @@ using InvestDapp.Models;
 using InvestDapp.Shared.DTOs;
 using InvestDapp.Shared.Enums;
 using InvestDapp.Shared.Models;
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -227,13 +228,13 @@ namespace InvestDapp.Infrastructure.Data.Repository
             var totalInvested = await _context.Investment
                 .Where(i => i.CampaignId == refundDto.CampaignId && i.InvestorAddress.ToLower() == investorLower)
                 .SumAsync(i => i.Amount);
-                
+
             var refund = new Refund
             {
                 CampaignId = refundDto.CampaignId,
                 TransactionHash = refundDto.TransactionHash,
                 InvestorAddress = refundDto.InvestorAddress,
-                AmountInWei = totalInvested.ToString(),
+                AmountInWei = totalInvested.ToString(CultureInfo.InvariantCulture),
                 ClaimedAt = DateTime.UtcNow,
                 RefundReason = "Campaign failed or user requested refund"
             };

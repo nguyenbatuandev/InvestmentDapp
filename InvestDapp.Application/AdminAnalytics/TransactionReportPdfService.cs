@@ -1,3 +1,4 @@
+using InvestDapp.Shared.Common;
 using InvestDapp.Shared.Common.Request;
 using InvestDapp.Shared.DTOs.Admin;
 using QuestPDF.Fluent;
@@ -115,10 +116,12 @@ namespace InvestDapp.Application.AdminAnalytics
                         columns.RelativeColumn();
                         columns.RelativeColumn();
                         columns.RelativeColumn();
+                        columns.RelativeColumn();
                     });
 
                     table.Cell().Element(StatCard("Tổng đầu tư", _data.Summary.TotalInvestment, Colors.Blue.Medium));
                     table.Cell().Element(StatCard("Tổng Refund", _data.Summary.TotalRefund, Colors.Orange.Medium));
+                    table.Cell().Element(StatCard("Tổng Claim Profit", _data.Summary.TotalProfit, Colors.Indigo.Medium));
                     table.Cell().Element(StatCard("Dòng tiền ròng", _data.Summary.NetAmount, _data.Summary.NetAmount >= 0 ? Colors.Green.Medium : Colors.Red.Medium));
                 });
             }
@@ -132,7 +135,7 @@ namespace InvestDapp.Application.AdminAnalytics
                     .Column(col =>
                     {
                         col.Item().Text(label).FontSize(11).FontColor(color).SemiBold();
-                        col.Item().Text(value.ToString("N4", _culture) + " BNB").FontSize(14).SemiBold();
+                        col.Item().Text(BlockchainAmountConverter.FormatBnb(value) + " BNB").FontSize(14).SemiBold();
                     });
 
             private void ComposeTransactionsTable(IContainer container)
@@ -174,7 +177,7 @@ namespace InvestDapp.Application.AdminAnalytics
                         table.Cell().Element(ContentCell(tx.CampaignName ?? "Không xác định"));
                         table.Cell().Element(ContentCell(tx.TransactionType));
                         table.Cell().Element(ContentCell(Shorten(tx.InvestorAddress)));
-                        table.Cell().Element(ContentCell(tx.Amount.ToString("N4", _culture)));
+                        table.Cell().Element(ContentCell(BlockchainAmountConverter.FormatBnb(tx.Amount)));
                         table.Cell().Element(ContentCell(tx.Status));
                         table.Cell().Element(ContentCell(string.IsNullOrWhiteSpace(tx.TransactionHash) ? "--" : tx.TransactionHash));
                     }

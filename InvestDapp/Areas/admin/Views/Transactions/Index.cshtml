@@ -395,6 +395,11 @@
             color: var(--danger);
         }
 
+        .type-badge.profit {
+            background: rgba(129, 140, 248, 0.12);
+            color: #6366f1;
+        }
+
         .address-short {
             font-family: "Fira Code", monospace;
             letter-spacing: 0.02em;
@@ -593,7 +598,7 @@
             <div class="analytics-title">
                 <div>
                     <h1>Thống kê giao dịch</h1>
-                    <p class="analytics-subtitle">Theo dõi dòng tiền đầu tư và hoàn tiền theo thời gian thực</p>
+                    <p class="analytics-subtitle">Theo dõi dòng tiền đầu tư, hoàn tiền và lợi nhuận theo thời gian thực</p>
                 </div>
                 <div class="quick-range">
                     <button type="button" data-range="7">7 ngày gần nhất</button>
@@ -618,6 +623,7 @@
                         <option value="" @(string.IsNullOrEmpty(filter.TransactionType) ? "selected" : string.Empty)>Tất cả</option>
                         <option value="Investment" @(string.Equals(filter.TransactionType, "Investment", System.StringComparison.OrdinalIgnoreCase) ? "selected" : string.Empty)>Đầu tư</option>
                         <option value="Refund" @(string.Equals(filter.TransactionType, "Refund", System.StringComparison.OrdinalIgnoreCase) ? "selected" : string.Empty)>Refund</option>
+                        <option value="Profit" @(string.Equals(filter.TransactionType, "Profit", System.StringComparison.OrdinalIgnoreCase) ? "selected" : string.Empty)>Claim Profit</option>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -652,6 +658,14 @@
                 <div class="stat-meta">
                     <ion-icon name="swap-horizontal-outline"></ion-icon>
                     @summary.RefundCount giao dịch
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Tổng Claim Profit</div>
+                <div class="stat-value">@summary.TotalProfit.ToString("N4") BNB</div>
+                <div class="stat-meta">
+                    <ion-icon name="ribbon-outline"></ion-icon>
+                    @summary.ProfitCount giao dịch
                 </div>
             </div>
             <div class="stat-card">
@@ -731,15 +745,29 @@
                         {
                             foreach (var tx in transactions)
                             {
-                                var badgeClass = tx.TransactionType.Equals("Investment", System.StringComparison.OrdinalIgnoreCase) ? "investment" : "refund";
-                                var statusClass = tx.Status.Equals("Completed", System.StringComparison.OrdinalIgnoreCase) || tx.Status.Equals("Refunded", System.StringComparison.OrdinalIgnoreCase) ? "completed" : "pending";
-                                <tr data-row-text="@((tx.CampaignName ?? string.Empty) + " " + tx.TransactionType + " " + tx.InvestorAddress + " " + tx.TransactionHash)" data-amount="@tx.Amount.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+                                var badgeClass = tx.TransactionType.Equals("Investment", System.StringComparison.OrdinalIgnoreCase)
+                                    ? "investment"
+                                    : tx.TransactionType.Equals("Refund", System.StringComparison.OrdinalIgnoreCase)
+                                        ? "refund"
+                                        : "profit";
+                                var displayType = tx.TransactionType.Equals("Profit", System.StringComparison.OrdinalIgnoreCase) ? "Claim Profit" : tx.TransactionType;
+                                var iconName = badgeClass == "investment"
+                                    ? "cash-outline"
+                                    : badgeClass == "refund"
+                                        ? "refresh-outline"
+                                        : "ribbon-outline";
+                                var statusClass = tx.Status.Equals("Completed", System.StringComparison.OrdinalIgnoreCase)
+                                    || tx.Status.Equals("Refunded", System.StringComparison.OrdinalIgnoreCase)
+                                    || tx.Status.Equals("Claimed", System.StringComparison.OrdinalIgnoreCase)
+                                    ? "completed"
+                                    : "pending";
+                                <tr data-row-text="@((tx.CampaignName ?? string.Empty) + " " + displayType + " " + tx.InvestorAddress + " " + tx.TransactionHash)" data-amount="@tx.Amount.ToString(System.Globalization.CultureInfo.InvariantCulture)">
                                     <td>@FormatDate(tx.OccurredAt)</td>
                                     <td>@(tx.CampaignName ?? "Không xác định")</td>
                                     <td>
                                         <span class="type-badge @badgeClass">
-                                            <ion-icon name="@(badgeClass == "investment" ? "cash-outline" : "refresh-outline")"></ion-icon>
-                                            @tx.TransactionType
+                                            <ion-icon name="@iconName"></ion-icon>
+                                            @displayType
                                         </span>
                                     </td>
                                     <td>
@@ -870,6 +898,14 @@
                             backgroundColor: 'rgba(239, 68, 68, 0.15)',
                             tension: 0.35,
                             fill: true
+                        },
+                        {
+                            label: 'Claim Profit',
+                            data: [],
+                            borderColor: 'rgba(99, 102, 241, 0.9)',
+                            backgroundColor: 'rgba(129, 140, 248, 0.18)',
+                            tension: 0.35,
+                            fill: true
                         }
                     ]
                 },
@@ -911,6 +947,11 @@
                             label: 'Refund',
                             data: [],
                             backgroundColor: 'rgba(248, 113, 113, 0.7)'
+                        },
+                        {
+                            label: 'Claim Profit',
+                            data: [],
+                            backgroundColor: 'rgba(129, 140, 248, 0.7)'
                         }
                     ]
                 },
@@ -950,9 +991,11 @@
                     const labels = (data.timeline || []).map(item => item.label);
                     const investments = (data.timeline || []).map(item => Number(item.investmentTotal || 0));
                     const refunds = (data.timeline || []).map(item => Number(item.refundTotal || 0));
+                    const profits = (data.timeline || []).map(item => Number(item.profitTotal || 0));
                     timelineChart.data.labels = labels;
                     timelineChart.data.datasets[0].data = investments;
                     timelineChart.data.datasets[1].data = refunds;
+                    timelineChart.data.datasets[2].data = profits;
                     timelineChart.update();
                 }
 
@@ -960,9 +1003,11 @@
                     const labels = (data.topCampaigns || []).map(item => item.campaignName || 'Không xác định');
                     const investments = (data.topCampaigns || []).map(item => Number(item.investmentTotal || 0));
                     const refunds = (data.topCampaigns || []).map(item => Number(item.refundTotal || 0));
+                    const profits = (data.topCampaigns || []).map(item => Number(item.profitTotal || 0));
                     campaignChart.data.labels = labels;
                     campaignChart.data.datasets[0].data = investments;
                     campaignChart.data.datasets[1].data = refunds;
+                    campaignChart.data.datasets[2].data = profits;
                     campaignChart.update();
                 }
 

@@ -335,7 +335,7 @@ namespace Invest.Application.EventService
                         var timestamp = block.Timestamp;
                         DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds((long)timestamp.Value).UtcDateTime;
 
-                        await _eventRepository.HandleClaimProfitAsync(evt.ProfitId, evt.Investor, txHash, dateTime);
+                        await _eventRepository.HandleClaimProfitAsync(evt.ProfitId, evt.Investor, evt.Amount, txHash, dateTime);
 
                         await _eventRepository.LogEventAsync("ClaimProfit", txHash, (int)log.Log.BlockNumber.Value, 0, JsonSerializer.Serialize(evt));
                     }, cancellationToken);

@@ -116,6 +116,7 @@ namespace InvestDapp.Infrastructure.Data
                 entity.HasIndex(e => e.ClaimerWallet);
                 entity.HasIndex(e => e.ProfitId);
                 entity.Property(e => e.TransactionHash).HasMaxLength(100);
+                entity.Property(e => e.Amount).HasPrecision(18, 8);
             });
         }
 

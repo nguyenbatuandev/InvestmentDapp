@@ -445,11 +445,11 @@ namespace InvestDapp.Infrastructure.Data.Repository
             }
         }
 
-        public Task HandleClaimProfitAsync(BigInteger profitId, string claimerWallet, string? transactionHash, DateTime claimedAt)
+        public Task HandleClaimProfitAsync(BigInteger profitId, string claimerWallet, BigInteger amount, string? transactionHash, DateTime claimedAt)
         {
             try
             {
-                _logger?.LogInformation("HandleClaimProfitAsync called: profitId={ProfitId} claimer={Claimer} tx={Tx}", profitId, claimerWallet, transactionHash);
+                _logger?.LogInformation("HandleClaimProfitAsync called: profitId={ProfitId} claimer={Claimer} amount={Amount} tx={Tx}", profitId, claimerWallet, amount, transactionHash);
 
                 int profitIdInt;
                 try
@@ -470,17 +470,20 @@ namespace InvestDapp.Infrastructure.Data.Repository
                     return Task.CompletedTask;
                 }
 
+                var claimAmountBnb = (decimal)Web3.Convert.FromWei(amount);
+
                 var claim = new ProfitClaim
                 {
                     ProfitId = profitIdInt,
                     ClaimerWallet = claimerWallet,
                     TransactionHash = transactionHash ?? string.Empty,
-                    ClaimedAt = claimedAt
+                    ClaimedAt = claimedAt,
+                    Amount = claimAmountBnb
                 };
 
                 _investDbContext.ProfitClaims.Add(claim);
 
-                _logger?.LogInformation("Saving ProfitClaim to DB: profitId={ProfitId} claimer={Claimer} tx={Tx}", profitIdInt, claimerWallet, transactionHash);
+                _logger?.LogInformation("Saving ProfitClaim to DB: profitId={ProfitId} claimer={Claimer} amount={Amount} tx={Tx}", profitIdInt, claimerWallet, claimAmountBnb, transactionHash);
                 try
                 {
                     return _investDbContext.SaveChangesAsync();

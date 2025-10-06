@@ -12,7 +12,7 @@ namespace InvestDapp.Shared.Models
 
         [Required]
         public int ProfitId { get; set; }
-        public virtual Profit Profit { get; set; }
+    public virtual Profit Profit { get; set; } = null!;
 
         [Required]
         [MaxLength(42)]
@@ -22,5 +22,8 @@ namespace InvestDapp.Shared.Models
         public string? TransactionHash { get; set; }
 
         public DateTime ClaimedAt { get; set; }
+
+        [Column(TypeName = "decimal(18,8)")]
+        public decimal Amount { get; set; }
     }
 }

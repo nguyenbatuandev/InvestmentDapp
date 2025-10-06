@@ -23,10 +23,12 @@ namespace InvestDapp.Shared.DTOs.Admin
     {
         public decimal TotalInvestment { get; set; }
         public decimal TotalRefund { get; set; }
-        public decimal NetAmount => TotalInvestment - TotalRefund;
+        public decimal TotalProfit { get; set; }
+        public decimal NetAmount => TotalInvestment - TotalRefund - TotalProfit;
         public int InvestmentCount { get; set; }
         public int RefundCount { get; set; }
-        public int TotalTransactions => InvestmentCount + RefundCount;
+        public int ProfitCount { get; set; }
+        public int TotalTransactions => InvestmentCount + RefundCount + ProfitCount;
     }
 
     public class TransactionReportResultDto
@@ -48,7 +50,8 @@ namespace InvestDapp.Shared.DTOs.Admin
         public string Label { get; set; } = string.Empty;
         public decimal InvestmentTotal { get; set; }
         public decimal RefundTotal { get; set; }
-        public decimal NetAmount => InvestmentTotal - RefundTotal;
+        public decimal ProfitTotal { get; set; }
+        public decimal NetAmount => InvestmentTotal - RefundTotal - ProfitTotal;
     }
 
     public class TransactionCampaignSummaryDto
@@ -57,7 +60,8 @@ namespace InvestDapp.Shared.DTOs.Admin
         public string CampaignName { get; set; } = string.Empty;
         public decimal InvestmentTotal { get; set; }
         public decimal RefundTotal { get; set; }
-        public decimal NetAmount => InvestmentTotal - RefundTotal;
+        public decimal ProfitTotal { get; set; }
+        public decimal NetAmount => InvestmentTotal - RefundTotal - ProfitTotal;
     }
 
     public class TransactionChartDataDto

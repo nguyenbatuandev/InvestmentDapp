@@ -3,6 +3,7 @@ using InvestDapp.Application.MessageService;
 using InvestDapp.Application.NotificationService;
 using InvestDapp.Application.UserService;
 using InvestDapp.Infrastructure.Data.interfaces;
+using InvestDapp.Shared.Common;
 using InvestDapp.Shared.Common.Request;
 using InvestDapp.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
@@ -965,10 +966,8 @@ namespace InvestDapp.Controllers
 
                     foreach (var refund in userRefunds)
                     {
-                        if (double.TryParse(refund.AmountInWei, out double refundAmount))
-                        {
-                            totalRefundedWei += refundAmount;
-                        }
+                        var refundAmount = BlockchainAmountConverter.ToBnb(refund.AmountInWei);
+                        totalRefundedWei += (double)refundAmount;
                         totalRefunds++;
 
                         transactions.Add(new
@@ -979,7 +978,7 @@ namespace InvestDapp.Controllers
                             campaignTitle = campaign.Name,
                             method = "REFUND",
                             amountInWei = refund.AmountInWei,
-                            amount = double.TryParse(refund.AmountInWei, out double amt) ? amt : 0,
+                            amount = (double)refundAmount,
                             time = refund.ClaimedAt ?? DateTime.UtcNow,
                             status = "success",
                             isRefunded = false,

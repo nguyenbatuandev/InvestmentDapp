@@ -1,4 +1,5 @@
 using InvestDapp.Infrastructure.Data;
+using InvestDapp.Shared.Common;
 using InvestDapp.Shared.Common.Request;
 using InvestDapp.Shared.DTOs.Admin;
 using InvestDapp.Shared.Enums;
@@ -7,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Numerics;
 using System.Threading.Tasks;
 
 namespace InvestDapp.Application.AdminAnalytics
@@ -100,11 +100,18 @@ namespace InvestDapp.Application.AdminAnalytics
                 .Include(r => r.Campaign)
                 .AsQueryable();
 
+            var profitClaimQuery = _context.ProfitClaims
+                .AsNoTracking()
+                .Include(pc => pc.Profit)
+                    .ThenInclude(p => p.Campaign)
+                .AsQueryable();
+
             if (!string.IsNullOrWhiteSpace(filterRequest.CampaignName))
             {
                 var keyword = $"%{filterRequest.CampaignName.Trim()}%";
                 investmentQuery = investmentQuery.Where(i => i.Campaign != null && EF.Functions.Like(i.Campaign.Name, keyword));
                 refundQuery = refundQuery.Where(r => r.Campaign != null && EF.Functions.Like(r.Campaign.Name, keyword));
+                profitClaimQuery = profitClaimQuery.Where(pc => pc.Profit != null && pc.Profit.Campaign != null && EF.Functions.Like(pc.Profit.Campaign.Name, keyword));
             }
 
             if (filterRequest.StartDate.HasValue)
@@ -112,6 +119,7 @@ namespace InvestDapp.Application.AdminAnalytics
                 var start = filterRequest.StartDate.Value.Date;
                 investmentQuery = investmentQuery.Where(i => i.Timestamp >= start);
                 refundQuery = refundQuery.Where(r => (r.ClaimedAt ?? DateTime.MinValue) >= start);
+                profitClaimQuery = profitClaimQuery.Where(pc => pc.ClaimedAt >= start);
             }
 
             if (filterRequest.EndDate.HasValue)
@@ -119,6 +127,7 @@ namespace InvestDapp.Application.AdminAnalytics
                 var exclusiveEnd = filterRequest.EndDate.Value.Date.AddDays(1);
                 investmentQuery = investmentQuery.Where(i => i.Timestamp < exclusiveEnd);
                 refundQuery = refundQuery.Where(r => (r.ClaimedAt ?? DateTime.MinValue) < exclusiveEnd);
+                profitClaimQuery = profitClaimQuery.Where(pc => pc.ClaimedAt < exclusiveEnd);
             }
 
             var records = new List<AdminTransactionRecordDto>();
@@ -129,6 +138,12 @@ namespace InvestDapp.Application.AdminAnalytics
 
             var includeRefunds = string.IsNullOrWhiteSpace(filterRequest.TransactionType) ||
                                  filterRequest.TransactionType.Equals("Refund", StringComparison.OrdinalIgnoreCase);
+
+            var includeProfitClaims = string.IsNullOrWhiteSpace(filterRequest.TransactionType) ||
+                                      filterRequest.TransactionType.Equals("Profit", StringComparison.OrdinalIgnoreCase) ||
+                                      filterRequest.TransactionType.Equals("ClaimProfit", StringComparison.OrdinalIgnoreCase) ||
+                                      filterRequest.TransactionType.Equals("ProfitClaim", StringComparison.OrdinalIgnoreCase) ||
+                                      filterRequest.TransactionType.Equals("Claim Profit", StringComparison.OrdinalIgnoreCase);
 
             if (includeInvestments)
             {
@@ -141,12 +156,17 @@ namespace InvestDapp.Application.AdminAnalytics
                         CampaignName = i.Campaign != null ? i.Campaign.Name : "Unknown Campaign",
                         InvestorAddress = i.InvestorAddress,
                         Amount = (decimal)i.Amount,
-                        AmountFormatted = i.Amount.ToString("N4", CultureInfo.InvariantCulture),
+                        AmountFormatted = string.Empty,
                         OccurredAt = i.Timestamp,
                         TransactionHash = i.TransactionHash,
                         Status = "Completed"
                     })
                     .ToListAsync();
+
+                foreach (var record in investmentRecords)
+                {
+                    record.AmountFormatted = BlockchainAmountConverter.FormatBnb(record.Amount);
+                }
 
                 records.AddRange(investmentRecords);
             }
@@ -169,7 +189,7 @@ namespace InvestDapp.Application.AdminAnalytics
 
                 foreach (var refund in refundRecords)
                 {
-                    var amount = ConvertWeiToBnb(refund.AmountInWei);
+                    var amount = BlockchainAmountConverter.ToBnb(refund.AmountInWei);
                     var occurredAt = refund.ClaimedAt ?? refund.CampaignCreatedAt;
 
                     records.Add(new AdminTransactionRecordDto
@@ -180,10 +200,43 @@ namespace InvestDapp.Application.AdminAnalytics
                         CampaignName = refund.CampaignName,
                         InvestorAddress = refund.InvestorAddress,
                         Amount = amount,
-                        AmountFormatted = amount.ToString("N4", CultureInfo.InvariantCulture),
+                        AmountFormatted = BlockchainAmountConverter.FormatBnb(amount),
                         OccurredAt = occurredAt ?? DateTime.MinValue,
                         TransactionHash = refund.TransactionHash,
                         Status = refund.ClaimedAt.HasValue ? "Refunded" : "Pending"
+                    });
+                }
+            }
+
+            if (includeProfitClaims)
+            {
+                var profitClaimRecords = await profitClaimQuery
+                    .Select(pc => new
+                    {
+                        pc.Id,
+                        CampaignId = pc.Profit != null ? pc.Profit.CampaignId : 0,
+                        CampaignName = pc.Profit != null && pc.Profit.Campaign != null ? pc.Profit.Campaign.Name : "Unknown Campaign",
+                        pc.ClaimerWallet,
+                        pc.Amount,
+                        pc.ClaimedAt,
+                        pc.TransactionHash
+                    })
+                    .ToListAsync();
+
+                foreach (var claim in profitClaimRecords)
+                {
+                    records.Add(new AdminTransactionRecordDto
+                    {
+                        Id = claim.Id,
+                        TransactionType = "Profit",
+                        CampaignId = claim.CampaignId,
+                        CampaignName = claim.CampaignName,
+                        InvestorAddress = claim.ClaimerWallet,
+                        Amount = claim.Amount,
+                        AmountFormatted = BlockchainAmountConverter.FormatBnb(claim.Amount),
+                        OccurredAt = claim.ClaimedAt,
+                        TransactionHash = claim.TransactionHash,
+                        Status = "Claimed"
                     });
                 }
             }
@@ -200,8 +253,10 @@ namespace InvestDapp.Application.AdminAnalytics
             {
                 TotalInvestment = records.Where(r => r.TransactionType.Equals("Investment", StringComparison.OrdinalIgnoreCase)).Sum(r => r.Amount),
                 TotalRefund = records.Where(r => r.TransactionType.Equals("Refund", StringComparison.OrdinalIgnoreCase)).Sum(r => r.Amount),
+                TotalProfit = records.Where(r => r.TransactionType.Equals("Profit", StringComparison.OrdinalIgnoreCase)).Sum(r => r.Amount),
                 InvestmentCount = records.Count(r => r.TransactionType.Equals("Investment", StringComparison.OrdinalIgnoreCase)),
-                RefundCount = records.Count(r => r.TransactionType.Equals("Refund", StringComparison.OrdinalIgnoreCase))
+                RefundCount = records.Count(r => r.TransactionType.Equals("Refund", StringComparison.OrdinalIgnoreCase)),
+                ProfitCount = records.Count(r => r.TransactionType.Equals("Profit", StringComparison.OrdinalIgnoreCase))
             };
         }
 
@@ -224,7 +279,8 @@ namespace InvestDapp.Application.AdminAnalytics
                     Period = g.Key,
                     Label = FormatPeriodLabel(g.Key, grouping),
                     InvestmentTotal = g.Where(r => r.TransactionType.Equals("Investment", StringComparison.OrdinalIgnoreCase)).Sum(r => r.Amount),
-                    RefundTotal = g.Where(r => r.TransactionType.Equals("Refund", StringComparison.OrdinalIgnoreCase)).Sum(r => r.Amount)
+                    RefundTotal = g.Where(r => r.TransactionType.Equals("Refund", StringComparison.OrdinalIgnoreCase)).Sum(r => r.Amount),
+                    ProfitTotal = g.Where(r => r.TransactionType.Equals("Profit", StringComparison.OrdinalIgnoreCase)).Sum(r => r.Amount)
                 })
                 .ToList();
 
@@ -235,7 +291,8 @@ namespace InvestDapp.Application.AdminAnalytics
                     CampaignId = g.Key.CampaignId,
                     CampaignName = g.Key.Name,
                     InvestmentTotal = g.Where(r => r.TransactionType.Equals("Investment", StringComparison.OrdinalIgnoreCase)).Sum(r => r.Amount),
-                    RefundTotal = g.Where(r => r.TransactionType.Equals("Refund", StringComparison.OrdinalIgnoreCase)).Sum(r => r.Amount)
+                    RefundTotal = g.Where(r => r.TransactionType.Equals("Refund", StringComparison.OrdinalIgnoreCase)).Sum(r => r.Amount),
+                    ProfitTotal = g.Where(r => r.TransactionType.Equals("Profit", StringComparison.OrdinalIgnoreCase)).Sum(r => r.Amount)
                 })
                 .OrderByDescending(c => c.InvestmentTotal)
                 .ThenByDescending(c => c.NetAmount)
@@ -284,18 +341,7 @@ namespace InvestDapp.Application.AdminAnalytics
 
         private static decimal ConvertWeiToBnb(string? amountInWei)
         {
-            if (string.IsNullOrWhiteSpace(amountInWei))
-            {
-                return 0m;
-            }
-
-            if (!BigInteger.TryParse(amountInWei, out var weiValue))
-            {
-                return 0m;
-            }
-
-            const decimal weiPerBnb = 1000000000000000000m; // 1e18
-            return (decimal)weiValue / weiPerBnb;
+            return BlockchainAmountConverter.ToBnb(amountInWei);
         }
     }
 }

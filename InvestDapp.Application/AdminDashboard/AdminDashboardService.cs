@@ -1,9 +1,9 @@
 using InvestDapp.Infrastructure.Data;
+using InvestDapp.Shared.Common;
 using InvestDapp.Shared.Enums;
 using InvestDapp.Shared.Models.Kyc;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
-using System.Numerics;
 using System.Linq;
 
 namespace InvestDapp.Application.AdminDashboard
@@ -614,18 +614,7 @@ namespace InvestDapp.Application.AdminDashboard
             decimal total = 0m;
             foreach (var amount in amountsInWei)
             {
-                if (string.IsNullOrWhiteSpace(amount))
-                {
-                    continue;
-                }
-
-                if (!BigInteger.TryParse(amount, out var weiValue))
-                {
-                    continue;
-                }
-
-                const decimal weiPerBnb = 1_000_000_000_000_000_000m;
-                total += (decimal)weiValue / weiPerBnb;
+                total += BlockchainAmountConverter.ToBnb(amount);
             }
 
             return total;
