@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace InvestDapp.Controllers
 {
     [Authorize]    
-    
     public class ConversationsController : Controller
     {
         private readonly IConversationService _convoService;

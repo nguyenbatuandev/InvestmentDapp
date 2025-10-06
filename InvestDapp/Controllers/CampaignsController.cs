@@ -15,7 +15,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InvestDapp.Controllers
 {
-    [Authorize]
     public class CampaignsController : Controller
     {
         private readonly ICampaignPostService _campaignPostService;
@@ -41,6 +40,7 @@ namespace InvestDapp.Controllers
             _campain = campaign;
         }
 
+        [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
             try
@@ -49,7 +49,7 @@ namespace InvestDapp.Controllers
                 var approvedCampaigns = await _campaignPostService.GetApprovedCampaignsAsync();
                 return View(approvedCampaigns);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Nếu có lỗi, trả về view với danh sách rỗng
                 return View(new List<InvestDapp.Models.Campaign>());
@@ -78,13 +78,14 @@ namespace InvestDapp.Controllers
                 var campaigns = await _campaignPostService.GetUserCampaignsAsync(wallet);
                 return View(campaigns);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return RedirectToAction("Index", "Home");
             }
         }
 
         // GET: /Campaign/Details/5
+        [AllowAnonymous]
         public async Task<IActionResult> Details(int id)
         {
             var campaign = await _campaignPostService.GetCampaignByIdAsync(id);
@@ -194,7 +195,7 @@ namespace InvestDapp.Controllers
                 }
                 return View(request);
             }
-            catch (Microsoft.Data.SqlClient.SqlException sqlEx)
+            catch (Microsoft.Data.SqlClient.SqlException)
             {
                 ModelState.AddModelError("", "Lỗi kết nối cơ sở dữ liệu. Vui lòng thử lại sau.");
                 return View(request);
@@ -222,6 +223,11 @@ namespace InvestDapp.Controllers
             }
 
             var wallet = User.FindFirst("WalletAddress")?.Value;
+            if (string.IsNullOrEmpty(wallet))
+            {
+                TempData["ErrorMessage"] = "Không thể xác thực địa chỉ ví của bạn.";
+                return RedirectToAction("Index", "Home");
+            }
             if (!await _campaignPostService.CanUserCreatePost(campaignId, wallet))
             {
                 TempData["ErrorMessage"] = "Bạn không có quyền tạo bài viết cho chiến dịch này.";
@@ -237,6 +243,7 @@ namespace InvestDapp.Controllers
         }
 
         // GET: /Campaign/Posts/5
+        [AllowAnonymous]
         public async Task<IActionResult> Posts(int campaignId)
         {
             var campaign = await _campaignPostService.GetCampaignByIdAsync(campaignId);
@@ -251,6 +258,7 @@ namespace InvestDapp.Controllers
         }
 
         // GET: /Campaign/PostDetails/5
+        [AllowAnonymous]
         public async Task<IActionResult> PostDetails(int id)
         {
             var post = await _campaignPostService.GetPostByIdAsync(id);
@@ -353,7 +361,7 @@ namespace InvestDapp.Controllers
                 TempData["ErrorMessage"] = ex.Message;
                 return RedirectToAction("Details", new { id = request.CampaignId });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 ModelState.AddModelError("", "Đã xảy ra lỗi khi tạo bài viết. Vui lòng thử lại.");
                 var campaign = await _campaignPostService.GetCampaignByIdAsync(request.CampaignId);
@@ -371,6 +379,18 @@ namespace InvestDapp.Controllers
             try
             {
                 var wallet = User.FindFirst("WalletAddress")?.Value;
+                if (string.IsNullOrEmpty(wallet))
+                {
+                    if (Request.Headers["Content-Type"].ToString().Contains("application/json") ||
+                        Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                        Request.ContentType?.Contains("multipart/form-data") == true)
+                    {
+                        return Json(new { success = false, message = "Không thể xác thực địa chỉ ví của bạn." });
+                    }
+
+                    TempData["ErrorMessage"] = "Không thể xác thực địa chỉ ví của bạn.";
+                    return RedirectToAction("Index", "Home");
+                }
                 var post = await _campaignPostService.GetPostByIdAsync(id);
 
                 if (post == null)
@@ -440,6 +460,11 @@ namespace InvestDapp.Controllers
             }
 
             var wallet = User.FindFirst("WalletAddress")?.Value;
+            if (string.IsNullOrEmpty(wallet))
+            {
+                TempData["ErrorMessage"] = "Không thể xác thực địa chỉ ví của bạn.";
+                return RedirectToAction("Index", "Home");
+            }
             if (!await _campaignPostService.CanUserEditCampaign(campaignId, wallet))
             {
                 TempData["ErrorMessage"] = "Bạn không có quyền xem thông tin này.";
@@ -634,6 +659,7 @@ namespace InvestDapp.Controllers
         // POST: /Campaigns/RequestFullWithdrawal - Record withdrawal request transaction
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize]
         public async Task<IActionResult> RequestFullWithdrawal([FromBody] WithdrawalRequestDto request)
         {
             try
@@ -719,6 +745,7 @@ namespace InvestDapp.Controllers
         // POST: /Campaigns/UpdateWithdrawalStatus - Update withdrawal request status after blockchain execution
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize]
         public async Task<IActionResult> UpdateWithdrawalStatus([FromBody] UpdateWithdrawalStatusDto request)
         {
             try
@@ -780,6 +807,7 @@ namespace InvestDapp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize]
         public async Task<IActionResult> Refund([FromBody] RefundRequestDto request)
         {
             try
@@ -820,6 +848,7 @@ namespace InvestDapp.Controllers
         }
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize]
         public async Task<IActionResult> ClaimRefund(ClaimRefundDto? claimRefund)
         {
             try
@@ -873,12 +902,14 @@ namespace InvestDapp.Controllers
         }
 
         #region analysis transaction
-        public async Task<IActionResult> TaskAnalysis()
+        [Authorize]
+        public IActionResult TaskAnalysis()
         {
             return View();
         }
 
         // Owner analytics view for campaign owners
+        [Authorize]
         public IActionResult OwnerAnalytics()
         {
             return View();
@@ -886,6 +917,7 @@ namespace InvestDapp.Controllers
 
         // API: Get user's transaction analysis data
         [HttpGet("api/user/transactions")]
+        [Authorize]
         public async Task<IActionResult> GetUserTransactions()
         {
             try
@@ -996,6 +1028,7 @@ namespace InvestDapp.Controllers
 
         // API: Get owner's transaction analysis data (for campaign owners)
         [HttpGet("api/owner/transactions")]
+        [Authorize]
         public async Task<IActionResult> GetOwnerTransactions()
         {
             try

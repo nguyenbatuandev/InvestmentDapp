@@ -21,19 +21,37 @@ namespace InvestDapp.Controllers
         [HttpGet]
         public async Task<JsonResult> CheckWallet(string wallet)
         {
-            if (string.IsNullOrEmpty(wallet))
+            if (string.IsNullOrWhiteSpace(wallet))
             {
-                return Json(new { exists = false, message = "Wallet address cannot be empty." });
+                return Json(new { exists = false, error = "Wallet address cannot be empty." });
             }
 
-            var profile = await _userRepository.GetUserByWalletAddressAsync(wallet);
-            if (profile != null)
+            var existingProfile = await _userRepository.GetUserByWalletAddressAsync(wallet);
+            var isNew = existingProfile == null;
+
+            var profile = existingProfile ?? await _userRepository.EnsureUserAsync(wallet);
+
+            if (profile == null)
             {
-                await _authService.SignInUser(profile);
-                return Json(new { exists = true });
+                return Json(new { exists = false, error = "Unable to initialize wallet profile." });
             }
 
-            return Json(new { exists = false });
+            await _authService.SignInUser(profile);
+
+            var requiresProfile = string.IsNullOrWhiteSpace(profile.Name) || string.IsNullOrWhiteSpace(profile.Email);
+
+            return Json(new
+            {
+                exists = true,
+                isNew,
+                requiresProfile,
+                profile = new
+                {
+                    name = profile.Name,
+                    email = profile.Email,
+                    wallet = profile.WalletAddress
+                }
+            });
         }
 
         [HttpPost]
@@ -41,24 +59,32 @@ namespace InvestDapp.Controllers
         {
             try
             {
-                if (string.IsNullOrEmpty(wallet) || string.IsNullOrEmpty(name) || string.IsNullOrEmpty(email))
+                if (string.IsNullOrWhiteSpace(wallet))
                 {
-                    return Json(new { success = false, message = "Invalid data provided." });
+                    return Json(new { success = false, message = "Wallet address is required." });
                 }
 
-                var user = await _userRepository.GetUserByWalletAddressAsync(wallet);
-
-                if (user != null)
+                if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(email))
                 {
-                    return Json(new { success = true, message = "This wallet address is already registered." });
+                    return Json(new { success = false, message = "Please provide both name and email." });
                 }
 
-                var profile = await _userRepository.CreateUserAsync(wallet, name, email);
+                var profile = await _userRepository.UpdateUserProfileAsync(wallet, name, email);
 
                 if (profile != null)
                 {
                     await _authService.SignInUser(profile);
-                    return Json(new { success = true, message = "Profile saved successfully." });
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Profile saved successfully.",
+                        profile = new
+                        {
+                            name = profile.Name,
+                            email = profile.Email,
+                            wallet = profile.WalletAddress
+                        }
+                    });
                 }
                 else
                 {

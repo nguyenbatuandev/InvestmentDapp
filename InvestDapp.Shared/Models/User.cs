@@ -18,14 +18,13 @@ namespace InvestDapp.Shared.Models
 
         [Required]
         [MaxLength(42)]
-        public string WalletAddress { get; set; }
-
-        [Required]
-        [MaxLength(255)]
-        public string Email { get; set; }
+        public string WalletAddress { get; set; } = string.Empty;
 
         [MaxLength(255)]
-        public string Name { get; set; }
+        public string? Email { get; set; }
+
+        [MaxLength(255)]
+        public string? Name { get; set; }
 
         [MaxLength(500)]
         public string? Avatar { get; set; }
@@ -34,7 +33,7 @@ namespace InvestDapp.Shared.Models
 
 
         [MaxLength(50)]
-        public string Role { get; set; } = "user";
+        public string Role { get; set; } = "User";
 
 
         [MaxLength(255)]
@@ -50,8 +49,8 @@ namespace InvestDapp.Shared.Models
         //public ICollection<Campaign> Campaigns { get; set; }
         //public ICollection<Investment> Investment { get; set; }
         //public ICollection<Vote> Votes { get; set; }
-        public ICollection<Notification> Notifications { get; set; }
-        public ICollection<FundraiserKyc> FundraiserKyc { get; set; }
+        public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+        public ICollection<FundraiserKyc> FundraiserKyc { get; set; } = new List<FundraiserKyc>();
         // --- Navigation Properties ---
         [InverseProperty("Sender")]
         public virtual ICollection<Messager> SentMessages { get; set; } = new List<Messager>();

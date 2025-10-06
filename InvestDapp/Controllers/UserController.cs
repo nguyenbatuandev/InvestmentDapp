@@ -23,12 +23,6 @@ namespace InvestDapp.Controllers
             return View();
         }
 
-        private int GetCurrentUserId()
-        {
-            var userIdClaim = User.FindFirst("UserId");
-            return userIdClaim != null ? int.Parse(userIdClaim.Value) : 0;
-        }
-
         [HttpPost]
         public async Task<IActionResult> UpdateProfile([FromBody] UserUpdateRequest request)
         {

@@ -6,6 +6,8 @@ namespace InvestDapp.Infrastructure.Data.interfaces
     public interface IUser
     {
         Task<User?> CreateUserAsync(string wallet, string name, string email);
+        Task<User?> EnsureUserAsync(string walletAddress);
+        Task<User?> UpdateUserProfileAsync(string walletAddress, string name, string email);
         Task<User?> UpdateUserAsync(UserUpdateRequest userUpdate , string wallet);
         Task<User?> GetUserByWalletAddressAsync(string walletAddress);
         Task<User> SetRoleByIdAsync(string walletAddress);

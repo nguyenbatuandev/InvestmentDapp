@@ -644,6 +644,8 @@
           const unreadBadge = document.getElementById('unreadBadgeMenu');
           const notificationBadge = document.getElementById('notificationBadgeMenu');
           const bell = document.getElementById('notifSound');
+          const newWalletModal = document.getElementById('newWalletModal');
+          const newWalletForm = document.getElementById('newWalletForm');
 
           function show(el, on){ if(!el) return; el.classList.toggle('hidden', !on); }
           function shorten(a){return a ? a.slice(0,6)+"…"+a.slice(-4) : '0x…'}
@@ -716,24 +718,52 @@
                         }catch(e){ console.warn('getUserProfile error', e); }
                     }
 
-          async function checkWalletOnServer(address){
-            try{
-              const r=await fetch('/Wallet/CheckWallet?wallet='+encodeURIComponent(address), {cache:'no-store'});
-              if(!r.ok) return { exists:true };
-              return await r.json();
-            }catch{ return { exists:true }; }
-          }
+                    async function checkWalletOnServer(address){
+                        try{
+                            const response = await fetch('/Wallet/CheckWallet?wallet='+encodeURIComponent(address), {cache:'no-store'});
+                            if(!response.ok){
+                                return { exists:false, requiresProfile:false };
+                            }
+                            return await response.json();
+                        }catch{
+                            return { exists:false, requiresProfile:false };
+                        }
+                    }
 
-          async function saveProfile(name,email){
-            try{
-              const r=await fetch('/Wallet/SaveProfile', {
-                method:'POST',
-                headers:{ 'Content-Type':'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ wallet: localStorage.getItem('connectedWallet')||'', name, email })
-              });
-              await r.json().catch(()=>null);
-            }catch{}
-          }
+                    async function saveProfile(name,email){
+                        const wallet = localStorage.getItem('connectedWallet')||'';
+                        if(!wallet){
+                            alert('Không xác định được ví đã kết nối. Vui lòng kết nối lại.');
+                            return false;
+                        }
+                        try{
+                            const r=await fetch('/Wallet/SaveProfile', {
+                                method:'POST',
+                                headers:{ 'Content-Type':'application/x-www-form-urlencoded' },
+                                body: new URLSearchParams({ wallet, name, email })
+                            });
+                            if(!r.ok){
+                                alert('Không thể lưu hồ sơ. Vui lòng thử lại.');
+                                return false;
+                            }
+                            const data = await r.json().catch(()=>null);
+                            if(!data){
+                                alert('Máy chủ phản hồi không hợp lệ. Vui lòng thử lại.');
+                                return false;
+                            }
+                            if(!data.success){
+                                alert(data.message || 'Không thể lưu hồ sơ. Vui lòng thử lại.');
+                                return false;
+                            }
+                            const walletAddress = data.profile?.wallet || wallet;
+                            setConnected(true, walletAddress);
+                            return true;
+                        }catch(err){
+                            console.warn('saveProfile error', err);
+                            alert('Không thể lưu hồ sơ. Vui lòng thử lại.');
+                            return false;
+                        }
+                    }
 
                     function setConnected(connected,address){
                         show(connectBtn, !connected);
@@ -797,7 +827,11 @@
                             const addr = (accounts&&accounts[0])||'';
                             localStorage.setItem('connectedWallet', addr);
                             const info = await checkWalletOnServer(addr);
-                            if(info && (info.isNew===true || info.exists===false) && typeof newWalletModal?.showModal==='function'){
+                            if(!info?.exists){
+                                alert('Không thể khởi tạo hồ sơ ví. Vui lòng thử lại.');
+                                return;
+                            }
+                            if(info?.requiresProfile && typeof newWalletModal?.showModal==='function'){
                                 newWalletModal.showModal();
                             }
                             setConnected(true, addr);
@@ -814,11 +848,21 @@
             setConnected(false);
           });
 
-          newWalletModal?.addEventListener('close', ()=>{
+                    newWalletModal?.addEventListener('close', ()=>{
             if(newWalletModal.returnValue==='ok'){
               const name=document.getElementById('nwName').value.trim();
               const email=document.getElementById('nwEmail').value.trim();
-              if(name && email) saveProfile(name,email);
+                            if(name && email){
+                                saveProfile(name,email).then(success=>{
+                                    if(success){
+                                        newWalletForm?.reset?.();
+                                    }else{
+                                        requestAnimationFrame(()=>{
+                                            try{ newWalletModal.showModal(); }catch{}
+                                        });
+                                    }
+                                });
+                            }
             }
           });
 

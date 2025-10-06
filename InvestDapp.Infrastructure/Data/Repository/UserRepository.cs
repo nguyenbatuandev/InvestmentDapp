@@ -14,27 +14,102 @@ namespace InvestDapp.Infrastructure.Data.Repository
             _context = context;
         }
 
+        private static string NormalizeWallet(string wallet)
+        {
+            return wallet?.Trim() ?? string.Empty;
+        }
+
         public async Task<User?> CreateUserAsync(string wallet, string name, string email)
         {
             try
             {
+                var normalizedWallet = NormalizeWallet(wallet);
+                if (string.IsNullOrWhiteSpace(normalizedWallet))
+                {
+                    return null;
+                }
+
+                var normalizedEmail = string.IsNullOrWhiteSpace(email) ? null : email.Trim();
+                var normalizedName = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
+
                 var user = new User
                 {
-                    WalletAddress = wallet,
-                    Email = email,
-                    Name = name, 
+                    WalletAddress = normalizedWallet,
+                    Email = normalizedEmail,
+                    Name = normalizedName,
                     Role = "User",
-                    CreatedAt = DateTime.Now,
-                    UpdatedAt = DateTime.Now,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
                 };
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
                 return user;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return null;
             }
+        }
+
+        public async Task<User?> EnsureUserAsync(string walletAddress)
+        {
+            var normalizedWallet = NormalizeWallet(walletAddress);
+            if (string.IsNullOrWhiteSpace(normalizedWallet))
+            {
+                return null;
+            }
+
+            var existing = await _context.Users
+                .FirstOrDefaultAsync(u => u.WalletAddress.ToLower() == normalizedWallet.ToLower());
+
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            var user = new User
+            {
+                WalletAddress = normalizedWallet,
+                Role = "User",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+            return user;
+        }
+
+        public async Task<User?> UpdateUserProfileAsync(string walletAddress, string name, string email)
+        {
+            var normalizedWallet = NormalizeWallet(walletAddress);
+            if (string.IsNullOrWhiteSpace(normalizedWallet))
+            {
+                return null;
+            }
+
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.WalletAddress.ToLower() == normalizedWallet.ToLower());
+
+            if (user == null)
+            {
+                return await CreateUserAsync(walletAddress, name, email);
+            }
+
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                user.Name = name.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                user.Email = email.Trim();
+            }
+
+            user.UpdatedAt = DateTime.UtcNow;
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+            return user;
         }
 
         public async Task<User?> GetUserByIdAsync(int id)
@@ -79,14 +154,20 @@ namespace InvestDapp.Infrastructure.Data.Repository
 
         public async Task<User?> UpdateUserAsync(UserUpdateRequest userUpdate , string wallet)
         {
-            var user = _context.Users.FirstOrDefault(u => u.WalletAddress == wallet);
+            var normalizedWallet = NormalizeWallet(wallet);
+            var user = _context.Users.FirstOrDefault(u => u.WalletAddress.ToLower() == normalizedWallet.ToLower());
+            if (user == null)
+            {
+                return null;
+            }
+
             if (!string.IsNullOrWhiteSpace(userUpdate.Name))
             {
-                user.Name = userUpdate.Name;
+                user.Name = userUpdate.Name.Trim();
             }
             if (!string.IsNullOrWhiteSpace(userUpdate.Email))
             {
-                user.Email = userUpdate.Email;
+                user.Email = userUpdate.Email.Trim();
             }
             if (!string.IsNullOrWhiteSpace(userUpdate.Avatar))
             {
@@ -96,6 +177,7 @@ namespace InvestDapp.Infrastructure.Data.Repository
             {
                 user.Bio = userUpdate.Bio;
             }
+            user.UpdatedAt = DateTime.UtcNow;
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
             return user;
