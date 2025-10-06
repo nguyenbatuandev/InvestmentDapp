@@ -610,19 +610,28 @@
                                     if(!chatBody.contains(typingEl)) chatBody.appendChild(typingEl);
                                     chatBody.scrollTop = chatBody.scrollHeight;
                                     try{
-                                        const res = await fetch('/Home/SendMessage', {
-                                            method:'POST',
-                                            headers:{ 'Content-Type':'application/json', 'RequestVerificationToken': getRequestVerificationToken(), 'Cache-Control':'no-store' },
-                                            body: JSON.stringify({ message: text })
-                                        });
-                                        if(res.ok){ const data=await res.json().catch(()=>({reply:'Đã gửi!'}));
-                                                // replace typing indicator with actual reply
-                                                if(chatBody.contains(typingEl)) chatBody.removeChild(typingEl);
-                                                pushMsg(data.reply||'Đã gửi!');
-                                        } else {
-                                                if(chatBody.contains(typingEl)) chatBody.removeChild(typingEl);
-                                                pushMsg('Lỗi gửi tin.');
-                                        }
+                    const token = typeof getRequestVerificationToken === 'function' ? getRequestVerificationToken() : '';
+                    const res = await fetch('@Url.Action("SendMessage", "Home")', {
+                        method:'POST',
+                        credentials:'include',
+                        headers:{
+                        'Content-Type':'application/json',
+                        'Cache-Control':'no-store',
+                        'RequestVerificationToken': token ?? ''
+                        },
+                        body: JSON.stringify({ message: text })
+                    });
+
+                    if(res.ok){
+                        const data=await res.json().catch(()=>({reply:'Đã gửi!'}));
+                        // replace typing indicator with actual reply
+                        if(chatBody.contains(typingEl)) chatBody.removeChild(typingEl);
+                        pushMsg(data.reply||'Đã gửi!');
+                    } else {
+                        if(chatBody.contains(typingEl)) chatBody.removeChild(typingEl);
+                        const friendly = res.status === 404 ? 'Dịch vụ AI tạm thời không khả dụng.' : 'Lỗi gửi tin.';
+                        pushMsg(friendly);
+                    }
                                     }catch{
                                         if(chatBody.contains(typingEl)) chatBody.removeChild(typingEl);
                                         pushMsg('Mạng không ổn định.');
