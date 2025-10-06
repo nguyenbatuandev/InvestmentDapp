@@ -1,19 +1,17 @@
 ﻿using InvestDapp.Application.CampaignService;
 using InvestDapp.Infrastructure.Data;
 using InvestDapp.Models;
-using InvestDapp.Shared.Common;
-using InvestDapp.Shared.Enums;
 using InvestDapp.ViewModels.Home;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
+using InvestDapp.Shared.Enums;
+using System.Linq;
+using InvestDapp.Application.UserService;
 
 namespace InvestDapp.Controllers
 {
@@ -23,17 +21,11 @@ namespace InvestDapp.Controllers
 
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly string? _geminiApiKey;
-        private readonly InvestDbContext _dbContext;
-        private readonly ICampaignPostService _campaignPostService;
-
-        private static readonly CultureInfo VietnameseCulture = new CultureInfo("vi-VN");
-        private const int MaxPostsPerCampaign = 3;
-        private const int MaxTransactionsPerCampaign = 5;
-        private const int MaxRefundsPerCampaign = 3;
-        private const int MaxProfitClaimsPerCampaign = 3;
+    private readonly ILogger<HomeController> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly string? _geminiApiKey;
+    private readonly InvestDbContext _dbContext;
+    private readonly ICampaignPostService _campaignPostService;
 
         public HomeController(
             ILogger<HomeController> logger,
@@ -173,306 +165,6 @@ namespace InvestDapp.Controllers
             return plain[..maxLength].TrimEnd() + "…";
         }
 
-        private async Task<string> BuildInvestorDataContextAsync(string walletAddress)
-        {
-            var normalizedWallet = walletAddress.Trim();
-            var walletLower = normalizedWallet.ToLowerInvariant();
-
-            var builder = new StringBuilder();
-            builder.AppendLine($"Ví đang hoạt động: {normalizedWallet}");
-
-            var investments = await _dbContext.Investment
-                .AsNoTracking()
-                .Include(i => i.Campaign)
-                .Where(i => i.InvestorAddress.ToLower() == walletLower)
-                .OrderByDescending(i => i.Timestamp)
-                .ToListAsync();
-
-            var profitClaims = await _dbContext.ProfitClaims
-                .AsNoTracking()
-                .Include(pc => pc.Profit)
-                .ThenInclude(p => p.Campaign)
-                .Where(pc => pc.ClaimerWallet.ToLower() == walletLower)
-                .OrderByDescending(pc => pc.ClaimedAt)
-                .ToListAsync();
-
-            var refundRecords = await _dbContext.Refunds
-                .AsNoTracking()
-                .Where(r => r.InvestorAddress.ToLower() == walletLower)
-                .ToListAsync();
-
-            if (investments.Count == 0 && profitClaims.Count == 0 && refundRecords.Count == 0)
-            {
-                builder.AppendLine("- Nhà đầu tư chưa có dữ liệu giao dịch nào trên nền tảng.");
-                return builder.ToString();
-            }
-
-            var campaignIds = new HashSet<int>(investments.Select(i => i.CampaignId));
-            foreach (var claim in profitClaims)
-            {
-                if (claim.Profit?.CampaignId is int campaignId)
-                {
-                    campaignIds.Add(campaignId);
-                }
-            }
-
-            foreach (var refund in refundRecords)
-            {
-                campaignIds.Add(refund.CampaignId);
-            }
-
-            var campaignLookup = campaignIds.Count > 0
-                ? await _dbContext.Campaigns
-                    .AsNoTracking()
-                    .Where(c => campaignIds.Contains(c.Id))
-                    .ToDictionaryAsync(c => c.Id)
-                : new Dictionary<int, Campaign>();
-
-            var approvedPosts = campaignIds.Count > 0
-                ? await _dbContext.CampaignPosts
-                    .AsNoTracking()
-                    .Where(p => campaignIds.Contains(p.CampaignId) && p.ApprovalStatus == ApprovalStatus.Approved)
-                    .OrderByDescending(p => p.ApprovedAt ?? p.CreatedAt)
-                    .ToListAsync()
-                : new List<InvestDapp.Shared.Models.CampaignPost>();
-
-            var totalInvested = investments.Sum(i => (decimal)i.Amount);
-            var totalRefunded = refundRecords.Sum(r => BlockchainAmountConverter.ToBnb(r.AmountInWei));
-            var totalProfitClaimed = profitClaims.Sum(pc => pc.Amount);
-            var investedCampaignCount = investments.Select(i => i.CampaignId).Distinct().Count();
-
-            if (investments.Count > 0)
-            {
-                builder.AppendLine($"- Tổng số chiến dịch đã đầu tư: {investedCampaignCount}");
-                builder.AppendLine($"- Tổng vốn đã góp: {FormatBnbAmount(totalInvested)}");
-            }
-            else
-            {
-                builder.AppendLine("- Chưa ghi nhận khoản đầu tư trực tiếp nào.");
-            }
-
-            if (refundRecords.Count > 0)
-            {
-                builder.AppendLine($"- Đã nhận hoàn vốn: {FormatBnbAmount(totalRefunded)} (từ {refundRecords.Select(r => r.CampaignId).Distinct().Count()} chiến dịch)");
-            }
-
-            if (profitClaims.Count > 0)
-            {
-                builder.AppendLine($"- Đã nhận lợi nhuận: {FormatBnbAmount(totalProfitClaimed)} (trong {profitClaims.Count} lượt claim)");
-            }
-
-            builder.AppendLine();
-
-            var campaignGroups = investments
-                .GroupBy(i => i.CampaignId)
-                .OrderByDescending(g => g.Max(i => i.Timestamp))
-                .ToList();
-
-            foreach (var campaignGroup in campaignGroups)
-            {
-                var campaignId = campaignGroup.Key;
-                campaignLookup.TryGetValue(campaignId, out var campaign);
-                campaign ??= campaignGroup.FirstOrDefault()?.Campaign;
-
-                if (campaign == null)
-                {
-                    continue;
-                }
-
-                builder.AppendLine($"- Chiến dịch: \"{campaign.Name}\" (ID #{campaign.Id})");
-                builder.AppendLine($"  • Trạng thái: {DescribeCampaignStatus(campaign.Status)}");
-                builder.AppendLine($"  • Thời hạn kết thúc: {FormatDateTime(campaign.EndTime)}");
-                builder.AppendLine($"  • Mục tiêu: {FormatBnbAmount((decimal)campaign.GoalAmount)} | Đã huy động: {FormatBnbAmount((decimal)campaign.CurrentRaisedAmount)} (tiến độ {FormatProgress(campaign.CurrentRaisedAmount, campaign.GoalAmount)})");
-
-                var totalByCampaign = campaignGroup.Sum(i => (decimal)i.Amount);
-                var latestInvestment = campaignGroup.OrderByDescending(i => i.Timestamp).First();
-                builder.AppendLine($"  • Tổng vốn bạn đã góp: {FormatBnbAmount(totalByCampaign)} (giao dịch gần nhất {FormatDateTime(latestInvestment.Timestamp)})");
-
-                var recentInvestments = campaignGroup
-                    .OrderByDescending(i => i.Timestamp)
-                    .Take(MaxTransactionsPerCampaign)
-                    .ToList();
-
-                if (recentInvestments.Count > 0)
-                {
-                    builder.AppendLine("  • Các giao dịch đầu tư gần nhất:");
-                    foreach (var investment in recentInvestments)
-                    {
-                        builder.AppendLine($"    ◦ {FormatDateTime(investment.Timestamp)} - {FormatBnbAmount((decimal)investment.Amount)} (Tx: {ShortenHash(investment.TransactionHash)})");
-                    }
-                }
-
-                var latestPosts = approvedPosts
-                    .Where(p => p.CampaignId == campaignId)
-                    .OrderByDescending(p => p.ApprovedAt ?? p.CreatedAt)
-                    .Take(MaxPostsPerCampaign)
-                    .ToList();
-
-                if (latestPosts.Count > 0)
-                {
-                    builder.AppendLine("  • Bài viết cập nhật gần nhất:");
-                    foreach (var post in latestPosts)
-                    {
-                        var publishedAt = post.ApprovedAt ?? post.CreatedAt;
-                        builder.AppendLine($"    ◦ [{FormatDateTime(publishedAt)}] ({DescribePostType(post.PostType)}) {post.Title}");
-                    }
-                }
-
-                var campaignRefunds = refundRecords
-                    .Where(r => r.CampaignId == campaignId)
-                    .OrderByDescending(r => r.ClaimedAt ?? DateTime.MinValue)
-                    .Take(MaxRefundsPerCampaign)
-                    .ToList();
-
-                if (campaignRefunds.Count > 0)
-                {
-                    builder.AppendLine("  • Hoàn vốn liên quan:");
-                    foreach (var refund in campaignRefunds)
-                    {
-                        var refundAmount = BlockchainAmountConverter.ToBnb(refund.AmountInWei);
-                        var claimedLabel = refund.ClaimedAt.HasValue
-                            ? $"nhận {FormatDateTime(refund.ClaimedAt)}"
-                            : "chưa nhận";
-                        builder.AppendLine($"    ◦ {FormatBnbAmount(refundAmount)} ({claimedLabel}) Tx: {ShortenHash(refund.TransactionHash)}");
-                    }
-                }
-
-                var campaignProfitClaims = profitClaims
-                    .Where(pc => pc.Profit?.CampaignId == campaignId)
-                    .OrderByDescending(pc => pc.ClaimedAt)
-                    .Take(MaxProfitClaimsPerCampaign)
-                    .ToList();
-
-                if (campaignProfitClaims.Count > 0)
-                {
-                    builder.AppendLine("  • Lợi nhuận đã nhận:");
-                    foreach (var claim in campaignProfitClaims)
-                    {
-                        builder.AppendLine($"    ◦ {FormatBnbAmount(claim.Amount)} (ngày {FormatDateTime(claim.ClaimedAt)}) Tx: {ShortenHash(claim.TransactionHash)}");
-                    }
-                }
-
-                builder.AppendLine();
-            }
-
-            var investedCampaignIds = new HashSet<int>(campaignGroups.Select(g => g.Key));
-            var profitOnlyGroups = profitClaims
-                .Where(pc => pc.Profit?.CampaignId != null && !investedCampaignIds.Contains(pc.Profit.CampaignId))
-                .GroupBy(pc => pc.Profit!.CampaignId)
-                .ToList();
-
-            if (profitOnlyGroups.Count > 0)
-            {
-                builder.AppendLine("LỢI NHUẬN TỪ CÁC CHIẾN DỊCH KHÁC:");
-                foreach (var group in profitOnlyGroups)
-                {
-                    var campaignId = group.Key;
-                    campaignLookup.TryGetValue(campaignId, out var campaign);
-                    var campaignLabel = campaign != null
-                        ? $"Chiến dịch \"{campaign.Name}\" (ID #{campaign.Id})"
-                        : $"Chiến dịch ID #{campaignId}";
-
-                    builder.AppendLine($"- {campaignLabel}");
-                    builder.AppendLine($"  • Tổng lợi nhuận đã nhận: {FormatBnbAmount(group.Sum(claim => claim.Amount))}");
-
-                    foreach (var claim in group.OrderByDescending(claim => claim.ClaimedAt).Take(MaxProfitClaimsPerCampaign))
-                    {
-                        builder.AppendLine($"    ◦ {FormatBnbAmount(claim.Amount)} vào {FormatDateTime(claim.ClaimedAt)} (Tx: {ShortenHash(claim.TransactionHash)})");
-                    }
-
-                    builder.AppendLine();
-                }
-            }
-
-            return builder.ToString();
-        }
-
-        private static string FormatProgress(double raised, double goal)
-        {
-            if (goal <= 0)
-            {
-                return "0%";
-            }
-
-            var ratio = raised / goal;
-            if (!double.IsFinite(ratio))
-            {
-                ratio = 0d;
-            }
-
-            if (ratio < 0)
-            {
-                ratio = 0;
-            }
-
-            return ratio.ToString("P1", VietnameseCulture);
-        }
-
-        private static string DescribeCampaignStatus(CampaignStatus status)
-        {
-            return status switch
-            {
-                CampaignStatus.Draft => "Bản nháp",
-                CampaignStatus.PendingPost => "Chờ đăng bài giới thiệu",
-                CampaignStatus.PendingApproval => "Chờ quản trị viên phê duyệt",
-                CampaignStatus.Active => "Đang huy động vốn",
-                CampaignStatus.Voting => "Đang biểu quyết DAO-lite",
-                CampaignStatus.Completed => "Đã hoàn thành",
-                CampaignStatus.Failed => "Thất bại hoặc bị từ chối",
-                _ => status.ToString()
-            };
-        }
-
-        private static string DescribePostType(PostType postType)
-        {
-            return postType switch
-            {
-                PostType.Introduction => "Giới thiệu",
-                PostType.Update => "Cập nhật",
-                PostType.Achievement => "Thành tựu",
-                PostType.Announcement => "Thông báo",
-                _ => postType.ToString()
-            };
-        }
-
-        private static string FormatBnbAmount(decimal amount)
-        {
-            return $"{BlockchainAmountConverter.FormatBnb(amount)} BNB";
-        }
-
-        private static string FormatDateTime(DateTime value)
-        {
-            DateTime localTime = value.Kind switch
-            {
-                DateTimeKind.Utc => value.ToLocalTime(),
-                DateTimeKind.Unspecified => DateTime.SpecifyKind(value, DateTimeKind.Utc).ToLocalTime(),
-                _ => value
-            };
-
-            return localTime.ToString("dd/MM/yyyy HH:mm", VietnameseCulture);
-        }
-
-        private static string FormatDateTime(DateTime? value)
-        {
-            return value.HasValue ? FormatDateTime(value.Value) : "Chưa cập nhật";
-        }
-
-        private static string ShortenHash(string? hash, int visibleChars = 6)
-        {
-            if (string.IsNullOrWhiteSpace(hash))
-            {
-                return "Không có";
-            }
-
-            var trimmed = hash.Trim();
-            if (trimmed.Length <= visibleChars * 2 + 3)
-            {
-                return trimmed;
-            }
-
-            return $"{trimmed[..visibleChars]}…{trimmed[^visibleChars..]}";
-        }
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -529,7 +221,7 @@ namespace InvestDapp.Controllers
                 - **Tính bất biến và minh bạch:** Mọi thông tin chiến dịch và lịch sử giao dịch một khi đã được ghi lên blockchain thì không thể thay đổi hay xóa bỏ. Bất kỳ ai cũng có thể kiểm tra.
                 - **Hệ thống thông báo đa kênh:** Người dùng sẽ nhận được thông báo trong ứng dụng (real-time qua SignalR) và qua Email về các sự kiện quan trọng để không bỏ lỡ.
                 - **Gamification:** Nền tảng có tích hợp các yếu tố như bảng xếp hạng để tăng tương tác.
-
+                
                 3. QUY TẮC TRẢ LỜI
 
                 - **Định dạng câu trả lời:** Luôn luôn sử dụng định dạng Markdown để câu trả lời dễ đọc. **Phải xuống dòng để tạo các đoạn văn ngắn riêng biệt cho mỗi ý chính.** Sử dụng gạch đầu dòng (`- `) cho danh sách và in đậm (`**text**`) cho các thuật ngữ quan trọng.
@@ -559,34 +251,13 @@ namespace InvestDapp.Controllers
 
                 Toàn bộ 10 BNB của bạn sẽ được gửi trả lại , bạn chỉ cần vào trang của dự án và nhận lại 10BNB.
                 ";
-            var walletAddress = User?.FindFirst("WalletAddress")?.Value?.Trim();
-            var investorContext = string.Empty;
+            // ▼▼▼ BƯỚC 2: KẾT HỢP PROMPT VÀ CÂU HỎI CỦA NGƯỜI DÙNG ▼▼▼
+            var finalPrompt = $"{systemPrompt}\n\nDựa vào các thông tin trên, hãy trả lời câu hỏi sau của người dùng một cách thân thiện và chi tiết: \"{request.Message}\"";
 
-            if (!string.IsNullOrWhiteSpace(walletAddress))
-            {
-                investorContext = await BuildInvestorDataContextAsync(walletAddress);
-            }
-
-               // ▼▼▼ BƯỚC 2: KẾT HỢP PROMPT, DỮ LIỆU NGƯỜI DÙNG VÀ CÂU HỎI ▼▼▼
-            var finalPromptBuilder = new StringBuilder();
-            finalPromptBuilder.AppendLine(systemPrompt);
-
-            if (!string.IsNullOrWhiteSpace(investorContext))
-            {
-                finalPromptBuilder.AppendLine();
-                finalPromptBuilder.AppendLine("THÔNG TIN THỰC TẾ VỀ NHÀ ĐẦU TƯ (CHỈ SỬ DỤNG ĐỂ PHÂN TÍCH):");
-                finalPromptBuilder.AppendLine(investorContext);
-            }
-
-            finalPromptBuilder.AppendLine();
-            finalPromptBuilder.AppendLine($"Dựa vào các thông tin trên, hãy trả lời câu hỏi sau của người dùng một cách thân thiện và chi tiết: \"{request.Message}\"");
-
-            var finalPrompt = finalPromptBuilder.ToString();
-            var loadedKey = Environment.GetEnvironmentVariable("GeminiApiKey");
 
             try
             {
-                var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={loadedKey}";
+                var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={_geminiApiKey}";
 
                 // ▼▼▼ BƯỚC 3: GỬI PROMPT HOÀN CHỈNH ĐẾN GEMINI ▼▼▼
                 var requestData = new
