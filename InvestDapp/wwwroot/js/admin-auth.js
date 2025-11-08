@@ -1,17 +1,13 @@
 (function () {
-    const connectButton = document.getElementById('btnConnect');
-    const signButton = document.getElementById('btnSign');
+    const loginButton = document.getElementById('btnLogin');
     const statusLabel = document.getElementById('statusMessage');
     const antiforgeryInput = document.querySelector('#antiforgeryForm input[name="__RequestVerificationToken"]');
     const config = window.__ADMIN_LOGIN_CONFIG__ || {};
 
-    if (!connectButton || !signButton || !statusLabel || !antiforgeryInput || !config.nonceEndpoint || !config.verifyEndpoint) {
+    if (!loginButton || !statusLabel || !antiforgeryInput || !config.nonceEndpoint || !config.verifyEndpoint) {
         console.error('Admin login component is not initialised correctly');
         return;
     }
-
-    let currentAccount = null;
-    let cachedNonce = null;
 
     const setStatus = (message, type) => {
         statusLabel.textContent = message;
@@ -65,65 +61,54 @@
         return payload.redirect;
     };
 
-    connectButton.addEventListener('click', async () => {
+    // Combined login function - one click does everything
+    loginButton.addEventListener('click', async () => {
         const ethereum = requireEthereum();
         if (!ethereum) {
             return;
         }
 
         try {
-            setStatus('Đang yêu cầu MetaMask...', null);
+            loginButton.disabled = true;
+            
+            // Step 1: Request MetaMask accounts
+            setStatus('Đang kết nối MetaMask...', null);
             const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
             if (!accounts || !accounts.length) {
                 setStatus('Không nhận được địa chỉ ví.', 'error');
+                loginButton.disabled = false;
                 return;
             }
 
-            currentAccount = accounts[0];
-            setStatus(`Ví đang được sử dụng: ${currentAccount}`, 'success');
-            signButton.disabled = false;
-            cachedNonce = await fetchNonce(currentAccount);
-            setStatus('Nonce đã sẵn sàng, hãy ký để hoàn tất đăng nhập.', 'success');
-        } catch (error) {
-            console.error(error);
-            setStatus(error.message || 'Không thể kết nối MetaMask.', 'error');
-            signButton.disabled = true;
-            cachedNonce = null;
-        }
-    });
+            const currentAccount = accounts[0];
+            console.log('✅ Wallet connected:', currentAccount);
 
-    signButton.addEventListener('click', async () => {
-        const ethereum = requireEthereum();
-        if (!ethereum) {
-            return;
-        }
+            // Step 2: Fetch nonce
+            setStatus('Đang tạo nonce...', null);
+            const nonce = await fetchNonce(currentAccount);
+            console.log('✅ Nonce received');
 
-        if (!currentAccount) {
-            setStatus('Vui lòng kết nối ví trước.', 'error');
-            return;
-        }
-
-        if (!cachedNonce) {
-            setStatus('Nonce không khả dụng, hãy lấy lại nonce.', 'error');
-            return;
-        }
-
-        try {
-            signButton.disabled = true;
-            setStatus('Đang yêu cầu chữ ký...', null);
+            // Step 3: Request signature
+            setStatus('Vui lòng ký trong MetaMask...', null);
             const signature = await ethereum.request({
                 method: 'personal_sign',
-                params: [cachedNonce, currentAccount]
+                params: [nonce, currentAccount]
             });
+            console.log('✅ Signature obtained');
 
+            // Step 4: Verify signature
             setStatus('Đang xác thực...', null);
             const redirectUrl = await verifySignature(currentAccount, signature);
-            setStatus('Đăng nhập thành công. Đang chuyển hướng...', 'success');
-            window.location.href = redirectUrl || config.dashboardUrl || '/admin';
+            
+            setStatus('Đăng nhập thành công! Đang chuyển hướng...', 'success');
+            setTimeout(() => {
+                window.location.href = redirectUrl || config.dashboardUrl || '/admin';
+            }, 500);
+
         } catch (error) {
-            console.error(error);
-            setStatus(error.message || 'Đăng nhập thất bại.', 'error');
-            signButton.disabled = false;
+            console.error('❌ Login error:', error);
+            setStatus(error.message || 'Đăng nhập thất bại. Vui lòng thử lại.', 'error');
+            loginButton.disabled = false;
         }
     });
 })();

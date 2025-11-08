@@ -548,6 +548,9 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    
+    <!-- User Wallet Authentication with MetaMask Signature -->
+    <script src="~/js/user-wallet-auth.js"></script>
 
     <script>
         // anti-forgery helper
@@ -746,6 +749,19 @@
                             return false;
                         }
                         try{
+                            // Use UserWalletAuth if available
+                            if(window.UserWalletAuth && typeof window.UserWalletAuth.saveProfile === 'function'){
+                                const success = await window.UserWalletAuth.saveProfile(wallet, name, email);
+                                if(success){
+                                    setConnected(true, wallet);
+                                    return true;
+                                } else {
+                                    alert('Không thể lưu hồ sơ. Vui lòng thử lại.');
+                                    return false;
+                                }
+                            }
+                            
+                            // Fallback to legacy approach
                             const r=await fetch('/Wallet/SaveProfile', {
                                 method:'POST',
                                 headers:{ 'Content-Type':'application/x-www-form-urlencoded' },
@@ -824,36 +840,71 @@
                         }
                     }
 
+                    // ==========================================
+                    // NEW: Connect Wallet with Signature Authentication
+                    // ==========================================
                     async function connectWallet(){
-                        if(!window.ethereum){ alert('⚠️ Cần MetaMask để kết nối ví.'); return; }
+                        if(!window.ethereum){ 
+                            alert('⚠️ Cần cài đặt MetaMask để kết nối ví.'); 
+                            return; 
+                        }
+
+                        if(!window.UserWalletAuth){
+                            console.error('UserWalletAuth module not loaded');
+                            alert('Lỗi: Module xác thực chưa sẵn sàng. Vui lòng tải lại trang.');
+                            return;
+                        }
+
                         try{
-                            const ok = await ensureBscTestnet();
-                            if(!ok){
-                                alert('Vui lòng chuyển mạng sang BSC Testnet trong MetaMask rồi thử lại.');
-                                return;
+                            console.log('🔐 Starting wallet authentication with signature...');
+                            
+                            const result = await window.UserWalletAuth.authenticate();
+                            
+                            if(result && result.success){
+                                console.log('✅ Wallet authenticated successfully:', result.account);
+                                
+                                // Check if profile needs completion
+                                if(result.requiresProfile && typeof newWalletModal?.showModal==='function'){
+                                    newWalletModal.showModal();
+                                }
+                                
+                                setConnected(true, result.account);
+                            } else {
+                                alert('Xác thực thất bại. Vui lòng thử lại.');
                             }
-                            const accounts = await window.ethereum.request({ method:'eth_requestAccounts' });
-                            const addr = (accounts&&accounts[0])||'';
-                            localStorage.setItem('connectedWallet', addr);
-                            const info = await checkWalletOnServer(addr);
-                            if(!info?.exists){
-                                alert('Không thể khởi tạo hồ sơ ví. Vui lòng thử lại.');
-                                return;
-                            }
-                            if(info?.requiresProfile && typeof newWalletModal?.showModal==='function'){
-                                newWalletModal.showModal();
-                            }
-                            setConnected(true, addr);
-                        }catch(err){ console.warn(err); }
+                        }catch(err){ 
+                            console.error('❌ Wallet authentication error:', err);
+                            alert(err.message || 'Có lỗi xảy ra khi kết nối ví. Vui lòng thử lại.');
+                        }
                     }
+
+                    // ==========================================
+                    // Event Handlers & Callbacks for UserWalletAuth
+                    // ==========================================
+                    window.handleWalletDisconnected = function(){
+                        setConnected(false);
+                    };
+
+                    window.handleWrongNetwork = function(){
+                        alert('⚠️ Vui lòng chuyển sang mạng BSC Testnet trong MetaMask.');
+                    };
 
           connectBtn?.addEventListener('click', connectWallet);
           trigger?.addEventListener('click', (e)=>{ e.stopPropagation(); menu.classList.toggle('open'); trigger.setAttribute('aria-expanded', menu.classList.contains('open')?'true':'false'); });
           document.addEventListener('click', ()=> menu?.classList.remove('open'));
 
           logoutBtn?.addEventListener('click', async ()=>{
-            try{ await fetch('/Wallet/Logout',{method:'POST', headers:{'RequestVerificationToken': getRequestVerificationToken()}}); }catch{}
-            localStorage.removeItem('connectedWallet');
+            try{ 
+                if(window.UserWalletAuth){
+                    await window.UserWalletAuth.logout();
+                } else {
+                    // Fallback
+                    await fetch('/Wallet/Logout',{method:'POST', headers:{'RequestVerificationToken': getRequestVerificationToken()}}); 
+                    localStorage.removeItem('connectedWallet');
+                }
+            }catch(err){
+                console.warn('Logout error:', err);
+            }
             setConnected(false);
           });
 

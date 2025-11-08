@@ -1,4 +1,4 @@
-@{
+gi@{
     ViewData["Title"] = "Đăng nhập quản trị";
     Layout = "~/Views/AdminAuth/_Layout.cshtml";
 }
@@ -13,24 +13,26 @@
     <div class="admin-login-steps" role="list">
         <div class="step-item" role="listitem">
             <span class="step-index">1</span>
-            <span class="step-title">Kết nối ví</span>
-            <span class="step-note">Chọn tài khoản MetaMask đã được cấp quyền.</span>
+            <span class="step-title">Ký với MetaMask</span>
+            <span class="step-note">Chọn tài khoản và ký nonce để xác thực.</span>
         </div>
         <div class="step-item" role="listitem">
             <span class="step-index">2</span>
-            <span class="step-title">Ký nonce</span>
-            <span class="step-note">Xác minh chữ ký để mở phiên bảo mật.</span>
+            <span class="step-title">Xác minh quyền</span>
+            <span class="step-note">Hệ thống kiểm tra quyền Admin/SuperAdmin.</span>
         </div>
         <div class="step-item" role="listitem">
             <span class="step-index">3</span>
             <span class="step-title">Vào dashboard</span>
-            <span class="step-note">Hệ thống chuyển hướng ngay khi hợp lệ.</span>
+            <span class="step-note">Chuyển hướng ngay khi hợp lệ.</span>
         </div>
     </div>
 
     <div class="admin-login-actions">
-        <button class="btn-primary" id="btnConnect">Kết nối MetaMask</button>
-        <button class="btn-outline" id="btnSign" disabled>Ký &amp; đăng nhập</button>
+        <button class="btn-primary btn-full" id="btnLogin">
+            <ion-icon name="shield-checkmark-outline"></ion-icon>
+            <span>Đăng nhập với MetaMask</span>
+        </button>
     </div>
 
     <div class="admin-login-status" id="statusPanel" role="status" aria-live="polite">
@@ -139,7 +141,7 @@
 
         .admin-login-actions {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             gap: 10px;
         }
 
@@ -153,6 +155,19 @@
             cursor: pointer;
             border: none;
             transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+        }
+
+        .btn-full {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 20px;
+        }
+
+        .btn-full ion-icon {
+            font-size: 1.4rem;
         }
 
         .btn-primary {

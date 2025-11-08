@@ -2,7 +2,9 @@
 using InvestDapp.Infrastructure.Data.interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 
 
 namespace InvestDapp.Controllers
@@ -16,6 +18,72 @@ namespace InvestDapp.Controllers
             _authService = authService;
             _userRepository = userRepository;
         }
+
+        // ==========================================
+        // NEW: Wallet Authentication with Signature
+        // ==========================================
+
+        /// <summary>
+        /// Generate nonce for wallet authentication
+        /// </summary>
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> Nonce([FromBody] NonceRequest request)
+        {
+            if (!ModelState.IsValid || string.IsNullOrWhiteSpace(request.WalletAddress))
+            {
+                return BadRequest(new { success = false, error = "Địa chỉ ví không hợp lệ." });
+            }
+
+            var result = await _authService.GenerateUserNonceAsync(request.WalletAddress);
+            
+            if (!result.Success)
+            {
+                return BadRequest(new { success = false, error = result.Error ?? "Không thể tạo nonce." });
+            }
+
+            return Ok(new { success = true, nonce = result.Nonce });
+        }
+
+        /// <summary>
+        /// Verify signature and sign in user
+        /// </summary>
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> Verify([FromBody] VerifyRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { success = false, error = "Thiếu dữ liệu xác thực." });
+            }
+
+            var result = await _authService.VerifyUserSignatureAsync(request.WalletAddress, request.Signature);
+            
+            if (!result.Success)
+            {
+                return Unauthorized(new { success = false, error = result.ErrorMessage ?? "Xác thực thất bại." });
+            }
+
+            // Get user profile to check if needs profile completion
+            var user = await _userRepository.GetUserByWalletAddressAsync(request.WalletAddress);
+            var requiresProfile = user == null || string.IsNullOrWhiteSpace(user.Name) || string.IsNullOrWhiteSpace(user.Email);
+
+            return Ok(new 
+            { 
+                success = true, 
+                requiresProfile,
+                profile = user != null ? new
+                {
+                    name = user.Name,
+                    email = user.Email,
+                    wallet = user.WalletAddress
+                } : null
+            });
+        }
+
+        // ==========================================
+        // LEGACY: Keep for backward compatibility but mark as deprecated
+        // ==========================================
 
 
         [HttpGet]
@@ -102,6 +170,25 @@ namespace InvestDapp.Controllers
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return Ok();
+        }
+
+        // ==========================================
+        // Request Models
+        // ==========================================
+
+        public class NonceRequest
+        {
+            [Required]
+            public string WalletAddress { get; set; } = string.Empty;
+        }
+
+        public class VerifyRequest
+        {
+            [Required]
+            public string WalletAddress { get; set; } = string.Empty;
+
+            [Required]
+            public string Signature { get; set; } = string.Empty;
         }
     }
 
