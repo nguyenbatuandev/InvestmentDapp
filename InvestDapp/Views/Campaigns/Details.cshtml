@@ -830,7 +830,7 @@
         if (!await ensureWalletConnected()) return;
 
         // validate
-        if (!reason || reason.trim().length < 10){ showError('Lý do rút vốn phải có ít nhất 10 ký tự'); return; }
+        if (!reason || reason.trim().length < 1){ showError('Vui lòng nhập lý do rút vốn'); return; }
 
         if (btn){ btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang kiểm tra điều kiện...'; }
 

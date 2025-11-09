@@ -34,6 +34,7 @@
 .h2{ font-size: var(--fs-4); font-weight: 700; }
 .muted{ color: var(--muted); }
 .row{ display:grid; gap: var(--sp-4); }
+.row.transactions-list{ gap: 0; }
 .grid-2{ display:grid; gap: var(--sp-4); grid-template-columns: 1fr 1fr; }
 @@media (max-width: 1080px){ .grid-2{ grid-template-columns: 1fr; } }
 .card{ padding: var(--sp-4); border-radius: var(--radius); padding-top :5px; padding-bottom:5px; }
@@ -553,10 +554,10 @@
           <div class="h2"><i class="fa-solid fa-coins"></i> Giao dịch đầu tư</div>
           @if (Model.Investments?.Any() == true)
           {
-            <div class="row">
+            <div class="row transactions-list">
               @foreach (var investment in Model.Investments.OrderByDescending(i => i.Timestamp).Take(4))
               {
-                <div class="transaction-item" style="display:flex; align-items:center; gap: var(--sp-3); padding: var(--sp-2); border:1px solid var(--border); border-radius: 10px; margin-bottom: var(--sp-2); background: rgba(255,255,255,.02);">
+                <div class="transaction-item" style="display:flex; align-items:center; gap: var(--sp-3); padding: var(--sp-2); border:1px solid var(--border); border-radius: 10px; margin-bottom: 8px; background: rgba(255,255,255,.02);">
                   <div class="avatar" style="width:40px; height:40px; border-radius:50%; background: conic-gradient(from 180deg,#6cf0ff,#9b6bff,#6cf0ff); display:grid; place-items:center; color:#04121c; font-weight:900; font-size: var(--fs-1);">
                     @investment.InvestorAddress.Substring(2, 2).ToUpper()
                   </div>
@@ -1132,7 +1133,7 @@
                                              </a>` : '';
                     
                     html += `
-                        <div class="transaction-item" style="display:flex; align-items:center; gap: var(--sp-3); padding: var(--sp-2); border:1px solid var(--border); border-radius: 10px; margin-bottom: var(--sp-2); background: rgba(255,255,255,.02);">
+                        <div class="transaction-item" style="display:flex; align-items:center; gap: var(--sp-3); padding: var(--sp-2); border:1px solid var(--border); border-radius: 10px; margin-bottom: 8px; background: rgba(255,255,255,.02);">
                             <div class="avatar" style="width:40px; height:40px; border-radius:50%; background: conic-gradient(from 180deg,#6cf0ff,#9b6bff,#6cf0ff); display:grid; place-items:center; color:#04121c; font-weight:900; font-size: var(--fs-1);">
                                 ${avatarText}
                             </div>
@@ -1281,7 +1282,7 @@
                      </a>` : '';
 
         newHtml += `
-          <div class="transaction-item new-transaction" style="display:flex; align-items:center; gap: var(--sp-3); padding: var(--sp-2); border:1px solid var(--primary); border-radius: 10px; margin-bottom: var(--sp-2); background: rgba(108,240,255,.1); animation: newTransactionGlow 2s ease-out;">
+          <div class="transaction-item new-transaction" style="display:flex; align-items:center; gap: var(--sp-3); padding: var(--sp-2); border:1px solid var(--primary); border-radius: 10px; margin-bottom: 8px; background: rgba(108,240,255,.1); animation: newTransactionGlow 2s ease-out;">
             <div class="avatar" style="width:40px; height:40px; border-radius:50%; background: conic-gradient(from 180deg,#6cf0ff,#9b6bff,#6cf0ff); display:grid; place-items:center; color:#04121c; font-weight:900; font-size: var(--fs-1);">
               ${avatarText}
             </div>

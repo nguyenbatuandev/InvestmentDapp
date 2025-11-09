@@ -491,6 +491,62 @@
                 color: var(--trading-muted);
             }
 
+        /* Leverage Slider */
+        .leverage-slider {
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(to right, #10b981 0%, #8b5cf6 50%, #ef4444 100%);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            margin: 8px 0;
+            cursor: pointer;
+        }
+
+        .leverage-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #8b5cf6;
+            cursor: pointer;
+            border: 2px solid var(--trading-panel);
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .leverage-slider::-webkit-slider-thumb:hover {
+            width: 22px;
+            height: 22px;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.6);
+        }
+
+        .leverage-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #8b5cf6;
+            cursor: pointer;
+            border: 2px solid var(--trading-panel);
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .leverage-slider::-moz-range-thumb:hover {
+            width: 22px;
+            height: 22px;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.6);
+        }
+
+        .leverage-limits {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--trading-muted);
+            margin-top: -4px;
+        }
+
         /* Action buttons */
         .action-buttons {
             display: grid;
@@ -1706,6 +1762,63 @@
                 setButtonLoading('btnShort', true);
                 try { await openPosition('SHORT'); } finally { setButtonLoading('btnShort', false); }
             });
+
+            // Leverage slider event handlers
+            const levSlider = document.getElementById('levSlider');
+            const levDisplay = document.getElementById('levDisplay');
+            const marginDisplay = document.getElementById('marginDisplay');
+            const qtyInput = document.getElementById('qtyInput');
+
+            // Max leverage configuration per symbol
+            const maxLeverageConfig = {
+                'BTCUSDT': 125,
+                'ETHUSDT': 100,
+                'BNBUSDT': 50,
+                'Default': 20
+            };
+
+            function updateMaxLeverage() {
+                const maxLev = maxLeverageConfig[currentSymbol] || maxLeverageConfig['Default'];
+                if (levSlider) {
+                    levSlider.max = maxLev;
+                    // Adjust current value if it exceeds new max
+                    if (Number(levSlider.value) > maxLev) {
+                        levSlider.value = maxLev;
+                    }
+                }
+                const maxLevDisplay = document.getElementById('maxLevDisplay');
+                if (maxLevDisplay) maxLevDisplay.textContent = maxLev + 'x';
+                updateLeverageDisplay();
+            }
+
+            function updateLeverageDisplay() {
+                const lev = Number(levSlider?.value || 20);
+                if (levDisplay) levDisplay.textContent = lev + 'x';
+                updateMarginDisplay();
+            }
+
+            function updateMarginDisplay() {
+                if (!marginDisplay || !latestPrice) return;
+                
+                const qty = Math.max(0.0001, Number(qtyInput?.value || 0));
+                const lev = Number(levSlider?.value || 20);
+                const price = normalizeSymbolPrice(latestPrice, currentSymbol);
+                const margin = (price * qty) / lev;
+                const fee = (price * qty) * (SimFut.feeRate / 100);
+                const total = margin + fee;
+                
+                marginDisplay.textContent = `Margin: ${formatMoney(margin)} + Fee: ${formatMoney(fee)} = ${formatMoney(total)} USDT`;
+            }
+
+            if (levSlider) {
+                levSlider.addEventListener('input', updateLeverageDisplay);
+                updateMaxLeverage(); // Set initial max leverage
+            }
+
+            if (qtyInput) {
+                qtyInput.addEventListener('input', updateMarginDisplay);
+            }
+
             document.getElementById('closeAll')?.addEventListener('click', () => {
                 if (confirm('Đóng tất cả vị thế?')) {
                     [...SimFut.positions].forEach(p => closePosition(p, 'CloseAll'));
@@ -1913,7 +2026,7 @@
                 if (!latestPrice) { hideLoading(); showNotification('❌ No real-time price.', 'danger'); return; }
 
                 const qty = Math.max(0.0001, Number($('#qtyInput')?.value || 0));
-                const lev = Math.min(125, Math.max(1, Number($('#levInput')?.value || 20)));
+                const lev = Math.min(125, Math.max(1, Number($('#levSlider')?.value || 20)));
                 const price = normalizeSymbolPrice(latestPrice, currentSymbol);
                 const mgn = (price * qty) / lev;
                 const openFee = (price * qty) * (SimFut.feeRate / 100);
@@ -1953,7 +2066,7 @@
                 type: orderType,
                 quantity: Math.max(0.0001, Number($('#qtyInput')?.value || 0)),
                 price: orderType === 1 ? Number(limitPriceVal) : null,
-                leverage: Math.min(125, Math.max(1, Number($('#levInput')?.value || 20))),
+                leverage: Math.min(125, Math.max(1, Number($('#levSlider')?.value || 20))),
                 takeProfitPrice: $('#tpInput')?.value ? Number($('#tpInput')?.value) : null,
                 stopLossPrice: $('#slInput')?.value ? Number($('#slInput')?.value) : null
             };
@@ -2829,8 +2942,15 @@
                                     <input type="number" id="qtyInput" class="input-field" min="0.0001" step="0.0001" value="0.001" placeholder="0.001" />
                                 </div>
                                 <div class="input-group">
-                                    <label class="input-label">Leverage</label>
-                                    <input type="number" id="levInput" class="input-field" min="1" max="125" step="1" value="20" placeholder="20x" />
+                                    <label class="input-label">
+                                        Leverage: <span id="levDisplay" style="color: #8b5cf6; font-weight: 600;">20x</span>
+                                        <span id="marginDisplay" style="float: right; color: #10b981; font-size: 12px;"></span>
+                                    </label>
+                                    <input type="range" id="levSlider" class="leverage-slider" min="1" max="125" step="1" value="20" />
+                                    <div class="leverage-limits">
+                                        <span>1x</span>
+                                        <span id="maxLevDisplay">125x</span>
+                                    </div>
                                 </div>
                                 <div class="tp-sl-group">
                                     <div class="input-group">
