@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Web3;
 using System.Text.Json;
@@ -77,6 +78,7 @@ namespace Invest.Application.EventService
                 _logger.LogInformation("Total range to process: {FromBlock} to {ToBlock}", fromBlock, toBlock);
 
                 long currentChunkStartBlock = fromBlock;
+                bool historyPrunedDetected = false;
                 while (currentChunkStartBlock <= toBlock)
                 {
                     // ... (phần code chia chunk giữ nguyên) ...
@@ -86,7 +88,7 @@ namespace Invest.Application.EventService
                     var chunkSucceeded = true;
 
                     // 2. THÊM ĐOẠN CODE LẮNG NGHE INVESTMENT TẠI ĐÂY
-                    var okInvestment = await ProcessEventsInRange<InvestmentReceivedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "InvestmentReceived", async (log) =>
+                    var investResult = await ProcessEventsInRange<InvestmentReceivedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "InvestmentReceived", async (log) =>
                     {
                         var evt = log.Event;
                         var txHash = log.Log.TransactionHash;
@@ -133,14 +135,19 @@ namespace Invest.Application.EventService
 
                         // Gọi repository để cập nhật DB
                         await _eventRepository.HandleInvestmentReceivedAsync(evt.CampaignId, evt.Investor, evt.Amount, evt.CurrentRaisedAmount, txHash, dateTime);
-
-
                     }, cancellationToken);
-                    if (!okInvestment) chunkSucceeded = false;
+
+                    if (investResult.HistoryPruned)
+                    {
+                        await FastForwardToBlockAsync(safeBlockNumber, currentChunkStartBlock, currentChunkEndBlock, "InvestmentReceived");
+                        historyPrunedDetected = true;
+                        break;
+                    }
+                    if (!investResult.Success) chunkSucceeded = false;
 
 
                     // 3. Xử lý WithdrawalRequestCreated
-                    var okProfit = await ProcessEventsInRange<ProfitAddedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "ProfitAdded", async (log) =>
+                    var profitResult = await ProcessEventsInRange<ProfitAddedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "ProfitAdded", async (log) =>
                     {
                         var evt = log.Event;
                         var txHash = log.Log.TransactionHash;
@@ -179,11 +186,18 @@ namespace Invest.Application.EventService
                             }
                         });
                     }, cancellationToken);
-                    if (!okProfit) chunkSucceeded = false;
+
+                    if (profitResult.HistoryPruned)
+                    {
+                        await FastForwardToBlockAsync(safeBlockNumber, currentChunkStartBlock, currentChunkEndBlock, "ProfitAdded");
+                        historyPrunedDetected = true;
+                        break;
+                    }
+                    if (!profitResult.Success) chunkSucceeded = false;
 
 
                     // 4. Xử lý WithdrawalRequestCreated
-                    var okStatus = await ProcessEventsInRange<CampaignStatusUpdatedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "CampaignStatusUpdated", async (log) =>
+                    var statusResult = await ProcessEventsInRange<CampaignStatusUpdatedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "CampaignStatusUpdated", async (log) =>
                     {
                         var evt = log.Event;
                         await _eventRepository.HandleCampaignStatusUpdatedAsync(evt.CampaignId, evt.NewStatus);
@@ -225,10 +239,16 @@ namespace Invest.Application.EventService
                         });
 
                     }, cancellationToken);
-                    if (!okStatus) chunkSucceeded = false;
+                    if (statusResult.HistoryPruned)
+                    {
+                        await FastForwardToBlockAsync(safeBlockNumber, currentChunkStartBlock, currentChunkEndBlock, "CampaignStatusUpdated");
+                        historyPrunedDetected = true;
+                        break;
+                    }
+                    if (!statusResult.Success) chunkSucceeded = false;
 
                     // 5. Xử lý WithdrawalRequestCreated
-                    var okWithdrawalReq = await ProcessEventsInRange<WithdrawalRequestedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "WithdrawalRequested", async (log) =>
+                    var withdrawalResult = await ProcessEventsInRange<WithdrawalRequestedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "WithdrawalRequested", async (log) =>
                     {
                         var evt = log.Event;
                         var txHash = log.Log.TransactionHash;
@@ -293,10 +313,16 @@ namespace Invest.Application.EventService
 
 
                     }, cancellationToken);
-                    if (!okWithdrawalReq) chunkSucceeded = false;
+                    if (withdrawalResult.HistoryPruned)
+                    {
+                        await FastForwardToBlockAsync(safeBlockNumber, currentChunkStartBlock, currentChunkEndBlock, "WithdrawalRequested");
+                        historyPrunedDetected = true;
+                        break;
+                    }
+                    if (!withdrawalResult.Success) chunkSucceeded = false;
 
                     // 6. Xử lý VoteCast
-                    var okVoteCast = await ProcessEventsInRange<VoteCastEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "VoteCast", async (log) =>
+                    var voteResult = await ProcessEventsInRange<VoteCastEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "VoteCast", async (log) =>
                     {
                         var evt = log.Event;
                         var txHash = log.Log.TransactionHash;
@@ -316,12 +342,18 @@ namespace Invest.Application.EventService
                         await _eventRepository.LogEventAsync("VoteCast", txHash, (int)log.Log.BlockNumber.Value, (int)evt.CampaignId, JsonSerializer.Serialize(evt));
 
                     }, cancellationToken);
-                    if (!okVoteCast) chunkSucceeded = false;
+                    if (voteResult.HistoryPruned)
+                    {
+                        await FastForwardToBlockAsync(safeBlockNumber, currentChunkStartBlock, currentChunkEndBlock, "VoteCast");
+                        historyPrunedDetected = true;
+                        break;
+                    }
+                    if (!voteResult.Success) chunkSucceeded = false;
 
 
 
                     // 8 Xử lý claim profit
-                    var okClaimProfit = await ProcessEventsInRange<ProfitClaimedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "ClaimProfit", async (log) =>
+                    var claimProfitResult = await ProcessEventsInRange<ProfitClaimedEventDTO>(currentChunkStartBlock, currentChunkEndBlock, "ClaimProfit", async (log) =>
                     {
                         var evt = log.Event;
                         var txHash = log.Log.TransactionHash;
@@ -339,7 +371,13 @@ namespace Invest.Application.EventService
 
                         await _eventRepository.LogEventAsync("ClaimProfit", txHash, (int)log.Log.BlockNumber.Value, 0, JsonSerializer.Serialize(evt));
                     }, cancellationToken);
-                    if (!okClaimProfit) chunkSucceeded = false;
+                    if (claimProfitResult.HistoryPruned)
+                    {
+                        await FastForwardToBlockAsync(safeBlockNumber, currentChunkStartBlock, currentChunkEndBlock, "ClaimProfit");
+                        historyPrunedDetected = true;
+                        break;
+                    }
+                    if (!claimProfitResult.Success) chunkSucceeded = false;
 
                     // Cập nhật block cuối cùng đã xử lý chỉ khi toàn bộ handlers trong chunk thành công
                     if (chunkSucceeded)
@@ -352,7 +390,17 @@ namespace Invest.Application.EventService
                         _logger.LogWarning("--> Chunk processing had errors. LastProcessedBlock will NOT be advanced past {Block}. Investigate logs.", currentChunkEndBlock);
                     }
 
+                    if (historyPrunedDetected)
+                    {
+                        break;
+                    }
+
                     currentChunkStartBlock = currentChunkEndBlock + 1;
+                }
+
+                if (historyPrunedDetected)
+                {
+                    return;
                 }
             }
             catch (Exception ex)
@@ -361,7 +409,7 @@ namespace Invest.Application.EventService
                 _logger.LogError(ex, "An error occurred during event processing loop.");
             }
         }
-        private async Task<bool> ProcessEventsInRange<TEventDTO>(long fromBlock, long toBlock, string eventName, Func<EventLog<TEventDTO>, Task> handler, CancellationToken cancellationToken
+        private async Task<EventRangeResult> ProcessEventsInRange<TEventDTO>(long fromBlock, long toBlock, string eventName, Func<EventLog<TEventDTO>, Task> handler, CancellationToken cancellationToken
         ) where TEventDTO : class, IEventDTO, new()
         {
             var eventHandler = _web3.Eth.GetEvent<TEventDTO>(_config.ContractAddress);
@@ -375,14 +423,20 @@ namespace Invest.Application.EventService
             }
             catch (Exception ex)
             {
+                if (IsHistoryPrunedException(ex))
+                {
+                    _logger.LogWarning(ex, "Blockchain history pruned for event {EventName} in range {From}-{To}", eventName, fromBlock, toBlock);
+                    return EventRangeResult.HistoryPrunedFailure;
+                }
+
                 _logger.LogError(ex, "Failed to fetch logs for event {EventName} in range {From}-{To}", eventName, fromBlock, toBlock);
-                return false; // failure fetching logs
+                return EventRangeResult.Failure; // failure fetching logs
             }
 
             if (logs.Count == 0)
             {
                 _logger.LogInformation("No logs returned for event {EventName} in range {From}-{To}", eventName, fromBlock, toBlock);
-                return true; // nothing to do, not a failure
+                return EventRangeResult.Successful; // nothing to do, not a failure
             }
 
             var anyFailure = false;
@@ -431,7 +485,29 @@ namespace Invest.Application.EventService
                 }
             }
 
-            return !anyFailure;
+            return anyFailure ? EventRangeResult.Failure : EventRangeResult.Successful;
+        }
+
+        private async Task FastForwardToBlockAsync(long targetBlock, long fromBlock, long toBlock, string eventName)
+        {
+            await UpdateLastProcessedBlockAsync(targetBlock);
+            _logger.LogWarning("History pruned when fetching {EventName} logs {From}-{To}. Fast-forwarding last processed block to {TargetBlock} to avoid old ranges.", eventName, fromBlock, toBlock, targetBlock);
+        }
+
+        private static bool IsHistoryPrunedException(Exception ex)
+        {
+            if (ex == null) return false;
+
+            if (ex is RpcResponseException rpcEx)
+            {
+                var message = rpcEx.Message ?? string.Empty;
+                if (message.Contains("History has been pruned", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return ex.InnerException != null && IsHistoryPrunedException(ex.InnerException);
         }
 
         private async Task<long> GetLastProcessedBlockAsync()
@@ -468,6 +544,13 @@ namespace Invest.Application.EventService
             state.LastProcessedBlock = blockNumber;
             state.UpdatedAt = DateTime.UtcNow;
             await _dbContext.SaveChangesAsync();
+        }
+
+        private record EventRangeResult(bool Success, bool HistoryPruned)
+        {
+            public static EventRangeResult Successful => new(true, false);
+            public static EventRangeResult Failure => new(false, false);
+            public static EventRangeResult HistoryPrunedFailure => new(false, true);
         }
     }
 }
